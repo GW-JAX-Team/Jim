@@ -2294,8 +2294,7 @@
 <h2 id="available-transforms">Available Transforms<a class="headerlink" href="#available-transforms" title="Permanent link">¤</a></h2>
 <p>All transforms are importable from <code>jimgw.core.single_event.transforms</code>.</p>
 <h3 id="mass-transforms">Mass transforms<a class="headerlink" href="#mass-transforms" title="Permanent link">¤</a></h3>
-<p>Transforms marked <em>pre-instantiated</em> are ready-to-use objects exported directly
-from the module — use them <strong>without parentheses</strong> in your transform lists:</p>
+<p>Transforms marked <em>pre-instantiated</em> are ready-to-use objects exported directly from the module — use them <strong>without parentheses</strong> in your transform lists:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Correct:</span>
 <span class="n">likelihood_transforms</span> <span class="o">=</span> <span class="p">[</span><span class="n">MassRatioToSymmetricMassRatioTransform</span><span class="p">]</span>
 
@@ -2398,10 +2397,8 @@ from the module — use them <strong>without parentheses</strong> in your transf
 </tbody>
 </table>
 <h2 id="mapping-a-prior-to-the-unit-cube-for-ns-aw">Mapping a prior to the unit cube (for NS-AW)<a class="headerlink" href="#mapping-a-prior-to-the-unit-cube-for-ns-aw" title="Permanent link">¤</a></h2>
-<p>The <a href="../samplers/#blackjax-ns-aw">BlackJAX NS-AW sampler</a> requires the
-<strong>sampling space</strong> to be the unit hypercube <code>[0, 1]^n_dims</code>, with a uniform
-prior in the original parameter space.  The <code>sample_transforms</code> must map every
-parameter from its physical support into <code>[0, 1]</code>.</p>
+<p>The <a href="../samplers/#blackjax-ns-aw">BlackJAX NS-AW sampler</a> requires the <strong>sampling space</strong> to be the unit hypercube <code>[0, 1]^n_dims</code>, with a uniform prior in the original parameter space.
+The <code>sample_transforms</code> must map every parameter from its physical support into <code>[0, 1]</code>.</p>
 <p>The key tool is <code>BoundToBound</code>, which linearly maps <code>[a, b] → [c, d]</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.transforms</span><span class="w"> </span><span class="kn">import</span> <span class="n">BoundToBound</span>
 
@@ -2435,8 +2432,7 @@ parameter from its physical support into <code>[0, 1]</code>.</p>
 <span class="p">]</span>
 </code></pre></div>
 <h3 id="power-law-priors-eg-luminosity-distance">Power-law priors (e.g. luminosity distance)<a class="headerlink" href="#power-law-priors-eg-luminosity-distance" title="Permanent link">¤</a></h3>
-<p>For parameters with a power-law prior (not uniform), use the reversed
-<code>PowerLawTransform</code> so the sampling space is uniform on <code>[0, 1]</code>:</p>
+<p>For parameters with a power-law prior (not uniform), use the reversed <code>PowerLawTransform</code> so the sampling space is uniform on <code>[0, 1]</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.transforms</span><span class="w"> </span><span class="kn">import</span> <span class="n">PowerLawTransform</span><span class="p">,</span> <span class="n">reverse_bijective_transform</span>
 
 <span class="n">sample_transforms</span> <span class="o">+=</span> <span class="p">[</span>
@@ -2450,9 +2446,7 @@ parameter from its physical support into <code>[0, 1]</code>.</p>
     <span class="p">),</span>
 <span class="p">]</span>
 </code></pre></div>
-<p>This maps <code>d_L_unit ∈ [0, 1]</code> (where the sampler works) back to
-<code>d_L ∈ [d_L_min, d_L_max]</code> with a <code>d_L^2</code> prior, which is the volume-element
-prior for a uniformly distributed source population.</p>
+<p>This maps <code>d_L_unit ∈ [0, 1]</code> (where the sampler works) back to <code>d_L ∈ [d_L_min, d_L_max]</code> with a <code>d_L^2</code> prior, which is the volume-element prior for a uniformly distributed source population.</p>
 <h3 id="periodic-parameters">Periodic parameters<a class="headerlink" href="#periodic-parameters" title="Permanent link">¤</a></h3>
 <p>NS-AW wraps the <code>periodic</code> list of parameter names in the unit cube:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.samplers.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">BlackJAXNSAWConfig</span>

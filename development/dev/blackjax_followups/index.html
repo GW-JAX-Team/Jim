@@ -1993,8 +1993,7 @@
 <h2 id="what-to-undo-when-the-features-land">What to undo when the features land<a class="headerlink" href="#what-to-undo-when-the-features-land" title="Permanent link">¤</a></h2>
 <h3 id="packaging">Packaging<a class="headerlink" href="#packaging" title="Permanent link">¤</a></h3>
 <ul>
-<li>Remove the <code>[tool.uv.sources]</code> block in <code>pyproject.toml</code> pointing
-  <code>blackjax = { git = "https://github.com/GW-JAX-Team/blackjax.git", branch = "jim" }</code>.</li>
+<li>Remove the <code>[tool.uv.sources]</code> block in <code>pyproject.toml</code> pointing <code>blackjax = { git = "https://github.com/GW-JAX-Team/blackjax.git", branch = "jim" }</code>.</li>
 <li>Drop the <code>[dependency-groups] nested-sampling</code> PEP 735 group entirely.</li>
 <li>Bump the <code>blackjax&gt;=1.4</code> pin to whatever release first contains all NS features.</li>
 </ul>
@@ -2041,14 +2040,11 @@
 </ul>
 <h3 id="ci">CI<a class="headerlink" href="#ci" title="Permanent link">¤</a></h3>
 <ul>
-<li><code>.github/workflows/CI.yml</code>: remove <code>--group nested-sampling</code> from the test job.
-  The <code>[dependency-groups] nested-sampling</code> block in <code>pyproject.toml</code> can be
-  deleted at the same time.</li>
+<li><code>.github/workflows/CI.yml</code>: remove <code>--group nested-sampling</code> from the test job. The <code>[dependency-groups] nested-sampling</code> block in <code>pyproject.toml</code> can be deleted at the same time.</li>
 </ul>
 <h3 id="tests">Tests<a class="headerlink" href="#tests" title="Permanent link">¤</a></h3>
 <ul>
-<li><code>tests/unit/samplers/test_blackjax_*.py</code>: the <code>pytest.importorskip("blackjax")</code>
-  lines can stay as defense-in-depth but are no longer load-bearing.</li>
+<li><code>tests/unit/samplers/test_blackjax_*.py</code>: the <code>pytest.importorskip("blackjax")</code> lines can stay as defense-in-depth but are no longer load-bearing.</li>
 </ul>
 
 

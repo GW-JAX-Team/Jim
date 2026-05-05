@@ -2258,31 +2258,18 @@ You select one by passing a typed config object to <code>Jim</code>.</p>
 <p>Key parameters:</p>
 <ul>
 <li><code>n_chains</code> — number of parallel MCMC chains.</li>
-<li><code>n_training_loops</code> / <code>n_production_loops</code> — how many rounds of training
-  (flow updates) and production (sample collection) to run.</li>
-<li><code>n_local_steps</code> / <code>n_global_steps</code> — local MCMC steps and flow-proposal
-  steps per loop.</li>
-<li><code>local_kernel</code> — MCMC kernel for local steps; one of <code>"MALA"</code> (default),
-  <code>"HMC"</code>, or <code>"GRW"</code>.</li>
-<li><code>parallel_tempering</code> — parallel tempering settings; disabled by default.
-  Enable with <code>parallel_tempering=True</code> (uses defaults), a plain dict of settings
-  such as <code>{"n_temperatures": 8}</code>, or a <code>ParallelTemperingConfig</code> instance.</li>
+<li><code>n_training_loops</code> / <code>n_production_loops</code> — how many rounds of training (flow updates) and production (sample collection) to run.</li>
+<li><code>n_local_steps</code> / <code>n_global_steps</code> — local MCMC steps and flow-proposal steps per loop.</li>
+<li><code>local_kernel</code> — MCMC kernel for local steps; one of <code>"MALA"</code> (default), <code>"HMC"</code>, or <code>"GRW"</code>.</li>
+<li><code>parallel_tempering</code> — parallel tempering settings; disabled by default. Enable with <code>parallel_tempering=True</code> (uses defaults), a plain dict of settings such as <code>{"n_temperatures": 8}</code>, or a <code>ParallelTemperingConfig</code> instance.</li>
 </ul>
 <p><strong>Repository:</strong> <a href="https://github.com/GW-JAX-Team/flowMC">GW-JAX-Team/flowMC</a></p>
-<p><strong>References:</strong> Wong, K. W. K., Gabrié, M., Foreman-Mackey, D.,
-<em>"flowMC: Normalizing flow enhanced sampling package for probabilistic
-inference in JAX"</em>, <a href="https://arxiv.org/abs/2211.06397">arXiv:2211.06397</a>,
-JOSS 8 (83) 5021 (2023). Wong, K. W. K., Isi, M., Edwards, T. D. P.,
-<em>"Fast Gravitational-wave Parameter Estimation without Compromises"</em>,
-<a href="https://arxiv.org/abs/2302.05333">arXiv:2302.05333</a>, ApJ 958 129 (2023).</p>
+<p><strong>References:</strong> Wong, K. W. K., Gabrié, M., Foreman-Mackey, D., <em>"flowMC: Normalizing flow enhanced sampling package for probabilistic inference in JAX"</em>, <a href="https://arxiv.org/abs/2211.06397">arXiv:2211.06397</a>, JOSS 8 (83) 5021 (2023). Wong, K. W. K., Isi, M., Edwards, T. D. P., <em>"Fast Gravitational-wave Parameter Estimation without Compromises"</em>, <a href="https://arxiv.org/abs/2302.05333">arXiv:2302.05333</a>, ApJ 958 129 (2023).</p>
 <hr />
 <h2 id="blackjax-smc">BlackJAX SMC<a class="headerlink" href="#blackjax-smc" title="Permanent link">¤</a></h2>
 <p>Sequential Monte Carlo (SMC) maintains a population of particles and gradually shifts them from the prior toward the posterior through a sequence of intermediate temperature steps.</p>
 <blockquote>
-<p><strong>Normalised-prior requirement</strong> — SMC computes a Bayesian evidence estimate and therefore requires a normalised prior.
-All built-in Jim priors are normalised.
-If you add custom constraints, check whether the resulting distribution is still normalised; if so, override <code>is_normalized</code> to return <code>True</code>.
-Jim raises a <code>ValueError</code> at construction if this condition is not met.</p>
+<p><strong>Normalised-prior requirement</strong> — SMC computes a Bayesian evidence estimate and therefore requires a normalised prior. All built-in Jim priors are normalised. If you add custom constraints, check whether the resulting distribution is still normalised; if so, override <code>is_normalized</code> to return <code>True</code>. Jim raises a <code>ValueError</code> at construction if this condition is not met.</p>
 </blockquote>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.samplers.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">BlackJAXSMCConfig</span>
 
@@ -2319,14 +2306,9 @@ They need a maintained fork of BlackJAX; install it with:</p>
 </ul>
 <hr />
 <h3 id="blackjax-ns-aw">BlackJAX NS-AW<a class="headerlink" href="#blackjax-ns-aw" title="Permanent link">¤</a></h3>
-<p>Nested sampling with a bilby/dynesty-style adaptive differential-evolution
-acceptance-walk inner kernel.</p>
+<p>Nested sampling with a bilby/dynesty-style adaptive differential-evolution acceptance-walk inner kernel.</p>
 <blockquote>
-<p><strong>Unit-cube + uniform-prior requirement</strong> — this sampler works in the unit
-hypercube <code>[0, 1]^n_dims</code>.  All parameters must be mapped into <code>[0, 1]</code> via
-<code>BoundToBound</code> sample transforms, and the prior in the original parameter
-space must be <strong>uniform</strong>.  A non-uniform prior (e.g. Gaussian) cannot be
-used with this sampler.</p>
+<p><strong>Unit-cube + uniform-prior requirement</strong> — this sampler works in the unit hypercube <code>[0, 1]^n_dims</code>.  All parameters must be mapped into <code>[0, 1]</code> via <code>BoundToBound</code> sample transforms, and the prior in the original parameter space must be <strong>uniform</strong>.  A non-uniform prior (e.g. Gaussian) cannot be used with this sampler.</p>
 </blockquote>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.samplers.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">BlackJAXNSAWConfig</span>
 
@@ -2350,23 +2332,17 @@ used with this sampler.</p>
 <p>Key parameters:</p>
 <ul>
 <li><code>n_live</code> — number of live points; more live points → more accurate but slower.</li>
-<li><code>n_delete_frac</code> — fraction of live points replaced per iteration
-  (e.g. <code>0.5</code> replaces half the live points each step).</li>
+<li><code>n_delete_frac</code> — fraction of live points replaced per iteration (e.g. <code>0.5</code> replaces half the live points each step).</li>
 <li><code>n_target</code> — target number of accepted proposals per walk.</li>
 <li><code>max_mcmc</code> — maximum number of proposals before giving up on a dead point.</li>
 </ul>
-<p><strong>Reference:</strong> Prathaban, M., Yallup, D., Alvey, J., Yang, M., Templeton, W.,
-Handley, W., <em>"Gravitational-wave inference at GPU speed: A bilby-like nested
-sampling kernel within blackjax-ns"</em>, arXiv:2509.04336 (Sep 2025).</p>
+<p><strong>Reference:</strong> Prathaban, M., Yallup, D., Alvey, J., Yang, M., Templeton, W., Handley, W., <em>"Gravitational-wave inference at GPU speed: A bilby-like nested sampling kernel within blackjax-ns"</em>, arXiv:2509.04336 (Sep 2025).</p>
 <hr />
 <h3 id="blackjax-nss">BlackJAX NSS<a class="headerlink" href="#blackjax-nss" title="Permanent link">¤</a></h3>
 <p>Nested sampling with a slice-sampling inner kernel.
 Unlike NS-AW, it does not require a unit-cube prior and works in any bounded sampling space.</p>
 <blockquote>
-<p><strong>Normalised-prior requirement</strong> — NSS computes a Bayesian evidence estimate and therefore requires a normalised prior.
-All built-in Jim priors are normalised.
-If you add custom constraints, check whether the resulting distribution is still normalised; if so, override <code>is_normalized</code> to return <code>True</code>.
-Jim raises a <code>ValueError</code> at construction if this condition is not met.</p>
+<p><strong>Normalised-prior requirement</strong> — NSS computes a Bayesian evidence estimate and therefore requires a normalised prior. All built-in Jim priors are normalised. If you add custom constraints, check whether the resulting distribution is still normalised; if so, override <code>is_normalized</code> to return <code>True</code>. Jim raises a <code>ValueError</code> at construction if this condition is not met.</p>
 </blockquote>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.samplers.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">BlackJAXNSSConfig</span>
 
@@ -2389,26 +2365,20 @@ Jim raises a <code>ValueError</code> at construction if this condition is not me
 <ul>
 <li><code>n_live</code> — number of live points.</li>
 <li><code>n_delete_frac</code> — fraction of live points replaced per iteration.</li>
-<li><code>num_inner_steps_per_dim</code> — slice-sampler steps per dimension per dead point;
-  increase for strongly correlated posteriors.</li>
+<li><code>num_inner_steps_per_dim</code> — slice-sampler steps per dimension per dead point; increase for strongly correlated posteriors.</li>
 </ul>
 <p><strong>Repository:</strong> <a href="https://github.com/handley-lab/blackjax">handley-lab/blackjax</a></p>
-<p><strong>References:</strong> Yallup, D., Prathaban, M., Alvey, J., Handley, W.,
-<em>"Parallel Nested Slice Sampling for Gravitational Wave Parameter Estimation"</em>,
-<a href="https://arxiv.org/abs/2509.24949">arXiv:2509.24949</a> (Sep 2025).
-Yallup, D., Kroupa, N., Handley, W., <em>"Nested Slice Sampling"</em>,
-<a href="https://openreview.net/forum?id=ekbkMSuPo4">OpenReview</a> (2025).</p>
+<p><strong>References:</strong> Yallup, D., Prathaban, M., Alvey, J., Handley, W., <em>"Parallel Nested Slice Sampling for Gravitational Wave Parameter Estimation"</em>, <a href="https://arxiv.org/abs/2509.24949">arXiv:2509.24949</a> (Sep 2025). Yallup, D., Kroupa, N., Handley, W., <em>"Nested Slice Sampling"</em>, <a href="https://openreview.net/forum?id=ekbkMSuPo4">OpenReview</a> (2025).</p>
 <hr />
 <h2 id="periodic-parameters">Periodic parameters<a class="headerlink" href="#periodic-parameters" title="Permanent link">¤</a></h2>
-<p>All samplers accept a <code>periodic</code> field to handle parameters that wrap around
-(e.g. angles).  Pass a dict of <code>parameter_name: (lower, upper)</code> bounds:</p>
+<p>All samplers accept a <code>periodic</code> field to handle parameters that wrap around (e.g. angles).
+Pass a dict of <code>parameter_name: (lower, upper)</code> bounds:</p>
 <div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FlowMCConfig</span><span class="p">(</span>
     <span class="o">...</span><span class="p">,</span>
     <span class="n">periodic</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;phase_c&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">6.283185</span><span class="p">),</span> <span class="s2">&quot;psi&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">3.141593</span><span class="p">)},</span>
 <span class="p">)</span>
 </code></pre></div>
-<p>BlackJAX NS-AW operates in <code>[0, 1]</code> per dimension, so its <code>periodic</code> field
-takes a plain list of parameter names:</p>
+<p>BlackJAX NS-AW operates in <code>[0, 1]</code> per dimension, so its <code>periodic</code> field takes a plain list of parameter names:</p>
 <div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">BlackJAXNSAWConfig</span><span class="p">(</span>
     <span class="o">...</span><span class="p">,</span>
     <span class="n">periodic</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;phase_c&quot;</span><span class="p">,</span> <span class="s2">&quot;psi&quot;</span><span class="p">],</span>
@@ -2467,17 +2437,13 @@ takes a plain list of parameter names:</p>
 <hr />
 <h2 id="writing-your-own-sampler">Writing your own sampler<a class="headerlink" href="#writing-your-own-sampler" title="Permanent link">¤</a></h2>
 <blockquote>
-<p>This section is for advanced users who want to integrate a custom sampling
-backend with Jim.  It requires familiarity with JAX and the Jim sampler
-internals.</p>
+<p>This section is for advanced users who want to integrate a custom sampling backend with Jim.  It requires familiarity with JAX and the Jim sampler internals.</p>
 </blockquote>
 <p>Subclass <code>Sampler</code>, implement three methods, and register it:</p>
 <ul>
-<li><code>_sample(rng_key, initial_position)</code> — run the sampler and store results. The
-  base class wraps this in <code>sample()</code>, which also records <code>sampling_time</code>.</li>
+<li><code>_sample(rng_key, initial_position)</code> — run the sampler and store results. The base class wraps this in <code>sample()</code>, which also records <code>sampling_time</code>.</li>
 <li><code>get_samples()</code> — return a dict with <code>"samples"</code> and <code>"log_likelihood"</code> keys.</li>
-<li><code>_get_diagnostics()</code> — return a plain dict with diagnostic information.
-  The base class wraps this in <code>get_diagnostics()</code>, which injects <code>sampling_time</code>.</li>
+<li><code>_get_diagnostics()</code> — return a plain dict with diagnostic information. The base class wraps this in <code>get_diagnostics()</code>, which injects <code>sampling_time</code>.</li>
 </ul>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Optional</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>

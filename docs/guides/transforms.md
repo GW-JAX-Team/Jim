@@ -67,8 +67,7 @@ All transforms are importable from `jimgw.core.single_event.transforms`.
 
 ### Mass transforms
 
-Transforms marked *pre-instantiated* are ready-to-use objects exported directly
-from the module — use them **without parentheses** in your transform lists:
+Transforms marked *pre-instantiated* are ready-to-use objects exported directly from the module — use them **without parentheses** in your transform lists:
 
 ```python
 # Correct:
@@ -105,10 +104,8 @@ likelihood_transforms = [MassRatioToSymmetricMassRatioTransform()]  # TypeError
 
 ## Mapping a prior to the unit cube (for NS-AW)
 
-The [BlackJAX NS-AW sampler](samplers.md#blackjax-ns-aw) requires the
-**sampling space** to be the unit hypercube `[0, 1]^n_dims`, with a uniform
-prior in the original parameter space.  The `sample_transforms` must map every
-parameter from its physical support into `[0, 1]`.
+The [BlackJAX NS-AW sampler](samplers.md#blackjax-ns-aw) requires the **sampling space** to be the unit hypercube `[0, 1]^n_dims`, with a uniform prior in the original parameter space.
+The `sample_transforms` must map every parameter from its physical support into `[0, 1]`.
 
 The key tool is `BoundToBound`, which linearly maps `[a, b] → [c, d]`:
 
@@ -155,8 +152,7 @@ sample_transforms += [
 
 ### Power-law priors (e.g. luminosity distance)
 
-For parameters with a power-law prior (not uniform), use the reversed
-`PowerLawTransform` so the sampling space is uniform on `[0, 1]`:
+For parameters with a power-law prior (not uniform), use the reversed `PowerLawTransform` so the sampling space is uniform on `[0, 1]`:
 
 ```python
 from jimgw.core.transforms import PowerLawTransform, reverse_bijective_transform
@@ -173,9 +169,7 @@ sample_transforms += [
 ]
 ```
 
-This maps `d_L_unit ∈ [0, 1]` (where the sampler works) back to
-`d_L ∈ [d_L_min, d_L_max]` with a `d_L^2` prior, which is the volume-element
-prior for a uniformly distributed source population.
+This maps `d_L_unit ∈ [0, 1]` (where the sampler works) back to `d_L ∈ [d_L_min, d_L_max]` with a `d_L^2` prior, which is the volume-element prior for a uniformly distributed source population.
 
 ### Periodic parameters
 

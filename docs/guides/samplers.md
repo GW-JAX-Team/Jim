@@ -47,24 +47,14 @@ samples = jim.get_samples()
 Key parameters:
 
 - `n_chains` — number of parallel MCMC chains.
-- `n_training_loops` / `n_production_loops` — how many rounds of training
-  (flow updates) and production (sample collection) to run.
-- `n_local_steps` / `n_global_steps` — local MCMC steps and flow-proposal
-  steps per loop.
-- `local_kernel` — MCMC kernel for local steps; one of `"MALA"` (default),
-  `"HMC"`, or `"GRW"`.
-- `parallel_tempering` — parallel tempering settings; disabled by default.
-  Enable with `parallel_tempering=True` (uses defaults), a plain dict of settings
-  such as `{"n_temperatures": 8}`, or a `ParallelTemperingConfig` instance.
+- `n_training_loops` / `n_production_loops` — how many rounds of training (flow updates) and production (sample collection) to run.
+- `n_local_steps` / `n_global_steps` — local MCMC steps and flow-proposal steps per loop.
+- `local_kernel` — MCMC kernel for local steps; one of `"MALA"` (default), `"HMC"`, or `"GRW"`.
+- `parallel_tempering` — parallel tempering settings; disabled by default. Enable with `parallel_tempering=True` (uses defaults), a plain dict of settings such as `{"n_temperatures": 8}`, or a `ParallelTemperingConfig` instance.
 
 **Repository:** [GW-JAX-Team/flowMC](https://github.com/GW-JAX-Team/flowMC)
 
-**References:** Wong, K. W. K., Gabrié, M., Foreman-Mackey, D.,
-*"flowMC: Normalizing flow enhanced sampling package for probabilistic
-inference in JAX"*, [arXiv:2211.06397](https://arxiv.org/abs/2211.06397),
-JOSS 8 (83) 5021 (2023). Wong, K. W. K., Isi, M., Edwards, T. D. P.,
-*"Fast Gravitational-wave Parameter Estimation without Compromises"*,
-[arXiv:2302.05333](https://arxiv.org/abs/2302.05333), ApJ 958 129 (2023).
+**References:** Wong, K. W. K., Gabrié, M., Foreman-Mackey, D., *"flowMC: Normalizing flow enhanced sampling package for probabilistic inference in JAX"*, [arXiv:2211.06397](https://arxiv.org/abs/2211.06397), JOSS 8 (83) 5021 (2023). Wong, K. W. K., Isi, M., Edwards, T. D. P., *"Fast Gravitational-wave Parameter Estimation without Compromises"*, [arXiv:2302.05333](https://arxiv.org/abs/2302.05333), ApJ 958 129 (2023).
 
 ---
 
@@ -72,10 +62,7 @@ JOSS 8 (83) 5021 (2023). Wong, K. W. K., Isi, M., Edwards, T. D. P.,
 
 Sequential Monte Carlo (SMC) maintains a population of particles and gradually shifts them from the prior toward the posterior through a sequence of intermediate temperature steps.
 
-> **Normalised-prior requirement** — SMC computes a Bayesian evidence estimate and therefore requires a normalised prior.
-> All built-in Jim priors are normalised.
-> If you add custom constraints, check whether the resulting distribution is still normalised; if so, override `is_normalized` to return `True`.
-> Jim raises a `ValueError` at construction if this condition is not met.
+> **Normalised-prior requirement** — SMC computes a Bayesian evidence estimate and therefore requires a normalised prior. All built-in Jim priors are normalised. If you add custom constraints, check whether the resulting distribution is still normalised; if so, override `is_normalized` to return `True`. Jim raises a `ValueError` at construction if this condition is not met.
 
 ```python
 from jimgw.samplers.config import BlackJAXSMCConfig
@@ -122,14 +109,9 @@ This pulls in:
 
 ### BlackJAX NS-AW
 
-Nested sampling with a bilby/dynesty-style adaptive differential-evolution
-acceptance-walk inner kernel.
+Nested sampling with a bilby/dynesty-style adaptive differential-evolution acceptance-walk inner kernel.
 
-> **Unit-cube + uniform-prior requirement** — this sampler works in the unit
-> hypercube `[0, 1]^n_dims`.  All parameters must be mapped into `[0, 1]` via
-> `BoundToBound` sample transforms, and the prior in the original parameter
-> space must be **uniform**.  A non-uniform prior (e.g. Gaussian) cannot be
-> used with this sampler.
+> **Unit-cube + uniform-prior requirement** — this sampler works in the unit hypercube `[0, 1]^n_dims`.  All parameters must be mapped into `[0, 1]` via `BoundToBound` sample transforms, and the prior in the original parameter space must be **uniform**.  A non-uniform prior (e.g. Gaussian) cannot be used with this sampler.
 
 ```python
 from jimgw.samplers.config import BlackJAXNSAWConfig
@@ -155,14 +137,11 @@ samples = jim.get_samples()
 Key parameters:
 
 - `n_live` — number of live points; more live points → more accurate but slower.
-- `n_delete_frac` — fraction of live points replaced per iteration
-  (e.g. `0.5` replaces half the live points each step).
+- `n_delete_frac` — fraction of live points replaced per iteration (e.g. `0.5` replaces half the live points each step).
 - `n_target` — target number of accepted proposals per walk.
 - `max_mcmc` — maximum number of proposals before giving up on a dead point.
 
-**Reference:** Prathaban, M., Yallup, D., Alvey, J., Yang, M., Templeton, W.,
-Handley, W., *"Gravitational-wave inference at GPU speed: A bilby-like nested
-sampling kernel within blackjax-ns"*, arXiv:2509.04336 (Sep 2025).
+**Reference:** Prathaban, M., Yallup, D., Alvey, J., Yang, M., Templeton, W., Handley, W., *"Gravitational-wave inference at GPU speed: A bilby-like nested sampling kernel within blackjax-ns"*, arXiv:2509.04336 (Sep 2025).
 
 ---
 
@@ -171,10 +150,7 @@ sampling kernel within blackjax-ns"*, arXiv:2509.04336 (Sep 2025).
 Nested sampling with a slice-sampling inner kernel.
 Unlike NS-AW, it does not require a unit-cube prior and works in any bounded sampling space.
 
-> **Normalised-prior requirement** — NSS computes a Bayesian evidence estimate and therefore requires a normalised prior.
-> All built-in Jim priors are normalised.
-> If you add custom constraints, check whether the resulting distribution is still normalised; if so, override `is_normalized` to return `True`.
-> Jim raises a `ValueError` at construction if this condition is not met.
+> **Normalised-prior requirement** — NSS computes a Bayesian evidence estimate and therefore requires a normalised prior. All built-in Jim priors are normalised. If you add custom constraints, check whether the resulting distribution is still normalised; if so, override `is_normalized` to return `True`. Jim raises a `ValueError` at construction if this condition is not met.
 
 ```python
 from jimgw.samplers.config import BlackJAXNSSConfig
@@ -199,23 +175,18 @@ Key parameters:
 
 - `n_live` — number of live points.
 - `n_delete_frac` — fraction of live points replaced per iteration.
-- `num_inner_steps_per_dim` — slice-sampler steps per dimension per dead point;
-  increase for strongly correlated posteriors.
+- `num_inner_steps_per_dim` — slice-sampler steps per dimension per dead point; increase for strongly correlated posteriors.
 
 **Repository:** [handley-lab/blackjax](https://github.com/handley-lab/blackjax)
 
-**References:** Yallup, D., Prathaban, M., Alvey, J., Handley, W.,
-*"Parallel Nested Slice Sampling for Gravitational Wave Parameter Estimation"*,
-[arXiv:2509.24949](https://arxiv.org/abs/2509.24949) (Sep 2025).
-Yallup, D., Kroupa, N., Handley, W., *"Nested Slice Sampling"*,
-[OpenReview](https://openreview.net/forum?id=ekbkMSuPo4) (2025).
+**References:** Yallup, D., Prathaban, M., Alvey, J., Handley, W., *"Parallel Nested Slice Sampling for Gravitational Wave Parameter Estimation"*, [arXiv:2509.24949](https://arxiv.org/abs/2509.24949) (Sep 2025). Yallup, D., Kroupa, N., Handley, W., *"Nested Slice Sampling"*, [OpenReview](https://openreview.net/forum?id=ekbkMSuPo4) (2025).
 
 ---
 
 ## Periodic parameters
 
-All samplers accept a `periodic` field to handle parameters that wrap around
-(e.g. angles).  Pass a dict of `parameter_name: (lower, upper)` bounds:
+All samplers accept a `periodic` field to handle parameters that wrap around (e.g. angles).
+Pass a dict of `parameter_name: (lower, upper)` bounds:
 
 ```python
 config = FlowMCConfig(
@@ -224,8 +195,7 @@ config = FlowMCConfig(
 )
 ```
 
-BlackJAX NS-AW operates in `[0, 1]` per dimension, so its `periodic` field
-takes a plain list of parameter names:
+BlackJAX NS-AW operates in `[0, 1]` per dimension, so its `periodic` field takes a plain list of parameter names:
 
 ```python
 config = BlackJAXNSAWConfig(
@@ -304,17 +274,13 @@ diag["log_Z"]                     # float      — final log Bayesian evidence
 
 ## Writing your own sampler
 
-> This section is for advanced users who want to integrate a custom sampling
-> backend with Jim.  It requires familiarity with JAX and the Jim sampler
-> internals.
+> This section is for advanced users who want to integrate a custom sampling backend with Jim.  It requires familiarity with JAX and the Jim sampler internals.
 
 Subclass `Sampler`, implement three methods, and register it:
 
-- `_sample(rng_key, initial_position)` — run the sampler and store results. The
-  base class wraps this in `sample()`, which also records `sampling_time`.
+- `_sample(rng_key, initial_position)` — run the sampler and store results. The base class wraps this in `sample()`, which also records `sampling_time`.
 - `get_samples()` — return a dict with `"samples"` and `"log_likelihood"` keys.
-- `_get_diagnostics()` — return a plain dict with diagnostic information.
-  The base class wraps this in `get_diagnostics()`, which injects `sampling_time`.
+- `_get_diagnostics()` — return a plain dict with diagnostic information. The base class wraps this in `get_diagnostics()`, which injects `sampling_time`.
 
 ```python
 from typing import Any, Literal, Optional

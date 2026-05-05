@@ -15,8 +15,7 @@ Track upstream parity at: <https://github.com/blackjax-devs/blackjax>
 
 ### Packaging
 
-- Remove the `[tool.uv.sources]` block in `pyproject.toml` pointing
-  `blackjax = { git = "https://github.com/GW-JAX-Team/blackjax.git", branch = "jim" }`.
+- Remove the `[tool.uv.sources]` block in `pyproject.toml` pointing `blackjax = { git = "https://github.com/GW-JAX-Team/blackjax.git", branch = "jim" }`.
 - Drop the `[dependency-groups] nested-sampling` PEP 735 group entirely.
 - Bump the `blackjax>=1.4` pin to whatever release first contains all NS features.
 
@@ -46,11 +45,8 @@ Track upstream parity at: <https://github.com/blackjax-devs/blackjax>
 
 ### CI
 
-- `.github/workflows/CI.yml`: remove `--group nested-sampling` from the test job.
-  The `[dependency-groups] nested-sampling` block in `pyproject.toml` can be
-  deleted at the same time.
+- `.github/workflows/CI.yml`: remove `--group nested-sampling` from the test job. The `[dependency-groups] nested-sampling` block in `pyproject.toml` can be deleted at the same time.
 
 ### Tests
 
-- `tests/unit/samplers/test_blackjax_*.py`: the `pytest.importorskip("blackjax")`
-  lines can stay as defense-in-depth but are no longer load-bearing.
+- `tests/unit/samplers/test_blackjax_*.py`: the `pytest.importorskip("blackjax")` lines can stay as defense-in-depth but are no longer load-bearing.

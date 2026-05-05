@@ -77,7 +77,7 @@ for ifo in ifos:
         parameters=injection_parameters,
         f_min=f_min,
         f_max=f_max,
-        is_zero_noise=False,
+        zero_noise=False,
     )
 
 # --- Prior ---

@@ -592,7 +592,7 @@ class GroundBased2G(Detector):
         f_min: float,
         f_max: float,
         start_time: Optional[float] = None,
-        is_zero_noise: bool = False,
+        zero_noise: bool = False,
         rng_key: Optional[Key] = None,
     ) -> None:
         """Inject a signal into the detector data.
@@ -654,7 +654,7 @@ class GroundBased2G(Detector):
 
         # 3. Set the new data
         strain_data = jnp.where(self.frequency_mask, projected_strain, 0.0 + 0.0j)
-        if not is_zero_noise:
+        if not zero_noise:
             if rng_key is None:
                 seed = int(time.time())
                 rng_key = jax.random.key(seed)

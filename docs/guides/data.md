@@ -149,4 +149,4 @@ H1.inject_signal(
 )
 ```
 
-Set `is_zero_noise=True` to get a noiseless injection.
+Set `zero_noise=True` to get a noiseless injection.

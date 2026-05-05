@@ -355,7 +355,7 @@ class TestHeterodynedTransientLikelihoodFD:
                 parameters=true_params,
                 f_min=fmin,
                 f_max=fmax,
-                is_zero_noise=True,
+                zero_noise=True,
             )
 
         base_likelihood = TransientLikelihoodFD(

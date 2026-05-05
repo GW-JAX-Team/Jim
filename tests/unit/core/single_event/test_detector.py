@@ -61,7 +61,7 @@ def inject_reference(det, trigger_time=GPS_TIME, **overrides):
         parameters=params,
         f_min=F_MIN,
         f_max=F_MAX,
-        is_zero_noise=True,
+        zero_noise=True,
     )
 
 
@@ -115,7 +115,7 @@ class TestInjectSignal:
             parameters=params,
             f_min=F_MIN,
             f_max=F_MAX,
-            is_zero_noise=False,
+            zero_noise=False,
             rng_key=jax.random.key(42),
         )
 

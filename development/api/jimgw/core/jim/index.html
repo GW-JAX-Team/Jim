@@ -2513,6 +2513,112 @@ checks, initial-position draws, etc.).</p>
 <div class="doc doc-object doc-function">
 
 
+<h5 id="jimgw.core.jim.Jim._validate_problem" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">_validate_problem</span><span class="p">(</span><span class="n">likelihood</span><span class="p">:</span> <span class="n">LikelihoodBase</span><span class="p">,</span> <span class="n">prior</span><span class="p">:</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">likelihood_transforms</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">NtoMTransform</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span></code>
+
+<a href="#jimgw.core.jim.Jim._validate_problem" class="headerlink" title="Permanent link">¤</a></h5>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Validate that the prior and likelihood parameter spaces are compatible.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>likelihood</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" href="../base/#jimgw.core.base.LikelihoodBase">LikelihoodBase</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The likelihood to evaluate.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>prior</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" href="../prior/#jimgw.core.prior.Prior">Prior</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The prior distribution.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>likelihood_transforms</code>
+            </td>
+            <td>
+                  <code><span title="collections.abc.Sequence">Sequence</span>[<a class="autorefs autorefs-internal" href="../transforms/#jimgw.core.transforms.NtoMTransform">NtoMTransform</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Transforms from prior space to likelihood space.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="ValueError">ValueError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If prior parameters overlap with fixed parameters, if prior
+parameters are not consumed by the likelihood, or if the likelihood
+requires parameters not provided by the prior or fixed_parameters.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h5 id="jimgw.core.jim.Jim._setup_problem" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">_setup_problem</span><span class="p">(</span><span class="n">likelihood</span><span class="p">:</span> <span class="n">LikelihoodBase</span><span class="p">,</span> <span class="n">prior</span><span class="p">:</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">sample_transforms</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">BijectiveTransform</span><span class="p">],</span> <span class="n">likelihood_transforms</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">NtoMTransform</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span></code>
 
@@ -2522,9 +2628,10 @@ checks, initial-position draws, etc.).</p>
     <div class="doc doc-contents ">
 
         <p>Wire together likelihood, prior, and transforms; build sampling-space callables.</p>
-<p>Validates that the prior and likelihood parameter spaces are compatible,
-then constructs <code>_log_prior_fn</code>, <code>_log_likelihood_fn</code>, and
-<code>_log_posterior_fn</code> — flat-array callables injected into the sampler.</p>
+<p>Constructs <code>_log_prior_fn</code>, <code>_log_likelihood_fn</code>, and
+<code>_log_posterior_fn</code> — flat-array callables injected into the sampler.
+Validation is performed separately by :meth:<code>_validate_problem</code> before
+this method is called.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -2606,30 +2713,6 @@ then constructs <code>_log_prior_fn</code>, <code>_log_likelihood_fn</code>, and
     </table>
 
 
-<p><span class="doc-section-title">Raises:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><span title="ValueError">ValueError</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If prior parameters overlap with fixed parameters, or if
-prior parameters are not consumed by the likelihood.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
     </div>
 
 </div>
@@ -2637,10 +2720,10 @@ prior parameters are not consumed by the likelihood.</p>
 <div class="doc doc-object doc-function">
 
 
-<h5 id="jimgw.core.jim.Jim._sanity_check_posterior" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">_sanity_check_posterior</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span></code>
+<h5 id="jimgw.core.jim.Jim._verify_posterior" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">_verify_posterior</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span></code>
 
-<a href="#jimgw.core.jim.Jim._sanity_check_posterior" class="headerlink" title="Permanent link">¤</a></h5>
+<a href="#jimgw.core.jim.Jim._verify_posterior" class="headerlink" title="Permanent link">¤</a></h5>
 
 
     <div class="doc doc-contents ">
@@ -3039,7 +3122,7 @@ auxiliary key is advanced automatically.</p>
         <p>Run the sampler.</p>
 <p>The sampling key is pre-reserved at construction time from <code>seed</code>,
 so results are reproducible regardless of any calls made before this
-method (e.g. the construction-time sanity check).</p>
+method (e.g. the construction-time posterior verification).</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>

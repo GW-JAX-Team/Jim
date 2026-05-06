@@ -1,10 +1,11 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 import logging
+import time
 
 import jax
 import jax.numpy as jnp
-from jaxtyping import Array, Float, Complex, PRNGKeyArray, jaxtyped, Bool
+from jaxtyping import Array, Float, Complex, Key, jaxtyped, Bool
 from numpy import loadtxt
 import requests
 from beartype import beartype as typechecker
@@ -15,9 +16,12 @@ from jimgw.core.constants import (
     EARTH_SEMI_MINOR_AXIS,
     DEG_TO_RAD,
 )
-from jimgw.core.single_event.wave import Polarization
+from jimgw.core.single_event.polarization import Polarization
 from jimgw.core.single_event.data import Data, PowerSpectrum
 from jimgw.core.single_event.utils import inner_product, complex_inner_product
+from jimgw.core.single_event.time_utils import (
+    greenwich_mean_sidereal_time as compute_gmst,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -53,9 +57,9 @@ class Detector(ABC):
     _sliced_psd: Float[Array, " n_sample"] = jnp.array([])
 
     @property
-    def epoch(self) -> Float:
-        """The epoch of the data."""
-        return self.data.epoch
+    def start_time(self) -> Float:
+        """GPS start time of the data segment."""
+        return self.data.start_time
 
     @property
     def times(self) -> Float[Array, " n_sample"]:
@@ -85,8 +89,8 @@ class Detector(ABC):
         """Modulate the waveform in the sky frame by the detector response in the frequency domain.
 
         Args:
-            frequency (Float[Array, " n_sample"]): Array of frequency samples.
-            h_sky (dict[str, Float[Array, " n_sample"]]): Dictionary mapping polarization names
+            frequency (Float[Array, "n_sample"]): Array of frequency samples.
+            h_sky (dict[str, Float[Array, "n_sample"]]): Dictionary mapping polarization names
                 to frequency-domain waveforms. The keys are polarization names (e.g., 'plus', 'cross')
                 and values are complex strain arrays.
             params (dict): Dictionary of source parameters including:
@@ -99,7 +103,7 @@ class Detector(ABC):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            Complex[Array, " n_sample"]: Complex strain measured by the detector in frequency domain.
+            Complex[Array, "n_sample"]: Complex strain measured by the detector in frequency domain.
         """
         pass
 
@@ -139,7 +143,7 @@ class Detector(ABC):
             bounds[0] = f_min
         if f_max is not None:
             bounds[1] = f_max
-        self.frequency_bounds = tuple(bounds)  # type: ignore
+        self.frequency_bounds = (bounds[0], bounds[1])
 
         # Compute sliced frequencies, data and psd.
         data, freqs_1 = self.data.frequency_slice(*self.frequency_bounds)
@@ -167,8 +171,8 @@ class Detector(ABC):
         """Get frequency-domain data slice based on frequency bounds.
 
         Returns:
-            Float[Array, " n_sample"]: Sliced frequency-domain data.
-            Float[Array, " n_sample"]: Frequency array.
+            Float[Array, "n_sample"]: Sliced frequency-domain data.
+            Float[Array, "n_sample"]: Frequency array.
         """
         return self._sliced_frequencies
 
@@ -177,7 +181,7 @@ class Detector(ABC):
         """Get frequency-domain data slice based on frequency bounds.
 
         Returns:
-            Complex[Array, " n_freq"]: Sliced frequency-domain data.
+            Complex[Array, "n_freq"]: Sliced frequency-domain data.
         """
         return self._sliced_fd_data
 
@@ -186,7 +190,7 @@ class Detector(ABC):
         """Get PSD slice based on frequency bounds.
 
         Returns:
-            Float[Array, " n_freq"]: Sliced power spectral density.
+            Float[Array, "n_freq"]: Sliced power spectral density.
         """
         return self._sliced_psd
 
@@ -235,7 +239,7 @@ class GroundBased2G(Detector):
     xarm_tilt: Float = 0
     yarm_tilt: Float = 0
     elevation: Float = 0
-    
+
     optimal_snr: Float = 0
     match_filtered_snr: Complex = 0 + 0j
 
@@ -286,7 +290,7 @@ class GroundBased2G(Detector):
     @staticmethod
     def _get_arm(
         lat: Float, lon: Float, tilt: Float, azimuth: Float
-    ) -> Float[Array, " 3"]:
+    ) -> Float[Array, "3"]:
         """Construct detector-arm vectors in geocentric Cartesian coordinates.
 
         Args:
@@ -296,7 +300,7 @@ class GroundBased2G(Detector):
             azimuth (Float): Arm azimuth in radians.
 
         Returns:
-            Float[Array, " 3"]: Detector arm vector in geocentric Cartesian coordinates.
+            Float[Array, "3"]: Detector arm vector in geocentric Cartesian coordinates.
         """
         e_lon = jnp.array([-jnp.sin(lon), jnp.cos(lon), 0])
         e_lat = jnp.array(
@@ -313,11 +317,11 @@ class GroundBased2G(Detector):
         )
 
     @property
-    def arms(self) -> tuple[Float[Array, " 3"], Float[Array, " 3"]]:
+    def arms(self) -> tuple[Float[Array, "3"], Float[Array, "3"]]:
         """Get the detector arm vectors.
 
         Returns:
-            tuple[Float[Array, " 3"], Float[Array, " 3"]]: A tuple containing:
+            tuple[Float[Array, "3"], Float[Array, "3"]]: A tuple containing:
                 - x: X-arm vector in geocentric Cartesian coordinates
                 - y: Y-arm vector in geocentric Cartesian coordinates
         """
@@ -330,7 +334,7 @@ class GroundBased2G(Detector):
         return x, y
 
     @property
-    def tensor(self) -> Float[Array, " 3 3"]:
+    def tensor(self) -> Float[Array, "3 3"]:
         """Get the detector tensor defining the strain measurement.
 
         For a 2-arm differential-length detector, this is given by:
@@ -342,7 +346,7 @@ class GroundBased2G(Detector):
         for unit vectors :math:`x` and :math:`y` along the x and y arms.
 
         Returns:
-            Float[Array, " 3 3"]: The 3x3 detector tensor in geocentric coordinates.
+            Float[Array, "3 3"]: The 3x3 detector tensor in geocentric coordinates.
         """
         # TODO: this could easily be generalized for other detector geometries
         arm1, arm2 = self.arms
@@ -351,14 +355,14 @@ class GroundBased2G(Detector):
         )
 
     @property
-    def vertex(self) -> Float[Array, " 3"]:
+    def vertex(self) -> Float[Array, "3"]:
         """Detector vertex coordinates in the reference celestial frame.
 
         Based on arXiv:gr-qc/0008066 Eqs. (B11-B13) except for a typo in the
         definition of the local radius; see Section 2.1 of LIGO-T980044-10.
 
         Returns:
-            Float[Array, " 3"]: Detector vertex coordinates in geocentric Cartesian coordinates.
+            Float[Array, "3"]: Detector vertex coordinates in geocentric Cartesian coordinates.
         """
         # get detector and Earth parameters
         lat = self.latitude
@@ -384,8 +388,8 @@ class GroundBased2G(Detector):
         """Modulate the waveform in the sky frame by the detector response in the frequency domain.
 
         Args:
-            frequency (Float[Array, " n_sample"]): Array of frequency samples.
-            h_sky (dict[str, Float[Array, " n_sample"]]): Dictionary mapping polarization names
+            frequency (Float[Array, "n_sample"]): Array of frequency samples.
+            h_sky (dict[str, Float[Array, "n_sample"]]): Dictionary mapping polarization names
                 to frequency-domain waveforms. Keys are polarization names (e.g., 'plus', 'cross')
                 and values are complex strain arrays.
             params (dict[str, Float]): Dictionary of source parameters containing:
@@ -404,7 +408,7 @@ class GroundBased2G(Detector):
         ra, dec, psi, gmst = params["ra"], params["dec"], params["psi"], params["gmst"]
         antenna_pattern = self.antenna_pattern(ra, dec, psi, gmst)
         time_shift = self.delay_from_geocenter(ra, dec, gmst)
-        time_shift += params["trigger_time"] - self.epoch + params["t_c"]
+        time_shift += params["trigger_time"] - self.start_time + params["t_c"]
 
         h_detector = jax.tree_util.tree_map(
             lambda h, antenna: h * antenna,
@@ -503,7 +507,7 @@ class GroundBased2G(Detector):
             psd_file (str, optional): Path to file containing PSD data. If empty, uses GWTC-2 PSD.
 
         Returns:
-            Float[Array, " n_sample"]: Array of PSD values of the detector.
+            Float[Array, "n_sample"]: Array of PSD values of the detector.
         """
         if psd_file != "":
             f, psd_vals = loadtxt(psd_file, unpack=True)
@@ -585,57 +589,90 @@ class GroundBased2G(Detector):
         self,
         duration: float,
         sampling_frequency: float,
-        epoch: float,
+        trigger_time: float,
         waveform_model,
         parameters: dict[str, float],
-        is_zero_noise: bool = False,
-        rng_key: PRNGKeyArray = jax.random.PRNGKey(0),
+        f_min: float,
+        f_max: float,
+        start_time: Optional[float] = None,
+        zero_noise: bool = False,
+        rng_key: Optional[Key] = None,
     ) -> None:
         """Inject a signal into the detector data.
 
         Note: The power spectral density must be set beforehand.
 
         Args:
+            duration (float): Duration of the data segment in seconds.
+            sampling_frequency (float): Sampling frequency in Hz.
+            trigger_time (float): GPS time of the event trigger. Used to stamp
+                ``trigger_time`` and derive ``gmst`` for the waveform projection,
+                mirroring the behavior of ``TransientLikelihoodFD``.
             waveform_model: The waveform model to be injected.
-            parameters (dict): Dictionary of parameters for the waveform model.
+            parameters (dict): Dictionary of likelihood-space source parameters.
+            f_min (float): Minimum frequency in Hz. The waveform is zeroed below
+                this frequency.
+            f_max (float): Maximum frequency in Hz. Should be set to the same
+                value used in the likelihood.
+            start_time (Optional[float], optional): GPS start time of the
+                data buffer in seconds. If None, defaults to
+                ``trigger_time - duration + 2.0`` (2 s of data after the trigger).
+                Defaults to None.
 
         Returns:
             None
         """
-        # 1. Set empty data to initialise the detector
-        # n_times = int(duration * sampling_frequency)
+        # Derive start_time if not provided
+        if start_time is None:
+            start_time = trigger_time - duration + 2.0
+            logger.info(
+                "start_time not provided. Defaulting to trigger_time - duration + 2.0 = %.3f s.",
+                start_time,
+            )
+
+        # Make a copy of the parameters to avoid modifying the original dictionary
+        params = parameters.copy()
+
+        # Stamp trigger_time and gmst — mirrors TransientLikelihoodFD.evaluate()
+        params["trigger_time"] = float(trigger_time)
+        params["gmst"] = compute_gmst(trigger_time)
+
+        # 1. Set empty data to initialize the detector
         n_times = int(jnp.round(duration * sampling_frequency))
         self.set_data(
             Data(
                 name=f"{self.name}_empty",
                 td=jnp.zeros(n_times),
                 delta_t=1 / sampling_frequency,
-                epoch=epoch,
+                start_time=start_time,
             )
         )
 
+        # Set frequency bounds before evaluating the waveform
+        self.set_frequency_bounds(f_min, f_max)
+
         # 2. Compute the projected strain from parameters
-        polarisations = waveform_model(self.frequencies, parameters)
-        # Waveforms may produce NaNs at invalid frequencies (like f=0)
-        # Replace NaNs with zeros since they'll be masked out by frequency_mask anyway
-        polarisations["p"] = jnp.nan_to_num(polarisations["p"], nan=0.0)
-        polarisations["c"] = jnp.nan_to_num(polarisations["c"], nan=0.0)
-        projected_strain = self.fd_response(self.frequencies, polarisations, parameters)
+        polarisations = waveform_model(self.frequencies, params)
+        projected_strain = self.fd_response(self.frequencies, polarisations, params)
 
         # 3. Set the new data
         strain_data = jnp.where(self.frequency_mask, projected_strain, 0.0 + 0.0j)
-        if not is_zero_noise:
-            noise = self.psd.simulate_data(rng_key)
-            strain_data += jnp.where(
-                self.frequency_mask, noise, 0.0 + 0.0j
-            )
+        if not zero_noise:
+            if rng_key is None:
+                seed = int(time.time())
+                rng_key = jax.random.key(seed)
+                logger.info(
+                    "No rng_key provided for noise simulation. Using time-based key with seed=%d.",
+                    seed,
+                )
+            strain_data += jnp.where(self.frequency_mask, noise, 0.0 + 0.0j)
 
         self.set_data(
             Data.from_fd(
                 name=f"{self.name}_injected",
                 fd_strain=strain_data,
                 frequencies=self.frequencies,
-                epoch=self.data.epoch,
+                start_time=self.data.start_time,
             )
         )
 
@@ -652,7 +689,7 @@ class GroundBased2G(Detector):
             masked_signal, self.sliced_fd_data, self.sliced_psd, df
         )
         match_filtered_snr /= optimal_snr
-        
+
         # Save as attributes
         self.optimal_snr = optimal_snr
         self.match_filtered_snr = match_filtered_snr
@@ -666,9 +703,9 @@ class GroundBased2G(Detector):
     ) -> Complex[Array, " n_freq"]:
         """Get the whitened frequency-domain strain.
         Args:
-            frequency_series (Complex[Array, " n_freq"]): Array of frequency domain data/signal.
+            frequency_series (Complex[Array, "n_freq"]): Array of frequency domain data/signal.
         Returns:
-            Complex[Array, " n_freq"]: Whitened frequency-domain strain.
+            Complex[Array, "n_freq"]: Whitened frequency-domain strain.
         """
         scaled_asd = jnp.sqrt(self.psd.values * self.duration / 4)
         return (frequency_series / scaled_asd) * self.frequency_mask
@@ -678,10 +715,10 @@ class GroundBased2G(Detector):
     ) -> Float[Array, " n_time"]:
         """Get the whitened frequency-domain strain.
         Args:
-            whitened_frequency_series (Complex[Array, " n_time // 2 + 1"]):
+            whitened_frequency_series (Complex[Array, "n_time // 2 + 1"]):
                 Array of whitened frequency domain data/signal.
         Returns:
-            Float[Array, " n_time"]: Whitened time-domain strain/signal.
+            Float[Array, "n_time"]: Whitened time-domain strain/signal.
         """
         freq_mask_ratio = len(self.frequency_mask) / jnp.sqrt(
             jnp.sum(self.frequency_mask)
@@ -693,10 +730,10 @@ class GroundBased2G(Detector):
         """Get the whitened frequency-domain data.
 
         Args:
-            frequency (Float[Array, " n_sample"]): Array of frequency samples.
+            frequency (Float[Array, "n_sample"]): Array of frequency samples.
 
         Returns:
-            Float[Array, " n_sample"]: Whitened frequency-domain data.
+            Float[Array, "n_sample"]: Whitened frequency-domain data.
         """
 
         return self.get_whitened_frequency_domain_strain(self.data.fd)
@@ -706,17 +743,18 @@ class GroundBased2G(Detector):
         """Get the whitened time-domain data.
 
         Args:
-            time (Float[Array, " n_sample"]): Array of time samples.
+            time (Float[Array, "n_sample"]): Array of time samples.
 
         Returns:
-            Float[Array, " n_sample"]: Whitened time-domain data.
+            Float[Array, "n_sample"]: Whitened time-domain data.
         """
         return self.whitened_frequency_to_time_domain_strain(
             self.whitened_frequency_domain_data
         )
 
 
-def get_H1():
+def get_H1() -> GroundBased2G:
+    """Return a [`GroundBased2G`][jimgw.core.single_event.detector.GroundBased2G] instance for LIGO Hanford (H1)."""
     return GroundBased2G(
         "H1",
         latitude=(46 + 27.0 / 60 + 18.528 / 3600) * DEG_TO_RAD,
@@ -730,7 +768,8 @@ def get_H1():
     )
 
 
-def get_L1():
+def get_L1() -> GroundBased2G:
+    """Return a [`GroundBased2G`][jimgw.core.single_event.detector.GroundBased2G] instance for LIGO Livingston (L1)."""
     return GroundBased2G(
         "L1",
         latitude=(30 + 33.0 / 60 + 46.4196 / 3600) * DEG_TO_RAD,
@@ -744,7 +783,8 @@ def get_L1():
     )
 
 
-def get_V1():
+def get_V1() -> GroundBased2G:
+    """Return a [`GroundBased2G`][jimgw.core.single_event.detector.GroundBased2G] instance for Virgo (V1)."""
     return GroundBased2G(
         "V1",
         latitude=(43 + 37.0 / 60 + 53.0921 / 3600) * DEG_TO_RAD,
@@ -759,15 +799,22 @@ def get_V1():
 
 
 def get_ET() -> list[GroundBased2G]:
+    """Return a list of three [`GroundBased2G`][jimgw.core.single_event.detector.GroundBased2G] instances for Einstein Telescope (ET).
+
+    ET is modelled as a triangle of three interferometers at adjacent vertices,
+    with arms rotated by 120° relative to each other. Vertex positions are
+    propagated using the spherical forward-azimuth (haversine) formula with a
+    latitude-dependent Earth radius derived from the WGS-84 ellipsoid.
+    """
     name = "ET"
     latitude = (43 + 37.0 / 60 + 53.0921 / 3600) * DEG_TO_RAD
-    longitude = (10 + 30.0 / 60 + 16.1887 / 3600) * DEG_TO_RAD
+    longitude = (10 + 30.0 / 60 + 16.1878 / 3600) * DEG_TO_RAD
     xarm_azimuth = 70.5674 * DEG_TO_RAD
     yarm_azimuth = 130.5674 * DEG_TO_RAD
     xarm_tilt = 0
     yarm_tilt = 0
     elevation = 51.884
-    length = 1e4
+    length: float = 1e4  # arm length in metres
 
     a = EARTH_SEMI_MAJOR_AXIS / 1e3  # Numerical instability avoidance
     b = EARTH_SEMI_MINOR_AXIS / 1e3
@@ -778,6 +825,11 @@ def get_ET() -> list[GroundBased2G]:
     )
     earth_approx_radius *= 1e3
 
+    # Navigation bearing (clockwise from North) corresponding to xarm_azimuth
+    # (counter-clockwise from East): brng = pi/2 - azimuth.
+    # Both brng and the arm azimuths are incremented by 240° (4π/3) per vertex.
+    brng = jnp.pi / 2 - xarm_azimuth
+
     ifos = []
     for i in range(3):
         ifos.append(
@@ -785,27 +837,37 @@ def get_ET() -> list[GroundBased2G]:
                 f"{name}{i + 1}",
                 latitude=float(latitude),
                 longitude=float(longitude),
-                xarm_azimuth=xarm_azimuth,
-                yarm_azimuth=yarm_azimuth,
+                xarm_azimuth=float(xarm_azimuth),
+                yarm_azimuth=float(yarm_azimuth),
                 elevation=elevation,
                 xarm_tilt=xarm_tilt,
                 yarm_tilt=yarm_tilt,
             )
         )
-        # Rotate arms
+        # Propagate to next vertex using the spherical forward-azimuth formula.
+        # Coordinate update must precede arm rotation (uses current bearing).
+        d = length / earth_approx_radius
+        phi1 = latitude
+        phi2 = jnp.arcsin(
+            jnp.sin(phi1) * jnp.cos(d) + jnp.cos(phi1) * jnp.sin(d) * jnp.cos(brng)
+        )
+        longitude = longitude + jnp.arctan2(
+            jnp.sin(brng) * jnp.sin(d) * jnp.cos(phi1),
+            jnp.cos(d) - jnp.sin(phi1) * jnp.sin(phi2),
+        )
+        latitude = phi2
+        # Rotate arms and bearing for the next detector vertex (240°, i.e. 4π/3, per vertex)
         xarm_azimuth += (4 / 3) * jnp.pi
         yarm_azimuth += (4 / 3) * jnp.pi
-        # The detector is taken as a chord that cuts across the earth
-        latitude += 2 * jnp.arcsin(
-            0.5 * length * jnp.sin(xarm_azimuth) / earth_approx_radius
-        )
-        longitude += 2 * jnp.arcsin(
-            0.5 * length * jnp.cos(xarm_azimuth) / earth_approx_radius
-        )
+        brng += (4 / 3) * jnp.pi
     return ifos
 
 
-def get_CE():
+def get_CE() -> GroundBased2G:
+    """Return a [`GroundBased2G`][jimgw.core.single_event.detector.GroundBased2G] instance for Cosmic Explorer (CE).
+
+    CE shares the LIGO Hanford site geometry.
+    """
     return GroundBased2G(
         "CE",
         latitude=(46 + 27.0 / 60 + 18.528 / 3600) * DEG_TO_RAD,
@@ -819,7 +881,14 @@ def get_CE():
     )
 
 
-def get_detector_preset():
+def get_detector_preset() -> dict[str, GroundBased2G | list[GroundBased2G]]:
+    """Return a dictionary of pre-configured detector instances.
+
+    Returns:
+        dict: Mapping of detector name to detector object(s).
+            Keys are ``"H1"``, ``"L1"``, ``"V1"``, ``"CE"`` (single
+            [`GroundBased2G`][jimgw.core.single_event.detector.GroundBased2G]) and ``"ET"`` (list of three).
+    """
     return {
         "H1": get_H1(),
         "L1": get_L1(),

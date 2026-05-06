@@ -3,7 +3,7 @@ import logging
 import numpy as np
 import jax
 import jax.numpy as jnp
-from jaxtyping import Array, Float, Complex, PRNGKeyArray
+from jaxtyping import Array, Float, Complex, Key
 
 from gwpy.timeseries import TimeSeries
 from typing import Optional, Self
@@ -15,9 +15,9 @@ logger = logging.getLogger(__name__)
 
 # TODO: Need to expand this list. Currently it is only O3.
 asd_file_dict = {
-    "H1": "https://dcc.ligo.org/public/0169/P2000251/001/O3-H1-C01_CLEAN_SUB60HZ-1251752040.0_sensitivity_strain_asd.txt",  # noqa: E501
-    "L1": "https://dcc.ligo.org/public/0169/P2000251/001/O3-L1-C01_CLEAN_SUB60HZ-1240573680.0_sensitivity_strain_asd.txt",  # noqa: E501
-    "V1": "https://dcc.ligo.org/public/0169/P2000251/001/O3-V1_sensitivity_strain_asd.txt",  # noqa: E501
+    "H1": "https://dcc.ligo.org/public/0169/P2000251/001/O3-H1-C01_CLEAN_SUB60HZ-1251752040.0_sensitivity_strain_asd.txt",
+    "L1": "https://dcc.ligo.org/public/0169/P2000251/001/O3-L1-C01_CLEAN_SUB60HZ-1240573680.0_sensitivity_strain_asd.txt",
+    "V1": "https://dcc.ligo.org/public/0169/P2000251/001/O3-V1_sensitivity_strain_asd.txt",
 }
 
 
@@ -33,20 +33,20 @@ class Data(ABC):
         name: Name of the data instance.
         td: Time domain data array.
         fd: Frequency domain data array.
-        epoch: Time epoch of the data.
+        start_time: GPS start time of the data segment in seconds.
         delta_t: Time step between samples.
         window: Window function applied to data.
     """
 
     name: str
 
-    td: Float[Array, " n_time"]
-    fd: Complex[Array, " n_time // 2 + 1"]
+    td: Float[Array, "n_time"]
+    fd: Complex[Array, "n_time // 2 + 1"]
 
-    epoch: Float
+    start_time: Float
     delta_t: Float
 
-    window: Float[Array, " n_time"]
+    window: Float[Array, "n_time"]
 
     def __len__(self) -> int:
         """Returns the length of the time-domain data.
@@ -110,16 +110,16 @@ class Data(ABC):
         return 1 / self.delta_t
 
     @property
-    def times(self) -> Float[Array, " n_time"]:
+    def times(self) -> Float[Array, "n_time"]:
         """Gets time points of the data.
 
         Returns:
             Array: Array of time points in seconds.
         """
-        return jnp.arange(self.n_time) * self.delta_t + self.epoch
+        return jnp.arange(self.n_time) * self.delta_t + self.start_time
 
     @property
-    def frequencies(self) -> Float[Array, " n_time // 2 + 1"]:
+    def frequencies(self) -> Float[Array, "n_time // 2 + 1"]:
         """Gets frequencies of the data.
 
         Returns:
@@ -138,18 +138,18 @@ class Data(ABC):
 
     def __init__(
         self,
-        td: Float[Array, " n_time"] = jnp.array([]),
+        td: Float[Array, "n_time"] = jnp.array([]),
         delta_t: Float = 0.0,
-        epoch: Float = 0.0,
+        start_time: Float = 0.0,
         name: str = "",
-        window: Optional[Float[Array, " n_time"]] = None,
+        window: Optional[Float[Array, "n_time"]] = None,
     ) -> None:
         """Initialize the data class.
 
         Args:
             td: Time domain data array.
             delta_t: Time step of the data in seconds.
-            epoch: Epoch of the data in seconds (default: 0).
+            start_time: GPS start time of the segment in seconds (default: 0).
             name: Name of the data (default: '').
             window: Window function to apply to the data before FFT (default: None).
         """
@@ -157,7 +157,7 @@ class Data(ABC):
         self.td = td
         self.fd = jnp.zeros(self.n_freq, dtype="complex128")
         self.delta_t = delta_t
-        self.epoch = epoch
+        self.start_time = start_time
         if window is None:
             self.set_tukey_window()
         else:
@@ -166,7 +166,7 @@ class Data(ABC):
     def __repr__(self):
         return (
             f"{self.__class__.__name__}(name='{self.name}', "
-            + f"delta_t={self.delta_t}, epoch={self.epoch})"
+            + f"delta_t={self.delta_t}, start_time={self.start_time})"
         )
 
     def __bool__(self) -> bool:
@@ -185,8 +185,8 @@ class Data(ABC):
         self.window = jnp.array(tukey(self.n_time, alpha))
 
     def fft(
-        self, window: Optional[Float[Array, " n_time"]] = None
-    ) -> Complex[Array, " n_freq"]:
+        self, window: Optional[Float[Array, "n_time"]] = None
+    ) -> Complex[Array, "n_freq"]:
         """Compute the Fourier transform of the data and store it
         in the fd attribute.
 
@@ -238,7 +238,7 @@ class Data(ABC):
         if not self.has_fd:
             self.fft()
         freq, psd = welch(self.td, fs=self.sampling_frequency, **kws)
-        return PowerSpectrum(psd, freq, self.name)  # type: ignore
+        return PowerSpectrum(jnp.asarray(psd), jnp.asarray(freq), self.name)
 
     @classmethod
     def from_gwosc(
@@ -270,14 +270,14 @@ class Data(ABC):
         data_td = TimeSeries.fetch_open_data(
             ifo, gps_start_time, gps_end_time, cache=cache, **kws
         )
-        return cls(data_td.value, data_td.dt.value, data_td.epoch.value, ifo)  # type: ignore # noqa: E501
+        return cls(data_td.value, data_td.dt.value, data_td.epoch.value, ifo)  # type: ignore[union-attr]
 
     @classmethod
     def from_fd(
         cls,
-        fd_strain: Complex[Array, " n_freq"],
-        frequencies: Float[Array, " n_freq"],
-        epoch: float = 0.0,
+        fd_strain: Complex[Array, "n_freq"],
+        frequencies: Float[Array, "n_freq"],
+        start_time: float = 0.0,
         name: str = "",
     ) -> Self:
         """Create a Data object starting from (potentially incomplete)
@@ -286,7 +286,7 @@ class Data(ABC):
         Args:
             fd_strain: Fourier domain data array.
             frequencies: Frequencies of the data in Hz.
-            epoch: Epoch of the data in seconds (default: 0).
+            start_time: GPS start time of the segment in seconds (default: 0).
             name: Name of the data (default: '').
 
         Returns:
@@ -323,7 +323,7 @@ class Data(ABC):
             "Generated frequencies do not match the input frequencies"
         )
         # Create a Data object
-        data = cls(data_td_full, delta_t, epoch=epoch, name=name)
+        data = cls(data_td_full, delta_t, start_time=start_time, name=name)
         data.fd = data_fd_full
 
         # Ensures the newly constructed Data in FD faithfully
@@ -340,21 +340,21 @@ class Data(ABC):
     @classmethod
     def from_file(cls, path: str) -> Self:
         """Load data from a file. This assumes the data to be in .npz format.
-        It should at least contains the keys 'td', 'dt', and 'epoch'.
-        `td` is the time domain data, `dt` is the time step, and `epoch` is the
-        epoch of the data in seconds.
+        It should at least contain the keys 'td', 'dt', and 'start_time' (GPS start time).
 
         Args:
             path (str): Path to the .npz file containing the data.
         """
-        data = jnp.load(path, allow_pickle=True)
-        if "td" not in data or "dt" not in data or "epoch" not in data:
-            raise ValueError("The file must contain 'td', 'dt', and 'epoch' keys.")
-        td = data["td"]
-        dt = float(data["dt"])
-        epoch = float(data["epoch"])
-        assert isinstance(name := data["name"], str), "Name must be a string"
-        return cls(td, dt, epoch, name)
+        with np.load(path) as data:
+            if "td" not in data or "dt" not in data or "start_time" not in data:
+                raise ValueError(
+                    "The file must contain 'td', 'dt', and 'start_time' keys."
+                )
+            td = jnp.array(data["td"])
+            dt = float(data["dt"])
+            start_time = float(data["start_time"])
+            name = str(data.get("name", ""))
+        return cls(td, dt, start_time, name)
 
     def to_file(self, path: str):
         """Save the data to a file in .npz format.
@@ -366,7 +366,7 @@ class Data(ABC):
             path,
             td=self.td,
             dt=self.delta_t,
-            epoch=self.epoch,
+            start_time=self.start_time,
             name=self.name,
         )
 
@@ -381,8 +381,8 @@ class PowerSpectrum(ABC):
     """
 
     name: str
-    values: Float[Array, " n_freq"]
-    frequencies: Float[Array, " n_freq"]
+    values: Float[Array, "n_freq"]
+    frequencies: Float[Array, "n_freq"]
 
     @property
     def n_freq(self) -> int:
@@ -440,8 +440,8 @@ class PowerSpectrum(ABC):
 
     def __init__(
         self,
-        values: Float[Array, " n_freq"] = jnp.array([]),
-        frequencies: Float[Array, " n_freq"] = jnp.array([]),
+        values: Float[Array, "n_freq"] = jnp.array([]),
+        frequencies: Float[Array, "n_freq"] = jnp.array([]),
         name: Optional[str] = None,
     ) -> None:
         """Initialize PowerSpectrum.
@@ -507,7 +507,7 @@ class PowerSpectrum(ABC):
             self.frequencies,
             self.values,
             kind=kind,
-            fill_value=(self.values[0], self.values[-1]),  # type: ignore
+            fill_value=(self.values[0], self.values[-1]),  # type: ignore[arg-type]  # scipy stubs
             bounds_error=False,
             **kws,
         )
@@ -515,7 +515,7 @@ class PowerSpectrum(ABC):
 
     def simulate_data(
         self,
-        key: PRNGKeyArray,
+        key: Key,
     ) -> Complex[Array, " n_sample"]:
         """Simulate noise data based on the power spectrum.
 
@@ -531,7 +531,6 @@ class PowerSpectrum(ABC):
         noise_imag = jax.random.normal(subkey, shape=var.shape) * jnp.sqrt(var)
         return noise_real + 1j * noise_imag
 
-    # TODO: Add function to save to file and load data from file.
     @classmethod
     def from_file(cls, path: str) -> Self:
         """Load power spectrum from a file. This assumes the data to be in .npz format.
@@ -541,12 +540,14 @@ class PowerSpectrum(ABC):
         Args:
             path (str): Path to the .npz file containing the data.
         """
-        data = np.load(path, allow_pickle=True)
-        if "values" not in data or "frequencies" not in data:
-            raise ValueError("The file must contain 'values' and 'frequencies' keys.")
-        values = data["values"]
-        frequencies = data["frequencies"]
-        name = data.get("name", "")
+        with np.load(path) as data:
+            if "values" not in data or "frequencies" not in data:
+                raise ValueError(
+                    "The file must contain 'values' and 'frequencies' keys."
+                )
+            values = jnp.array(data["values"])
+            frequencies = jnp.array(data["frequencies"])
+            name = str(data.get("name", ""))
         return cls(values, frequencies, name)
 
     def to_file(self, path: str):

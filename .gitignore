@@ -82,7 +82,7 @@ ipython_config.py
 # pyenv
 .python-version
 
-# PEP 582; used by e.g. github.com/David-OConnor/pyflow
+# PEP 582
 __pypackages__/
 
 # Celery stuff
@@ -149,3 +149,6 @@ jim.code-workspace
 # Dagster
 .tmp_dagster*
 dagster_tmp/*
+
+# Zensical generated files
+_zensical_build.toml

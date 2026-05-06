@@ -1,63 +1,50 @@
 from abc import ABC, abstractmethod
 
-import equinox as eqx
-from jaxtyping import Array, Float
+from jaxtyping import Float
 
 
 class Data(ABC):
-    @abstractmethod
-    def __init__(self):
-        raise NotImplementedError
-
-    @abstractmethod
-    def fetch(self):
-        raise NotImplementedError
-
-
-class Model(eqx.Module):
-    params: dict
+    """Abstract base class for data containers."""
 
     @abstractmethod
     def __init__(self):
         raise NotImplementedError
 
-    def __call__(self, x: Array) -> float:
+    @abstractmethod
+    def fetch(self) -> None:
+        """Fetch or load the data into the container."""
         raise NotImplementedError
 
 
 class LikelihoodBase(ABC):
-    """
-    Base class for likelihoods.
-    Note that this likelihood class should work
-    for a some what general class of problems.
-    In light of that, this class would be some what abstract,
-    but the idea behind it is this handles two main components of a likelihood:
-    the data and the model.
-    It should be able to take the data and model and evaluate the likelihood for
-    a given set of parameters.
+    """Abstract base class for likelihoods.
 
+    Handles two main components: the data and the model.
+    Subclasses must implement `evaluate`.
     """
 
     _model: object
     _data: object
 
     @property
-    def model(self):
-        """
-        The model for the likelihood.
-        """
+    def model(self) -> object:
+        """The model used by the likelihood."""
         return self._model
 
     @property
-    def data(self):
-        """
-        The data for the likelihood.
-        """
+    def data(self) -> object:
+        """The data used by the likelihood."""
         return self._data
 
     @abstractmethod
     def evaluate(self, params: dict[str, Float], data: dict) -> Float:
-        """
-        Evaluate the likelihood for a given set of parameters.
+        """Evaluate the log-likelihood for a given set of parameters.
+
+        Args:
+            params: Dictionary mapping parameter names to values.
+            data: Auxiliary data (typically empty for pre-loaded data).
+
+        Returns:
+            Log-likelihood value.
         """
         raise NotImplementedError

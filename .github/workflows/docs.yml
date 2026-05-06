@@ -1,0 +1,118 @@
+name: Docs
+
+on:
+  push:
+    branches: [main, jim-dev]
+    tags: ['v*']
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install doc dependencies
+        run: uv sync --group doc
+
+      - name: Determine version
+        id: version
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            echo "alias=stable" >> "$GITHUB_OUTPUT"
+          elif [[ "${GITHUB_REF}" == refs/heads/main ]]; then
+            echo "alias=latest" >> "$GITHUB_OUTPUT"
+          else
+            echo "alias=development" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Convert notebooks to Markdown
+        run: |
+          for nb in docs/tutorials/*.ipynb; do
+            [ -f "$nb" ] && uv run jupytext --to markdown "$nb"
+          done
+
+      - name: Generate API stubs and versioned config
+        env:
+          VERSION_ALIAS: ${{ steps.version.outputs.alias }}
+        run: uv run python docs/gen_api.py
+
+      - name: Build docs
+        run: uv run zensical build -f _zensical_build.toml --clean
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Deploy to gh-pages
+        env:
+          VERSION: ${{ steps.version.outputs.alias }}
+        run: |
+          mv site /tmp/docs-built
+          rm -f /tmp/docs-built/.gitignore
+          git clean -fd
+          if git ls-remote --exit-code origin refs/heads/gh-pages > /dev/null 2>&1; then
+            git fetch origin gh-pages
+            git checkout gh-pages
+          else
+            git checkout --orphan gh-pages
+            git rm -rf . --quiet || true
+          fi
+
+          rm -rf "${VERSION}"
+          cp -r /tmp/docs-built "${VERSION}"
+
+          case "$VERSION" in
+            stable) title="Stable" ;;
+            latest) title="Latest" ;;
+            development) title="Development" ;;
+            *) title="$VERSION" ;;
+          esac
+          [ -f versions.json ] || echo '[]' > versions.json
+          jq --arg v "$VERSION" --arg t "$title" \
+            '([.[] | select(.version != $v)] + [{"version": $v, "title": $t, "aliases": []}])
+             | sort_by(if .version == "stable" then 0
+                       elif .version == "latest" then 1
+                       elif .version == "development" then 2
+                       else 99 end)' \
+            versions.json > versions.json.tmp
+          mv versions.json.tmp versions.json
+
+          cat > index.html << 'EOF'
+          <!doctype html>
+          <html><head><meta charset="utf-8"><title>Redirecting…</title>
+          <script>
+          fetch("versions.json").then(function(r){return r.json();}).then(function(vs){
+            var order=["stable","latest","development"];
+            var available=vs.map(function(v){return v.version;});
+            for(var i=0;i<order.length;i++){
+              if(available.indexOf(order[i])!==-1){
+                window.location.replace(order[i]+"/");return;
+              }
+            }
+            if(available.length>0)window.location.replace(available[0]+"/");
+          }).catch(function(){window.location.replace("stable/");});
+          </script>
+          </head><body>Redirecting…</body></html>
+          EOF
+
+          touch .nojekyll
+          git add -A
+          git diff --cached --quiet || git commit -m "docs: deploy ${VERSION} [skip ci]"
+          git push origin gh-pages

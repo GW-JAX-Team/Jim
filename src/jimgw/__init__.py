@@ -1,4 +1,6 @@
-import logging
+from importlib.metadata import version, PackageNotFoundError
 
-# Create logger for jim package
-logger = logging.getLogger("jim")
+try:
+    __version__ = version("jimgw")
+except PackageNotFoundError:
+    __version__ = "unknown"

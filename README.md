@@ -1,71 +1,55 @@
-# Jim <img src="https://user-images.githubusercontent.com/4642979/218163532-1c8a58e5-6f36-42de-96d3-f245eee93cf8.png" alt="jim" width="35"/>
+# Jim 🚬
 
-**A JAX-based gravitational-wave inference toolkit**
+### A JAX-based gravitational-wave inference toolkit
 
-<a href="https://jim.readthedocs.io/en/main/">
-<img src="https://badgen.net/badge/Read/the doc/blue" alt="doc"/>
-</a>
-<a href="https://github.com/GW-JAX-Team/jim/blob/main/LICENSE">
-<img src="https://badgen.net/badge/License/MIT/blue" alt="license"/>
-</a>
-<a href='https://coveralls.io/github/GW-JAX-Team/jim?branch=main'>
-<img src='https://badgen.net/coveralls/c/github/GW-JAX-Team/jim/main' alt='coverage' />
-</a>
+[![docs](https://img.shields.io/badge/docs-online-blue)](https://gw-jax-team.github.io/jim/) [![license](https://img.shields.io/badge/License-MIT-blue)](https://github.com/GW-JAX-Team/jim/blob/main/LICENSE) [![coverage](https://img.shields.io/coveralls/github/GW-JAX-Team/jim/main)](https://coveralls.io/github/GW-JAX-Team/jim?branch=main) [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/GW-JAX-Team/jim/main.svg)](https://results.pre-commit.ci/latest/github/GW-JAX-Team/jim/main)
 
-Jim is a JAX-based toolkit for estimating parameters of gravitational-wave sources through Bayesian inference. At its core, Jim uses the normalizing-flow enhanced sampler [flowMC](https://github.com/GW-JAX-Team/flowMC) to improve the convergence of gradient-based MCMC sampling.
+Jim is a JAX-based toolkit for Bayesian parameter estimation of gravitational-wave sources. It pairs differentiable waveform models from [ripple](https://github.com/GW-JAX-Team/ripple) with GPU-accelerated JAX-based samplers, enabling massively parallel inference.
 
-Built on JAX, Jim leverages hardware acceleration to achieve significant speedups on GPUs. The toolkit also implements likelihood-heterodyning ([Cornish et al. 2010](https://arxiv.org/abs/1007.4820), [Cornish & Littenberg 2021](https://arxiv.org/abs/2109.02728)) for efficient gravitational-wave likelihood computation.
+**Supported samplers:**
 
-See the accompanying paper, [Wong, Isi, Edwards (2023)](https://github.com/kazewong/TurboPE/), for more details.
+- [flowMC](https://github.com/GW-JAX-Team/flowMC) — normalizing-flow-enhanced MCMC with optional parallel tempering.
+- [BlackJAX NS-AW](https://github.com/mrosep/blackjax_ns_gw) — nested sampling described in [Prathaban et al. 2025 (arXiv:2509.04336)](https://arxiv.org/abs/2509.04336).
+- [BlackJAX NSS](https://github.com/handley-lab/blackjax) — nested slice sampling.
+- [BlackJAX SMC](https://github.com/blackjax-devs/blackjax) — sequential Monte Carlo with optional adaptive tempering and persistent sampling.
 
+For a quick introduction, see the [Quick Start guide](https://gw-jax-team.github.io/jim/stable/quickstart/).
 
-> [!WARNING]  
-> Jim is under active development and the API may change. Use at your own risk!
-> Consider forking a specific version if you need API stability.
-> We aim to release a stable v1.0.0 version in 2026.
+> [!WARNING]
+> Jim has not yet reached v1.0.0 and the API may change. Use at your own risk. Consider pinning to a specific version if you need API stability.
 
-_[Documentation and examples are a work in progress]_
-
-# Installation
+## Installation
 
 The simplest way to install Jim is through pip:
 
-```
-pip install jimGW
+```bash
+pip install JimGW
 ```
 
 This will install the latest stable release and its dependencies.
-Jim is built on [JAX](https://github.com/google/jax) and [flowMC](https://github.com/GW-JAX-Team/flowMC).
-By default, this installs the CPU version of JAX from [PyPI](https://pypi.org).
-If you have a GPU and want to leverage hardware acceleration, install the CUDA-enabled version:
+Jim is built on [JAX](https://github.com/jax-ml/jax).
+By default, this installs the CPU version of JAX.
+If you have an NVIDIA GPU, install the CUDA-enabled version:
 
-```
-pip install jimGW[cuda]
+```bash
+pip install JimGW[cuda]
 ```
 
 If you want to install the latest version of Jim, you can clone this repo and install it locally:
 
-```
+```bash
 git clone https://github.com/GW-JAX-Team/jim.git
 cd jim
 pip install -e .
 ```
 
-# Performance
+We recommend using [uv](https://docs.astral.sh/uv/) to manage your Python environment. After cloning the repository, run `uv sync` to create a virtual environment with all dependencies installed.
 
-Jim's performance varies with available hardware. Under optimal conditions with CUDA, parameter estimation for a binary neutron star can complete in ~1 minute on an NVIDIA A100 GPU (see [paper](https://github.com/kazewong/TurboPE/) for details).
-
-If no GPU is available, JAX will automatically fall back to CPU execution, displaying:
-
-```
-No GPU/TPU found, falling back to CPU.
-```
-
-# Attribution
+## Attribution
 
 If you use Jim in your research, please cite the accompanying paper:
 
-```
+```bibtex
 @article{Wong:2023lgb,
     author = "Wong, Kaze W. K. and Isi, Maximiliano and Edwards, Thomas D. P.",
     title = "{Fast Gravitational-wave Parameter Estimation without Compromises}",

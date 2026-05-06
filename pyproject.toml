@@ -1,11 +1,14 @@
 [project]
 name = "jimgw"
-version = "0.3.0"
-description = "Gravitatioanl wave data analysis tool in Jax"
+dynamic = ["version"]
+description = "A JAX-based gravitational-wave inference toolkit"
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [
 	{name = "Kaze W. K. Wong", email = "kazewong.physics@gmail.com"},
+]
+maintainers = [
+  {name = "Thomas Ng", email = "thomas.ng@nikhef.nl"}
 ]
 license = {file = "LICENSE"}
 classifiers = [
@@ -18,43 +21,33 @@ classifiers = [
 ]
 
 dependencies = [
+    "anesthetic>=2",
     "astropy>=7.0.1",
     "beartype>=0.19.0",
-    "flowmc>=0.4.5",
+    "blackjax>=1.4",
+    "equinox>=0.11",
+    "evosax>=0.2.0",
+    "flowmc>=0.5.0",
     "gwpy>=3.0.12",
     "jax>=0.8.2",
     "jaxtyping>=0.3.3",
-    "ripplegw>=0.0.9",
-    "scipy<1.17.0",
+    "pydantic>=2",
+    "ripplegw>=0.1.1",
+    "scipy>=1.17.1",
 ]
 
 [project.optional-dependencies]
-visualize = [
-    "corner>=2.2.3",
-    "matplotlib>=3.10.7",
-]
-docs = [
-    "mkdocs-gen-files==0.6.0",
-    "mkdocs-jupyter==0.25.1",
-    "mkdocs-literate-nav==0.6.2",
-    "mkdocs-material==9.7.1",
-    "mkdocs==1.6.1",
-    "mkdocstrings[python]==1.0.0",
-    "pymdown-extensions==10.20",
-]
 cuda = [
     "jax[cuda]>=0.8.2",
 ]
-dagster = [
-    "dagster>=1.11.1",
-    "dagster-dg-cli>=1.11.1",
-    "dagster-pipes>=1.11.1",
-    "dagster-webserver>=1.11.1",
+visualize = [
+    "numpy",
+    "corner>=2.2.3",
+    "matplotlib>=3.10.7",
 ]
 
 [dependency-groups]
-dev = [
-    "jimgw",
+test = [
     "pre-commit>=4.2.0",
     "coverage>=7.7.0",
     "coveralls>=4.0.1",
@@ -63,19 +56,49 @@ dev = [
     "ruff>=0.12.2",
     "pyright>=1.1.402",
 ]
+cross-validation = [
+    "lalsuite>=7.26.4",
+    "bilby[gw]>=2.8.0",
+]
+doc = [
+    "jupytext",
+    "mkdocstrings[python]",
+    "pymdown-extensions",
+    "zensical",
+]
+nested-sampling = [
+    "blackjax",
+]
+
+[project.urls]
+Homepage = "https://github.com/GW-JAX-Team/jim"
+Documentation = "https://gw-jax-team.github.io/jim/"
+Repository = "https://github.com/GW-JAX-Team/jim"
+"Bug Tracker" = "https://github.com/GW-JAX-Team/jim/issues"
+Changelog = "https://github.com/GW-JAX-Team/jim/releases"
 
 [tool.uv.sources]
 jimgw = { workspace = true }
-
-[tool.dagster]
-modules = [
-{ type="module", name="jim_dagster.InjectionRecovery.definitions" },
-{ type="module", name="jim_dagster.RealDataCatalog.definitions" },
-]
+# Pinned to a maintained fork on a dedicated `jim` branch that carries:
+#   - blackjax.ns.{base,adaptive,utils}                                     (NS-AW, NSS)
+#   - blackjax.nss                                                          (NSS)
+# When the NS module land upstream, drop this pin and the nested-sampling group.
+blackjax = { git = "https://github.com/GW-JAX-Team/blackjax.git", branch = "jim" }
 
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "vcs"
+fallback-version = "0.3.0"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+markers = [
+    "integration: end-to-end Jim runs",
+    "slow: slow tests",
+]
 
 [tool.pyright]
 include = ["src"]

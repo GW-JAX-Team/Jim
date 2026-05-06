@@ -8,6 +8,10 @@ on:
   release:
     types: [published]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -22,30 +26,54 @@ jobs:
       - name: Set up Python ${{ matrix.python-version }}
         run: uv python install ${{ matrix.python-version }}
       - name: Install dependencies
-        run: uv sync --all-extras --dev
+        run: |
+          uv sync --python ${{ matrix.python-version }} --group test --group cross-validation --group nested-sampling
+          if [[ "${{ github.ref }}" == "refs/heads/jim-dev" || "${{ github.base_ref }}" == "jim-dev" ]]; then
+            uv pip install git+https://github.com/GW-JAX-Team/flowMC.git@flowMC-dev
+            uv pip install git+https://github.com/GW-JAX-Team/ripple.git@ripple-dev
+          elif [[ "${{ github.event_name }}" != "release" ]]; then
+            uv pip install git+https://github.com/GW-JAX-Team/flowMC.git@main
+            uv pip install git+https://github.com/GW-JAX-Team/ripple.git@main
+          fi
       - name: Run tests
-        run: uv run pytest --cov=jimgw --cov-report=term-missing tests/
+        run: |
+          is_main=false
+          [[ "${{ github.ref }}" == "refs/heads/main" || "${{ github.base_ref }}" == "main" ]] && is_main=true
+          cov_flags=""
+          [[ "${{ matrix.python-version }}" == "3.12" ]] && cov_flags="--cov=jimgw --cov-report=term-missing"
+          if [[ "$is_main" == "true" ]]; then
+            uv run --no-sync pytest $cov_flags tests -v --tb=short
+          else
+            uv run --no-sync pytest -m "not slow and not integration" $cov_flags tests
+          fi
       - name: Upload coverage to Coveralls
         if: matrix.python-version == '3.12'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
-        run: uv run coveralls
+        run: uv run --no-sync coveralls
 
   pre-commit:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
       - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
       - name: Install dependencies
-        run: uv sync --all-extras --dev
-      - name: Run pre-commit
-        run: uv run pre-commit run --all-files
+        run: |
+          uv sync --python 3.12 --group test
+          if [[ "${{ github.ref }}" == "refs/heads/jim-dev" || "${{ github.base_ref }}" == "jim-dev" ]]; then
+            uv pip install git+https://github.com/GW-JAX-Team/flowMC.git@flowMC-dev
+            uv pip install git+https://github.com/GW-JAX-Team/ripple.git@ripple-dev
+          elif [[ "${{ github.event_name }}" != "release" ]]; then
+            uv pip install git+https://github.com/GW-JAX-Team/flowMC.git@main
+            uv pip install git+https://github.com/GW-JAX-Team/ripple.git@main
+          fi
+      - name: Run pre-commit (excluding pyright)
+        run: SKIP=pyright uv run --no-sync pre-commit run --all-files
+      - name: Run pyright
+        run: uv run --no-sync pyright src/
 
   publish:
     needs: [test, pre-commit]
@@ -56,6 +84,8 @@ jobs:
       url: https://pypi.org/project/jimgw/
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
       - uses: astral-sh/setup-uv@v7
       - name: Build package
         run: uv build

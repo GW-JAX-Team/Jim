@@ -1899,6 +1899,7 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
 
         return log_likelihood
 
+
 likelihood_presets = {
     "TransientLikelihoodFD": TransientLikelihoodFD,
     "HeterodynedTransientLikelihoodFD": HeterodynedTransientLikelihoodFD,

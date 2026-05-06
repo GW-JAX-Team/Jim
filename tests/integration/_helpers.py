@@ -8,10 +8,6 @@ mean is analytically known and easily verifiable.
 
 from __future__ import annotations
 
-import jax
-
-jax.config.update("jax_enable_x64", True)
-
 from jimgw.core.base import LikelihoodBase
 from jimgw.core.jim import Jim
 from jimgw.core.prior import CombinePrior, UniformPrior

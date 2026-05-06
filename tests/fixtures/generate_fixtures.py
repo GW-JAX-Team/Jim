@@ -4,10 +4,6 @@ This script fetches real GW150914 data and saves it as fixtures for testing.
 Run this once to create the fixture files.
 """
 
-import jax
-
-jax.config.update("jax_enable_x64", True)
-
 from jimgw.core.single_event.data import Data
 from jimgw.core.single_event.detector import get_H1, get_L1
 

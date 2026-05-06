@@ -7,8 +7,6 @@ import jax.numpy as jnp
 import numpy as np
 import pytest
 
-jax.config.update("jax_enable_x64", True)
-
 from jimgw.core.jim import Jim
 from jimgw.core.prior import CombinePrior, UniformPrior
 from jimgw.core.transforms import BoundToUnbound
@@ -477,7 +475,9 @@ class TestJimPriorLikelihoodConsistencyChecks:
         lh = self._make_mock_single_event_likelihood(
             waveform_parameter_names=("M_c", "ra", "dec", "psi", "t_c"),
         )
-        with pytest.raises(ValueError, match="not provided by the prior or fixed_parameters"):
+        with pytest.raises(
+            ValueError, match="not provided by the prior or fixed_parameters"
+        ):
             Jim(likelihood=lh, prior=prior, sampler_config=_tiny_flowmc_config())
 
     def test_missing_parameter_covered_by_fixed_no_error(self):

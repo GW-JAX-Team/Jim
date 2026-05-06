@@ -41,14 +41,12 @@ except ImportError as e:
     print("This script requires bilby.")
     exit(1)
 
-jax.config.update("jax_enable_x64", True)
 jax.config.update("jax_platforms", "cpu")
 
 from jimgw.core.single_event.time_utils import (
     gps_to_utc_date,
     greenwich_mean_sidereal_time as jim_gmst,
 )
-
 
 # Configuration
 SIZE = 10_000_000  # Total number of samples

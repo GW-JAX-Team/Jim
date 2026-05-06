@@ -1,13 +1,10 @@
 """Unit tests for wave polarization utilities."""
 
-import jax
 import jax.numpy as jnp
 import pytest
 
 from jimgw.core.single_event.polarization import Polarization, KNOWN_POLS
 from tests.utils import assert_all_finite
-
-jax.config.update("jax_enable_x64", True)
 
 
 class TestPolarization:

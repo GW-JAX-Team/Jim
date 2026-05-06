@@ -12,8 +12,6 @@ from jimgw.core.prior import CombinePrior, UniformPrior  # noqa: E402
 from jimgw.samplers.blackjax.nss import BlackJAXNSSSampler  # noqa: E402
 from jimgw.samplers.config import BlackJAXNSSConfig  # noqa: E402
 
-jax.config.update("jax_enable_x64", True)
-
 _SIGMA = 0.05
 _MU = 0.5
 

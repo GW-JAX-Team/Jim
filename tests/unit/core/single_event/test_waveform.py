@@ -12,8 +12,6 @@ from jimgw.core.single_event.waveform import (
 )
 from tests.utils import assert_all_finite
 
-jax.config.update("jax_enable_x64", True)
-
 
 # Module-level fixtures
 @pytest.fixture

@@ -16,8 +16,6 @@ from jimgw.core.transforms import (
 )
 from tests.utils import common_keys_allclose
 
-jax.config.update("jax_enable_x64", True)
-
 
 class TestBasicTransforms:
     def test_scale_transform(self):

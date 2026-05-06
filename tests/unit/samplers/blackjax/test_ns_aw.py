@@ -12,8 +12,6 @@ from jimgw.core.prior import CombinePrior, UniformPrior  # noqa: E402
 from jimgw.samplers.blackjax.ns_aw import BlackJAXNSAWSampler  # noqa: E402
 from jimgw.samplers.config import BlackJAXNSAWConfig  # noqa: E402
 
-jax.config.update("jax_enable_x64", True)
-
 # ---------------------------------------------------------------------------
 # Toy problem: 2-D unit-cube Gaussian centred at (0.5, 0.5), sigma = 0.05.
 # ---------------------------------------------------------------------------

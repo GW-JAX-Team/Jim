@@ -2,11 +2,8 @@ import pytest
 
 pytestmark = pytest.mark.integration
 
-import jax
 import jax.numpy as jnp
 from pathlib import Path
-
-jax.config.update("jax_enable_x64", True)
 
 from jimgw.core.jim import Jim
 from jimgw.core.prior import (

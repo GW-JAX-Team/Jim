@@ -34,8 +34,6 @@ pytestmark = pytest.mark.skipif(
     reason="bilby required for cross-validation tests",
 )
 
-jax.config.update("jax_enable_x64", True)
-
 N_SAMPLES = 1000
 
 

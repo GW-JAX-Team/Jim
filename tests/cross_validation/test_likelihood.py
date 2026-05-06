@@ -43,8 +43,6 @@ pytestmark = pytest.mark.skipif(
     reason="bilby required for cross-validation tests",
 )
 
-jax.config.update("jax_enable_x64", True)
-
 FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
 
 # ─── GW150914 parameters ──────────────────────────────────────────────────────
@@ -74,7 +72,6 @@ BILBY_PARAMS = {
     "dec": -1.2108,
     "psi": 2.659,
 }
-
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 

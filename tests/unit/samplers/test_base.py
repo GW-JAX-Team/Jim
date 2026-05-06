@@ -11,8 +11,6 @@ import pytest
 from jimgw.samplers.base import Sampler
 from jimgw.samplers.config import BaseSamplerConfig
 
-jax.config.update("jax_enable_x64", True)
-
 
 def _make_callables(n_dims: int = 1):
     """Return minimal flat-array callables for a unit-uniform prior in [0,1]^n."""

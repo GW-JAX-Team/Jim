@@ -20,8 +20,6 @@ from jimgw.core.single_event.transforms import (
 from jimgw.core.single_event.detector import get_detector_preset
 from tests.utils import assert_all_finite, common_keys_allclose
 
-jax.config.update("jax_enable_x64", True)
-
 detector_preset = get_detector_preset()
 H1 = detector_preset["H1"]
 L1 = detector_preset["L1"]
@@ -224,9 +222,7 @@ class TestSphereSpinToCartesianSpinTransform:
         key, *subkeys = jax.random.split(key, 4)
         s1_mag = jax.random.uniform(subkeys[0], (10,), minval=1e-3, maxval=1.0)
         s1_theta = jax.random.uniform(subkeys[1], (10,), minval=0, maxval=jnp.pi)
-        s1_phi = jax.random.uniform(
-            subkeys[2], (10,), minval=0, maxval=2 * jnp.pi
-        )
+        s1_phi = jax.random.uniform(subkeys[2], (10,), minval=0, maxval=2 * jnp.pi)
 
         inputs = {"s1_mag": s1_mag, "s1_theta": s1_theta, "s1_phi": s1_phi}
         transform = SphereSpinToCartesianSpinTransform("s1")
@@ -243,9 +239,7 @@ class TestSphereSpinToCartesianSpinTransform:
         subkeys = jax.random.split(jax.random.key(12), 3)
         s1_mag = jax.random.uniform(subkeys[0], (1,), minval=1e-3, maxval=1.0)
         s1_theta = jax.random.uniform(subkeys[1], (1,), minval=0, maxval=jnp.pi)
-        s1_phi = jax.random.uniform(
-            subkeys[2], (1,), minval=0, maxval=2 * jnp.pi
-        )
+        s1_phi = jax.random.uniform(subkeys[2], (1,), minval=0, maxval=2 * jnp.pi)
 
         sample_dict = {
             "s1_mag": s1_mag[0],

@@ -22,8 +22,6 @@ from jimgw.core.prior import (
 from jimgw.samplers.config import BlackJAXNSSConfig, BlackJAXSMCConfig
 from tests.utils import assert_all_finite, assert_all_in_range
 
-jax.config.update("jax_enable_x64", True)
-
 
 class TestUnivariatePrior:
     def test_logistic_distribution(self):

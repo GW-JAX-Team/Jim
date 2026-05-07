@@ -404,11 +404,12 @@ jim = Jim(
     likelihood,
     prior,
     sampler_config=BlackJAXNSAWConfig(
-        n_live=1000,
+        n_live=1400,
         n_delete_frac=0.5,
         n_target=60,
         max_mcmc=5000,
         termination_dlogz=0.1,
+        verbose=True
     ),
     sample_transforms=sample_transforms,
     likelihood_transforms=likelihood_transforms,

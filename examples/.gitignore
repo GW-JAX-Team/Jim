@@ -1,1 +1,4 @@
 *.png
+outdir/
+submit.sh
+samples.npz

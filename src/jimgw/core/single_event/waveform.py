@@ -1,30 +1,33 @@
 from ripplegw import (
-    IMRPhenomD,
-    IMRPhenomPv2,
     TaylorF2,
+    IMRPhenomD,
     IMRPhenomD_NRTidalv2,
+    IMRPhenomPv2,
     IMRPhenomXAS,
     IMRPhenomXAS_NRTidalv3,
+    IMRPhenomXHM,
     IMRPhenomXPHM,
     SineGaussian,
 )
 
-RippleIMRPhenomD = IMRPhenomD
-RippleIMRPhenomPv2 = IMRPhenomPv2
 RippleTaylorF2 = TaylorF2
+RippleIMRPhenomD = IMRPhenomD
 RippleIMRPhenomD_NRTidalv2 = IMRPhenomD_NRTidalv2
+RippleIMRPhenomPv2 = IMRPhenomPv2
 RippleIMRPhenomXAS = IMRPhenomXAS
 RippleIMRPhenomXAS_NRTidalv3 = IMRPhenomXAS_NRTidalv3
+RippleIMRPhenomXHM = IMRPhenomXHM
 RippleIMRPhenomXPHM = IMRPhenomXPHM
 RippleSineGaussian = SineGaussian
 
 __all__ = [
-    "RippleIMRPhenomD",
-    "RippleIMRPhenomPv2",
     "RippleTaylorF2",
+    "RippleIMRPhenomD",
     "RippleIMRPhenomD_NRTidalv2",
+    "RippleIMRPhenomPv2",
     "RippleIMRPhenomXAS",
     "RippleIMRPhenomXAS_NRTidalv3",
+    "RippleIMRPhenomXHM",
     "RippleIMRPhenomXPHM",
     "RippleSineGaussian",
 ]

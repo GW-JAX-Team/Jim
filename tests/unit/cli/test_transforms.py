@@ -414,16 +414,15 @@ def test_adapt_ns_time_converts_t_c_to_t_det():
         }
     )
 
-    result = adapt_prior_for_ns_time(prior_cfg, TRIGGER_TIME, ifos, cfg)
+    result = adapt_prior_for_ns_time(prior_cfg, cfg)
 
     assert result is not None
     assert "t_c" not in result.root
     assert "t_det" in result.root
     spec = result.root["t_det"]
     assert isinstance(spec, UniformSpec)
-    # Bounds should be wider than the t_c prior
-    assert spec.min < TRIGGER_TIME - 0.1
-    assert spec.max > TRIGGER_TIME + 0.1
+    assert spec.min == prior_cfg.root["t_c"].min
+    assert spec.max == prior_cfg.root["t_c"].max
     # Insertion order preserved: t_det sits where t_c was
     assert list(result.root.keys()) == ["M_c", "t_det", "d_L"]
 
@@ -442,7 +441,7 @@ def test_adapt_ns_time_geocentric_no_conversion():
         }
     )
 
-    result = adapt_prior_for_ns_time(prior_cfg, TRIGGER_TIME, ifos, cfg)
+    result = adapt_prior_for_ns_time(prior_cfg, cfg)
 
     assert result is None  # no change needed
 
@@ -463,7 +462,7 @@ def test_adapt_ns_time_t_det_in_prior_no_conversion():
         }
     )
 
-    result = adapt_prior_for_ns_time(prior_cfg, TRIGGER_TIME, ifos, cfg)
+    result = adapt_prior_for_ns_time(prior_cfg, cfg)
 
     assert result is None  # t_det already in prior, no change
 
@@ -480,15 +479,15 @@ def test_adapt_ns_time_t_det_geocentric():
     hi = TRIGGER_TIME + 0.15
     prior_cfg = _make_prior_cfg({"t_det": {"type": "uniform", "min": lo, "max": hi}})
 
-    result = adapt_prior_for_ns_time(prior_cfg, TRIGGER_TIME, ifos, cfg)
+    result = adapt_prior_for_ns_time(prior_cfg, cfg)
 
     assert result is not None
     assert "t_c" in result.root
     assert "t_det" not in result.root
     spec = result.root["t_c"]
     assert isinstance(spec, UniformSpec)
-    assert spec.min < lo  # widened by max_delay
-    assert spec.max > hi
+    assert spec.min == lo
+    assert spec.max == hi
 
 
 def test_adapt_ns_time_non_uniform_t_c_raises():
@@ -506,4 +505,4 @@ def test_adapt_ns_time_non_uniform_t_c_raises():
     )
 
     with pytest.raises(ValueError, match="uniform"):
-        adapt_prior_for_ns_time(prior_cfg, TRIGGER_TIME, ifos, cfg)
+        adapt_prior_for_ns_time(prior_cfg, cfg)

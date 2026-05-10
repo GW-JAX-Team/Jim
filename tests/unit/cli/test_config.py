@@ -149,7 +149,7 @@ def test_dump_resolved_round_trip():
 
 
 def test_file_config_from_toml():
-    with open("tests/configs/GW150914_file.toml", "rb") as f:
+    with open("tests/fixtures/GW150914_test.toml", "rb") as f:
         raw = tomllib.load(f)
     cfg = PipelineConfig.model_validate(raw)
     assert isinstance(cfg.data, FileDataConfig)

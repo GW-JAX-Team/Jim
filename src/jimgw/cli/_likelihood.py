@@ -56,6 +56,14 @@ def build_likelihood(
     fixed_params = cfg.fixed_parameters if cfg.fixed_parameters else None
 
     if cfg.heterodyne is not None:
+        if cfg.time_marginalization is not None:
+            raise ValueError(
+                "time_marginalization cannot be used with heterodyne likelihood"
+            )
+        if cfg.distance_marginalization is not None:
+            raise ValueError(
+                "distance_marginalization cannot be used with heterodyne likelihood"
+            )
         if prior is None:
             raise ValueError(
                 "heterodyne likelihood requires the prior — pass prior= to build_likelihood"

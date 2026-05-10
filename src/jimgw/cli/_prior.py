@@ -86,6 +86,12 @@ def adapt_prior_for_ns_time(
     has_t_c = "t_c" in prior_cfg.root
     has_t_det = "t_det" in prior_cfg.root
 
+    if has_t_c and has_t_det:
+        raise ValueError(
+            "NS-AW sampler: both 't_c' and 't_det' appear in [prior]. "
+            "These are mutually exclusive — remove one before running."
+        )
+
     # Case 2: t_det in prior + geocentric sampling → adapt to t_c prior.
     if has_t_det and sampling_cfg.time_frame == "geocentric":
         t_det_spec = prior_cfg.root["t_det"]

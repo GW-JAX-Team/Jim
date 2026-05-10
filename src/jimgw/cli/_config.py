@@ -101,9 +101,9 @@ class WaveformConfig(BaseModel):
 #
 # Example TOML:
 #   [prior]
-#   M_c  = { type = "uniform",   low = 10.0, high = 80.0 }
+#   M_c  = { type = "uniform",   min = 10.0, max = 80.0 }
 #   iota = { type = "sine" }
-#   d_L  = { type = "power_law", low = 1.0, high = 2000.0, alpha = 2.0 }
+#   d_L  = { type = "power_law", min = 1.0, max = 2000.0, alpha = 2.0 }
 # ---------------------------------------------------------------------------
 
 

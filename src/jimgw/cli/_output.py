@@ -50,7 +50,7 @@ def write_outputs(jim, cfg) -> None:
 
     # Resolved config
     cfg_path = out_dir / "config.final.toml"
-    dumped = cfg.model_dump(mode="json")
+    dumped = cfg.model_dump(mode="json", exclude_none=True)
     if dumped.get("sampler", {}).get("type") == "flowmc":
         active = dumped["sampler"]["local_kernel"].lower()
         for kernel in ("mala", "hmc", "grw"):
@@ -74,10 +74,12 @@ def _save_corner(out_dir: Path, samples: dict, param_names: list[str] | None) ->
         return
 
     if param_names:
-        data = np.column_stack(
-            [np.asarray(samples[p]) for p in param_names if p in samples]
-        )
         labels = [p for p in param_names if p in samples]
+        if labels:
+            data = np.column_stack([np.asarray(samples[p]) for p in labels])
+        else:
+            labels = list(samples.keys())
+            data = np.column_stack([np.asarray(samples[p]) for p in labels])
     else:
         labels = list(samples.keys())
         data = np.column_stack([np.asarray(samples[p]) for p in labels])

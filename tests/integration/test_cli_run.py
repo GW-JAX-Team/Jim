@@ -3,6 +3,7 @@
 import tomllib
 from pathlib import Path
 
+import numpy as np
 import pytest
 import tomli_w
 from typer.testing import CliRunner
@@ -11,35 +12,33 @@ from jimgw.cli import app
 
 pytestmark = pytest.mark.integration
 
-_CONFIG = Path("tests/fixtures/GW150914_test.toml")
+_CONFIG = Path(__file__).resolve().parent.parent / "fixtures" / "GW150914_test.toml"
 _RUNNER = CliRunner()
 
 
-@pytest.fixture()
-def tmp_output(tmp_path):
-    """Yield a dedicated output subdirectory separate from the config file location."""
-    out = tmp_path / "output"
-    out.mkdir()
-    yield out
+@pytest.fixture(scope="module")
+def tmp_output(tmp_path_factory):
+    """Shared output directory for the module — created once, reused by all tests."""
+    return tmp_path_factory.mktemp("output")
 
 
-@pytest.fixture()
-def patched_config(tmp_output, tmp_path):
-    """Copy the test config and patch output.dir to tmp_output."""
+@pytest.fixture(scope="module")
+def patched_config(tmp_output, tmp_path_factory):
+    """Copy the test config and patch output.dir to tmp_output — created once per module."""
     with open(_CONFIG, "rb") as f:
         raw = tomllib.load(f)
     raw["output"]["dir"] = str(tmp_output)
     raw["output"]["overwrite"] = True
-    cfg_path = tmp_path / "test_cfg.toml"
+    cfg_path = tmp_path_factory.mktemp("cfg") / "test_cfg.toml"
     with open(cfg_path, "wb") as f:
         tomli_w.dump(raw, f)
     return cfg_path
 
 
-@pytest.fixture()
+@pytest.fixture(scope="module")
 def full_run_result(patched_config):
-    """Run the CLI once and cache the result for multiple tests."""
-    result = _RUNNER.invoke(app, [str(patched_config)])
+    """Run the CLI once per module and share the result across all tests."""
+    result = _RUNNER.invoke(app, [str(patched_config)], catch_exceptions=False)
     assert result.exit_code == 0, result.output
     return result
 
@@ -55,8 +54,6 @@ def test_full_run_output_files(full_run_result, tmp_output):
 
 
 def test_full_run_samples_shape(full_run_result, tmp_output):
-    import numpy as np
-
     data = np.load(tmp_output / "samples.npz")
     expected_params = {
         "M_c",

@@ -32,6 +32,9 @@ def build_data(
     """
     preset = get_detector_preset()
 
+    if not data_cfg.ifos:
+        raise ValueError("data.ifos must be a non-empty list")
+
     unknown = [ifo for ifo in data_cfg.ifos if ifo not in preset]
     if unknown:
         raise ValueError(

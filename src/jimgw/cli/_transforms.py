@@ -242,7 +242,7 @@ def infer_likelihood_transforms(
     logger.info(
         "likelihood transforms: %s",
         [
-            type(t).__name__ if hasattr(t, "__name__") else repr(t)
+            t.__name__ if hasattr(t, "__name__") else type(t).__name__
             for t in likelihood_transforms
         ],
     )
@@ -259,13 +259,8 @@ def validate_config(prior_params: frozenset[str], sampling_cfg: SamplingConfig) 
         for label in _SPHERE_SPIN_LABELS
     )
     has_cartesian_spin = bool(prior_params & _CARTESIAN_SPIN_PARAMS)
-    has_aligned_only = (
-        bool(prior_params & _ALIGNED_SPIN_PARAMS) and not has_cartesian_spin
-    )
 
-    active_spin_groups = sum(
-        [has_j_frame, has_sphere_spin, has_cartesian_spin or has_aligned_only]
-    )
+    active_spin_groups = sum([has_j_frame, has_sphere_spin, has_cartesian_spin])
     if active_spin_groups > 1:
         raise ValueError(
             "Spin parametrizations are mutually exclusive. "
@@ -380,7 +375,7 @@ def _build_unit_cube_transforms(
             BoundToBound(
                 name_mapping=(["azimuth"], ["azimuth_unit"]),
                 original_lower_bound=0.0,
-                original_upper_bound=_TWO_PI,
+                original_upper_bound=float(_TWO_PI),
                 target_lower_bound=0.0,
                 target_upper_bound=1.0,
             )

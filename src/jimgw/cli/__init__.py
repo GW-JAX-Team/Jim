@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Optional
 
 import typer
+from pydantic import ValidationError
 
 from jimgw.cli._config import PipelineConfig
 
@@ -103,18 +104,31 @@ def run(
         typer.echo(f"Error: config file not found: {config}", err=True)
         raise typer.Exit(code=2)
 
-    with open(config, "rb") as f:
-        raw = tomllib.load(f)
+    try:
+        with open(config, "rb") as f:
+            raw = tomllib.load(f)
+    except (OSError, tomllib.TOMLDecodeError) as exc:
+        typer.echo(f"Error reading config {config}:\n{exc}", err=True)
+        raise typer.Exit(code=2) from exc
 
     logger.info("Loaded config from %s", config)
 
     try:
         cfg = PipelineConfig.model_validate(raw)
-    except Exception as exc:
+    except ValidationError as exc:
         typer.echo(f"Config validation error:\n{exc}", err=True)
         raise typer.Exit(code=2) from exc
 
     _log_config_summary(cfg)
+
+    out_dir = cfg.output.dir
+    if out_dir.exists() and not cfg.output.overwrite:
+        typer.echo(
+            f"Error: output directory already exists: {out_dir}. "
+            "Set output.overwrite = true to allow overwriting.",
+            err=True,
+        )
+        raise typer.Exit(code=2)
 
     import jax
 

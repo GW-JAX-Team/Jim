@@ -33,7 +33,7 @@ _MINIMAL_RAW = {
     },
     "likelihood": {"f_min": 20.0, "f_max": 1024.0},
     "sampler": {"type": "flowmc"},
-    "output": {"dir": "/tmp/test"},
+    "output": {"dir": "tests/tmp/test"},
 }
 
 

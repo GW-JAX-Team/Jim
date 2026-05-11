@@ -18,9 +18,11 @@ nav = [
     {"Tutorials" = [
         "tutorials/index.md",
         {"Getting Started" = "tutorials/getting_started.md"},
+        {"GW150914 with CLI" = "tutorials/gw150914_cli.md"},
     ]},
     {"Guides" = [
         "guides/index.md",
+        {"Command Line Interface" = "guides/cli.md"},
         {"Data" = "guides/data.md"},
         {"Likelihood" = "guides/likelihood.md"},
         {"Prior" = "guides/prior.md"},

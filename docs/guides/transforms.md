@@ -104,7 +104,7 @@ likelihood_transforms = [MassRatioToSymmetricMassRatioTransform()]  # TypeError
 
 ## Mapping a prior to the unit cube (for NS-AW)
 
-The [BlackJAX NS-AW sampler](samplers.md#blackjax-ns-aw) requires the **sampling space** to be the unit hypercube `[0, 1]^n_dims`, with a uniform prior in the original parameter space.
+The [BlackJAX NS-AW sampler](samplers.md#blackjax-ns-aw) requires the **sampling space** to be the unit hypercube `[0, 1]^n_dims`.
 The `sample_transforms` must map every parameter from its physical support into `[0, 1]`.
 
 The key tool is `BoundToBound`, which linearly maps `[a, b] → [c, d]`:
@@ -171,17 +171,39 @@ sample_transforms += [
 
 This maps `d_L_unit ∈ [0, 1]` (where the sampler works) back to `d_L ∈ [d_L_min, d_L_max]` with a `d_L^2` prior, which is the volume-element prior for a uniformly distributed source population.
 
-### Periodic parameters
+### Rayleigh priors
 
-NS-AW wraps the `periodic` list of parameter names in the unit cube:
+For parameters with a Rayleigh prior, use the reversed `RayleighTransform` (the inverse CDF maps `x → exp(-(x/σ)²/2) ∈ [0, 1]`):
 
 ```python
-from jimgw.samplers.config import BlackJAXNSAWConfig
+from jimgw.core.transforms import RayleighTransform, reverse_bijective_transform
 
-config = BlackJAXNSAWConfig(
-    n_live=1000,
-    periodic=["ra_unit", "phase_c_unit"],  # names in sampling space
-)
+sample_transforms += [
+    reverse_bijective_transform(
+        RayleighTransform(
+            name_mapping=(["x_unit"], ["x"]),
+            sigma=0.5,
+        )
+    ),
+]
+```
+
+### Gaussian priors
+
+For parameters with a Gaussian prior, use the reversed `GaussianTransform`.  The forward direction maps `u ∈ (0, 1)` to `x = mu + sigma * ndtri(u)` (probit function); the reverse direction is the normal CDF `x → ndtr((x - mu) / sigma) ∈ (0, 1)`:
+
+```python
+from jimgw.core.transforms import GaussianTransform, reverse_bijective_transform
+
+sample_transforms += [
+    reverse_bijective_transform(
+        GaussianTransform(
+            name_mapping=(["x_unit"], ["x"]),
+            mu=0.0,
+            sigma=1.0,
+        )
+    ),
+]
 ```
 
 ## Passing Transforms to Jim

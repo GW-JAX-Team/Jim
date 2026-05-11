@@ -60,7 +60,7 @@ waveform = RippleIMRPhenomXAS(f_ref=20)
 
 prior = CombinePrior(
     [
-        UniformPrior(10.0, 80.0, parameter_names=["M_c"]),
+        UniformPrior(20.0, 40.0, parameter_names=["M_c"]),
         UniformPrior(0.125, 1.0, parameter_names=["q"]),
         UniformPrior(-0.99, 0.99, parameter_names=["s1_z"]),
         UniformPrior(-0.99, 0.99, parameter_names=["s2_z"]),

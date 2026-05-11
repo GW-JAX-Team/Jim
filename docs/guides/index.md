@@ -2,6 +2,7 @@
 
 These guides cover each Jim component in depth — what it does and how to use it.
 
+- **[CLI Config Reference](cli.md)** — Complete reference for the `jim-run` TOML config: all sections, fields, and defaults.
 - **[Data](data.md)** — How to load detector data from GWOSC, files, or frequency-domain arrays, and how to inject simulated signals.
 - **[Likelihood](likelihood.md)** — Setting up `TransientLikelihoodFD` and `HeterodynedTransientLikelihoodFD`, including analytic marginalisation and fixed parameters.
 - **[Prior](prior.md)** — Building priors with `CombinePrior` and the available 1-D prior distributions.

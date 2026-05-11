@@ -37,7 +37,7 @@ waveform = RippleIMRPhenomXAS(f_ref=20)
 # --- Inject signal ---
 
 gps = time.time() - 1000
-random_samples = jax.random.uniform(jax.random.key(42), (3,), maxval=jnp.pi)
+random_samples = jax.random.uniform(jax.random.key(0), (3,), maxval=jnp.pi)
 
 # Injection parameters in likelihood space.
 injection_parameters = {
@@ -84,12 +84,12 @@ for ifo in ifos:
 
 prior = CombinePrior(
     [
-        UniformPrior(25.0, 35.0, parameter_names=["M_c"]),
+        UniformPrior(20.0, 40.0, parameter_names=["M_c"]),
         UniformPrior(0.125, 1.0, parameter_names=["q"]),
         UniformPrior(-0.99, 0.99, parameter_names=["s1_z"]),
         UniformPrior(-0.99, 0.99, parameter_names=["s2_z"]),
         SinePrior(parameter_names=["iota"]),
-        PowerLawPrior(10.0, 3e3, 2.0, parameter_names=["d_L"]),
+        PowerLawPrior(1.0, 2000.0, 2.0, parameter_names=["d_L"]),
         UniformPrior(-0.1, 0.1, parameter_names=["t_c"]),
         UniformPrior(0.0, 2 * jnp.pi, parameter_names=["phase_c"]),
         UniformPrior(0.0, jnp.pi, parameter_names=["psi"]),

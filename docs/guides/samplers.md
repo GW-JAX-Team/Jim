@@ -111,7 +111,7 @@ This pulls in:
 
 Nested sampling with a bilby/dynesty-style adaptive differential-evolution acceptance-walk inner kernel.
 
-> **Unit-cube + uniform-prior requirement** — this sampler works in the unit hypercube `[0, 1]^n_dims`.  All parameters must be mapped into `[0, 1]` via `BoundToBound` sample transforms, and the prior in the original parameter space must be **uniform**.  A non-uniform prior (e.g. Gaussian) cannot be used with this sampler.
+> **Unit-cube requirement** — this sampler works in the unit hypercube `[0, 1]^n_dims`.  All parameters must be mapped into `[0, 1]` via sample transforms, which the CLI constructs automatically.
 
 ```python
 from jimgw.samplers.config import BlackJAXNSAWConfig

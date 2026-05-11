@@ -17,7 +17,7 @@ Jim is a JAX-based toolkit for Bayesian parameter estimation of gravitational-wa
 ## Documentation
 
 - **[Installation](installation.md)** — How to install Jim
-- **[Quick Start](quickstart.md)** — A basic example to get started
+- **[Quick Start](quickstart.md)** — Run your first analysis with `jim-run`
 - **[Tutorials](tutorials/index.md)** — Hands-on worked examples
-- **[Guides](guides/index.md)** — In-depth coverage of each module
+- **[Guides](guides/index.md)** — In-depth coverage of each module and the CLI config reference
 - **[FAQ](FAQ.md)** — Answers to common questions

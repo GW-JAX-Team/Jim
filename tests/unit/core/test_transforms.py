@@ -1,5 +1,6 @@
 import jax
 import jax.numpy as jnp
+import jax.scipy.special
 import numpy as np
 
 from jimgw.core.transforms import (
@@ -12,6 +13,8 @@ from jimgw.core.transforms import (
     BoundToUnbound,
     SingleSidedUnboundTransform,
     PowerLawTransform,
+    RayleighTransform,
+    GaussianTransform,
     reverse_bijective_transform,
 )
 from tests.utils import common_keys_allclose
@@ -289,6 +292,61 @@ class TestBasicTransforms:
         assert np.isfinite(jitted_log_det)
         jitted_recovered, jitted_inv_log_det = jit_inverse(jitted_output)
         assert np.allclose(jitted_recovered["x"], input_data["x"])
+        assert np.isfinite(jitted_inv_log_det)
+
+    def test_rayleigh_transform(self):
+        name_mapping = (["u"], ["x"])
+        sigma = 0.5
+        transform = RayleighTransform(name_mapping, sigma)
+        u = 0.3
+        input_data = {"u": u}
+        expected_x = sigma * jnp.sqrt(-2 * jnp.log(u))
+
+        output, log_det = transform.transform(input_data.copy())
+        assert np.allclose(output["x"], expected_x)
+        assert np.isfinite(log_det)
+
+        recovered, inv_log_det = transform.inverse(output.copy())
+        assert np.allclose(recovered["u"], u)
+        assert np.isfinite(inv_log_det)
+
+        jit_transform = jax.jit(lambda x: transform.transform(x))
+        jit_inverse = jax.jit(lambda x: transform.inverse(x))
+
+        jitted_output, jitted_log_det = jit_transform(input_data)
+        assert np.allclose(jitted_output["x"], expected_x)
+        assert np.isfinite(jitted_log_det)
+
+        jitted_recovered, jitted_inv_log_det = jit_inverse(jitted_output)
+        assert np.allclose(jitted_recovered["u"], u)
+        assert np.isfinite(jitted_inv_log_det)
+
+    def test_gaussian_transform(self):
+        name_mapping = (["u"], ["x"])
+        mu = 2.0
+        sigma = 0.5
+        transform = GaussianTransform(name_mapping, mu, sigma)
+        u = 0.3
+        input_data = {"u": u}
+        expected_x = mu + sigma * jax.scipy.special.ndtri(u)
+
+        output, log_det = transform.transform(input_data.copy())
+        assert np.allclose(output["x"], expected_x)
+        assert np.isfinite(log_det)
+
+        recovered, inv_log_det = transform.inverse(output.copy())
+        assert np.allclose(recovered["u"], u)
+        assert np.isfinite(inv_log_det)
+
+        jit_transform = jax.jit(lambda x: transform.transform(x))
+        jit_inverse = jax.jit(lambda x: transform.inverse(x))
+
+        jitted_output, jitted_log_det = jit_transform(input_data)
+        assert np.allclose(jitted_output["x"], expected_x)
+        assert np.isfinite(jitted_log_det)
+
+        jitted_recovered, jitted_inv_log_det = jit_inverse(jitted_output)
+        assert np.allclose(jitted_recovered["u"], u)
         assert np.isfinite(jitted_inv_log_det)
 
 

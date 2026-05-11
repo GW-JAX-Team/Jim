@@ -34,7 +34,12 @@ dependencies = [
     "pydantic>=2",
     "ripplegw>=0.1.1",
     "scipy>=1.17.1",
+    "tomli-w>=1.0",
+    "typer>=0.12",
 ]
+
+[project.scripts]
+jim-run = "jimgw.cli:app"
 
 [project.optional-dependencies]
 cuda = [

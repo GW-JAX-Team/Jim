@@ -64,7 +64,7 @@ waveform = RippleIMRPhenomXAS(f_ref=20)
 
 # --- Prior ---
 
-M_c_min, M_c_max = 10.0, 80.0
+M_c_min, M_c_max = 20.0, 40.0
 q_min, q_max = 0.125, 1.0
 d_L_min, d_L_max = 1.0, 2000.0
 t_det_min, t_det_max = -0.1, 0.1

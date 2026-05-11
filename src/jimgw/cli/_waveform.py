@@ -7,6 +7,7 @@ from jimgw.core.single_event.waveform import (
     RippleIMRPhenomPv2,
     RippleIMRPhenomXAS,
     RippleIMRPhenomXAS_NRTidalv3,
+    RippleIMRPhenomXHM,
     RippleIMRPhenomXPHM,
     RippleSineGaussian,
     RippleTaylorF2,
@@ -21,6 +22,7 @@ _REGISTRY = {
     "IMRPhenomD_NRTidalv2": RippleIMRPhenomD_NRTidalv2,
     "IMRPhenomXAS": RippleIMRPhenomXAS,
     "IMRPhenomXAS_NRTidalv3": RippleIMRPhenomXAS_NRTidalv3,
+    "IMRPhenomXHM": RippleIMRPhenomXHM,
     "IMRPhenomXPHM": RippleIMRPhenomXPHM,
     "SineGaussian": RippleSineGaussian,
 }

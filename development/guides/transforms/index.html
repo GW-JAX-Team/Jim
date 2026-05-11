@@ -600,6 +600,33 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/gw150914_cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  GW150914 with CLI
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -675,6 +702,33 @@
     
   
   Guides
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Command Line Interface
 
     
   </span>
@@ -978,10 +1032,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#periodic-parameters" class="md-nav__link">
+  <a href="#rayleigh-priors" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Periodic parameters
+        Rayleigh priors
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gaussian-priors" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Gaussian priors
       </span>
     </span>
   </a>
@@ -2213,10 +2278,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#periodic-parameters" class="md-nav__link">
+  <a href="#rayleigh-priors" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Periodic parameters
+        Rayleigh priors
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gaussian-priors" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Gaussian priors
       </span>
     </span>
   </a>
@@ -2412,7 +2488,7 @@
 </tbody>
 </table>
 <h2 id="mapping-a-prior-to-the-unit-cube-for-ns-aw">Mapping a prior to the unit cube (for NS-AW)<a class="headerlink" href="#mapping-a-prior-to-the-unit-cube-for-ns-aw" title="Permanent link">¤</a></h2>
-<p>The <a href="../samplers/#blackjax-ns-aw">BlackJAX NS-AW sampler</a> requires the <strong>sampling space</strong> to be the unit hypercube <code>[0, 1]^n_dims</code>, with a uniform prior in the original parameter space.
+<p>The <a href="../samplers/#blackjax-ns-aw">BlackJAX NS-AW sampler</a> requires the <strong>sampling space</strong> to be the unit hypercube <code>[0, 1]^n_dims</code>.
 The <code>sample_transforms</code> must map every parameter from its physical support into <code>[0, 1]</code>.</p>
 <p>The key tool is <code>BoundToBound</code>, which linearly maps <code>[a, b] → [c, d]</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.transforms</span><span class="w"> </span><span class="kn">import</span> <span class="n">BoundToBound</span>
@@ -2462,14 +2538,32 @@ The <code>sample_transforms</code> must map every parameter from its physical su
 <span class="p">]</span>
 </code></pre></div>
 <p>This maps <code>d_L_unit ∈ [0, 1]</code> (where the sampler works) back to <code>d_L ∈ [d_L_min, d_L_max]</code> with a <code>d_L^2</code> prior, which is the volume-element prior for a uniformly distributed source population.</p>
-<h3 id="periodic-parameters">Periodic parameters<a class="headerlink" href="#periodic-parameters" title="Permanent link">¤</a></h3>
-<p>NS-AW wraps the <code>periodic</code> list of parameter names in the unit cube:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.samplers.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">BlackJAXNSAWConfig</span>
+<h3 id="rayleigh-priors">Rayleigh priors<a class="headerlink" href="#rayleigh-priors" title="Permanent link">¤</a></h3>
+<p>For parameters with a Rayleigh prior, use the reversed <code>RayleighTransform</code> (the inverse CDF maps <code>x → exp(-(x/σ)²/2) ∈ [0, 1]</code>):</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.transforms</span><span class="w"> </span><span class="kn">import</span> <span class="n">RayleighTransform</span><span class="p">,</span> <span class="n">reverse_bijective_transform</span>
 
-<span class="n">config</span> <span class="o">=</span> <span class="n">BlackJAXNSAWConfig</span><span class="p">(</span>
-    <span class="n">n_live</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
-    <span class="n">periodic</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;ra_unit&quot;</span><span class="p">,</span> <span class="s2">&quot;phase_c_unit&quot;</span><span class="p">],</span>  <span class="c1"># names in sampling space</span>
-<span class="p">)</span>
+<span class="n">sample_transforms</span> <span class="o">+=</span> <span class="p">[</span>
+    <span class="n">reverse_bijective_transform</span><span class="p">(</span>
+        <span class="n">RayleighTransform</span><span class="p">(</span>
+            <span class="n">name_mapping</span><span class="o">=</span><span class="p">([</span><span class="s2">&quot;x_unit&quot;</span><span class="p">],</span> <span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">]),</span>
+            <span class="n">sigma</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">),</span>
+<span class="p">]</span>
+</code></pre></div>
+<h3 id="gaussian-priors">Gaussian priors<a class="headerlink" href="#gaussian-priors" title="Permanent link">¤</a></h3>
+<p>For parameters with a Gaussian prior, use the reversed <code>GaussianTransform</code>.  The forward direction maps <code>u ∈ (0, 1)</code> to <code>x = mu + sigma * ndtri(u)</code> (probit function); the reverse direction is the normal CDF <code>x → ndtr((x - mu) / sigma) ∈ (0, 1)</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.transforms</span><span class="w"> </span><span class="kn">import</span> <span class="n">GaussianTransform</span><span class="p">,</span> <span class="n">reverse_bijective_transform</span>
+
+<span class="n">sample_transforms</span> <span class="o">+=</span> <span class="p">[</span>
+    <span class="n">reverse_bijective_transform</span><span class="p">(</span>
+        <span class="n">GaussianTransform</span><span class="p">(</span>
+            <span class="n">name_mapping</span><span class="o">=</span><span class="p">([</span><span class="s2">&quot;x_unit&quot;</span><span class="p">],</span> <span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">]),</span>
+            <span class="n">mu</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+            <span class="n">sigma</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">),</span>
+<span class="p">]</span>
 </code></pre></div>
 <h2 id="passing-transforms-to-jim">Passing Transforms to Jim<a class="headerlink" href="#passing-transforms-to-jim" title="Permanent link">¤</a></h2>
 <p>Both lists are passed to the <code>Jim</code> constructor:</p>

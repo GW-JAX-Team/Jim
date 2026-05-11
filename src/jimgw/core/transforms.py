@@ -799,6 +799,52 @@ class RayleighTransform(BijectiveTransform):
         }
 
 
+class GaussianTransform(BijectiveTransform):
+    """CDF transform from Uniform(0, 1) to a Gaussian (normal) distribution.
+
+    Maps ``u ∈ (0, 1)`` to ``x = mu + sigma * ndtri(u)`` using the probit
+    (quantile) function.  The inverse maps ``x → ndtr((x - mu) / sigma) ∈ (0, 1)``
+    using the normal CDF.
+
+    Attributes:
+        mu: Mean of the Gaussian distribution.
+        sigma: Standard deviation of the Gaussian distribution.
+    """
+
+    mu: Float
+    sigma: Float
+
+    def __repr__(self):
+        return f"GaussianTransform(name_mapping={self.name_mapping}, mu={self.mu}, sigma={self.sigma})"
+
+    def __init__(
+        self,
+        name_mapping: tuple[list[str], list[str]],
+        mu: Float,
+        sigma: Float,
+    ):
+        """
+        Args:
+            name_mapping: Pair of ``(input_names, output_names)``.
+            mu: Mean of the Gaussian distribution.
+            sigma: Standard deviation of the Gaussian distribution.
+        """
+        super().__init__(name_mapping)
+        self.mu = mu
+        self.sigma = sigma
+        self.transform_func = lambda x: {
+            name_mapping[1][i]: mu
+            + sigma * jax.scipy.special.ndtri(x[name_mapping[0][i]])
+            for i in range(len(name_mapping[0]))
+        }
+        self.inverse_transform_func = lambda x: {
+            name_mapping[0][i]: jax.scipy.special.ndtr(
+                (x[name_mapping[1][i]] - mu) / sigma
+            )
+            for i in range(len(name_mapping[1]))
+        }
+
+
 def reverse_bijective_transform(
     original_transform: BijectiveTransform,
 ) -> BijectiveTransform:

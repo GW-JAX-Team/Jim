@@ -506,14 +506,6 @@ class PipelineConfig(BaseModel):
         if self.sampler.type != "blackjax-ns-aw":
             return self
 
-        for name, spec in self.prior.root.items():
-            if isinstance(spec, GaussianSpec):
-                raise ValueError(
-                    f"GaussianSpec for parameter '{name}' has infinite support and "
-                    "cannot be automatically mapped to [0, 1] for NS-AW. "
-                    "Use a bounded prior (uniform, sine, cosine, power_law, rayleigh) instead."
-                )
-
         prior_keys = frozenset(self.prior.root.keys())
 
         if "t_det" in prior_keys and not isinstance(

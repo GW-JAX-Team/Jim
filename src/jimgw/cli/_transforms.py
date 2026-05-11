@@ -50,6 +50,7 @@ from jimgw.core.transforms import (
     BijectiveTransform,
     BoundToBound,
     CosineTransform,
+    GaussianTransform,
     NtoMTransform,
     PowerLawTransform,
     RayleighTransform,
@@ -261,7 +262,7 @@ def _build_unit_cube_transforms(
     prior to ``t_det`` with exact bounds) and AFTER ``infer_sample_transforms``.
     The returned list is appended to ``sample_transforms``.
 
-    Raises ``AssertionError`` for ``GaussianSpec``.
+    Raises ``AssertionError`` for unknown spec types.
     """
     unit_transforms: list[BijectiveTransform] = []
 
@@ -383,11 +384,18 @@ def _unit_cube_for_spec(name: str, spec) -> list:
                 )
             )
         ]
-    assert not isinstance(spec, GaussianSpec), (
-        f"Prior type 'GaussianSpec' for parameter '{name}' has infinite "
-        "support and cannot be automatically mapped to [0, 1] for NS-AW. "
-        "Use a bounded prior (uniform, sine, cosine, power_law, rayleigh) instead."
-    )
+    if isinstance(spec, GaussianSpec):
+        # GaussianPrior: use the inverse CDF (probit) to map u ∈ (0,1) → x ∈ ℝ.
+        # GaussianTransform forward maps u → mu + sigma*ndtri(u); reverse maps x → ndtr((x-mu)/sigma) ∈ (0,1).
+        return [
+            reverse_bijective_transform(
+                GaussianTransform(
+                    name_mapping=([f"{name}_unit"], [name]),
+                    mu=spec.loc,
+                    sigma=spec.scale,
+                )
+            )
+        ]
     assert False, f"Unknown prior spec type for '{name}': {type(spec)}"
 
 

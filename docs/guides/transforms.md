@@ -188,6 +188,24 @@ sample_transforms += [
 ]
 ```
 
+### Gaussian priors
+
+For parameters with a Gaussian prior, use the reversed `GaussianTransform`.  The forward direction maps `u ∈ (0, 1)` to `x = mu + sigma * ndtri(u)` (probit function); the reverse direction is the normal CDF `x → ndtr((x - mu) / sigma) ∈ (0, 1)`:
+
+```python
+from jimgw.core.transforms import GaussianTransform, reverse_bijective_transform
+
+sample_transforms += [
+    reverse_bijective_transform(
+        GaussianTransform(
+            name_mapping=(["x_unit"], ["x"]),
+            mu=0.0,
+            sigma=1.0,
+        )
+    ),
+]
+```
+
 ## Passing Transforms to Jim
 
 Both lists are passed to the `Jim` constructor:

@@ -15,6 +15,8 @@ from jimgw.cli._config import (
     PriorConfig,
     RayleighSpec,
     SineSpec,
+    UniformSpec,
+    GaussianSpec,
     WaveformConfig,
 )
 
@@ -90,22 +92,48 @@ def test_pipeline_config_injection_data():
     assert cfg.data.zero_noise is False  # default
 
 
-def test_prior_config_dict_keys():
-    raw_prior = {
-        "M_c": {"type": "rayleigh", "scale": 15.0},
-        "q": {"type": "uniform", "min": 0.125, "max": 1.0},
-        "iota": {"type": "sine"},
-        "dec": {"type": "cosine"},
-        "d_L": {"type": "power_law", "min": 1.0, "max": 2000.0, "alpha": 2.0},
-    }
-    cfg = PriorConfig.model_validate(raw_prior)
-    assert list(cfg.root.keys()) == ["M_c", "q", "iota", "dec", "d_L"]
-    assert isinstance(cfg.root["M_c"], RayleighSpec)
-    assert cfg.root["M_c"].scale == 15.0
+def test_prior_spec_uniform():
+    cfg = PriorConfig.model_validate({"M_c": {"type": "uniform", "min": 10.0, "max": 80.0}})
+    spec = cfg.root["M_c"]
+    assert isinstance(spec, UniformSpec)
+    assert spec.min == 10.0
+    assert spec.max == 80.0
+
+
+def test_prior_spec_rayleigh():
+    cfg = PriorConfig.model_validate({"sigma": {"type": "rayleigh", "scale": 15.0}})
+    spec = cfg.root["sigma"]
+    assert isinstance(spec, RayleighSpec)
+    assert spec.scale == 15.0
+
+
+def test_prior_spec_gaussian():
+    cfg = PriorConfig.model_validate({"x": {"type": "gaussian", "loc": 2.0, "scale": 0.5}})
+    spec = cfg.root["x"]
+    assert isinstance(spec, GaussianSpec)
+    assert spec.loc == 2.0
+    assert spec.scale == 0.5
+
+
+def test_prior_spec_sine():
+    cfg = PriorConfig.model_validate({"iota": {"type": "sine"}})
     assert isinstance(cfg.root["iota"], SineSpec)
+
+
+def test_prior_spec_cosine():
+    cfg = PriorConfig.model_validate({"dec": {"type": "cosine"}})
     assert isinstance(cfg.root["dec"], CosineSpec)
-    assert isinstance(cfg.root["d_L"], PowerLawSpec)
-    assert cfg.root["d_L"].alpha == 2.0
+
+
+def test_prior_spec_power_law():
+    cfg = PriorConfig.model_validate(
+        {"d_L": {"type": "power_law", "min": 1.0, "max": 2000.0, "alpha": 2.0}}
+    )
+    spec = cfg.root["d_L"]
+    assert isinstance(spec, PowerLawSpec)
+    assert spec.min == 1.0
+    assert spec.max == 2000.0
+    assert spec.alpha == 2.0
 
 
 def test_prior_insertion_order_preserved():

@@ -185,7 +185,7 @@ def test_file_data_config_missing_strain_rejected():
                 **_MINIMAL_RAW,
                 "data": {
                     "type": "file",
-                    "ifos": ["H1", "L1"],
+                    "detectors": ["H1", "L1"],
                     "trigger_time": 1126259462.4,
                     "strain_files": {"H1": "tests/fixtures/GW150914_strain_H1.npz"},
                     "psd_files": {
@@ -204,7 +204,7 @@ def test_file_data_config_missing_psd_rejected():
                 **_MINIMAL_RAW,
                 "data": {
                     "type": "file",
-                    "ifos": ["H1", "L1"],
+                    "detectors": ["H1", "L1"],
                     "trigger_time": 1126259462.4,
                     "strain_files": {
                         "H1": "tests/fixtures/GW150914_strain_H1.npz",

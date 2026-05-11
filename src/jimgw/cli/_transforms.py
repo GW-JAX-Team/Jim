@@ -412,7 +412,7 @@ def to_likelihood_space(
     p = {k: jnp.float64(v) for k, v in params.items()}
 
     # azimuth/zenith → ra/dec (must come before t_det conversion, which needs ra/dec)
-    if _DETECTOR_SKY_PARAMS & p.keys():
+    if _DETECTOR_SKY_PARAMS <= p.keys():
         t_sky = SkyFrameToDetectorFrameSkyPositionTransform(trigger_time, ifos)
         p = dict(t_sky.backward(p))
 

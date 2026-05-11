@@ -94,7 +94,7 @@ def run(
             init.write_text(_INIT_TEMPLATE)
         except OSError as exc:
             typer.echo(f"Error: could not write template to {init}: {exc}", err=True)
-            raise typer.Exit(code=2)
+            raise typer.Exit(code=2) from exc
         typer.echo(f"Template config written to {init}")
         raise typer.Exit()
 

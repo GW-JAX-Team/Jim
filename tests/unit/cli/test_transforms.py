@@ -55,11 +55,13 @@ def _infer(prior_params, sky_frame="detector", time_frame="detector"):
 
     ifos = _make_ifos()
     cfg = SamplingConfig(sky_frame=sky_frame, time_frame=time_frame)  # type: ignore[arg-type]
+    prior_cfg = PriorConfig.model_validate({})
     sample_t = infer_sample_transforms(
         frozenset(prior_params),
         TRIGGER_TIME,
         ifos,
         cfg,
+        prior_cfg=prior_cfg,
     )
     lh_t = infer_likelihood_transforms(
         frozenset(prior_params),
@@ -491,18 +493,5 @@ def test_adapt_ns_time_t_det_geocentric():
     assert isinstance(spec, UniformSpec)
     assert spec.min == lo
     assert spec.max == hi
-
-
-def test_adapt_ns_time_non_uniform_t_c_raises():
-    """Non-uniform t_c prior cannot be auto-converted for NS."""
-    cfg = SamplingConfig(time_frame="detector")
-    prior_cfg = _make_prior_cfg(
-        {
-            "t_c": {"type": "gaussian", "loc": 0.0, "scale": 0.05},
-        }
-    )
-
-    with pytest.raises(AssertionError, match="uniform"):
-        adapt_prior_for_ns_time(prior_cfg, cfg)
 
 

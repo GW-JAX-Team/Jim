@@ -331,3 +331,39 @@ def test_incomplete_detector_sky_rejected():
                 "sampling": {"sky_frame": "detector"},
             }
         )
+
+
+# ---------------------------------------------------------------------------
+# NS-AW sampler prior constraints
+# ---------------------------------------------------------------------------
+
+
+def test_ns_aw_non_uniform_t_c_rejected():
+    with pytest.raises(ValidationError, match="uniform"):
+        PipelineConfig.model_validate(
+            {
+                **_MINIMAL_RAW,
+                "prior": {
+                    "M_c": {"type": "uniform", "min": 10.0, "max": 80.0},
+                    "q": {"type": "uniform", "min": 0.125, "max": 1.0},
+                    "t_c": {"type": "gaussian", "loc": 0.0, "scale": 0.05},
+                },
+                "sampler": {"type": "blackjax-ns-aw"},
+            }
+        )
+
+
+def test_ns_aw_non_uniform_t_det_rejected():
+    with pytest.raises(ValidationError, match="uniform"):
+        PipelineConfig.model_validate(
+            {
+                **_MINIMAL_RAW,
+                "prior": {
+                    "M_c": {"type": "uniform", "min": 10.0, "max": 80.0},
+                    "q": {"type": "uniform", "min": 0.125, "max": 1.0},
+                    "t_det": {"type": "gaussian", "loc": 0.0, "scale": 0.05},
+                },
+                "sampler": {"type": "blackjax-ns-aw"},
+            }
+        )
+

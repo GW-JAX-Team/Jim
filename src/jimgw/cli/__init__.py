@@ -191,6 +191,7 @@ def run(
         ifos,
         cfg.sampling,
         cfg.waveform.f_ref,
+        phase_marginalization=cfg.likelihood.phase_marginalization,
     )
 
     # Stage 6: likelihood

@@ -146,6 +146,7 @@ def infer_likelihood_transforms(
     ifos: list[GroundBased2G],
     sampling_cfg: SamplingConfig,
     waveform_f_ref: float,
+    phase_marginalization: bool = False,
 ) -> list[NtoMTransform]:
     """Infer likelihood transforms (prior space → likelihood space).
 
@@ -157,6 +158,9 @@ def infer_likelihood_transforms(
         waveform_f_ref: Reference frequency from [waveform] — passed to
             ``SpinAnglesToCartesianSpinTransform`` to match the waveform
             spin-angle convention (same as bilby's ``reference_frequency``).
+        phase_marginalization: When ``True``, ``phase_c`` is not a free
+            parameter, so ``SpinAnglesToCartesianSpinTransform`` is built
+            with ``fixed_phase=True`` (uses ``phase_c=0``).
 
     Returns:
         List of N-to-M transforms to pass to Jim as ``likelihood_transforms``.
@@ -179,11 +183,14 @@ def infer_likelihood_transforms(
     # J-frame spin angles → Cartesian spins + iota
     if has_j_frame:
         likelihood_transforms.append(
-            SpinAnglesToCartesianSpinTransform(freq_ref=waveform_f_ref)
+            SpinAnglesToCartesianSpinTransform(
+                freq_ref=waveform_f_ref, fixed_phase=phase_marginalization
+            )
         )
         logger.debug(
-            "Added SpinAnglesToCartesianSpinTransform(freq_ref=%.1f)",
+            "Added SpinAnglesToCartesianSpinTransform(freq_ref=%.1f, fixed_phase=%s)",
             waveform_f_ref,
+            phase_marginalization,
         )
 
     # Spherical per-spin → Cartesian

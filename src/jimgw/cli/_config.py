@@ -395,6 +395,12 @@ class PipelineConfig(BaseModel):
                 "('azimuth'/'zenith') but [sampling].sky_frame != 'detector'. "
                 "Use 'ra'/'dec' in injection_parameters, or set sky_frame = 'detector'."
             )
+        if inj & _J_FRAME_SPIN_PARAMS and "phase_c" not in inj:
+            raise ValueError(
+                "injection_parameters uses J-frame spin angles but 'phase_c' is missing. "
+                "SpinAnglesToCartesianSpinTransform requires 'phase_c' as a conditioning "
+                "parameter. Add 'phase_c' to injection_parameters."
+            )
         return self
 
     @model_validator(mode="after")

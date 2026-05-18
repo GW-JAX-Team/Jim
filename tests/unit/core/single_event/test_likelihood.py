@@ -1257,9 +1257,12 @@ class TestMultibandedTransientLikelihoodFD:
             reference_chirp_mass=20.0,
         )
         assert isinstance(likelihood, MultibandedTransientLikelihoodFD)
+        assert likelihood.minimum_frequency == fmin
+        assert likelihood.maximum_frequency == fmax
         assert likelihood.trigger_time == gps
         assert hasattr(likelihood, "gmst")
         assert likelihood.reference_chirp_mass == 20.0
+        assert likelihood.n_bands > 0
 
     def test_band_setup(self, detectors_and_waveform):
         ifos, waveform, fmin, fmax, gps = detectors_and_waveform
@@ -1300,6 +1303,24 @@ class TestMultibandedTransientLikelihoodFD:
                 reference_chirp_mass=20.0,
             )
 
+    def test_partially_initialized_data_raises(self, detectors_and_waveform):
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        extra = get_H1()
+        extra.set_psd(
+            PowerSpectrum.from_file(
+                str(FIXTURES_DIR / f"GW150914_psd_{extra.name}.npz")
+            )
+        )
+        with pytest.raises(ValueError, match=r"H1.*does not have initialized data"):
+            MultibandedTransientLikelihoodFD(
+                detectors=ifos + [extra],
+                waveform=waveform,
+                f_min=fmin,
+                f_max=fmax,
+                trigger_time=gps,
+                reference_chirp_mass=20.0,
+            )
+
     def test_uninitialized_psd_raises(self):
         gps = 1126259462.4
         ifos = [get_H1(), get_L1()]
@@ -1317,34 +1338,42 @@ class TestMultibandedTransientLikelihoodFD:
                 reference_chirp_mass=20.0,
             )
 
+    def test_partially_initialized_psd_raises(self, detectors_and_waveform):
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        extra = get_H1()
+        extra.set_data(
+            Data.from_file(str(FIXTURES_DIR / f"GW150914_strain_{extra.name}.npz"))
+        )
+        with pytest.raises(ValueError, match=r"H1.*does not have initialized PSD"):
+            MultibandedTransientLikelihoodFD(
+                detectors=ifos + [extra],
+                waveform=waveform,
+                f_min=fmin,
+                f_max=fmax,
+                trigger_time=gps,
+                reference_chirp_mass=20.0,
+            )
+
     # ── Evaluation ────────────────────────────────────────────────────────────
 
-    def test_evaluate_is_finite(self, detectors_and_waveform):
+    def test_evaluation(self, detectors_and_waveform):
         ifos, waveform, fmin, fmax, gps = detectors_and_waveform
         likelihood = MultibandedTransientLikelihoodFD(
-            detectors=ifos,
-            waveform=waveform,
-            f_min=fmin,
-            f_max=fmax,
-            trigger_time=gps,
-            reference_chirp_mass=20.0,
-        )
-        assert jnp.isfinite(likelihood.evaluate(example_params(), {}))
-
-    def test_evaluate_jit_matches(self, detectors_and_waveform):
-        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
-        likelihood = MultibandedTransientLikelihoodFD(
-            detectors=ifos,
-            waveform=waveform,
-            f_min=fmin,
-            f_max=fmax,
-            trigger_time=gps,
-            reference_chirp_mass=20.0,
+            detectors=ifos, waveform=waveform, f_min=fmin, f_max=fmax,
+            trigger_time=gps, reference_chirp_mass=20.0,
         )
         params = example_params()
-        result = likelihood.evaluate(params, {})
-        result_jit = jax.jit(likelihood.evaluate)(params, {})
-        assert jnp.allclose(result, result_jit)
+        ll = likelihood.evaluate(params, {})
+        assert jnp.isfinite(ll)
+        ll_jit = jax.jit(likelihood.evaluate)(params, {})
+        assert jnp.isfinite(ll_jit)
+        assert jnp.allclose(ll, ll_jit)
+        ll_diff = MultibandedTransientLikelihoodFD(
+            detectors=ifos, waveform=waveform,
+            f_min={"H1": fmin, "L1": fmin + 1.0}, f_max=fmax,
+            trigger_time=gps, reference_chirp_mass=20.0,
+        ).evaluate(params, {})
+        assert jnp.isfinite(ll_diff)
 
     def test_evaluate_does_not_mutate_params(self, detectors_and_waveform):
         ifos, waveform, fmin, fmax, gps = detectors_and_waveform
@@ -1364,7 +1393,8 @@ class TestMultibandedTransientLikelihoodFD:
         for k, v in values_before.items():
             assert float(params[k]) == v
 
-    def test_different_accuracy_factors(self, detectors_and_waveform):
+    @pytest.mark.slow
+    def test_accuracy_factor_evaluation(self, detectors_and_waveform):
         ifos, waveform, fmin, fmax, gps = detectors_and_waveform
         params = example_params()
         for acc in [1.0, 5.0, 10.0]:

@@ -467,6 +467,7 @@ class UniformPrior(SequentialTransformPrior):
         parameter_names: list[str],
     ):
         assert len(parameter_names) == 1, "UniformPrior needs to be 1D distributions"
+        assert xmin < xmax, "xmin must be less than xmax"
         self.xmax = xmax
         self.xmin = xmin
         super().__init__(
@@ -515,6 +516,7 @@ class GaussianPrior(SequentialTransformPrior):
             parameter_names: List with a single parameter name.
         """
         assert len(parameter_names) == 1, "GaussianPrior needs to be 1D distributions"
+        assert sigma > 0, "sigma must be positive"
         self.mu = mu
         self.sigma = sigma
         super().__init__(
@@ -659,6 +661,7 @@ class RayleighPrior(BoundedMixin, SequentialTransformPrior):
             parameter_names: List with a single parameter name.
         """
         assert len(parameter_names) == 1, "RayleighPrior needs to be 1D distributions"
+        assert sigma > 0, "sigma must be positive"
         self.sigma = sigma
         super().__init__(
             [UniformPrior(0.0, 1.0, [f"{parameter_names[0]}_base"])],

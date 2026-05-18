@@ -1053,56 +1053,22 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
 
         logger.info("Initializing multi-banded likelihood...")
 
-        # ── Infer reference_chirp_mass from prior when not provided ──────────
-        if reference_chirp_mass is None:
-            if prior is not None:
-                mc_min = self._infer_Mc_min(prior)
-                if mc_min is not None:
-                    reference_chirp_mass = mc_min
-                    logger.info(
-                        "reference_chirp_mass inferred from M_c prior minimum: %.4f M_sun",
-                        reference_chirp_mass,
-                    )
-                else:
-                    raise ValueError(
-                        "reference_chirp_mass=None but no M_c prior found in prior. "
-                        "Pass either reference_chirp_mass or a prior "
-                        "with an M_c component to infer it automatically."
-                    )
-            else:
-                raise ValueError(
-                    "Either reference_chirp_mass or prior with M_c component must be "
-                    "provided to infer reference_chirp_mass automatically."
-                )
+        reference_chirp_mass = self._resolve_reference_chirp_mass(
+            reference_chirp_mass, prior
+        )
+        time_offset, delta_f_end = self._resolve_time_params(
+            time_offset, delta_f_end, prior, float(trigger_time), detectors
+        )
+        self._validate_banding_params(
+            reference_chirp_mass,
+            highest_mode,
+            accuracy_factor,
+            time_offset,
+            delta_f_end,
+            min_banding_duration,
+            max_banding_frequency,
+        )
 
-        # ── Infer time_offset / delta_f_end from prior when not provided ─────
-        if time_offset is None or delta_f_end is None:
-            inferred_to, inferred_dfe = (
-                self._infer_time_offsets(prior, float(trigger_time), detectors)
-                if prior is not None
-                else (None, None)
-            )
-            if time_offset is None:
-                if inferred_to is not None:
-                    time_offset = inferred_to
-                    logger.info("time_offset inferred from prior: %.4f s", time_offset)
-                else:
-                    time_offset = 2.12
-                    logger.warning(
-                        "time_offset cannot be inferred from prior; using default 2.12 s"
-                    )
-            if delta_f_end is None:
-                if inferred_dfe is not None:
-                    delta_f_end = inferred_dfe
-                    logger.info("delta_f_end inferred from prior: %.4f Hz", delta_f_end)
-                else:
-                    delta_f_end = 53.0
-                    logger.warning(
-                        "delta_f_end cannot be inferred from prior; using default 53.0 Hz"
-                    )
-
-        # Store parameters — reference_chirp_mass is guaranteed non-None here
-        assert reference_chirp_mass is not None
         self.reference_chirp_mass = reference_chirp_mass
         self.reference_chirp_mass_in_second = reference_chirp_mass * MTSUN
         self.highest_mode = highest_mode
@@ -1111,7 +1077,6 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
         self.delta_f_end = delta_f_end
         self.min_banding_duration = min_banding_duration
 
-        # Get frequency bounds from detectors
         _f_mins = []
         _f_maxs = []
         for detector in detectors:
@@ -1124,21 +1089,20 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
         self.minimum_frequency = min(_f_mins)
         self.maximum_frequency = max(_f_maxs)
 
-        # Compute maximum banding frequency based on validity of stationary phase approx
-        fmax_theoretical = (
+        fmax_spa = (
             (15 / 968) ** (3 / 5)
             * (self.highest_mode / (2 * jnp.pi)) ** (8 / 5)
             / self.reference_chirp_mass_in_second
         )
-        if max_banding_frequency is not None:
-            self.max_banding_frequency = min(max_banding_frequency, fmax_theoretical)
-        else:
-            self.max_banding_frequency = fmax_theoretical
+        self.max_banding_frequency = (
+            min(max_banding_frequency, fmax_spa)
+            if max_banding_frequency is not None
+            else fmax_spa
+        )
 
         self.trigger_time = trigger_time
         self.gmst = compute_gmst(trigger_time)
 
-        # Set up multibanding
         self._setup_frequency_bands()
         self._setup_integers()
         self._setup_waveform_frequency_points()
@@ -1147,10 +1111,14 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
 
         logger.info("Multi-banding setup complete with %d bands", self.n_bands)
 
-    # ── Prior-inference helpers ───────────────────────────────────────────────
+    # ── Prior-inference and validation helpers ────────────────────────────────
 
-    def _find_subprior(self, prior: Any, param_name: str) -> Optional[Any]:
-        """Return the leaf prior responsible for *param_name*, or None."""
+    def _find_leaf_prior(self, prior: Any, param_name: str) -> Optional[Any]:
+        """Recursively search *prior* for the bounded leaf that owns *param_name*.
+
+        Returns the first component that has ``xmin``/``xmax`` attributes and
+        lists *param_name* in its ``parameter_names``, or ``None`` if not found.
+        """
         if param_name not in prior.parameter_names:
             return None
         if hasattr(prior, "xmin"):
@@ -1159,43 +1127,116 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
             components = prior.base_prior
             if hasattr(components, "__iter__"):
                 for p in components:
-                    result = self._find_subprior(p, param_name)
+                    result = self._find_leaf_prior(p, param_name)
                     if result is not None:
                         return result
         return None
 
-    def _infer_Mc_min(self, prior: Any) -> Optional[float]:
-        """Extract the minimum chirp mass bound from *prior*, or None."""
-        p = self._find_subprior(prior, "M_c")
-        return float(p.xmin) if p is not None else None
-
-    def _infer_time_offsets(
+    def _resolve_reference_chirp_mass(
         self,
-        prior: Any,
+        reference_chirp_mass: Optional[Float],
+        prior: Optional[Any],
+    ) -> float:
+        """Return ``reference_chirp_mass``, inferring from the M_c prior minimum when not provided."""
+        if reference_chirp_mass is not None:
+            return reference_chirp_mass
+        if prior is None:
+            raise ValueError(
+                "Either reference_chirp_mass or a prior with an M_c component must be provided."
+            )
+        mc_prior = self._find_leaf_prior(prior, "M_c")
+        if mc_prior is None:
+            raise ValueError(
+                "reference_chirp_mass=None but no M_c prior found. "
+                "Pass either reference_chirp_mass or a prior with an M_c component."
+            )
+        mc_min = float(mc_prior.xmin)
+        logger.info(
+            "reference_chirp_mass inferred from M_c prior minimum: %.4f M_sun", mc_min
+        )
+        return mc_min
+
+    def _resolve_time_params(
+        self,
+        time_offset: Optional[Float],
+        delta_f_end: Optional[Float],
+        prior: Optional[Any],
         trigger_time: float,
         detectors: Any,
-    ) -> tuple[Optional[float], Optional[float]]:
-        """Infer time_offset and delta_f_end from the t_c prior.
+    ) -> tuple[Float, Float]:
+        """Return ``(time_offset, delta_f_end)``, inferring from t_c prior bounds when not provided.
 
-        Returns ``(time_offset, delta_f_end)`` or ``(None, None)`` when no
-        ``t_c`` component is found in *prior*.
-
-        Requires ``t_c`` (geocentric coalescence-time offset).  Detector-frame
-        times are not supported because ``t_det = t_c + delay(ra, dec)`` and the
-        delay is sky-position-dependent, so exact bounds on ``t_c`` cannot be
-        derived from a ``t_det`` prior at setup time.
+        Inference uses the geocentric coalescence time ``t_c`` only.
+        Detector-frame time ``t_det`` is not supported because
+        ``t_det = t_c + sky_delay(ra, dec)`` and the delay is sky-position-dependent,
+        so ``t_c`` bounds cannot be derived from a ``t_det`` prior at setup time.
+        Falls back to bilby defaults (2.12 s, 53.0 Hz) when inference is not possible.
         """
-        data = detectors[0].data
-        t_end = float(data.start_time) + float(data.duration) - trigger_time
+        inferred_to: Optional[Float] = None
+        inferred_dfe: Optional[Float] = None
 
-        tc_prior = self._find_subprior(prior, "t_c")
-        if tc_prior is not None:
-            tc_min = float(tc_prior.xmin)
-            tc_max = float(tc_prior.xmax)
-            s = EARTH_RADIUS_LIGHT_S
-            return t_end - tc_min + s, 100.0 / (t_end - tc_max - s)
+        if prior is not None and (time_offset is None or delta_f_end is None):
+            tc_prior = self._find_leaf_prior(prior, "t_c")
+            if tc_prior is not None:
+                data = detectors[0].data
+                t_end = float(data.start_time) + float(data.duration) - trigger_time
+                s = EARTH_RADIUS_LIGHT_S
+                inferred_to = t_end - float(tc_prior.xmin) + s
+                inferred_dfe = 100.0 / (t_end - float(tc_prior.xmax) - s)
 
-        return None, None
+        if time_offset is None:
+            if inferred_to is not None:
+                time_offset = inferred_to
+                logger.info("time_offset inferred from t_c prior: %.4f s", time_offset)
+            else:
+                time_offset = 2.12
+                logger.warning(
+                    "time_offset cannot be inferred from prior; using default 2.12 s"
+                )
+
+        if delta_f_end is None:
+            if inferred_dfe is not None:
+                delta_f_end = inferred_dfe
+                logger.info("delta_f_end inferred from t_c prior: %.4f Hz", delta_f_end)
+            else:
+                delta_f_end = 53.0
+                logger.warning(
+                    "delta_f_end cannot be inferred from prior; using default 53.0 Hz"
+                )
+
+        return time_offset, delta_f_end
+
+    def _validate_banding_params(
+        self,
+        reference_chirp_mass: Float,
+        highest_mode: int,
+        accuracy_factor: Float,
+        time_offset: Float,
+        delta_f_end: Float,
+        min_banding_duration: Float,
+        max_banding_frequency: Optional[Float],
+    ) -> None:
+        """Raise ValueError for any out-of-range banding parameter."""
+        if reference_chirp_mass <= 0:
+            raise ValueError(
+                f"reference_chirp_mass must be > 0, got {reference_chirp_mass}"
+            )
+        if highest_mode <= 0:
+            raise ValueError(f"highest_mode must be > 0, got {highest_mode}")
+        if accuracy_factor <= 0:
+            raise ValueError(f"accuracy_factor must be > 0, got {accuracy_factor}")
+        if time_offset < 0:
+            raise ValueError(f"time_offset must be >= 0, got {time_offset}")
+        if delta_f_end <= 0:
+            raise ValueError(f"delta_f_end must be > 0, got {delta_f_end}")
+        if min_banding_duration < 0:
+            raise ValueError(
+                f"min_banding_duration must be >= 0, got {min_banding_duration}"
+            )
+        if max_banding_frequency is not None and max_banding_frequency <= 0:
+            raise ValueError(
+                f"max_banding_frequency must be > 0, got {max_banding_frequency}"
+            )
 
     # ── Band structure ────────────────────────────────────────────────────────
 

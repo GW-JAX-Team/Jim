@@ -84,7 +84,6 @@ class Detector(ABC):
         frequency: Float[Array, " n_sample"],
         h_sky: dict[str, Float[Array, " n_sample"]],
         params: dict,
-        **kwargs,
     ) -> Complex[Array, " n_sample"]:
         """Modulate the waveform in the sky frame by the detector response in the frequency domain.
 
@@ -100,7 +99,6 @@ class Detector(ABC):
                 - trigger_time (Float): The trigger time in sec
                 - t_c (Float): The difference between peak time and trigger time in sec
                 - gmst (Float): The greenwich mean sidereal time at the trigger time in radian
-            **kwargs: Additional keyword arguments.
 
         Returns:
             Complex[Array, "n_sample"]: Complex strain measured by the detector in frequency domain.
@@ -113,7 +111,6 @@ class Detector(ABC):
         time: Float[Array, " n_sample"],
         h_sky: dict[str, Float[Array, " n_sample"]],
         params: dict,
-        **kwargs,
     ) -> Float[Array, " n_sample"]:
         """Modulate the waveform in the sky frame by the detector response in the time domain.
 
@@ -121,7 +118,6 @@ class Detector(ABC):
             time: Array of time samples.
             h_sky: Dictionary mapping polarization names to time-domain waveforms.
             params: Dictionary of source parameters.
-            **kwargs: Additional keyword arguments.
 
         Returns:
             Array of detector response in time domain.
@@ -383,7 +379,6 @@ class GroundBased2G(Detector):
         frequency: Float[Array, " n_sample"],
         h_sky: dict[str, Float[Array, " n_sample"]],
         params: dict[str, Float],
-        **kwargs,
     ) -> Complex[Array, " n_sample"]:
         """Modulate the waveform in the sky frame by the detector response in the frequency domain.
 
@@ -399,7 +394,6 @@ class GroundBased2G(Detector):
                 - trigger_time (Float): The trigger time in sec
                 - t_c (Float): The difference between peak time and trigger time in sec
                 - gmst (Float): The greenwich mean sidereal time at the trigger time in radian
-            **kwargs: Additional keyword arguments.
 
         Returns:
             Array: Complex strain measured by the detector in frequency domain, obtained by
@@ -427,7 +421,6 @@ class GroundBased2G(Detector):
         time: Float[Array, " n_sample"],
         h_sky: dict[str, Float[Array, " n_sample"]],
         params: dict,
-        **kwargs,
     ) -> Array:
         """Modulate the waveform in the sky frame by the detector response in the time domain.
 
@@ -435,7 +428,6 @@ class GroundBased2G(Detector):
             time: Array of time samples.
             h_sky: Dictionary mapping polarization names to time-domain waveforms.
             params: Dictionary of source parameters.
-            **kwargs: Additional keyword arguments.
 
         Returns:
             Array of detector response in time domain.

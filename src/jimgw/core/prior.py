@@ -157,7 +157,7 @@ class LogisticDistribution(Prior):
     def __repr__(self):
         return f"LogisticDistribution(parameter_names={self.parameter_names})"
 
-    def __init__(self, parameter_names: list[str], **kwargs):
+    def __init__(self, parameter_names: list[str]):
         super().__init__(parameter_names)
         assert self.n_dims == 1, "LogisticDistribution needs to be 1D distributions"
 
@@ -193,7 +193,7 @@ class StandardNormalDistribution(Prior):
     def __repr__(self):
         return f"StandardNormalDistribution(parameter_names={self.parameter_names})"
 
-    def __init__(self, parameter_names: list[str], **kwargs):
+    def __init__(self, parameter_names: list[str]):
         super().__init__(parameter_names)
         assert self.n_dims == 1, (
             "StandardNormalDistribution needs to be 1D distributions"
@@ -233,7 +233,7 @@ class UniformDistribution(Prior):
     def __repr__(self):
         return f"UniformDistribution(parameter_names={self.parameter_names})"
 
-    def __init__(self, parameter_names: list[str], **kwargs):
+    def __init__(self, parameter_names: list[str]):
         super().__init__(parameter_names)
         assert self.n_dims == 1, "UniformDistribution needs to be 1D distributions"
 

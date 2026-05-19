@@ -683,8 +683,8 @@ class TestHeterodynedTransientLikelihoodFD:
             bilby.gw.likelihood.RelativeBinningGravitationalWaveTransient(
                 interferometers=setup["bilby_ifos"],
                 waveform_generator=build_bilby_waveform_generator(
-                setup["duration"], setup["sampling_frequency"]
-            ),
+                    setup["duration"], setup["sampling_frequency"]
+                ),
                 fiducial_parameters=bilby_ref_params,
             )
         )
@@ -743,8 +743,8 @@ class TestHeterodynedTransientLikelihoodFD:
             bilby.gw.likelihood.RelativeBinningGravitationalWaveTransient(
                 interferometers=setup["bilby_ifos"],
                 waveform_generator=build_bilby_waveform_generator(
-                setup["duration"], setup["sampling_frequency"]
-            ),
+                    setup["duration"], setup["sampling_frequency"]
+                ),
                 fiducial_parameters=bilby_ref_params,
                 phase_marginalization=True,
                 priors=priors,

@@ -262,10 +262,17 @@ class Jim:
             logger.info("Using sample transforms.")
             for transform in sample_transforms:
                 self.parameter_names = transform.propagate_name(self.parameter_names)
+                logger.debug(
+                    f"  Applied transform {type(transform).__name__}: parameter_names = {self.parameter_names}"
+                )
 
         if not likelihood_transforms:
             logger.info(
                 "No likelihood transforms provided. Using prior parameters as likelihood parameters."
+            )
+        else:
+            logger.debug(
+                f"Using {len(likelihood_transforms)} likelihood transform(s): {[type(t).__name__ for t in likelihood_transforms]}"
             )
 
         # Build sampling-space callables. These operate on flat arrays of shape

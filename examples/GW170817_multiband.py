@@ -1,4 +1,4 @@
-"""GW170817 analysis with the flowMC sampler."""
+"""GW170817 analysis with the MultibandedTransientLikelihoodFD sampler."""
 
 import time
 from pathlib import Path
@@ -20,7 +20,7 @@ from jimgw.core.prior import (
     PowerLawPrior,
 )
 from jimgw.core.single_event.detector import get_H1, get_L1, get_V1
-from jimgw.core.single_event.likelihood import HeterodynedTransientLikelihoodFD
+from jimgw.core.single_event.likelihood import MultibandedTransientLikelihoodFD
 from jimgw.core.single_event.data import Data
 from jimgw.core.single_event.waveform import IMRPhenomXAS_NRTidalv3
 from jimgw.core.single_event.transforms import (
@@ -56,7 +56,7 @@ for ifo in ifos:
     ifo.set_data(strain_data)
     psd_data = Data.from_gwosc(ifo.name, psd_start, psd_end)
     ifo.set_psd(
-        psd_data.to_psd(nperseg=strain_data.duration * strain_data.sampling_frequency)
+        psd_data.to_psd(nperseg=int(strain_data.duration * strain_data.sampling_frequency))
     )
 
 # --- Waveform model ---
@@ -96,19 +96,14 @@ likelihood_transforms = [
 
 # --- Likelihood ---
 
-likelihood = HeterodynedTransientLikelihoodFD(
+likelihood = MultibandedTransientLikelihoodFD(
     ifos,
     waveform=waveform,
-    n_bins=1000,
-    trigger_time=gps,
     f_min=fmin,
     f_max=fmax,
+    trigger_time=gps,
     prior=prior,
-    likelihood_transforms=likelihood_transforms,
-    phase_marginalization=True,
 )
-
-prior = CombinePrior([p for p in prior.base_prior if p.parameter_names[0] != "phase_c"])
 
 # --- Sample ---
 
@@ -119,6 +114,7 @@ jim = Jim(
     likelihood_transforms=likelihood_transforms,
     periodic={
         "psi": (0.0, float(jnp.pi)),
+        "phase_c": (0.0, 2 * float(jnp.pi)),
         "azimuth": (0.0, 2 * float(jnp.pi)),
     },
     sampler_config=FlowMCConfig(
@@ -127,7 +123,7 @@ jim = Jim(
         n_global_steps=1000,
         n_training_loops=50,
         n_production_loops=10,
-        n_NFproposal_batch_size=100,
+        n_NFproposal_batch_size=64,
         global_thinning=100,
         verbose=True,
     ),
@@ -164,4 +160,4 @@ fig = corner.corner(
     np.stack([chains[key] for key in jim.prior.parameter_names]).T[::10],
     labels=[parameter_labels.get(k, k) for k in jim.prior.parameter_names],
 )
-fig.savefig(Path(__file__).parent / "GW170817.png")
+fig.savefig(Path(__file__).parent / "GW170817_multiband.png")

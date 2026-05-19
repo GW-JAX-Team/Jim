@@ -191,7 +191,8 @@ Optional section that controls the coordinate system the sampler explores. The C
 | `phase_marginalization` | bool | `false` | Analytically marginalise over coalescence phase |
 | `time_marginalization` | table | — | Optional — Analytically marginalise over coalescence time (see below) |
 | `distance_marginalization` | table | — | Optional — Analytically marginalise over luminosity distance (see below) |
-| `heterodyne` | table | — | Optional — Use the relative-binning likelihood for a large speedup (see below) |
+| `heterodyne` | table | — | Optional — Use the relative-binning likelihood (see below) |
+| `multiband` | table | — | Optional — Use the multi-banded likelihood (see below) |
 
 ### `[likelihood.time_marginalization]`
 
@@ -213,7 +214,7 @@ d_L = { type = "power_law", min = 1.0, max = 2000.0, alpha = 2.0 }
 
 ### `[likelihood.heterodyne]`
 
-Enables `HeterodynedTransientLikelihoodFD` (relative binning), which can be 10–100× faster than the standard likelihood.
+Enables `HeterodynedTransientLikelihoodFD` (relative binning).
 
 ```toml
 [likelihood.heterodyne]
@@ -230,6 +231,12 @@ n_steps = 1000
 | `"optimizer"` | Find reference parameters via CMA-ES optimisation (default) |
 | `"provided"` | Supply explicit likelihood-space values via a `values` dict |
 | `"injection"` | Use `data.injection_parameters` as reference (injection runs only) |
+
+### `[likelihood.multiband]`
+
+Enables `MultibandedTransientLikelihoodFD` (geometric frequency banding).
+
+All fields are optional; when omitted, defaults are chosen adaptively based on the data and prior.
 
 ---
 

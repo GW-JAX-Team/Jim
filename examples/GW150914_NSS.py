@@ -51,8 +51,7 @@ for ifo in ifos:
     ifo.set_data(data)
 
     psd_data = Data.from_gwosc(ifo.name, psd_start, psd_end)
-    psd_fftlength = data.duration * data.sampling_frequency
-    ifo.set_psd(psd_data.to_psd(nperseg=psd_fftlength))
+    ifo.set_psd(psd_data.to_psd(nperseg=int(data.duration * data.sampling_frequency)))
 
 # --- Waveform model ---
 

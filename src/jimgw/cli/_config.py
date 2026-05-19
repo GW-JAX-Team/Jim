@@ -361,6 +361,31 @@ class CLIHeterodynedConfig(BaseModel):
     )
 
 
+class CLIMultibandedConfig(BaseModel):
+    """Enable the multi-banded likelihood.
+
+    When present, ``MultibandedTransientLikelihoodFD`` is used instead of
+    ``TransientLikelihoodFD``.
+
+    ``reference_chirp_mass``, ``time_offset``, and ``delta_f_end`` are all
+    optional: when omitted they are inferred automatically from the prior
+    (``M_c`` minimum and ``t_c`` range respectively).  You only need to set
+    them explicitly to override the inferred values.
+
+    All other parameters default to the same values as bilby's
+    ``MBGravitationalWaveTransient``.
+    """
+
+    model_config = {"extra": "forbid"}
+    reference_chirp_mass: Optional[float] = None
+    highest_mode: int = 2
+    accuracy_factor: float = 5.0
+    time_offset: Optional[float] = None
+    delta_f_end: Optional[float] = None
+    max_banding_frequency: Optional[float] = None
+    min_banding_duration: float = 0.0
+
+
 class LikelihoodConfig(BaseModel):
     model_config = {"extra": "forbid"}
     f_min: float
@@ -370,9 +395,12 @@ class LikelihoodConfig(BaseModel):
     time_marginalization: Optional[CLITimeMargConfig] = None
     distance_marginalization: Optional[CLIDistanceMargConfig] = None
     heterodyne: Optional[CLIHeterodynedConfig] = None
+    multiband: Optional[CLIMultibandedConfig] = None
 
     @model_validator(mode="after")
     def _validate_marginalization_conflicts(self) -> "LikelihoodConfig":
+        if self.heterodyne is not None and self.multiband is not None:
+            raise ValueError("heterodyne and multiband cannot both be set")
         if self.heterodyne is not None:
             if self.time_marginalization is not None:
                 raise ValueError(
@@ -381,6 +409,19 @@ class LikelihoodConfig(BaseModel):
             if self.distance_marginalization is not None:
                 raise ValueError(
                     "distance_marginalization cannot be used with heterodyne likelihood"
+                )
+        if self.multiband is not None:
+            if self.time_marginalization is not None:
+                raise ValueError(
+                    "time_marginalization cannot be used with multiband likelihood"
+                )
+            if self.distance_marginalization is not None:
+                raise ValueError(
+                    "distance_marginalization cannot be used with multiband likelihood"
+                )
+            if self.phase_marginalization:
+                raise ValueError(
+                    "phase_marginalization cannot be used with multiband likelihood"
                 )
         return self
 

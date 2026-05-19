@@ -50,7 +50,7 @@ class Detector(ABC):
     data: Data
     psd: PowerSpectrum
 
-    frequency_bounds: tuple[float, float] = (0.0, float("inf"))
+    frequency_bounds: tuple[float, float] = (0.0, jnp.inf)
 
     _sliced_frequencies: Float[Array, " n_sample"] = jnp.array([])
     _sliced_fd_data: Float[Array, " n_sample"] = jnp.array([])
@@ -157,7 +157,7 @@ class Detector(ABC):
         """Clear the data and PSD of the detector."""
         self.data = Data()
         self.psd = PowerSpectrum()
-        self.frequency_bounds = (0.0, float("inf"))
+        self.frequency_bounds = (0.0, jnp.inf)
         self._sliced_frequencies = jnp.array([])
         self._sliced_fd_data = jnp.array([])
         self._sliced_psd = jnp.array([])
@@ -235,6 +235,9 @@ class GroundBased2G(Detector):
     xarm_tilt: Float = 0
     yarm_tilt: Float = 0
     elevation: Float = 0
+
+    optimal_snr: Optional[Float] = None
+    match_filtered_snr: Optional[Complex] = None
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.name})"
@@ -654,9 +657,8 @@ class GroundBased2G(Detector):
                     "No rng_key provided for noise simulation. Using time-based key with seed=%d.",
                     seed,
                 )
-            strain_data += jnp.where(
-                self.frequency_mask, self.psd.simulate_data(rng_key), 0.0 + 0.0j
-            )
+            noise = self.psd.simulate_data(rng_key)
+            strain_data += jnp.where(self.frequency_mask, noise, 0.0 + 0.0j)
 
         self.set_data(
             Data.from_fd(
@@ -680,6 +682,10 @@ class GroundBased2G(Detector):
             masked_signal, self.sliced_fd_data, self.sliced_psd, df
         )
         match_filtered_snr /= optimal_snr
+
+        # Save as attributes
+        self.optimal_snr = optimal_snr
+        self.match_filtered_snr = match_filtered_snr
 
         logger.info(f"For detector {self.name}, the injected signal has:")
         logger.info(f"  - Optimal SNR: {optimal_snr:.4f}")

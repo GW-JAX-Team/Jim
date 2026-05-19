@@ -139,11 +139,21 @@ likelihood = TransientLikelihoodFD(
 
 Both forms are `jax.jit`-compatible. Callables are evaluated in **insertion order**, so later entries in `fixed_parameters` can read values written by earlier ones.
 
-## HeterodynedTransientLikelihoodFD
+## Fast Likelihoods
 
-For faster evaluation, `HeterodynedTransientLikelihoodFD` uses the heterodyne (relative binning) technique.  It requires a set of *reference parameters* around which the binning is constructed.
+`HeterodynedTransientLikelihoodFD` and `MultibandedTransientLikelihoodFD` are both approximations that trade exactness for speed. They are suitable when the full likelihood is computationally expensive (e.g., long duration signals) and the signal is well-approximated by the underlying assumptions of the method.
 
-### Providing reference parameters directly
+| Likelihood | Method |
+| --- | --- |
+| `HeterodynedTransientLikelihoodFD` | Relative binning around a reference waveform |
+| `MultibandedTransientLikelihoodFD` | Geometric frequency banding |
+
+### HeterodynedTransientLikelihoodFD
+
+`HeterodynedTransientLikelihoodFD` uses the heterodyne (relative binning) technique.
+It requires a set of *reference parameters* around which the binning is constructed.
+
+#### Providing reference parameters directly
 
 ```python
 from jimgw.core.single_event.likelihood import HeterodynedTransientLikelihoodFD
@@ -159,7 +169,7 @@ likelihood = HeterodynedTransientLikelihoodFD(
 )
 ```
 
-### Automatic reference-parameter search
+#### Automatic reference-parameter search
 
 If you do not have reference parameters, pass a `prior` (and any `likelihood_transforms`) and the constructor will call `maximize_likelihood` internally using `evosax.CMA_ES` (Covariance Matrix Adaptation Evolution Strategy):
 
@@ -190,3 +200,37 @@ likelihood = HeterodynedTransientLikelihoodFD(
 ```
 
 The optimiser runs `evosax.CMA_ES` with a JAX-native ask/tell loop, so the waveform evaluations are fully batched and JIT-compiled on CPU/GPU.
+
+### MultibandedTransientLikelihoodFD
+
+`MultibandedTransientLikelihoodFD` implements the multi-banding method.
+
+Pass a `prior` to let the constructor infer `reference_chirp_mass`, `time_offset`, and `delta_f_end` automatically:
+
+```python
+from jimgw.core.single_event.likelihood import MultibandedTransientLikelihoodFD
+
+likelihood = MultibandedTransientLikelihoodFD(
+    detectors=[H1, L1],
+    waveform=waveform,
+    f_min=20.0,
+    f_max=1024.0,
+    trigger_time=gps_time,
+    prior=prior,
+)
+```
+
+Or supply `reference_chirp_mass` explicitly when you do not have a prior object:
+
+```python
+likelihood = MultibandedTransientLikelihoodFD(
+    detectors=[H1, L1],
+    waveform=waveform,
+    f_min=20.0,
+    f_max=1024.0,
+    trigger_time=gps_time,
+    reference_chirp_mass=1.2,
+)
+```
+
+**Choosing `reference_chirp_mass`:** use the **minimum** of your chirp-mass prior. A lower chirp mass means a longer signal and finer frequency resolution; setting the reference to the prior minimum ensures the bands are correct for all systems in the prior.

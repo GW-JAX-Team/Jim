@@ -13,10 +13,12 @@ from jimgw.cli._config import (
 )
 from jimgw.cli._transforms import to_likelihood_space
 from jimgw.cli._prior import build_prior
+from jimgw.core.constants import EARTH_RADIUS_LIGHT_S
 from jimgw.core.prior import CombinePrior, UniformPrior
 from jimgw.core.single_event.detector import GroundBased2G
 from jimgw.core.single_event.likelihood import (
     HeterodynedTransientLikelihoodFD,
+    MultibandedTransientLikelihoodFD,
     TransientLikelihoodFD,
 )
 from jimgw.core.single_event.marginalization_config import (
@@ -39,7 +41,11 @@ def build_likelihood(
     prior: CombinePrior,
     likelihood_transforms: list[NtoMTransform],
     data_cfg: DataConfig,
-) -> Union[TransientLikelihoodFD, HeterodynedTransientLikelihoodFD]:
+) -> Union[
+    TransientLikelihoodFD,
+    HeterodynedTransientLikelihoodFD,
+    MultibandedTransientLikelihoodFD,
+]:
     """Build a likelihood from the validated likelihood config.
 
     Uses ``HeterodynedTransientLikelihoodFD`` when ``cfg.heterodyne`` is set,
@@ -114,6 +120,82 @@ def build_likelihood(
             cfg.f_min,
             cfg.f_max,
             cfg.heterodyne.n_bins,
+        )
+        return likelihood
+
+    if cfg.multiband is not None:
+        mb = cfg.multiband
+
+        # MultibandedTransientLikelihoodFD._infer_time_offsets only searches for
+        # t_c. When the NS-AW sampler is used it renames t_c → t_det in the built
+        # prior (same relative-offset bounds). Detect that here and compute
+        # time_offset / delta_f_end explicitly so auto-inference works correctly.
+        mb_time_offset = mb.time_offset
+        mb_delta_f_end = mb.delta_f_end
+        if (mb_time_offset is None or mb_delta_f_end is None) and (
+            "t_c" not in prior.parameter_names and "t_det" in prior.parameter_names
+        ):
+            tdet_comp = next(
+                (
+                    p
+                    for p in prior.base_prior
+                    if "t_det" in p.parameter_names and hasattr(p, "xmin")
+                ),
+                None,
+            )
+            if tdet_comp is not None:
+                ref_ifo = (
+                    ifos[0]
+                    if time_frame == "detector"
+                    else next(ifo for ifo in ifos if ifo.name == time_frame)
+                )
+                t_end = (
+                    float(ref_ifo.data.start_time)
+                    + float(ref_ifo.data.duration)
+                    - trigger_time
+                )
+                s = EARTH_RADIUS_LIGHT_S
+                if mb_time_offset is None:
+                    mb_time_offset = t_end - float(getattr(tdet_comp, "xmin")) + s
+                    logger.info(
+                        "time_offset inferred from t_det prior: %.4f s", mb_time_offset
+                    )
+                if mb_delta_f_end is None:
+                    xmax = float(getattr(tdet_comp, "xmax"))
+                    denom = t_end - xmax - s
+                    if denom <= 0:
+                        raise ValueError(
+                            f"Cannot infer delta_f_end from t_det prior: "
+                            f"t_end - xmax - s = {t_end:.4f} - {xmax:.4f} - {s:.6f} = {denom:.6f} <= 0. "
+                            "Check that the t_det prior upper bound is well within the data segment."
+                        )
+                    mb_delta_f_end = 100.0 / denom
+                    logger.info(
+                        "delta_f_end inferred from t_det prior: %.4f Hz", mb_delta_f_end
+                    )
+
+        likelihood = MultibandedTransientLikelihoodFD(
+            detectors=ifos,
+            waveform=waveform,
+            fixed_parameters=fixed_params,
+            f_min=cfg.f_min,
+            f_max=cfg.f_max,
+            trigger_time=trigger_time,
+            highest_mode=mb.highest_mode,
+            accuracy_factor=mb.accuracy_factor,
+            prior=prior,
+            reference_chirp_mass=mb.reference_chirp_mass,
+            time_offset=mb_time_offset,
+            delta_f_end=mb_delta_f_end,
+            max_banding_frequency=mb.max_banding_frequency,
+            min_banding_duration=mb.min_banding_duration,
+        )
+        logger.info(
+            "Built multiband likelihood: f_min=%.1f, f_max=%.1f, "
+            "reference_chirp_mass=%.4f M_sun",
+            cfg.f_min,
+            cfg.f_max,
+            likelihood.reference_chirp_mass,
         )
         return likelihood
 

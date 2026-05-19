@@ -993,8 +993,10 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
         detectors (Sequence[Detector]): List of detector objects.
         waveform (Waveform): Waveform model to evaluate.
         fixed_parameters (Optional[dict]): Fixed parameters for the likelihood.
-        f_min (Float): Minimum frequency for likelihood evaluation.
-        f_max (Float): Maximum frequency for likelihood evaluation.
+        f_min (Float | dict[str, Float]): Minimum frequency for likelihood
+            evaluation, or a dict mapping detector name to per-detector Float.
+        f_max (Float | dict[str, Float]): Maximum frequency for likelihood
+            evaluation, or a dict mapping detector name to per-detector Float.
         trigger_time (Float): GPS time of the event trigger.
         highest_mode (int): Maximum magnetic number (default 2, for 22-mode only).
         accuracy_factor (Float): Accuracy parameter L (default 5.0).
@@ -1026,7 +1028,7 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
     fb_dfb: Float[Array, "n_bands+1 2"]
 
     unique_frequencies: Float[Array, " n_unique"]
-    unique_to_original: Float[Array, " n_total_points"]
+    unique_to_original: Array
 
     linear_coeffs: dict[str, Float[Array, " n_total_points"]]
     quadratic_coeffs: dict[str, Float[Array, " n_total_points"]]
@@ -1038,8 +1040,8 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
         fixed_parameters: Optional[
             dict[str, Float | Callable[[dict[str, Float]], Float | dict[str, Float]]]
         ] = None,
-        f_min: Float = 0,
-        f_max: Float = jnp.inf,
+        f_min: Float | dict[str, Float] = 0,
+        f_max: Float | dict[str, Float] = jnp.inf,
         trigger_time: Float = 0,
         highest_mode: int = 2,
         accuracy_factor: Float = 5.0,

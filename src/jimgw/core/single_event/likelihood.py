@@ -1180,8 +1180,10 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
         if prior is not None and (time_offset is None or delta_f_end is None):
             tc_prior = self._find_leaf_prior(prior, "t_c")
             if tc_prior is not None:
-                data = detectors[0].data
-                t_end = float(data.start_time) + float(data.duration) - trigger_time
+                t_end = min(
+                    float(d.data.start_time) + float(d.data.duration) - trigger_time
+                    for d in detectors
+                )
                 s = EARTH_RADIUS_LIGHT_S
                 tc_max = float(tc_prior.xmax)
                 denom = t_end - tc_max - s
@@ -1684,9 +1686,9 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
             Log-likelihood value.
         """
         params = params.copy()
-        apply_fixed_parameters(params, self.fixed_parameters)
         params["trigger_time"] = self.trigger_time
         params["gmst"] = self.gmst
+        apply_fixed_parameters(params, self.fixed_parameters)
         return self._likelihood(params, data)
 
     def _likelihood(self, params: dict[str, Float], data: dict) -> Float:

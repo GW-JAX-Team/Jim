@@ -1035,7 +1035,9 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
         self,
         detectors: Sequence[Detector],
         waveform: Waveform,
-        fixed_parameters: Optional[dict[str, Float]] = None,
+        fixed_parameters: Optional[
+            dict[str, Float | Callable[[dict[str, Float]], Float | dict[str, Float]]]
+        ] = None,
         f_min: Float = 0,
         f_max: Float = jnp.inf,
         trigger_time: Float = 0,
@@ -1682,7 +1684,7 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
             Log-likelihood value.
         """
         params = params.copy()
-        params.update(self.fixed_parameters)
+        apply_fixed_parameters(params, self.fixed_parameters)
         params["trigger_time"] = self.trigger_time
         params["gmst"] = self.gmst
         return self._likelihood(params, data)

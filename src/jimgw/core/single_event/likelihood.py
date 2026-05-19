@@ -1085,8 +1085,9 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
             f_min_ifo = f_min if not isinstance(f_min, dict) else f_min[detector.name]
             f_max_ifo = f_max if not isinstance(f_max, dict) else f_max[detector.name]
             detector.set_frequency_bounds(f_min_ifo, f_max_ifo)
-            _f_mins.append(f_min_ifo)
-            _f_maxs.append(f_max_ifo)
+            sliced = detector.sliced_frequencies
+            _f_mins.append(float(sliced[0]))
+            _f_maxs.append(float(sliced[-1]))
 
         self.minimum_frequency = min(_f_mins)
         self.maximum_frequency = max(_f_maxs)

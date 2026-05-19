@@ -50,7 +50,7 @@ class Detector(ABC):
     data: Data
     psd: PowerSpectrum
 
-    frequency_bounds: tuple[float, float] = (0.0, float("inf"))
+    frequency_bounds: tuple[float, float] = (0.0, jnp.inf)
 
     _sliced_frequencies: Float[Array, " n_sample"] = jnp.array([])
     _sliced_fd_data: Float[Array, " n_sample"] = jnp.array([])
@@ -157,7 +157,7 @@ class Detector(ABC):
         """Clear the data and PSD of the detector."""
         self.data = Data()
         self.psd = PowerSpectrum()
-        self.frequency_bounds = (0.0, float("inf"))
+        self.frequency_bounds = (0.0, jnp.inf)
         self._sliced_frequencies = jnp.array([])
         self._sliced_fd_data = jnp.array([])
         self._sliced_psd = jnp.array([])

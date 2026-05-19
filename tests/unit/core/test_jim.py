@@ -428,7 +428,7 @@ class TestJimPriorLikelihoodConsistencyChecks:
                 self.waveform = waveform
                 self.fixed_parameters = fixed_parameters or {}
 
-            def _likelihood(self, params, data) -> Float:
+            def _likelihood(self, params) -> Float:
                 return 0.0
 
         return FakeSingleEventLikelihood(

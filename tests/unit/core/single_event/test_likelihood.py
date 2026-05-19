@@ -1359,8 +1359,12 @@ class TestMultibandedTransientLikelihoodFD:
     def test_evaluation(self, detectors_and_waveform):
         ifos, waveform, fmin, fmax, gps = detectors_and_waveform
         likelihood = MultibandedTransientLikelihoodFD(
-            detectors=ifos, waveform=waveform, f_min=fmin, f_max=fmax,
-            trigger_time=gps, reference_chirp_mass=20.0,
+            detectors=ifos,
+            waveform=waveform,
+            f_min=fmin,
+            f_max=fmax,
+            trigger_time=gps,
+            reference_chirp_mass=20.0,
         )
         params = example_params()
         ll = likelihood.evaluate(params, {})
@@ -1369,9 +1373,12 @@ class TestMultibandedTransientLikelihoodFD:
         assert jnp.isfinite(ll_jit)
         assert jnp.allclose(ll, ll_jit)
         ll_diff = MultibandedTransientLikelihoodFD(
-            detectors=ifos, waveform=waveform,
-            f_min={"H1": fmin, "L1": fmin + 1.0}, f_max=fmax,
-            trigger_time=gps, reference_chirp_mass=20.0,
+            detectors=ifos,
+            waveform=waveform,
+            f_min={"H1": fmin, "L1": fmin + 1.0},
+            f_max=fmax,
+            trigger_time=gps,
+            reference_chirp_mass=20.0,
         ).evaluate(params, {})
         assert jnp.isfinite(ll_diff)
 

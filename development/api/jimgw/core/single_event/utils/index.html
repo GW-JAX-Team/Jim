@@ -1558,22 +1558,38 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="utils">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#jimgw.core.single_event.utils-functions" class="md-nav__link">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jimgw.core.single_event.utils.apply_fixed_parameters" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Functions
+        apply_fixed_parameters
       </span>
     </span>
   </a>
   
 </li>
-        
-      </ul>
-    </nav>
+      
+        <li class="md-nav__item">
+  <a href="#jimgw.core.single_event.utils.complex_inner_product" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        complex_inner_product
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jimgw.core.single_event.utils.inner_product" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        inner_product
+      </span>
+    </span>
+  </a>
   
 </li>
       
@@ -2044,22 +2060,38 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="utils">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#jimgw.core.single_event.utils-functions" class="md-nav__link">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jimgw.core.single_event.utils.apply_fixed_parameters" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Functions
+        apply_fixed_parameters
       </span>
     </span>
   </a>
   
 </li>
-        
-      </ul>
-    </nav>
+      
+        <li class="md-nav__item">
+  <a href="#jimgw.core.single_event.utils.complex_inner_product" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        complex_inner_product
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jimgw.core.single_event.utils.inner_product" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        inner_product
+      </span>
+    </span>
+  </a>
   
 </li>
       
@@ -2087,12 +2119,7 @@
 
 
 
-<h3 id="jimgw.core.single_event.utils" class="doc doc-heading">
-            <code>utils</code>
-
-
-<a href="#jimgw.core.single_event.utils" class="headerlink" title="Permanent link">¤</a></h3>
-
+<a id="jimgw.core.single_event.utils"></a>
     <div class="doc doc-contents first">
 
         <p>General single-event likelihood utilities.</p>
@@ -2159,15 +2186,15 @@ and the fixed-parameter application helper.</p>
 
 
 
-<h4 id="jimgw.core.single_event.utils-functions">Functions<a href="#jimgw.core.single_event.utils-functions" class="headerlink" title="Permanent link">¤</a></h4>
+
 
 <div class="doc doc-object doc-function">
 
 
-<h5 id="jimgw.core.single_event.utils.apply_fixed_parameters" class="doc doc-heading">
+<h3 id="jimgw.core.single_event.utils.apply_fixed_parameters" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">apply_fixed_parameters</span><span class="p">(</span><span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">],</span> <span class="n">fixed_parameters</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span> <span class="o">|</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">]],</span> <span class="n">Float</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">]]])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">]</span></code>
 
-<a href="#jimgw.core.single_event.utils.apply_fixed_parameters" class="headerlink" title="Permanent link">¤</a></h5>
+<a href="#jimgw.core.single_event.utils.apply_fixed_parameters" class="headerlink" title="Permanent link">¤</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -2286,10 +2313,10 @@ parameters applied.</p>
 <div class="doc doc-object doc-function">
 
 
-<h5 id="jimgw.core.single_event.utils.complex_inner_product" class="doc doc-heading">
+<h3 id="jimgw.core.single_event.utils.complex_inner_product" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">complex_inner_product</span><span class="p">(</span><span class="n">h1</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">&#39; n_freq&#39;</span><span class="p">],</span> <span class="n">h2</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">&#39; n_freq&#39;</span><span class="p">],</span> <span class="n">psd</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">&#39; n_freq&#39;</span><span class="p">],</span> <span class="n">df</span><span class="p">:</span> <span class="n">Float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Complex</span></code>
 
-<a href="#jimgw.core.single_event.utils.complex_inner_product" class="headerlink" title="Permanent link">¤</a></h5>
+<a href="#jimgw.core.single_event.utils.complex_inner_product" class="headerlink" title="Permanent link">¤</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -2412,10 +2439,10 @@ data, this is the complex match-filtered SNR.</p>
 <div class="doc doc-object doc-function">
 
 
-<h5 id="jimgw.core.single_event.utils.inner_product" class="doc doc-heading">
+<h3 id="jimgw.core.single_event.utils.inner_product" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">inner_product</span><span class="p">(</span><span class="n">h1</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">&#39; n_freq&#39;</span><span class="p">],</span> <span class="n">h2</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">&#39; n_freq&#39;</span><span class="p">],</span> <span class="n">psd</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">&#39; n_freq&#39;</span><span class="p">],</span> <span class="n">df</span><span class="p">:</span> <span class="n">Float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Float</span></code>
 
-<a href="#jimgw.core.single_event.utils.inner_product" class="headerlink" title="Permanent link">¤</a></h5>
+<a href="#jimgw.core.single_event.utils.inner_product" class="headerlink" title="Permanent link">¤</a></h3>
 
 
     <div class="doc doc-contents ">

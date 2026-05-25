@@ -212,14 +212,13 @@ def main() -> None:
     api_nav = build_nav_tree(modules)
     print(f"Generated {len(modules)} API stubs")
 
-    # Rebuild nav: keep everything except existing API entry, append new one
+    # Rebuild nav: keep everything except existing Reference entry, append new one
     def drop_reference_entries(nav):
         """Drop auto-generated reference sections so rebuilds stay idempotent."""
-        auto_keys = {"API", REFERENCE_TAB_NAME}
         return [
             item
             for item in nav
-            if not (isinstance(item, dict) and any(key in item for key in auto_keys))
+            if not (isinstance(item, dict) and REFERENCE_TAB_NAME in item)
         ]
 
     base_nav = drop_reference_entries(config.get("project", {}).get("nav", []))

@@ -72,9 +72,9 @@ docstring_style = "google"
 filters = ["!^_[^_]", "!^logger$"]
 inherited_members = false
 group_by_category = true
-show_category_heading = true
+show_category_heading = false
 summary = {attributes = true, functions = true}
-show_root_heading = true
+show_root_heading = false
 show_root_full_path = false
 show_if_no_docstring = false
 show_signature_annotations = true

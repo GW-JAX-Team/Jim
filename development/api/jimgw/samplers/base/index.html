@@ -365,7 +365,7 @@
         <a href="../../core/base/" class="md-tabs__link">
           
   
-  API
+  Reference
 
         </a>
       </li>
@@ -967,7 +967,7 @@
   <span class="md-ellipsis">
     
   
-  API
+  Reference
 
     
   </span>
@@ -982,7 +982,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-  API
+  Reference
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
@@ -1732,10 +1732,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#jimgw.samplers.base.Sampler" class="md-nav__link">
+  <a href="#jimgw.samplers.base-classes" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Sampler
+        Classes
       </span>
     </span>
   </a>
@@ -2046,10 +2046,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#jimgw.samplers.base.Sampler" class="md-nav__link">
+  <a href="#jimgw.samplers.base-classes" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Sampler
+        Classes
       </span>
     </span>
   </a>
@@ -2086,7 +2086,7 @@
 
 
 <h3 id="jimgw.samplers.base" class="doc doc-heading">
-            <code>jimgw.samplers.base</code>
+            <code>base</code>
 
 
 <a href="#jimgw.samplers.base" class="headerlink" title="Permanent link">¤</a></h3>
@@ -2112,6 +2112,8 @@ named prior-space dict via <a class="autorefs autorefs-internal" title="&lt;code
 
 
 
+
+
 <div class="doc doc-children">
 
 
@@ -2120,17 +2122,17 @@ named prior-space dict via <a class="autorefs autorefs-internal" title="&lt;code
 
 
 
-
+<h4 id="jimgw.samplers.base-classes">Classes<a href="#jimgw.samplers.base-classes" class="headerlink" title="Permanent link">¤</a></h4>
 
 <div class="doc doc-object doc-class">
 
 
 
-<h4 id="jimgw.samplers.base.Sampler" class="doc doc-heading">
+<h5 id="jimgw.samplers.base.Sampler" class="doc doc-heading">
             <code>Sampler</code>
 
 
-<a href="#jimgw.samplers.base.Sampler" class="headerlink" title="Permanent link">¤</a></h4>
+<a href="#jimgw.samplers.base.Sampler" class="headerlink" title="Permanent link">¤</a></h5>
 
 
     <div class="doc doc-contents ">
@@ -2157,6 +2159,49 @@ samples themselves.</p>
 
 
 
+<p><span class="doc-section-title">Methods:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;get_diagnostics&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;dict&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Any&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.samplers.base.Sampler.get_diagnostics">get_diagnostics</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Return run-level diagnostics.</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;get_samples&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;dict&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;np&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ndarray&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;/code&gt;
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-abstractmethod&quot;&gt;&lt;code&gt;abstractmethod&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="./#jimgw.samplers.base.Sampler.get_samples">get_samples</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Return posterior samples after internal post-processing.</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;sample&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rng_key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;initial_position&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Array&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&amp;#39;n n_dims&amp;#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;None&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.samplers.base.Sampler.sample">sample</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Run the sampler and record wall-clock sampling time.</p>
+                </div>
+              </td>
+            </tr>
+      </tbody>
+    </table>
+
+
+
+
 
 
 <div class="doc doc-children">
@@ -2167,159 +2212,22 @@ samples themselves.</p>
 
 
 
-<div class="doc doc-object doc-attribute">
 
-
-
-<h5 id="jimgw.samplers.base.Sampler.n_dims" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">n_dims</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">n_dims</span></code>
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
-  </span>
-
-<a href="#jimgw.samplers.base.Sampler.n_dims" class="headerlink" title="Permanent link">¤</a></h5>
-
-
-    <div class="doc doc-contents ">
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-attribute">
-
-
-
-<h5 id="jimgw.samplers.base.Sampler._log_prior_fn" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">_log_prior_fn</span> <span class="o">=</span> <span class="n">log_prior_fn</span></code>
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
-  </span>
-
-<a href="#jimgw.samplers.base.Sampler._log_prior_fn" class="headerlink" title="Permanent link">¤</a></h5>
-
-
-    <div class="doc doc-contents ">
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-attribute">
-
-
-
-<h5 id="jimgw.samplers.base.Sampler._log_likelihood_fn" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">_log_likelihood_fn</span> <span class="o">=</span> <span class="n">log_likelihood_fn</span></code>
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
-  </span>
-
-<a href="#jimgw.samplers.base.Sampler._log_likelihood_fn" class="headerlink" title="Permanent link">¤</a></h5>
-
-
-    <div class="doc doc-contents ">
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-attribute">
-
-
-
-<h5 id="jimgw.samplers.base.Sampler._log_posterior_fn" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">_log_posterior_fn</span> <span class="o">=</span> <span class="n">log_posterior_fn</span></code>
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
-  </span>
-
-<a href="#jimgw.samplers.base.Sampler._log_posterior_fn" class="headerlink" title="Permanent link">¤</a></h5>
-
-
-    <div class="doc doc-contents ">
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-attribute">
-
-
-
-<h5 id="jimgw.samplers.base.Sampler._config" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">_config</span> <span class="o">=</span> <span class="n">config</span></code>
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
-  </span>
-
-<a href="#jimgw.samplers.base.Sampler._config" class="headerlink" title="Permanent link">¤</a></h5>
-
-
-    <div class="doc doc-contents ">
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-attribute">
-
-
-
-<h5 id="jimgw.samplers.base.Sampler._sampled" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">_sampled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span></code>
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
-  </span>
-
-<a href="#jimgw.samplers.base.Sampler._sampled" class="headerlink" title="Permanent link">¤</a></h5>
-
-
-    <div class="doc doc-contents ">
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-attribute">
-
-
-
-<h5 id="jimgw.samplers.base.Sampler._sampling_time" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">_sampling_time</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span></code>
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
-  </span>
-
-<a href="#jimgw.samplers.base.Sampler._sampling_time" class="headerlink" title="Permanent link">¤</a></h5>
-
-
-    <div class="doc doc-contents ">
-
-    </div>
-
-</div>
-
-
-
+<h6 id="jimgw.samplers.base.Sampler-functions">Functions<a href="#jimgw.samplers.base.Sampler-functions" class="headerlink" title="Permanent link">¤</a></h6>
 
 <div class="doc doc-object doc-function">
 
 
-<h5 id="jimgw.samplers.base.Sampler.__init__" class="doc doc-heading">
-            <code class="highlight language-python"><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">n_dims</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">log_prior_fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">&#39; n_dims&#39;</span><span class="p">]],</span> <span class="n">Float</span><span class="p">],</span> <span class="n">log_likelihood_fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">&#39; n_dims&#39;</span><span class="p">]],</span> <span class="n">Float</span><span class="p">],</span> <span class="n">log_posterior_fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">&#39; n_dims&#39;</span><span class="p">]],</span> <span class="n">Float</span><span class="p">],</span> <span class="n">config</span><span class="p">:</span> <span class="n">BaseSamplerConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span></code>
+<h7 id="jimgw.samplers.base.Sampler.get_diagnostics" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">get_diagnostics</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span></code>
 
-<a href="#jimgw.samplers.base.Sampler.__init__" class="headerlink" title="Permanent link">¤</a></h5>
+<a href="#jimgw.samplers.base.Sampler.get_diagnostics" class="headerlink" title="Permanent link">¤</a></h7>
 
 
     <div class="doc doc-contents ">
+
+        <p>Return run-level diagnostics.</p>
+<p>Only valid after <code>sample</code> has been called.</p>
 
 
     </div>
@@ -2329,10 +2237,43 @@ samples themselves.</p>
 <div class="doc doc-object doc-function">
 
 
-<h5 id="jimgw.samplers.base.Sampler.sample" class="doc doc-heading">
+<h7 id="jimgw.samplers.base.Sampler.get_samples" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">get_samples</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
+  </span>
+
+<a href="#jimgw.samplers.base.Sampler.get_samples" class="headerlink" title="Permanent link">¤</a></h7>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Return posterior samples after internal post-processing.</p>
+<p>Returns a dict with exactly two keys:</p>
+<ul>
+<li><code>"samples"</code> — 2-D <code>np.ndarray</code> of shape <code>(n, n_dims)</code> in the
+  sampling space.</li>
+<li><code>"log_likelihood"</code> — 1-D <code>np.ndarray</code> of shape <code>(n,)</code> with the
+  per-sample log-likelihood values.</li>
+</ul>
+<p>Backends that use weighted samples (NS, persistent SMC) perform
+importance resampling internally so the returned samples are
+equally-weighted.</p>
+<p>Only valid after <code>sample</code> has been called.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h7 id="jimgw.samplers.base.Sampler.sample" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">sample</span><span class="p">(</span><span class="n">rng_key</span><span class="p">:</span> <span class="n">Key</span><span class="p">,</span> <span class="n">initial_position</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">&#39;n n_dims&#39;</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span></code>
 
-<a href="#jimgw.samplers.base.Sampler.sample" class="headerlink" title="Permanent link">¤</a></h5>
+<a href="#jimgw.samplers.base.Sampler.sample" class="headerlink" title="Permanent link">¤</a></h7>
 
 
     <div class="doc doc-contents ">
@@ -2388,102 +2329,6 @@ backend (<code>n_chains</code> for flowMC, <code>n_live</code> for NS,
           </tr>
       </tbody>
     </table>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h5 id="jimgw.samplers.base.Sampler._sample" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">_sample</span><span class="p">(</span><span class="n">rng_key</span><span class="p">:</span> <span class="n">Key</span><span class="p">,</span> <span class="n">initial_position</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">&#39;n n_dims&#39;</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span></code>
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
-  </span>
-
-<a href="#jimgw.samplers.base.Sampler._sample" class="headerlink" title="Permanent link">¤</a></h5>
-
-
-    <div class="doc doc-contents ">
-
-        <p>Backend-specific sampling implementation.</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h5 id="jimgw.samplers.base.Sampler.get_samples" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">get_samples</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span></code>
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
-  </span>
-
-<a href="#jimgw.samplers.base.Sampler.get_samples" class="headerlink" title="Permanent link">¤</a></h5>
-
-
-    <div class="doc doc-contents ">
-
-        <p>Return posterior samples after internal post-processing.</p>
-<p>Returns a dict with exactly two keys:</p>
-<ul>
-<li><code>"samples"</code> — 2-D <code>np.ndarray</code> of shape <code>(n, n_dims)</code> in the
-  sampling space.</li>
-<li><code>"log_likelihood"</code> — 1-D <code>np.ndarray</code> of shape <code>(n,)</code> with the
-  per-sample log-likelihood values.</li>
-</ul>
-<p>Backends that use weighted samples (NS, persistent SMC) perform
-importance resampling internally so the returned samples are
-equally-weighted.</p>
-<p>Only valid after <code>sample</code> has been called.</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h5 id="jimgw.samplers.base.Sampler.get_diagnostics" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">get_diagnostics</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span></code>
-
-<a href="#jimgw.samplers.base.Sampler.get_diagnostics" class="headerlink" title="Permanent link">¤</a></h5>
-
-
-    <div class="doc doc-contents ">
-
-        <p>Return run-level diagnostics.</p>
-<p>Only valid after <code>sample</code> has been called.</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h5 id="jimgw.samplers.base.Sampler._get_diagnostics" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">_get_diagnostics</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span></code>
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
-  </span>
-
-<a href="#jimgw.samplers.base.Sampler._get_diagnostics" class="headerlink" title="Permanent link">¤</a></h5>
-
-
-    <div class="doc doc-contents ">
-
-        <p>Backend-specific diagnostics implementation.</p>
 
 
     </div>

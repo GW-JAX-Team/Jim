@@ -363,7 +363,7 @@
         <a href="../../core/base/" class="md-tabs__link">
           
   
-  API
+  Reference
 
         </a>
       </li>
@@ -965,7 +965,7 @@
   <span class="md-ellipsis">
     
   
-  API
+  Reference
 
     
   </span>
@@ -980,7 +980,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-  API
+  Reference
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
@@ -1948,43 +1948,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#jimgw.samplers.periodic._build_masks_arrays" class="md-nav__link">
+  <a href="#jimgw.samplers.periodic-functions" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        _build_masks_arrays
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#jimgw.samplers.periodic.to_unit_cube_stepper" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        to_unit_cube_stepper
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#jimgw.samplers.periodic.to_prior_space_stepper" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        to_prior_space_stepper
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#jimgw.samplers.periodic.to_displacement_wrapper" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        to_displacement_wrapper
+        Functions
       </span>
     </span>
   </a>
@@ -2077,43 +2044,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#jimgw.samplers.periodic._build_masks_arrays" class="md-nav__link">
+  <a href="#jimgw.samplers.periodic-functions" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        _build_masks_arrays
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#jimgw.samplers.periodic.to_unit_cube_stepper" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        to_unit_cube_stepper
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#jimgw.samplers.periodic.to_prior_space_stepper" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        to_prior_space_stepper
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#jimgw.samplers.periodic.to_displacement_wrapper" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        to_displacement_wrapper
+        Functions
       </span>
     </span>
   </a>
@@ -2150,7 +2084,7 @@
 
 
 <h3 id="jimgw.samplers.periodic" class="doc doc-heading">
-            <code>jimgw.samplers.periodic</code>
+            <code>periodic</code>
 
 
 <a href="#jimgw.samplers.periodic" class="headerlink" title="Permanent link">¤</a></h3>
@@ -2175,6 +2109,45 @@ displacement wrapper.  The adapters below handle those conversions.</p>
 
 
 
+<p><span class="doc-section-title">Functions:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;to_displacement_wrapper&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;periodic_index&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Optional&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;dict&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;tuple&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]]],&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;n_dims&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Callable&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.samplers.periodic.to_displacement_wrapper">to_displacement_wrapper</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Displacement wrapper for BlackJAX SMC (prior space).</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;to_prior_space_stepper&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;periodic_index&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Optional&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;dict&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;tuple&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]]],&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;n_dims&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Callable&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.samplers.periodic.to_prior_space_stepper">to_prior_space_stepper</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Stepper function for BlackJAX NSS (prior space).</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;to_unit_cube_stepper&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;periodic_index&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Optional&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]],&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;n_dims&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Callable&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.samplers.periodic.to_unit_cube_stepper">to_unit_cube_stepper</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Stepper function for BlackJAX NS-AW (unit-cube space).</p>
+                </div>
+              </td>
+            </tr>
+      </tbody>
+    </table>
+
+
+
+
 
 <div class="doc doc-children">
 
@@ -2185,21 +2158,27 @@ displacement wrapper.  The adapters below handle those conversions.</p>
 
 
 
-
+<h4 id="jimgw.samplers.periodic-functions">Functions<a href="#jimgw.samplers.periodic-functions" class="headerlink" title="Permanent link">¤</a></h4>
 
 <div class="doc doc-object doc-function">
 
 
-<h4 id="jimgw.samplers.periodic._build_masks_arrays" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">_build_masks_arrays</span><span class="p">(</span><span class="n">periodic_index</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]],</span> <span class="n">n_dims</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span></code>
+<h5 id="jimgw.samplers.periodic.to_displacement_wrapper" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">to_displacement_wrapper</span><span class="p">(</span><span class="n">periodic_index</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]],</span> <span class="n">n_dims</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span></code>
 
-<a href="#jimgw.samplers.periodic._build_masks_arrays" class="headerlink" title="Permanent link">¤</a></h4>
+<a href="#jimgw.samplers.periodic.to_displacement_wrapper" class="headerlink" title="Permanent link">¤</a></h5>
 
 
     <div class="doc doc-contents ">
 
-        <p>Build boolean mask, lower-bound, and period arrays from an index-keyed dict.</p>
-<p>Returns <code>(mask, lower, period)</code> as JAX arrays of shape <code>(n_dims,)</code>.</p>
+        <p>Displacement wrapper for BlackJAX SMC (prior space).</p>
+<p>Signature: <code>wrapper_fn(proposed_displacement, current_position) -&gt; wrapped_displacement</code></p>
+<p>Displacement and position are flat JAX arrays of shape <code>(n_dims,)</code>.
+SMC's inner kernel operates on displacements. For periodic parameters the
+displacement is adjusted so that <code>current + wrapped_displacement</code> stays
+within <code>[lower, upper)</code>:</p>
+<pre><code>wrapped_displacement = lower + mod(current + disp - lower, period) - current
+</code></pre>
 
 
     </div>
@@ -2209,32 +2188,10 @@ displacement wrapper.  The adapters below handle those conversions.</p>
 <div class="doc doc-object doc-function">
 
 
-<h4 id="jimgw.samplers.periodic.to_unit_cube_stepper" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">to_unit_cube_stepper</span><span class="p">(</span><span class="n">periodic_index</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span> <span class="n">n_dims</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span></code>
-
-<a href="#jimgw.samplers.periodic.to_unit_cube_stepper" class="headerlink" title="Permanent link">¤</a></h4>
-
-
-    <div class="doc doc-contents ">
-
-        <p>Stepper function for BlackJAX NS-AW (unit-cube space).</p>
-<p>Signature: <code>stepper_fn(position, direction, step_size) -&gt; new_position</code></p>
-<p><code>periodic_index</code> is a list of dimension indices to wrap; bounds are implicit
-because NS-AW always operates in <code>[0, 1]^n_dims</code>, so wrapping is always
-<code>mod(pos + step_size * dir, 1.0)</code>.</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h4 id="jimgw.samplers.periodic.to_prior_space_stepper" class="doc doc-heading">
+<h5 id="jimgw.samplers.periodic.to_prior_space_stepper" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">to_prior_space_stepper</span><span class="p">(</span><span class="n">periodic_index</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]],</span> <span class="n">n_dims</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span></code>
 
-<a href="#jimgw.samplers.periodic.to_prior_space_stepper" class="headerlink" title="Permanent link">¤</a></h4>
+<a href="#jimgw.samplers.periodic.to_prior_space_stepper" class="headerlink" title="Permanent link">¤</a></h5>
 
 
     <div class="doc doc-contents ">
@@ -2254,22 +2211,19 @@ Periodic parameters are wrapped with
 <div class="doc doc-object doc-function">
 
 
-<h4 id="jimgw.samplers.periodic.to_displacement_wrapper" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">to_displacement_wrapper</span><span class="p">(</span><span class="n">periodic_index</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]],</span> <span class="n">n_dims</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span></code>
+<h5 id="jimgw.samplers.periodic.to_unit_cube_stepper" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">to_unit_cube_stepper</span><span class="p">(</span><span class="n">periodic_index</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span> <span class="n">n_dims</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span></code>
 
-<a href="#jimgw.samplers.periodic.to_displacement_wrapper" class="headerlink" title="Permanent link">¤</a></h4>
+<a href="#jimgw.samplers.periodic.to_unit_cube_stepper" class="headerlink" title="Permanent link">¤</a></h5>
 
 
     <div class="doc doc-contents ">
 
-        <p>Displacement wrapper for BlackJAX SMC (prior space).</p>
-<p>Signature: <code>wrapper_fn(proposed_displacement, current_position) -&gt; wrapped_displacement</code></p>
-<p>Displacement and position are flat JAX arrays of shape <code>(n_dims,)</code>.
-SMC's inner kernel operates on displacements. For periodic parameters the
-displacement is adjusted so that <code>current + wrapped_displacement</code> stays
-within <code>[lower, upper)</code>:</p>
-<pre><code>wrapped_displacement = lower + mod(current + disp - lower, period) - current
-</code></pre>
+        <p>Stepper function for BlackJAX NS-AW (unit-cube space).</p>
+<p>Signature: <code>stepper_fn(position, direction, step_size) -&gt; new_position</code></p>
+<p><code>periodic_index</code> is a list of dimension indices to wrap; bounds are implicit
+because NS-AW always operates in <code>[0, 1]^n_dims</code>, so wrapping is always
+<code>mod(pos + step_size * dir, 1.0)</code>.</p>
 
 
     </div>

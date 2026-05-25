@@ -2126,7 +2126,7 @@
 <p>Contains the noise-weighted inner product functions used by the likelihood
 and the fixed-parameter application helper.</p>
 <ul>
-<li>For mass, spin, and sky/detector coordinate transforms, see :mod:<code>jimgw.core.single_event.transform_utils</code>.</li>
+<li>For mass, spin, and sky/detector coordinate transforms, see <code>jimgw.core.single_event.transform_utils</code>.</li>
 </ul>
 
 
@@ -2323,9 +2323,9 @@ parameters applied.</p>
 
         <p>Compute the complex noise-weighted inner product of two frequency-domain waveforms.</p>
 <p>The first waveform <code>h1</code> is complex-conjugated. The result is:</p>
-<p>.. math::</p>
-<pre><code>\langle h_1, h_2 \rangle = 4 \Delta f \sum_k \frac{h_1^*(f_k)\, h_2(f_k)}{S_n(f_k)}
-</code></pre>
+<p>$$</p>
+<p>\langle h_1, h_2 \rangle = 4 \Delta f \sum_k \frac{h_1^*(f_k)\, h_2(f_k)}{S_n(f_k)}</p>
+<p>$$</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -2449,10 +2449,13 @@ data, this is the complex match-filtered SNR.</p>
 
         <p>Compute the real noise-weighted inner product of two frequency-domain waveforms.</p>
 <p>Returns the real part of <code>complex_inner_product</code>:</p>
-<p>.. math::</p>
-<pre><code>(h_1 | h_2) = \operatorname{Re}\langle h_1, h_2 \rangle
-    = 4 \Delta f \sum_k \operatorname{Re}\!\left[
-      \frac{h_1^*(f_k)\, h_2(f_k)}{S_n(f_k)} \right]
+<pre><code>$$
+
+(h_1 | h_2) = \operatorname{Re}\langle h_1, h_2 \rangle
+        = 4 \Delta f \sum_k \operatorname{Re}\!\left[
+            \frac{h_1^*(f_k)\, h_2(f_k)}{S_n(f_k)} \right]
+
+$$
 </code></pre>
 
 

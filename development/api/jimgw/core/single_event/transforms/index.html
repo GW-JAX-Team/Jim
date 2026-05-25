@@ -2434,17 +2434,17 @@
 <p>The SNR-weighted distance <code>d_hat</code> absorbs the network sensitivity and chirp-mass
 dependence into the distance parameter, making it closer to uniform in the
 posterior:</p>
-<p>.. math::</p>
-<pre><code>d_{\hat} = \frac{d_L}{\mathcal{M}_c^{5/6}\, R_{\mathrm{net}}}
-</code></pre>
+<p>$$</p>
+<p>d_{\hat} = \frac{d_L}{\mathcal{M}<em>c^{5/6}\, R</em>{\mathrm{net}}}</p>
+<p>$$</p>
 <p>Conditioning parameters are <code>(M_c, ra, dec, psi, iota)</code>.</p>
 
 
 <details class="warning" open>
   <summary>Warning</summary>
   <p>This transform is derived under the assumption that the waveform consists
-only of the dominant quadrupolar mode (:math:<code>\ell = 2, |m| = 2</code>), following
-the parameterisation in <code>arXiv:2207.03508 &lt;https://arxiv.org/abs/2207.03508&gt;</code>_.
+only of the dominant quadrupolar mode (<span class="arithmatex">\(\ell = 2, |m| = 2\)</span>), following
+the parameterisation in <a href="https://arxiv.org/abs/2207.03508">arXiv:2207.03508</a>.
 It is <strong>not valid</strong> for waveforms that include higher harmonics or orbital
 precession.  Use at your own discretion when such waveform approximants are employed.</p>
 </details>
@@ -2622,18 +2622,18 @@ used to compute the network antenna response <code>R_net</code>.</p>
 <p>In the geocentric convention the orbital phase at coalescence is
 <code>phase_c</code> (so the GW phase is <code>phase_c / 2</code>).  In the detector
 convention the arrival phase is</p>
-<p>.. math::</p>
-<pre><code>\phi_{\mathrm{det}} = \frac{\phi_c}{2} + \arg R_{\mathrm{det}}
-</code></pre>
-<p>where :math:<code>R_{\mathrm{det}}</code> is the complex detector response.</p>
+<p>$$</p>
+<p>\phi_{\mathrm{det}} = \frac{\phi_c}{2} + \arg R_{\mathrm{det}}</p>
+<p>$$</p>
+<p>where <span class="arithmatex">\(R_{\mathrm{det}}\)</span> is the complex detector response.</p>
 <p>Conditioning parameters are <code>(ra, dec, psi, iota)</code>.</p>
 
 
 <details class="warning" open>
   <summary>Warning</summary>
   <p>This transform is derived under the assumption that the waveform consists
-only of the dominant quadrupolar mode (:math:<code>\ell = 2, |m| = 2</code>), following
-the parameterisation in <code>arXiv:2207.03508 &lt;https://arxiv.org/abs/2207.03508&gt;</code>_.
+only of the dominant quadrupolar mode (<span class="arithmatex">\(\ell = 2, |m| = 2\)</span>), following
+the parameterisation in <a href="https://arxiv.org/abs/2207.03508">arXiv:2207.03508</a>.
 It is <strong>not valid</strong> for waveforms that include higher harmonics or orbital
 precession.  Use at your own discretion when such waveform approximants are employed.</p>
 </details>

@@ -3514,8 +3514,8 @@ transform function and corresponding <code>inverse</code> and <code>backward</co
 
 
         <p>Linear rescaling from one bounded interval to another.</p>
-<p>Maps <code>x ∈ [original_lower, original_upper]</code> to
-<code>y ∈ [target_lower, target_upper]</code> via a linear (affine) transform.</p>
+<p>Maps <code>x in [original_lower, original_upper]</code> to
+<code>y in [target_lower, target_upper]</code> via a linear (affine) transform.</p>
 
 
 <p><span class="doc-section-title">Attributes:</span></p>
@@ -3757,10 +3757,10 @@ transform function and corresponding <code>inverse</code> and <code>backward</co
 
 
         <p>Logit-based transform from a bounded interval to the real line.</p>
-<p>Maps <code>x ∈ (original_lower, original_upper)</code> to <code>y ∈ (-∞, +∞)</code> via</p>
-<p>.. math::</p>
-<pre><code>y = \text{logit}\!\left(\frac{x - x_{\min}}{x_{\max} - x_{\min}}\right).
-</code></pre>
+<p>Maps values from <code>(original_lower, original_upper)</code> to the real line via</p>
+<p>$$</p>
+<p>y = \text{logit}!\left(\frac{x - x_{\min}}{x_{\max} - x_{\min}}\right)</p>
+<p>$$</p>
 <p>The inverse maps back with the sigmoid function.</p>
 
 
@@ -3948,7 +3948,7 @@ transform function and corresponding <code>inverse</code> and <code>backward</co
 
 
 
-        <p>Cartesian-to-polar transform: <code>(x, y) → (theta, r)</code> with <code>theta ∈ [0, 2π]</code>.</p>
+        <p>Cartesian-to-polar transform: <code>(x, y) -&gt; (theta, r)</code> with <code>theta in [0, 2*pi]</code>.</p>
 
 
 
@@ -4415,7 +4415,7 @@ through unchanged.</p>
 
 
 
-        <p>Cosine transformation: <code>y = cos(x)</code>, with <code>x ∈ [0, π]</code>.</p>
+        <p>Cosine transformation: <code>y = cos(x)</code>, with <code>x in [0, pi]</code>.</p>
 
 
 
@@ -4535,8 +4535,8 @@ through unchanged.</p>
 
 
         <p>CDF transform from Uniform(0, 1) to a Gaussian (normal) distribution.</p>
-<p>Maps <code>u ∈ (0, 1)</code> to <code>x = mu + sigma * ndtri(u)</code> using the probit
-(quantile) function.  The inverse maps <code>x → ndtr((x - mu) / sigma) ∈ (0, 1)</code>
+<p>Maps <code>u in (0, 1)</code> to <code>x = mu + sigma * ndtri(u)</code> using the probit
+(quantile) function.  The inverse maps <code>x -&gt; ndtr((x - mu) / sigma) in (0, 1)</code>
 using the normal CDF.</p>
 
 
@@ -5379,10 +5379,10 @@ determinant of the transform is computed automatically using <code>jax.jacfwd</c
 
 
         <p>Transform a periodic parameter onto a 2D circle.</p>
-<p>Maps <code>(r, θ)</code> — where <code>θ ∈ [xmin, xmax]</code> is the periodic angle and
-<code>r</code> is a scale — to Cartesian coordinates <code>(x, y) = r(cos θ', sin θ')</code>
-(with <code>θ' = 2π(θ - xmin)/(xmax - xmin)</code>).  The inverse recovers
-<code>(r, θ)</code> from <code>(x, y)</code>.</p>
+<p>Maps <code>(r, theta)</code> - where <code>theta in [xmin, xmax]</code> is the periodic angle and
+<code>r</code> is a scale - to Cartesian coordinates <code>(x, y) = r(cos theta_prime, sin theta_prime)</code>
+(with <code>theta_prime = 2*pi*(theta - xmin)/(xmax - xmin)</code>).  The inverse recovers
+<code>(r, theta)</code> from <code>(x, y)</code>.</p>
 
 
 <p><span class="doc-section-title">Attributes:</span></p>
@@ -5786,7 +5786,7 @@ The <code>alpha = -1</code> (log-uniform) case is handled separately.</p>
 
 
         <p>CDF transform from Uniform(0, 1) to a Rayleigh distribution.</p>
-<p>Maps <code>u ∈ [0, 1]</code> to <code>x = sigma * sqrt(-2 * log(u))</code>.</p>
+<p>Maps <code>u in [0, 1]</code> to <code>x = sigma * sqrt(-2 * log(u))</code>.</p>
 
 
 <p><span class="doc-section-title">Attributes:</span></p>
@@ -6105,7 +6105,7 @@ The <code>alpha = -1</code> (log-uniform) case is handled separately.</p>
 
 
 
-        <p>Sine transformation: <code>y = sin(x)</code>, with <code>x ∈ [-π/2, π/2]</code>.</p>
+        <p>Sine transformation: <code>y = sin(x)</code>, with <code>x in [-pi/2, pi/2]</code>.</p>
 
 
 

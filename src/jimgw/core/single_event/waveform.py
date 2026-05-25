@@ -6,6 +6,7 @@ from ripplegw import (
     IMRPhenomXAS,
     IMRPhenomXAS_NRTidalv3,
     IMRPhenomXHM,
+    IMRPhenomXP,
     IMRPhenomXPHM,
     SineGaussian,
 )
@@ -17,6 +18,7 @@ RippleIMRPhenomPv2 = IMRPhenomPv2
 RippleIMRPhenomXAS = IMRPhenomXAS
 RippleIMRPhenomXAS_NRTidalv3 = IMRPhenomXAS_NRTidalv3
 RippleIMRPhenomXHM = IMRPhenomXHM
+RippleIMRPhenomXP = IMRPhenomXP
 RippleIMRPhenomXPHM = IMRPhenomXPHM
 RippleSineGaussian = SineGaussian
 
@@ -28,6 +30,7 @@ __all__ = [
     "RippleIMRPhenomXAS",
     "RippleIMRPhenomXAS_NRTidalv3",
     "RippleIMRPhenomXHM",
+    "RippleIMRPhenomXP",
     "RippleIMRPhenomXPHM",
     "RippleSineGaussian",
 ]

@@ -16,13 +16,14 @@ from jimgw.core.single_event.waveform import (
 logger = logging.getLogger(__name__)
 
 _REGISTRY = {
-    "IMRPhenomD": RippleIMRPhenomD,
-    "IMRPhenomPv2": RippleIMRPhenomPv2,
     "TaylorF2": RippleTaylorF2,
+    "IMRPhenomD": RippleIMRPhenomD,
     "IMRPhenomD_NRTidalv2": RippleIMRPhenomD_NRTidalv2,
+    "IMRPhenomPv2": RippleIMRPhenomPv2,
     "IMRPhenomXAS": RippleIMRPhenomXAS,
     "IMRPhenomXAS_NRTidalv3": RippleIMRPhenomXAS_NRTidalv3,
     "IMRPhenomXHM": RippleIMRPhenomXHM,
+    "IMRPhenomXP": RippleIMRPhenomXP,
     "IMRPhenomXPHM": RippleIMRPhenomXPHM,
     "SineGaussian": RippleSineGaussian,
 }

@@ -113,13 +113,14 @@ DataConfig = Annotated[
 # ---------------------------------------------------------------------------
 
 Approximant = Literal[
-    "IMRPhenomD",
-    "IMRPhenomPv2",
     "TaylorF2",
+    "IMRPhenomD",
     "IMRPhenomD_NRTidalv2",
+    "IMRPhenomPv2",
     "IMRPhenomXAS",
     "IMRPhenomXAS_NRTidalv3",
     "IMRPhenomXHM",
+    "IMRPhenomXP",
     "IMRPhenomXPHM",
     "SineGaussian",
 ]

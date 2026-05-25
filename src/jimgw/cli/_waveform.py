@@ -8,6 +8,7 @@ from jimgw.core.single_event.waveform import (
     RippleIMRPhenomXAS,
     RippleIMRPhenomXAS_NRTidalv3,
     RippleIMRPhenomXHM,
+    RippleIMRPhenomXP,
     RippleIMRPhenomXPHM,
     RippleSineGaussian,
     RippleTaylorF2,

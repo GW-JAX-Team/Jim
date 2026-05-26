@@ -529,11 +529,12 @@ class Data(ABC):
             or path_lower.endswith(".csv")
         ):
             self.fft()
+            fd = np.array(self.fd)
             data = np.column_stack(
                 [
                     np.array(self.frequencies),
-                    np.array(self.fd).real,
-                    np.array(self.fd).imag,
+                    np.real(fd),
+                    np.imag(fd),
                 ]
             )
             if path_lower.endswith(".csv"):

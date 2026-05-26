@@ -530,14 +530,34 @@ class Data(ABC):
         ):
             self.fft()
             data = np.column_stack(
-                [np.array(self.frequencies), np.array(self.fd).real, np.array(self.fd).imag]
+                [
+                    np.array(self.frequencies),
+                    np.array(self.fd).real,
+                    np.array(self.fd).imag,
+                ]
             )
             if path_lower.endswith(".csv"):
-                np.savetxt(path, data, delimiter=",", header="f,real_h(f),imag_h(f)", comments="# ")
+                np.savetxt(
+                    path,
+                    data,
+                    delimiter=",",
+                    header="f,real_h(f),imag_h(f)",
+                    comments="# ",
+                )
             else:
                 np.savetxt(path, data, header="f real_h(f) imag_h(f)")
-        elif path_lower.endswith(".gwf") or path_lower.endswith(".hdf5") or path_lower.endswith(".h5"):
-            channel = self.name if ":" in self.name else f"{self.name}:STRAIN" if self.name else "STRAIN"
+        elif (
+            path_lower.endswith(".gwf")
+            or path_lower.endswith(".hdf5")
+            or path_lower.endswith(".h5")
+        ):
+            channel = (
+                self.name
+                if ":" in self.name
+                else f"{self.name}:STRAIN"
+                if self.name
+                else "STRAIN"
+            )
             ts = TimeSeries(
                 np.array(self.td),
                 t0=self.start_time,

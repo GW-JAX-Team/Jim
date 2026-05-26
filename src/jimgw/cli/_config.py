@@ -85,11 +85,25 @@ class InjectionDataConfig(_DataBase):
 
 
 class FileDataConfig(_DataBase):
-    """Load pre-saved strain and PSD from .npz files (useful for CI/offline use)."""
+    """Load pre-saved strain and PSD from local files (useful for CI/offline use).
+
+    Supported strain formats: ``.npz``, ``.gwf`` / ``.gwf.gz``, ``.hdf5`` / ``.h5``,
+    ``.csv``.  PSD files must be ``.npz`` archives.
+
+    For frame (``.gwf``) and HDF5 files a channel name is required.  Provide
+    ``strain_channels`` to map detector names to channel strings; if omitted,
+    common LIGO/Virgo preset channel names are tried automatically for GWF files.
+    """
 
     type: Literal["file"] = "file"
-    strain_files: dict[str, Path]  # detector_name -> .npz with 'strain', 'times'
-    psd_files: dict[str, Path]  # detector_name -> .npz with 'psd', 'freqs'
+    strain_files: dict[str, Path]  # detector_name -> strain file path
+    psd_files: dict[str, Path]  # detector_name -> .npz with 'values', 'frequencies'
+    strain_channels: dict[str, str] = Field(
+        default_factory=dict
+    )  # detector_name -> channel (e.g. "H1:GDS-CALIB_STRAIN")
+    psd_is_asd: dict[str, bool] = Field(
+        default_factory=dict
+    )  # detector_name -> True when the psd_file contains ASD values (Hz^{-1/2})
 
     @model_validator(mode="after")
     def _check_all_detectors_have_files(self) -> "FileDataConfig":

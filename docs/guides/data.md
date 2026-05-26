@@ -43,10 +43,44 @@ H1.set_data(data)
 
 ### Load from File
 
-Use `Data.from_file()` to read a locally saved `.npz` file. The file must contain the keys `td` (time-domain strain), `dt` (time step in seconds), and `start_time` (GPS start time):
+`Data.from_file()` detects the file format from the extension and dispatches accordingly.
+
+#### NumPy archive (`.npz`)
+
+The file must contain the keys `td` (time-domain strain), `dt` (time step in seconds), and `start_time` (GPS start time):
 
 ```python
 data = Data.from_file("path/to/data.npz")
+H1.set_data(data)
+```
+
+#### GWF / LAL frame file (`.gwf`)
+
+Pass a channel name via the `channel` argument. If omitted, a set of common LIGO/Virgo channel names is tried automatically:
+
+```python
+# Explicit channel (recommended)
+data = Data.from_file("path/to/data.gwf", channel="H1:GDS-CALIB_STRAIN")
+H1.set_data(data)
+
+# Auto-detect channel from common presets
+data = Data.from_file("path/to/data.gwf")
+H1.set_data(data)
+```
+
+Optional `start_time` and `end_time` (GPS seconds) let you trim the segment read from the frame file.
+
+#### HDF5 file (`.hdf5` / `.h5`)
+
+```python
+data = Data.from_file("path/to/data.hdf5", channel="H1:GDS-CALIB_STRAIN")
+H1.set_data(data)
+```
+
+#### CSV file (`.csv`)
+
+```python
+data = Data.from_file("path/to/data.csv")
 H1.set_data(data)
 ```
 
@@ -82,16 +116,46 @@ The simplest approach downloads and sets the default GWTC-2 ASD for the detector
 H1.load_and_set_psd()
 ```
 
-### Load from a text file
+### Load from a file
 
-`load_and_set_psd` also accepts paths to two-column whitespace-separated text files (frequency, PSD or ASD):
+There are two ways to load a PSD from a local file, depending on how much control you need.
+
+#### One-liner: `load_and_set_psd`
+
+`load_and_set_psd` is a convenience method that loads and sets the PSD in a single call. It supports all the same formats as `PowerSpectrum.from_file` (`.npz`, `.txt`, `.dat`, `.csv`):
 
 ```python
-# From a PSD file (units: Hz^{-1})
+# PSD file — any supported format (values in Hz^{-1})
 H1.load_and_set_psd(psd_file="path/to/psd.txt")
 
-# From an ASD file (units: Hz^{-1/2}) — squared internally to give PSD
-H1.load_and_set_psd(asd_file="path/to/asd.txt")
+# ASD file — any supported format (values in Hz^{-1/2}, squared internally)
+H1.load_and_set_psd(asd_file="path/to/asd.npz")
+```
+
+#### Explicit: `PowerSpectrum.from_file` + `set_psd`
+
+For full control, or when your file is not a plain text file, use `PowerSpectrum.from_file`. Supported formats:
+
+| Format | Extensions | Notes |
+| --- | --- | --- |
+| NumPy archive | `.npz` | Must contain `values` (Hz⁻¹) and `frequencies` arrays |
+| Text / dat | `.txt`, `.dat` | Two-column whitespace-separated: `(frequency, value)` |
+| CSV | `.csv` | Two-column comma-separated: `(frequency, value)` |
+
+```python
+from jimgw.core.single_event.data import PowerSpectrum
+
+# From an .npz archive
+H1.set_psd(PowerSpectrum.from_file("path/to/psd.npz"))
+
+# From a PSD text file (Hz^{-1})
+H1.set_psd(PowerSpectrum.from_file("path/to/psd.txt"))
+
+# From an ASD text file (Hz^{-1/2}) — pass is_asd=True to square the values
+H1.set_psd(PowerSpectrum.from_file("path/to/asd.txt", is_asd=True))
+
+# From a CSV file
+H1.set_psd(PowerSpectrum.from_file("path/to/psd.csv"))
 ```
 
 ### Construct from arrays
@@ -106,14 +170,6 @@ psd_values = jnp.array(...)      # PSD in Hz^{-1}
 frequencies = jnp.array(...)     # Frequencies in Hz
 
 H1.set_psd(PowerSpectrum(psd_values, frequencies))
-```
-
-### Load from a `.npz` file
-
-If you have a previously saved `PowerSpectrum`, reload it with `PowerSpectrum.from_file`. The file must contain `values` and `frequencies` arrays:
-
-```python
-H1.set_psd(PowerSpectrum.from_file("path/to/psd.npz"))
 ```
 
 ## Injecting a Simulated Signal

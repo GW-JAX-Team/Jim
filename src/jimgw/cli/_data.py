@@ -115,9 +115,11 @@ def _load_files(ifos: list[GroundBased2G], cfg: FileDataConfig) -> None:
     for ifo in ifos:
         strain_path = cfg.strain_files[ifo.name]
         psd_path = cfg.psd_files[ifo.name]
+        channel = cfg.strain_channels.get(ifo.name)
+        is_asd = cfg.psd_is_asd.get(ifo.name, False)
 
         logger.info("Loading %s strain from %s", ifo.name, strain_path)
-        ifo.set_data(Data.from_file(str(strain_path)))
+        ifo.set_data(Data.from_file(str(strain_path), channel=channel))
 
         logger.info("Loading %s PSD from %s", ifo.name, psd_path)
-        ifo.set_psd(PowerSpectrum.from_file(str(psd_path)))
+        ifo.set_psd(PowerSpectrum.from_file(str(psd_path), is_asd=is_asd))

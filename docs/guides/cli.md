@@ -78,16 +78,63 @@ ra      = 1.375
 dec     = -1.21
 ```
 
-### `type = "file"` — load from pre-saved `.npz` files
+### `type = "file"` — load from local files
 
 Loads strain and PSD from local files. Useful for offline or CI use.
+
+Supported strain formats: `.npz`, `.gwf` / `.gwf.gz`, `.hdf5` / `.h5`, `.csv`.
+Supported PSD formats: `.npz`, `.txt`, `.dat`, `.csv`.
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
 | `detectors` | list[str] | — | Detector identifiers |
 | `trigger_time` | float | — | GPS trigger time |
-| `strain_files` | dict[str, path] | — | Map from detector name to `.npz` file containing `strain` and `times` arrays |
-| `psd_files` | dict[str, path] | — | Map from detector name to `.npz` file containing `psd` and `freqs` arrays |
+| `strain_files` | dict[str, path] | — | Map from detector name to strain file (any supported format) |
+| `psd_files` | dict[str, path] | — | Map from detector name to PSD file (any supported format) |
+| `strain_channels` | dict[str, str] | `{}` | Channel name per detector for GWF/HDF5 files (e.g. `"H1:GDS-CALIB_STRAIN"`). If omitted, common LIGO/Virgo preset channel names are tried for `.gwf` files. |
+| `psd_is_asd` | dict[str, bool] | `{}` | Set to `true` for detectors whose PSD file contains ASD values (Hz⁻¹/²); they are squared automatically. Ignored for `.npz` files. |
+
+Example with `.npz` files (no channels required):
+
+```toml
+[data]
+type = "file"
+detectors = ["H1", "L1"]
+trigger_time = 1126259462.4
+
+[data.strain_files]
+H1 = "h1_strain.npz"
+L1 = "l1_strain.npz"
+
+[data.psd_files]
+H1 = "h1_psd.npz"
+L1 = "l1_psd.npz"
+```
+
+Example with `.gwf` frame files and `.txt` ASD curves:
+
+```toml
+[data]
+type = "file"
+detectors = ["H1", "L1"]
+trigger_time = 1126259462.4
+
+[data.strain_files]
+H1 = "H-H1_LOSC_4_V2-1126259446-32.gwf"
+L1 = "L-L1_LOSC_4_V2-1126259446-32.gwf"
+
+[data.strain_channels]
+H1 = "H1:GWOSC-4KHZ_R1_STRAIN"
+L1 = "L1:GWOSC-4KHZ_R1_STRAIN"
+
+[data.psd_files]
+H1 = "O3-H1_asd.txt"
+L1 = "O3-L1_asd.txt"
+
+[data.psd_is_asd]
+H1 = true
+L1 = true
+```
 
 ---
 

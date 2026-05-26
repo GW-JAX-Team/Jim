@@ -1,7 +1,11 @@
 import jax
 
 import jax.numpy as jnp
+import numpy as np
+import pytest
 from copy import deepcopy
+from pathlib import Path
+from unittest.mock import MagicMock, patch
 from scipy.signal import welch
 from jimgw.core.single_event.data import Data, PowerSpectrum
 
@@ -139,3 +143,251 @@ class TestPowerSpectrum:
         fd_data_white = fd_data / jnp.sqrt(self.psd.values / 2 / self.psd.delta_t)
         td_data_white = jnp.fft.irfft(fd_data_white) / self.psd.delta_t
         assert jnp.allclose(jnp.var(td_data_white), 1, rtol=1e-1)
+
+
+class TestPowerSpectrumFromFile:
+    """Tests for PowerSpectrum.from_file across all supported formats."""
+
+    _FREQS = np.array([10.0, 20.0, 30.0])
+    _PSD = np.array([1e-46, 4e-46, 9e-46])
+    _ASD = np.sqrt(_PSD)
+
+    # -- NPZ ------------------------------------------------------------------
+
+    def test_npz_roundtrip(self, tmp_path: Path):
+        """.npz file is loaded with the correct values and frequencies."""
+        path = str(tmp_path / "psd.npz")
+        np.savez(path, values=self._PSD, frequencies=self._FREQS, name="H1")
+        psd = PowerSpectrum.from_file(path)
+        assert jnp.allclose(psd.values, jnp.array(self._PSD))
+        assert jnp.allclose(psd.frequencies, jnp.array(self._FREQS))
+        assert psd.name == "H1"
+
+    def test_npz_missing_keys_raises(self, tmp_path: Path):
+        path = str(tmp_path / "bad.npz")
+        np.savez(path, values=self._PSD)  # missing 'frequencies'
+        with pytest.raises(ValueError, match="must contain"):
+            PowerSpectrum.from_file(path)
+
+    # -- TXT / DAT -----------------------------------------------------------
+
+    @pytest.mark.parametrize("ext", [".txt", ".dat"])
+    def test_text_psd_file(self, tmp_path: Path, ext: str):
+        """Two-column text file loads correctly as PSD (is_asd=False)."""
+        path = str(tmp_path / f"psd{ext}")
+        np.savetxt(path, np.column_stack([self._FREQS, self._PSD]))
+        psd = PowerSpectrum.from_file(path, is_asd=False)
+        assert jnp.allclose(psd.values, jnp.array(self._PSD))
+        assert jnp.allclose(psd.frequencies, jnp.array(self._FREQS))
+
+    @pytest.mark.parametrize("ext", [".txt", ".dat"])
+    def test_text_asd_file_squared(self, tmp_path: Path, ext: str):
+        """is_asd=True squares the loaded values to give a PSD."""
+        path = str(tmp_path / f"asd{ext}")
+        np.savetxt(path, np.column_stack([self._FREQS, self._ASD]))
+        psd = PowerSpectrum.from_file(path, is_asd=True)
+        assert jnp.allclose(psd.values, jnp.array(self._PSD), rtol=1e-6)
+
+    # -- CSV ------------------------------------------------------------------
+
+    def test_csv_psd_file(self, tmp_path: Path):
+        """Comma-separated two-column CSV loads as PSD."""
+        path = str(tmp_path / "psd.csv")
+        np.savetxt(path, np.column_stack([self._FREQS, self._PSD]), delimiter=",")
+        psd = PowerSpectrum.from_file(path)
+        assert jnp.allclose(psd.values, jnp.array(self._PSD))
+
+    def test_csv_asd_file_squared(self, tmp_path: Path):
+        """CSV with ASD values is squared correctly when is_asd=True."""
+        path = str(tmp_path / "asd.csv")
+        np.savetxt(path, np.column_stack([self._FREQS, self._ASD]), delimiter=",")
+        psd = PowerSpectrum.from_file(path, is_asd=True)
+        assert jnp.allclose(psd.values, jnp.array(self._PSD), rtol=1e-6)
+
+    # -- Unsupported ----------------------------------------------------------
+
+    def test_unsupported_extension_raises(self, tmp_path: Path):
+        path = str(tmp_path / "psd.xyz")
+        with pytest.raises(ValueError, match="Unsupported file format"):
+            PowerSpectrum.from_file(path)
+
+
+# ---------------------------------------------------------------------------
+# Helpers shared across file-loading tests
+# ---------------------------------------------------------------------------
+
+
+def _make_mock_timeseries(n=8192, dt=1 / 2048.0, epoch=0.0):
+    """Return a MagicMock that looks like a gwpy TimeSeries."""
+    ts = MagicMock()
+    ts.value = np.zeros(n)
+    ts.dt.value = dt
+    ts.epoch.value = epoch
+    return ts
+
+
+# ---------------------------------------------------------------------------
+
+
+class TestDataFromFile:
+    """Tests for Data.from_file and Data._from_gwf."""
+
+    # -- NPZ ------------------------------------------------------------------
+
+    def test_from_file_npz_roundtrip(self, tmp_path: Path):
+        """from_file with .npz produces Data with correct attributes."""
+        td = np.ones(8192)
+        dt = 1 / 2048.0
+        start = 100.0
+        path = str(tmp_path / "strain.npz")
+        np.savez(path, td=td, dt=dt, start_time=start, name="H1")
+
+        data = Data.from_file(path)
+
+        assert data.name == "H1"
+        assert data.start_time == pytest.approx(start)
+        assert data.delta_t == pytest.approx(dt)
+        assert len(data.td) == len(td)
+
+    def test_from_file_npz_missing_keys_raises(self, tmp_path: Path):
+        """from_file raises ValueError for an .npz missing required keys."""
+        path = str(tmp_path / "bad.npz")
+        np.savez(path, td=np.zeros(4))  # missing 'dt' and 'start_time'
+
+        with pytest.raises(ValueError, match="must contain"):
+            Data.from_file(path)
+
+    # -- Unsupported extension ------------------------------------------------
+
+    def test_from_file_unsupported_extension_raises(self, tmp_path: Path):
+        """from_file raises ValueError for an unrecognised file extension."""
+        path = str(tmp_path / "data.xyz")
+        with pytest.raises(ValueError, match="Unsupported file format"):
+            Data.from_file(path)
+
+    # -- GWF ------------------------------------------------------------------
+
+    def test_from_file_gwf_delegates_to_from_gwf(self):
+        """from_file with .gwf extension calls _from_gwf with the right args."""
+        sentinel = object()
+        with patch.object(Data, "_from_gwf", return_value=sentinel) as mock_gwf:
+            result = Data.from_file(
+                "data.gwf",
+                channel="H1:GDS-CALIB_STRAIN",
+                start_time=10.0,
+                end_time=14.0,
+            )
+        mock_gwf.assert_called_once_with(
+            "data.gwf",
+            channel="H1:GDS-CALIB_STRAIN",
+            start_time=10.0,
+            end_time=14.0,
+        )
+        assert result is sentinel
+
+    def test_from_gwf_explicit_channel(self):
+        """_from_gwf with an explicit channel calls TimeSeries.read correctly."""
+        mock_ts = _make_mock_timeseries()
+        with patch(
+            "jimgw.core.single_event.data.TimeSeries.read", return_value=mock_ts
+        ) as mock_read:
+            data = Data._from_gwf("strain.gwf", channel="H1:GDS-CALIB_STRAIN")
+
+        mock_read.assert_called_once_with(
+            source="strain.gwf", channel="H1:GDS-CALIB_STRAIN"
+        )
+        assert data.name == "H1"
+        assert data.delta_t == pytest.approx(mock_ts.dt.value)
+
+    def test_from_gwf_explicit_channel_with_time_bounds(self):
+        """_from_gwf passes start/end to TimeSeries.read when provided."""
+        mock_ts = _make_mock_timeseries()
+        with patch(
+            "jimgw.core.single_event.data.TimeSeries.read", return_value=mock_ts
+        ) as mock_read:
+            Data._from_gwf(
+                "strain.gwf",
+                channel="L1:GDS-CALIB_STRAIN",
+                start_time=0.0,
+                end_time=4.0,
+            )
+
+        mock_read.assert_called_once_with(
+            source="strain.gwf",
+            channel="L1:GDS-CALIB_STRAIN",
+            start=0.0,
+            end=4.0,
+        )
+
+    def test_from_gwf_explicit_channel_not_found_raises(self):
+        """_from_gwf re-raises as ValueError when the named channel is missing."""
+        with patch(
+            "jimgw.core.single_event.data.TimeSeries.read",
+            side_effect=RuntimeError("no channel"),
+        ):
+            with pytest.raises(ValueError, match="Could not read channel"):
+                Data._from_gwf("strain.gwf", channel="H1:BAD_CHANNEL")
+
+    def test_from_gwf_auto_channel_fallback(self):
+        """_from_gwf tries presets and succeeds on a later candidate."""
+        mock_ts = _make_mock_timeseries()
+
+        call_count = 0
+
+        def _side_effect(**kwargs):
+            nonlocal call_count
+            call_count += 1
+            # Fail on the first two attempts, succeed on the third
+            if call_count < 3:
+                raise RuntimeError("channel not found")
+            return mock_ts
+
+        with patch(
+            "jimgw.core.single_event.data.TimeSeries.read",
+            side_effect=_side_effect,
+        ):
+            data = Data._from_gwf("strain.gwf")
+
+        assert call_count == 3
+        assert data is not None
+
+    def test_from_gwf_no_channel_all_fail_raises(self):
+        """_from_gwf raises ValueError when no preset channel works."""
+        with patch(
+            "jimgw.core.single_event.data.TimeSeries.read",
+            side_effect=RuntimeError("channel not found"),
+        ):
+            with pytest.raises(ValueError, match="Could not load any data"):
+                Data._from_gwf("strain.gwf")
+
+    # -- HDF5 / CSV -----------------------------------------------------------
+
+    @pytest.mark.parametrize("ext", [".hdf5", ".h5", ".hdf", ".csv"])
+    def test_from_file_gwpy_formats(self, ext: str):
+        """from_file for HDF5/CSV formats calls TimeSeries.read."""
+        mock_ts = _make_mock_timeseries()
+        with patch(
+            "jimgw.core.single_event.data.TimeSeries.read", return_value=mock_ts
+        ) as mock_read:
+            data = Data.from_file(
+                f"data{ext}", channel="H1:GDS-CALIB_STRAIN", start_time=0.0
+            )
+
+        mock_read.assert_called_once_with(
+            source=f"data{ext}",
+            channel="H1:GDS-CALIB_STRAIN",
+            start=0.0,
+        )
+        assert data.name == "H1"
+
+    @pytest.mark.parametrize("ext", [".hdf5", ".h5", ".hdf", ".csv"])
+    def test_from_file_gwpy_no_channel(self, ext: str):
+        """from_file for HDF5/CSV passes no channel kwarg when channel is None."""
+        mock_ts = _make_mock_timeseries()
+        with patch(
+            "jimgw.core.single_event.data.TimeSeries.read", return_value=mock_ts
+        ) as mock_read:
+            data = Data.from_file(f"data{ext}")
+
+        mock_read.assert_called_once_with(source=f"data{ext}")
+        assert data.name == ""

@@ -6,7 +6,6 @@ import time
 import jax
 import jax.numpy as jnp
 from jaxtyping import Array, Float, Complex, Key, jaxtyped, Bool
-from numpy import loadtxt
 import requests
 from beartype import beartype as typechecker
 
@@ -497,27 +496,30 @@ class GroundBased2G(Detector):
         """Load power spectral density (PSD) from file or default GWTC-2 catalog,
             and set it to the detector.
 
+        Supported formats: .npz, .txt, .dat, .csv.
+        Pass ``asd_file`` (or ``is_asd=True`` via :meth:`PowerSpectrum.from_file`)
+        when the file contains amplitude spectral density values (Hz⁻¹/²); they
+        are squared internally to produce a PSD.
+
         Args:
-            psd_file (str, optional): Path to file containing PSD data. If empty, uses GWTC-2 PSD.
+            psd_file (str, optional): Path to a PSD file (Hz⁻¹). If empty, uses GWTC-2 ASD.
+            asd_file (str, optional): Path to an ASD file (Hz⁻¹/²). Values are squared.
 
         Returns:
-            Float[Array, "n_sample"]: Array of PSD values of the detector.
+            PowerSpectrum: The loaded PSD, already set on the detector.
         """
-        if psd_file != "":
-            f, psd_vals = loadtxt(psd_file, unpack=True)
-        elif asd_file != "":
-            f, asd_vals = loadtxt(asd_file, unpack=True)
-            psd_vals = asd_vals**2
+        if psd_file:
+            _loaded_psd = PowerSpectrum.from_file(psd_file, is_asd=False)
+        elif asd_file:
+            _loaded_psd = PowerSpectrum.from_file(asd_file, is_asd=True)
         else:
             logger.info("Grabbing GWTC-2 PSD for " + self.name)
             url = asd_file_dict[self.name]
             data = requests.get(url)
             tmp_file_name = f"fetched_default_asd_{self.name}.txt"
             open(tmp_file_name, "wb").write(data.content)
-            f, asd_vals = loadtxt(tmp_file_name, unpack=True)
-            psd_vals = asd_vals**2
-
-        _loaded_psd = PowerSpectrum(psd_vals, f, name=f"{self.name}_psd")
+            _loaded_psd = PowerSpectrum.from_file(tmp_file_name, is_asd=True)
+        _loaded_psd.name = f"{self.name}_psd"
         self.set_psd(_loaded_psd)
         return self.psd
 

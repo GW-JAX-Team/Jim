@@ -3064,14 +3064,14 @@ Fourier series is complete up to the Nyquist frequency.</p>
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;from_file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;path&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Self&lt;/span&gt;&lt;/code&gt;
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;from_file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;path&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;channel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Optional&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;None&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;start_time&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Optional&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;None&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;end_time&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Optional&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;None&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Self&lt;/span&gt;&lt;/code&gt;
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-classmethod&quot;&gt;&lt;code&gt;classmethod&lt;/code&gt;&lt;/small&gt;
   &lt;/span&gt;" href="./#jimgw.core.single_event.data.Data.from_file">from_file</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Load data from a file. This assumes the data to be in .npz format.</p>
+                  <p>Load data from a file.</p>
                 </div>
               </td>
             </tr>
@@ -4014,7 +4014,7 @@ Fourier domain data.</p>
 
 
 <h4 id="jimgw.core.single_event.data.Data.from_file" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">from_file</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span></code>
+            <code class="highlight language-python"><span class="n">from_file</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">channel</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">start_time</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">end_time</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
@@ -4025,8 +4025,18 @@ Fourier domain data.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Load data from a file. This assumes the data to be in .npz format.
-It should at least contain the keys 'td', 'dt', and 'start_time' (GPS start time).</p>
+        <p>Load data from a file.</p>
+<p>Supported formats:</p>
+<ul>
+<li><code>.npz</code> — NumPy archive containing <code>td</code> (time-domain strain),
+  <code>dt</code> (time step in seconds), and <code>start_time</code> (GPS start time).</li>
+<li><code>.gwf</code> / <code>.gwf.gz</code> — LIGO/Virgo Gravitational Wave Frame file.
+  Requires <code>gwpy</code>. Specify <em>channel</em> (e.g. <code>'H1:GDS-CALIB_STRAIN'</code>);
+  if omitted, common preset channel names are tried automatically.</li>
+<li><code>.hdf5</code> / <code>.h5</code> / <code>.hdf</code> — HDF5 file readable by gwpy.
+  <em>channel</em> is required when the file contains multiple channels.</li>
+<li><code>.csv</code> — Two-column CSV time-series file (gwpy format).</li>
+</ul>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -4049,11 +4059,83 @@ It should at least contain the keys 'td', 'dt', and 'start_time' (GPS start time
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Path to the .npz file containing the data.</p>
+                <p>Path to the file.</p>
               </div>
             </td>
             <td>
                 <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>channel</code>
+            </td>
+            <td>
+                  <code><span title="typing.Optional">Optional</span>[<span title="str">str</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Channel name for frame or HDF5 files
+(e.g. <code>'H1:GDS-CALIB_STRAIN'</code>). Ignored for <code>.npz</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>start_time</code>
+            </td>
+            <td>
+                  <code><span title="typing.Optional">Optional</span>[<span title="float">float</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>GPS start time to read (optional; for gwpy-backed formats).</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>end_time</code>
+            </td>
+            <td>
+                  <code><span title="typing.Optional">Optional</span>[<span title="float">float</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>GPS end time to read (optional; for gwpy-backed formats).</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+<th>Name</th>          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+<td><code>Data</code></td>            <td>
+                  <code><span title="typing.Self">Self</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Data object with the loaded time domain data.</p>
+              </div>
             </td>
           </tr>
       </tbody>
@@ -4498,14 +4580,14 @@ the fraction of the segment that is tapered on each side.</p>
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;from_file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;path&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Self&lt;/span&gt;&lt;/code&gt;
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;from_file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;path&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;is_asd&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;bool&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;False&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Self&lt;/span&gt;&lt;/code&gt;
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-classmethod&quot;&gt;&lt;code&gt;classmethod&lt;/code&gt;&lt;/small&gt;
   &lt;/span&gt;" href="./#jimgw.core.single_event.data.PowerSpectrum.from_file">from_file</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Load power spectrum from a file. This assumes the data to be in .npz format.</p>
+                  <p>Load a power spectrum from a file.</p>
                 </div>
               </td>
             </tr>
@@ -5046,7 +5128,7 @@ the fraction of the segment that is tapered on each side.</p>
 
 
 <h4 id="jimgw.core.single_event.data.PowerSpectrum.from_file" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">from_file</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span></code>
+            <code class="highlight language-python"><span class="n">from_file</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">is_asd</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
@@ -5057,9 +5139,18 @@ the fraction of the segment that is tapered on each side.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Load power spectrum from a file. This assumes the data to be in .npz format.
-It should at least contains the keys 'values', 'frequencies', and 'name'.
-<code>values</code> is the PSD values, <code>frequencies</code> is the frequencies of the PSD.</p>
+        <p>Load a power spectrum from a file.</p>
+<p>Supported formats:</p>
+<ul>
+<li><code>.npz</code> — NumPy archive containing <code>values</code> (PSD, Hz⁻¹) and
+  <code>frequencies</code> arrays. <em>is_asd</em> is ignored.</li>
+<li><code>.txt</code> / <code>.dat</code> — two-column whitespace-separated text file
+  <code>(frequency, value)</code>.  Set <em>is_asd=True</em> if the second column
+  contains amplitude spectral density (Hz⁻¹/²); it will be squared
+  internally to give the PSD.</li>
+<li><code>.csv</code> — same two-column format as <code>.txt</code>/<code>.dat</code> but
+  comma-separated.</li>
+</ul>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -5082,11 +5173,52 @@ It should at least contains the keys 'values', 'frequencies', and 'name'.
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Path to the .npz file containing the data.</p>
+                <p>Path to the PSD file.</p>
               </div>
             </td>
             <td>
                 <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>is_asd</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If <code>True</code>, the file contains ASD values (Hz⁻¹/²) that
+are squared to obtain the PSD. Applies only to text/CSV files;
+ignored for <code>.npz</code>. Defaults to <code>False</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+<th>Name</th>          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+<td><code>PowerSpectrum</code></td>            <td>
+                  <code><span title="typing.Self">Self</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Loaded power spectrum.</p>
+              </div>
             </td>
           </tr>
       </tbody>

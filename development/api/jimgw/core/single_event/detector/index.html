@@ -4825,6 +4825,10 @@ Defaults to None.</p>
 
         <p>Load power spectral density (PSD) from file or default GWTC-2 catalog,
     and set it to the detector.</p>
+<p>Supported formats: .npz, .txt, .dat, .csv.
+Pass <code>asd_file</code> (or <code>is_asd=True</code> via :meth:<code>PowerSpectrum.from_file</code>)
+when the file contains amplitude spectral density values (Hz⁻¹/²); they
+are squared internally to produce a PSD.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -4847,7 +4851,23 @@ Defaults to None.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Path to file containing PSD data. If empty, uses GWTC-2 PSD.</p>
+                <p>Path to a PSD file (Hz⁻¹). If empty, uses GWTC-2 ASD.</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;&#39;</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>asd_file</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Path to an ASD file (Hz⁻¹/²). Values are squared.</p>
               </div>
             </td>
             <td>
@@ -4862,18 +4882,18 @@ Defaults to None.</p>
     <table>
       <thead>
         <tr>
-          <th>Type</th>
+<th>Name</th>          <th>Type</th>
           <th>Description</th>
         </tr>
       </thead>
       <tbody>
           <tr class="doc-section-item">
-            <td>
+<td><code>PowerSpectrum</code></td>            <td>
                   <code><a class="autorefs autorefs-internal" href="../data/#jimgw.core.single_event.data.PowerSpectrum">PowerSpectrum</a></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Float[Array, "n_sample"]: Array of PSD values of the detector.</p>
+                <p>The loaded PSD, already set on the detector.</p>
               </div>
             </td>
           </tr>

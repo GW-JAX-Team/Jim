@@ -836,10 +836,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#type-file-load-from-pre-saved-npz-files" class="md-nav__link">
+  <a href="#type-file-load-from-local-files" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        <code>type = "file"</code> — load from pre-saved <code>.npz</code> files
+        <code>type = "file"</code> — load from local files
       </span>
     </span>
   </a>
@@ -2428,10 +2428,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#type-file-load-from-pre-saved-npz-files" class="md-nav__link">
+  <a href="#type-file-load-from-local-files" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        <code>type = "file"</code> — load from pre-saved <code>.npz</code> files
+        <code>type = "file"</code> — load from local files
       </span>
     </span>
   </a>
@@ -2924,8 +2924,10 @@
 <span class="n">ra</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="mf">1.375</span>
 <span class="n">dec</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="mf">-1.21</span>
 </code></pre></div>
-<h3 id="type-file-load-from-pre-saved-npz-files"><code>type = "file"</code> — load from pre-saved <code>.npz</code> files<a class="headerlink" href="#type-file-load-from-pre-saved-npz-files" title="Permanent link">¤</a></h3>
+<h3 id="type-file-load-from-local-files"><code>type = "file"</code> — load from local files<a class="headerlink" href="#type-file-load-from-local-files" title="Permanent link">¤</a></h3>
 <p>Loads strain and PSD from local files. Useful for offline or CI use.</p>
+<p>Supported strain formats: <code>.npz</code>, <code>.gwf</code> / <code>.gwf.gz</code>, <code>.hdf5</code> / <code>.h5</code>, <code>.csv</code>.
+Supported PSD formats: <code>.npz</code>, <code>.txt</code>, <code>.dat</code>, <code>.csv</code>.</p>
 <table>
 <thead>
 <tr>
@@ -2952,16 +2954,64 @@
 <td><code>strain_files</code></td>
 <td>dict[str, path]</td>
 <td>—</td>
-<td>Map from detector name to <code>.npz</code> file containing <code>strain</code> and <code>times</code> arrays</td>
+<td>Map from detector name to strain file (any supported format)</td>
 </tr>
 <tr>
 <td><code>psd_files</code></td>
 <td>dict[str, path]</td>
 <td>—</td>
-<td>Map from detector name to <code>.npz</code> file containing <code>psd</code> and <code>freqs</code> arrays</td>
+<td>Map from detector name to PSD file (any supported format)</td>
+</tr>
+<tr>
+<td><code>strain_channels</code></td>
+<td>dict[str, str]</td>
+<td><code>{}</code></td>
+<td>Channel name per detector for GWF/HDF5 files (e.g. <code>"H1:GDS-CALIB_STRAIN"</code>). If omitted, common LIGO/Virgo preset channel names are tried for <code>.gwf</code> files.</td>
+</tr>
+<tr>
+<td><code>psd_is_asd</code></td>
+<td>dict[str, bool]</td>
+<td><code>{}</code></td>
+<td>Set to <code>true</code> for detectors whose PSD file contains ASD values (Hz⁻¹/²); they are squared automatically. Ignored for <code>.npz</code> files.</td>
 </tr>
 </tbody>
 </table>
+<p>Example with <code>.npz</code> files (no channels required):</p>
+<div class="highlight"><pre><span></span><code><span class="k">[data]</span>
+<span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;file&quot;</span>
+<span class="n">detectors</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;H1&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;L1&quot;</span><span class="p">]</span>
+<span class="n">trigger_time</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1126259462.4</span>
+
+<span class="k">[data.strain_files]</span>
+<span class="n">H1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;h1_strain.npz&quot;</span>
+<span class="n">L1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;l1_strain.npz&quot;</span>
+
+<span class="k">[data.psd_files]</span>
+<span class="n">H1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;h1_psd.npz&quot;</span>
+<span class="n">L1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;l1_psd.npz&quot;</span>
+</code></pre></div>
+<p>Example with <code>.gwf</code> frame files and <code>.txt</code> ASD curves:</p>
+<div class="highlight"><pre><span></span><code><span class="k">[data]</span>
+<span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;file&quot;</span>
+<span class="n">detectors</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;H1&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;L1&quot;</span><span class="p">]</span>
+<span class="n">trigger_time</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1126259462.4</span>
+
+<span class="k">[data.strain_files]</span>
+<span class="n">H1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;H-H1_LOSC_4_V2-1126259446-32.gwf&quot;</span>
+<span class="n">L1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;L-L1_LOSC_4_V2-1126259446-32.gwf&quot;</span>
+
+<span class="k">[data.strain_channels]</span>
+<span class="n">H1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;H1:GWOSC-4KHZ_R1_STRAIN&quot;</span>
+<span class="n">L1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;L1:GWOSC-4KHZ_R1_STRAIN&quot;</span>
+
+<span class="k">[data.psd_files]</span>
+<span class="n">H1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;O3-H1_asd.txt&quot;</span>
+<span class="n">L1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;O3-L1_asd.txt&quot;</span>
+
+<span class="k">[data.psd_is_asd]</span>
+<span class="n">H1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<span class="n">L1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+</code></pre></div>
 <hr />
 <h2 id="waveform"><code>[waveform]</code><a class="headerlink" href="#waveform" title="Permanent link">¤</a></h2>
 <table>

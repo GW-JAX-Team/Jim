@@ -3096,10 +3096,10 @@ Fourier series is complete up to the Nyquist frequency.</p>
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;to_file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;path&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.core.single_event.data.Data.to_file">to_file</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;to_file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;path&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;None&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.core.single_event.data.Data.to_file">to_file</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Save the data to a file in .npz format.</p>
+                  <p>Save the data to a file.</p>
                 </div>
               </td>
             </tr>
@@ -4340,14 +4340,25 @@ the fraction of the segment that is tapered on each side.</p>
 
 
 <h4 id="jimgw.core.single_event.data.Data.to_file" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">to_file</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">to_file</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span></code>
 
 <a href="#jimgw.core.single_event.data.Data.to_file" class="headerlink" title="Permanent link">¤</a></h4>
 
 
     <div class="doc doc-contents ">
 
-        <p>Save the data to a file in .npz format.</p>
+        <p>Save the data to a file.</p>
+<p>Supported formats:</p>
+<ul>
+<li><code>.npz</code> — NumPy archive with keys <code>td</code> (time-domain strain),
+  <code>dt</code> (time step in seconds), <code>start_time</code> (GPS), and <code>name</code>.</li>
+<li><code>.txt</code> / <code>.dat</code> — Three-column whitespace-separated text file
+  containing <code>[f, real(h(f)), imag(h(f))]</code> (frequency-domain strain).</li>
+<li><code>.csv</code> — Same as <code>.txt</code> but comma-separated.</li>
+<li><code>.gwf</code> — LIGO/Virgo Gravitational Wave Frame file (time-domain).
+  Requires <code>gwpy</code>.</li>
+<li><code>.hdf5</code> / <code>.h5</code> — HDF5 file (time-domain). Requires <code>gwpy</code>.</li>
+</ul>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -4370,11 +4381,34 @@ the fraction of the segment that is tapered on each side.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Path to save the .npz file.</p>
+                <p>Path to the output file (extension determines format).</p>
               </div>
             </td>
             <td>
                 <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="ValueError">ValueError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If the file extension is not supported.</p>
+              </div>
             </td>
           </tr>
       </tbody>

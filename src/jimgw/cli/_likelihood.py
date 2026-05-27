@@ -108,6 +108,7 @@ def build_likelihood(
             f_max=cfg.f_max,
             trigger_time=trigger_time,
             n_bins=cfg.heterodyne.n_bins,
+            epsilon=cfg.heterodyne.epsilon,
             optimizer_popsize=optimizer_popsize,
             optimizer_n_steps=optimizer_n_steps,
             prior=prior,
@@ -119,7 +120,7 @@ def build_likelihood(
             "Built heterodyne likelihood: f_min=%.1f, f_max=%.1f, n_bins=%d",
             cfg.f_min,
             cfg.f_max,
-            cfg.heterodyne.n_bins,
+            likelihood.n_bins,
         )
         return likelihood
 

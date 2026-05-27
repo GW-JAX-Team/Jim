@@ -1037,13 +1037,14 @@ class TestHeterodynedTransientLikelihoodFD:
         )
         assert hasattr(likelihood, "freq_grid_low")
         assert hasattr(likelihood, "freq_grid_center")
+        assert hasattr(likelihood, "freq_grid_high")
         for det in ifos:
             assert det.name in likelihood.A0_array
             assert det.name in likelihood.A1_array
             assert det.name in likelihood.B0_array
             assert det.name in likelihood.B1_array
             assert det.name in likelihood.waveform_low_ref
-            assert det.name in likelihood.waveform_center_ref
+            assert det.name in likelihood.waveform_high_ref
 
     def test_no_reference_params_and_no_prior_raises(self, detectors_and_waveform):
         ifos, waveform, fmin, fmax, gps = detectors_and_waveform

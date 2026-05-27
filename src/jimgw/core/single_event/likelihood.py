@@ -534,7 +534,13 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         f_min: Minimum frequency for likelihood evaluation.
         f_max: Maximum frequency for likelihood evaluation.
         trigger_time: GPS time of the event trigger.
-        n_bins: Number of frequency bins for relative binning.
+        n_bins: Number of frequency bins for relative binning.  Mutually
+            exclusive with ``epsilon``; raises ``ValueError`` if both are set.
+            When neither is set, ``epsilon=0.5`` is used as the default.
+        epsilon: Maximum allowed phase change per bin (rad).  The bin count
+            is set to ``max(1, int(total_phase / epsilon))``.  Mutually
+            exclusive with ``n_bins``; raises ``ValueError`` if both are set.
+            When neither is set, ``epsilon=0.5`` is used as the default.
         optimizer_popsize: Population size for the CMA-ES optimizer used
             when finding reference parameters automatically.  Defaults to 500.
         optimizer_n_steps: Maximum number of CMA-ES generations.  Defaults to 1000.
@@ -555,9 +561,11 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
     n_bins: int
     reference_parameters: dict
     freq_grid_low: Array
+    freq_grid_high: Array
     freq_grid_center: Array
+    bin_widths: Array
     waveform_low_ref: dict[str, Float[Array, " n_bin"]]
-    waveform_center_ref: dict[str, Float[Array, " n_bin"]]
+    waveform_high_ref: dict[str, Float[Array, " n_bin"]]
     A0_array: dict[str, Float[Array, " n_bin"]]
     A1_array: dict[str, Float[Array, " n_bin"]]
     B0_array: dict[str, Float[Array, " n_bin"]]
@@ -576,7 +584,8 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         f_min: float | dict[str, float] = 0.0,
         f_max: float | dict[str, float] = jnp.inf,
         trigger_time: float = 0,
-        n_bins: int = 1000,
+        n_bins: Optional[int] = None,
+        epsilon: Optional[float] = None,
         optimizer_popsize: int = 500,
         optimizer_n_steps: int = 1000,
         reference_parameters: Optional[dict] = None,
@@ -665,17 +674,35 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         self.reference_parameters["gmst"] = self.gmst
 
         self.waveform_low_ref = {}
-        self.waveform_center_ref = {}
+        self.waveform_high_ref = {}
         self.A0_array = {}
         self.A1_array = {}
         self.B0_array = {}
         self.B1_array = {}
 
         frequency_original = self.frequencies
-        freq_grid, self.freq_grid_center = self.make_binning_scheme(
-            jnp.array(frequency_original), n_bins
+        if n_bins is not None and epsilon is not None:
+            raise ValueError(
+                "'n_bins' and 'epsilon' are mutually exclusive; specify at most one."
+            )
+        if epsilon is not None and epsilon <= 0:
+            raise ValueError(f"'epsilon' must be a positive number, got {epsilon!r}.")
+        if n_bins is not None and n_bins <= 0:
+            raise ValueError(f"'n_bins' must be a positive integer, got {n_bins!r}.")
+        if epsilon is None and n_bins is None:
+            epsilon = 0.5
+        if epsilon is not None:
+            freqs_arr = jnp.array(frequency_original)
+            phase = HeterodynedTransientLikelihoodFD._max_phase_diff(
+                freqs_arr, freqs_arr[0], freqs_arr[-1]
+            )
+            n_bins = max(1, int(float(phase[-1]) / epsilon))
+        assert isinstance(n_bins, int)
+        freq_grid, self.freq_grid_center = self._make_binning_scheme(
+            jnp.array(frequency_original), n_bins=n_bins
         )
         self.freq_grid_low = freq_grid[:-1]
+        self.freq_grid_high = freq_grid[1:]
 
         h_sky = reference_waveform(frequency_original, self.reference_parameters)
 
@@ -687,20 +714,21 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         f_waveform_min = jnp.min(f_valid)
 
         mask_heterodyne_center = jnp.where(
-            (self.freq_grid_center <= f_waveform_max)
+            (self.freq_grid_high <= f_waveform_max)
             & (self.freq_grid_center >= f_waveform_min)
         )[0]
         self.freq_grid_center = self.freq_grid_center[mask_heterodyne_center]
         self.freq_grid_low = self.freq_grid_low[mask_heterodyne_center]
+        self.freq_grid_high = self.freq_grid_high[mask_heterodyne_center]
+        self.bin_widths = self.freq_grid_high - self.freq_grid_low
+        self.n_bins = len(self.freq_grid_center)
 
         start_idx = mask_heterodyne_center[0]
         end_idx = mask_heterodyne_center[-1] + 2
         freq_grid = freq_grid[start_idx:end_idx]
 
         h_sky_low = reference_waveform(self.freq_grid_low, self.reference_parameters)
-        h_sky_center = reference_waveform(
-            self.freq_grid_center, self.reference_parameters
-        )
+        h_sky_high = reference_waveform(self.freq_grid_high, self.reference_parameters)
 
         for i, detector in enumerate(self.detectors):
             h_sky_ifo = {key: h_sky[key][self.frequency_masks[i]] for key in h_sky}
@@ -710,10 +738,10 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
             self.waveform_low_ref[detector.name] = detector.fd_response(
                 self.freq_grid_low, h_sky_low, self.reference_parameters
             )
-            self.waveform_center_ref[detector.name] = detector.fd_response(
-                self.freq_grid_center, h_sky_center, self.reference_parameters
+            self.waveform_high_ref[detector.name] = detector.fd_response(
+                self.freq_grid_high, h_sky_high, self.reference_parameters
             )
-            A0, A1, B0, B1 = self.compute_coefficients(
+            A0, A1, B0, B1 = self._compute_coefficients(
                 detector.sliced_fd_data,
                 waveform_ref,
                 detector.sliced_psd,
@@ -737,10 +765,10 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
 
     def _likelihood(self, params: dict[str, Float]) -> Float:
         frequencies_low = self.freq_grid_low
-        frequencies_center = self.freq_grid_center
+        frequencies_high = self.freq_grid_high
         log_likelihood = 0.0
         waveform_sky_low = self.waveform(frequencies_low, params)
-        waveform_sky_center = self.waveform(frequencies_center, params)
+        waveform_sky_high = self.waveform(frequencies_high, params)
 
         complex_d_inner_h = 0.0 + 0.0j
 
@@ -748,14 +776,14 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
             waveform_low = detector.fd_response(
                 frequencies_low, waveform_sky_low, params
             )
-            waveform_center = detector.fd_response(
-                frequencies_center, waveform_sky_center, params
+            waveform_high = detector.fd_response(
+                frequencies_high, waveform_sky_high, params
             )
 
-            r0 = waveform_center / self.waveform_center_ref[detector.name]
-            r1 = (waveform_low / self.waveform_low_ref[detector.name] - r0) / (
-                frequencies_low - frequencies_center
-            )
+            r_low = waveform_low / self.waveform_low_ref[detector.name]
+            r_high = waveform_high / self.waveform_high_ref[detector.name]
+            r0 = (r_low + r_high) / 2
+            r1 = (r_high - r_low) / self.bin_widths
 
             if self.phase_marginalization:
                 complex_d_inner_h += jnp.sum(
@@ -784,38 +812,54 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         return log_likelihood
 
     @staticmethod
-    def max_phase_diff(
+    def _max_phase_diff(
         freqs: Float[Array, " n_freq"],
         f_low: float | Float[Array, ""],
         f_high: float | Float[Array, ""],
         chi: float = 1.0,
     ) -> Float[Array, " n_freq"]:
         """
-        Compute the maximum phase difference between the frequencies in the array.
+        Compute the cumulative phase difference used for bin construction.
 
-        See Eq.(7) in arXiv:2302.05333.
+        Uses 5 physically-motivated PN/IMR terms from arXiv:1806.08792:
+        gamma ∈ {-5/3, -2/3, 1, 5/3, 7/3}, covering the dominant Newtonian
+        chirp (0PN), spin-orbit (1.5PN), coalescence time, and phenomenological
+        IMR contributions.  Each term is normalised by ``d_alpha`` so that its
+        individual contribution spans exactly ``chi * 2π`` rad across
+        [f_low, f_high].  The returned array starts at 0 (cumulative from
+        f_low).
         """
-        gamma = jnp.arange(-5, 6) / 3.0
+        gamma = jnp.array([-5 / 3, -2 / 3, 1.0, 5 / 3, 7 / 3])
+        # H(-γ)=1 for γ<0, H(γ)=1 for γ>0 (no γ=0 in our set)
+        h_neg = (gamma < 0).astype(gamma.dtype)
+        h_pos = (gamma > 0).astype(gamma.dtype)
+        d_alpha = (
+            chi * 2 * jnp.pi / jnp.abs(f_low**gamma * h_neg - f_high**gamma * h_pos)
+        )
         freq_2D = jax.lax.broadcast_in_dim(freqs, (freqs.size, gamma.size), [0])
-        f_star = jnp.where(gamma >= 0, f_high, f_low)
-        summand = (freq_2D / f_star) ** gamma * jnp.sign(gamma)
-        return 2 * jnp.pi * chi * jnp.sum(summand, axis=1)
+        d_phi = jnp.sum(jnp.sign(gamma) * d_alpha * freq_2D**gamma, axis=1)
+        return d_phi - d_phi[0]
 
-    def make_binning_scheme(
-        self, freqs: Float[Array, " n_freq"], n_bins: int, chi: float = 1
+    def _make_binning_scheme(
+        self,
+        freqs: Float[Array, " n_freq"],
+        n_bins: int,
+        chi: float = 1.0,
     ) -> tuple[Float[Array, " n_bins + 1"], Float[Array, " n_bins"]]:
+        """Make ``n_bins`` frequency bins of equal phase change.
+
+        ``n_bins`` must be a positive integer resolved by the caller
+        (see :meth:`__init__`).
         """
-        Make a binning scheme based on the maximum phase difference between the
-        frequencies in the array.
-        """
-        phase_diff_array = self.max_phase_diff(freqs, freqs[0], freqs[-1], chi=chi)
-        phase_diff = jnp.linspace(phase_diff_array[0], phase_diff_array[-1], n_bins + 1)
+        phase_diff_array = self._max_phase_diff(freqs, freqs[0], freqs[-1], chi=chi)
+        total_phase = phase_diff_array[-1]
+        phase_diff = jnp.linspace(0.0, total_phase, n_bins + 1)
         f_bins = interp1d(phase_diff_array, freqs)(phase_diff)
         f_bins_center = (f_bins[:-1] + f_bins[1:]) / 2
         return jnp.array(f_bins), jnp.array(f_bins_center)
 
     @staticmethod
-    def compute_coefficients(data, h_ref, psd, freqs, f_bins, f_bins_center):
+    def _compute_coefficients(data, h_ref, psd, freqs, f_bins, f_bins_center):
         df = freqs[1] - freqs[0]
         data_prod = jnp.array(data * h_ref.conj()) / psd
         self_prod = jnp.array(h_ref * h_ref.conj()) / psd

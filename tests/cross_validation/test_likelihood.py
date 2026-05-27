@@ -688,7 +688,6 @@ class TestHeterodynedTransientLikelihoodFD:
                 fiducial_parameters=bilby_ref_params,
             )
         )
-        n_bins = bilby_likelihood.number_of_bins
 
         jim_likelihood = HeterodynedTransientLikelihoodFD(
             detectors=setup["jim_ifos"],
@@ -696,7 +695,7 @@ class TestHeterodynedTransientLikelihoodFD:
             f_min=F_MIN,
             f_max=F_MAX,
             trigger_time=GPS,
-            n_bins=n_bins,
+            epsilon=0.5,
             reference_parameters=jim_ref_params,
         )
 
@@ -750,7 +749,6 @@ class TestHeterodynedTransientLikelihoodFD:
                 priors=priors,
             )
         )
-        n_bins = bilby_likelihood.number_of_bins
 
         jim_likelihood = HeterodynedTransientLikelihoodFD(
             detectors=setup["jim_ifos"],
@@ -758,7 +756,7 @@ class TestHeterodynedTransientLikelihoodFD:
             f_min=F_MIN,
             f_max=F_MAX,
             trigger_time=GPS,
-            n_bins=n_bins,
+            epsilon=0.5,
             reference_parameters=jim_ref_params,
             phase_marginalization=True,
         )

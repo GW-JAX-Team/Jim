@@ -367,10 +367,15 @@ class CLIHeterodynedConfig(BaseModel):
     - ``type = "provided"``: explicit likelihood-space values (skips CMA-ES).
     - ``type = "injection"``: use ``data.injection_parameters`` (injection
       runs only).
+
+    Binning is controlled by at most one of ``epsilon`` or ``n_bins``
+    (mutually exclusive).  When neither is set, ``epsilon=0.5`` (rad per
+    bin) is used as the default.
     """
 
     model_config = {"extra": "forbid"}
-    n_bins: int = 1000
+    n_bins: Optional[int] = None
+    epsilon: Optional[float] = None
     reference_parameters: HeterodynedRefParams = Field(
         default_factory=CLIOptimizerRefParams
     )

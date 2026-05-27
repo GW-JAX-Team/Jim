@@ -23,7 +23,8 @@ class BaseSamplerConfig(BaseModel):
         checkpoint_path: Path to the checkpoint ``.pkl`` file.
             ``None`` (default) disables checkpointing.  When set, the
             sampler writes a checkpoint atomically and resumes from it if
-            the file already exists when sampling starts.
+            the file already exists when sampling starts.  The parent
+            directory must already exist.
         checkpoint_interval: Minimum wall-clock seconds between checkpoint
             writes.  Default ``600`` (10 minutes).  Set to ``0.0`` to
             checkpoint after every completed iteration.
@@ -34,6 +35,18 @@ class BaseSamplerConfig(BaseModel):
     verbose: bool = False
     checkpoint_path: Optional[Path] = None
     checkpoint_interval: float = 600.0
+
+    @field_validator("checkpoint_path", mode="before")
+    @classmethod
+    def _check_checkpoint_path(cls, v: object) -> Optional[Path]:
+        if v is None:
+            return None
+        p = Path(str(v))
+        if not p.parent.exists():
+            raise ValueError(
+                f"checkpoint_path parent directory does not exist: {p.parent}"
+            )
+        return p
 
     @field_validator("checkpoint_interval")
     @classmethod

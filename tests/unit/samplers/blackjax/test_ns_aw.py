@@ -148,3 +148,45 @@ def test_ns_aw_diagnostics():
     assert np.isfinite(diag["log_Z"])
     assert "sampling_time" in diag
     assert diag["sampling_time"] >= 0.0
+
+
+def test_ns_aw_checkpoint_file_created(tmp_path):
+    """Checkpoint .pkl must be created when checkpoint_path is configured."""
+    ckpt = tmp_path / "checkpoint.pkl"
+    prior = CombinePrior(
+        [
+            UniformPrior(0.0, 1.0, parameter_names=["x"]),
+            UniformPrior(0.0, 1.0, parameter_names=["y"]),
+        ]
+    )
+    likelihood = _GaussianLikelihood()
+    parameter_names = prior.parameter_names
+    config = BlackJAXNSAWConfig(
+        n_live=100,
+        n_delete_frac=0.5,
+        n_target=10,
+        max_mcmc=500,
+        max_proposals=200,
+        termination_dlogz=0.5,
+        checkpoint_path=ckpt,
+        checkpoint_interval=0.0,
+    )
+
+    def log_prior_fn(arr):
+        return prior.log_prob(dict(zip(parameter_names, arr, strict=True)))
+
+    def log_likelihood_fn(arr):
+        return likelihood.evaluate(dict(zip(parameter_names, arr, strict=True)))
+
+    def log_posterior_fn(arr):
+        return log_prior_fn(arr) + log_likelihood_fn(arr)
+
+    sampler = BlackJAXNSAWSampler(
+        n_dims=len(parameter_names),
+        log_prior_fn=log_prior_fn,
+        log_likelihood_fn=log_likelihood_fn,
+        log_posterior_fn=log_posterior_fn,
+        config=config,
+    )
+    sampler.sample(jax.random.key(42), _init_pos(100))
+    assert ckpt.exists(), "Checkpoint file was not created"

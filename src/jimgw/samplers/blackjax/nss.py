@@ -86,10 +86,16 @@ class BlackJAXNSSSampler(Sampler):
     ) -> None:
         """Run the BlackJAX NSS sampler.
 
+        If ``config.checkpoint_path`` is set, a ``.pkl`` checkpoint is written
+        atomically after each nested-sampling iteration (subject to
+        ``config.checkpoint_interval``) and the sampler resumes from the
+        checkpoint if one already exists at that path.
+
         Args:
             rng_key: JAX PRNG key.
             initial_position: Starting live points in the sampling space,
                 shape ``(n_live, n_dims)``.  Must match ``config.n_live``.
+                Ignored when resuming from a checkpoint.
 
         Raises:
             ValueError: If ``initial_position`` shape does not match

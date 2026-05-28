@@ -57,6 +57,11 @@ class BlackJAXSMCSampler(Sampler):
     estimated from the starting particles.  With adaptive temperature
     selection the covariance is re-estimated at each step.
 
+    Supports checkpoint/resume via ``config.checkpoint_path``: a ``.pkl``
+    checkpoint is written atomically after each tempering iteration (subject
+    to ``config.checkpoint_interval``) and the sampler resumes from it if one
+    already exists at that path.
+
     Operates on flat ``(n_dims,)`` arrays.
 
     Args:
@@ -540,10 +545,16 @@ class BlackJAXSMCSampler(Sampler):
     ) -> None:
         """Run the BlackJAX SMC sampler.
 
+        If ``config.checkpoint_path`` is set, a ``.pkl`` checkpoint is written
+        atomically after each tempering iteration (subject to
+        ``config.checkpoint_interval``) and the sampler resumes from the
+        checkpoint if one already exists at that path.
+
         Args:
             rng_key: JAX PRNG key.
             initial_position: Starting particles in the sampling space,
                 shape ``(n_particles, n_dims)``.  Must match ``config.n_particles``.
+                Ignored when resuming from a checkpoint.
 
         Raises:
             ValueError: If ``initial_position`` shape does not match

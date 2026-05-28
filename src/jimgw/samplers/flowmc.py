@@ -119,6 +119,8 @@ class FlowMCSampler(Sampler):
 
         The flowMC bundle (NF + chosen local kernel + optional PT) is built
         here so that the PRNG key is derived from the key Jim passes in.
+        Checkpoint writing and resumption (when ``config.checkpoint_path`` is
+        set) is handled by the flowMC backend's ``Sampler.sample`` method.
 
         Args:
             rng_key: JAX PRNG key for both bundle initialisation and sampling.

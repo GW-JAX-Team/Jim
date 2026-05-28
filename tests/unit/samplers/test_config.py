@@ -350,9 +350,11 @@ def test_checkpoint_path_accepts_string(tmp_path):
     assert isinstance(cfg.checkpoint_path, Path)
 
 
-def test_checkpoint_path_nonexistent_parent_raises():
+def test_checkpoint_path_nonexistent_parent_raises(tmp_path):
+    missing_parent = tmp_path / "nonexistent_dir" / "ckpt.pkl"
+    assert not missing_parent.parent.exists()
     with pytest.raises(ValidationError, match="parent directory"):
-        FlowMCConfig(checkpoint_path="/nonexistent/dir/ckpt.pkl")
+        FlowMCConfig(checkpoint_path=str(missing_parent))
 
 
 def test_checkpoint_interval_negative_raises():

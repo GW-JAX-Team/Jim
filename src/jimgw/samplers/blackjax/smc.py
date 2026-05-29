@@ -143,7 +143,6 @@ class BlackJAXSMCSampler(Sampler):
         config = self._config
         n_mcmc_steps = config.n_mcmc_steps_per_dim * self.n_dims
         target_ess = config._resolve_target_ess_fraction()
-        max_iterations = 1000
         ckpt_path = (
             config.checkpoint_dir / "checkpoint.pkl"
             if config.checkpoint_dir is not None
@@ -160,7 +159,7 @@ class BlackJAXSMCSampler(Sampler):
             smc_algorithm=adaptive_persistent_sampling_smc,
             logprior_fn=self._log_prior_fn,
             loglikelihood_fn=self._log_likelihood_fn,
-            max_iterations=max_iterations,
+            max_iterations=1000,
             mcmc_step_fn=mcmc_step,
             mcmc_init_fn=rmh.init,
             resampling_fn=systematic,
@@ -170,8 +169,8 @@ class BlackJAXSMCSampler(Sampler):
             target_ess=target_ess,
         )
 
-        accept_h = np.zeros(max_iterations)
-        cov_scale_h = np.zeros(max_iterations)
+        accept_list: list[float] = []
+        cov_scale_list: list[float] = []
         cov_scale = float(config.initial_cov_scale)
         n_iter = 0
 
@@ -187,8 +186,8 @@ class BlackJAXSMCSampler(Sampler):
                     rng_key = _ckpt["rng_key"]
                     n_iter = _ckpt["n_iter"]
                     cov_scale = float(_ckpt.get("cov_scale", cov_scale))
-                    accept_h[:n_iter] = _ckpt["accept_history"]
-                    cov_scale_h[:n_iter] = _ckpt["cov_scale_history"]
+                    accept_list = list(_ckpt["accept_history"])
+                    cov_scale_list = list(_ckpt["cov_scale_history"])
                     logger.info(
                         "SMC-AP: resumed from checkpoint at n_iter=%d (%s)",
                         n_iter,
@@ -225,8 +224,8 @@ class BlackJAXSMCSampler(Sampler):
             new_params = extend_params({"cov": current_cov[0] * new_scale})  # type: ignore[arg-type]  # blackjax fork stubs
             state = StateWithParameterOverride(ps, new_params)  # type: ignore[arg-type]  # blackjax fork stubs
 
-            accept_h[n_iter] = acceptance_rate
-            cov_scale_h[n_iter] = new_scale
+            accept_list.append(acceptance_rate)
+            cov_scale_list.append(new_scale)
             cov_scale = new_scale
             n_iter += 1
 
@@ -250,8 +249,8 @@ class BlackJAXSMCSampler(Sampler):
         self._final_state = state
         self._mode = "ap"
         self._n_iterations = n_iter
-        self._acceptance_history = accept_h[:n_iter]
-        self._cov_scale_history = cov_scale_h[:n_iter]
+        self._acceptance_history = np.asarray(accept_list)
+        self._cov_scale_history = np.asarray(cov_scale_list)
 
     def _run_fixed_persistent(
         self, rng_key: Key, initial_particles, ladder: list[float]
@@ -281,7 +280,7 @@ class BlackJAXSMCSampler(Sampler):
             num_mcmc_steps=n_mcmc_steps,
         )
 
-        accept_h = np.zeros(n_schedule)
+        accept_list: list[float] = []
         n_iter = 0
 
         # Resume from checkpoint if one exists.
@@ -293,7 +292,7 @@ class BlackJAXSMCSampler(Sampler):
                     state = _ckpt["state"]
                     rng_key = _ckpt["rng_key"]
                     n_iter = _ckpt["n_iter"]
-                    accept_h[:n_iter] = _ckpt["accept_history"]
+                    accept_list = list(_ckpt["accept_history"])
                     logger.info(
                         "SMC-FP: resumed from checkpoint at n_iter=%d (%s)",
                         n_iter,
@@ -317,7 +316,7 @@ class BlackJAXSMCSampler(Sampler):
         for lmbda in ladder_values[n_iter:]:
             rng_key, subkey = jax.random.split(rng_key)
             state, info = step_fn(subkey, state, lmbda)  # type: ignore[call-arg]  # blackjax fork API: step accepts extra arg
-            accept_h[n_iter] = float(info.update_info.acceptance_rate.mean())
+            accept_list.append(float(info.update_info.acceptance_rate.mean()))
             n_iter += 1
             if (
                 ckpt_path is not None
@@ -337,7 +336,7 @@ class BlackJAXSMCSampler(Sampler):
         self._final_state = state
         self._mode = "fp"
         self._n_iterations = n_schedule
-        self._acceptance_history = accept_h
+        self._acceptance_history = np.asarray(accept_list)
 
     def _run_adaptive_tempered(self, rng_key: Key, initial_particles) -> None:
         """Mode AT: adaptive_tempered_smc + inner_kernel_tuning + Python while."""
@@ -385,7 +384,7 @@ class BlackJAXSMCSampler(Sampler):
                     n_iter = _ckpt["n_iter"]
                     accept_list = list(_ckpt["accept_history"])
                     temp_list = list(_ckpt["tempering_schedule"])
-                    is_weights_list = [row for row in _ckpt["is_weights_history"]]
+                    is_weights_list = list(_ckpt["is_weights_history"])
                     logger.info(
                         "SMC-AT: resumed from checkpoint at n_iter=%d (%s)",
                         n_iter,
@@ -470,7 +469,7 @@ class BlackJAXSMCSampler(Sampler):
             num_mcmc_steps=n_mcmc_steps,
         )
 
-        accept_h = np.zeros(n_schedule)
+        accept_list: list[float] = []
         is_weights_list: list[np.ndarray] = []
         n_iter = 0
 
@@ -483,8 +482,8 @@ class BlackJAXSMCSampler(Sampler):
                     state = _ckpt["state"]
                     rng_key = _ckpt["rng_key"]
                     n_iter = _ckpt["n_iter"]
-                    accept_h[:n_iter] = _ckpt["accept_history"]
-                    is_weights_list = [row for row in _ckpt["is_weights_history"]]
+                    accept_list = list(_ckpt["accept_history"])
+                    is_weights_list = list(_ckpt["is_weights_history"])
                     logger.info(
                         "SMC-FT: resumed from checkpoint at n_iter=%d (%s)",
                         n_iter,
@@ -508,7 +507,7 @@ class BlackJAXSMCSampler(Sampler):
         for lmbda in ladder_values[n_iter:]:
             rng_key, subkey = jax.random.split(rng_key)
             state, info = step_fn(subkey, state, lmbda)  # type: ignore[call-arg]  # blackjax fork API: step accepts extra arg
-            accept_h[n_iter] = float(info.update_info.acceptance_rate.mean())
+            accept_list.append(float(info.update_info.acceptance_rate.mean()))
             is_weights_list.append(np.asarray(state.weights))
             n_iter += 1
             if (
@@ -530,7 +529,7 @@ class BlackJAXSMCSampler(Sampler):
         self._final_state = state
         self._mode = "ft"
         self._n_iterations = n_schedule
-        self._acceptance_history = accept_h
+        self._acceptance_history = np.asarray(accept_list)
         self._is_weights_history = (
             np.stack(is_weights_list)
             if is_weights_list

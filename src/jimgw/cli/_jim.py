@@ -11,26 +11,28 @@ _CLI_CHECKPOINT_INTERVAL = 600.0  # 10 minutes
 
 
 def _with_checkpoint(sampler_config, output_dir):
-    """Return a copy of *sampler_config* with checkpointing wired to *output_dir*.
+    """Return a copy of *sampler_config* with CLI checkpoint defaults applied.
 
-    The CLI always enables checkpointing so that long runs can be resumed.
-    The checkpoint file is always ``{output_dir}/checkpoint.pkl``.
+    Only fields the user did not explicitly set are filled in, so explicit
+    values in the config file are always respected.  The CLI defaults are:
+    checkpoint every ``_CLI_CHECKPOINT_INTERVAL`` seconds, writing to
+    ``{output_dir}/checkpoint.pkl``.
     """
+    explicitly_set = sampler_config.model_fields_set
     if isinstance(sampler_config, FlowMCConfig):
-        return sampler_config.model_copy(
-            update={
-                "outdir": str(output_dir),
-                "checkpoint_interval": _CLI_CHECKPOINT_INTERVAL,
-            }
-        )
-    # BlackJAX configs (BlackJAXNSAWConfig, BlackJAXNSSConfig, BlackJAXSMCConfig)
-    # all carry checkpoint_dir via _CheckpointMixin.
-    return sampler_config.model_copy(
-        update={
-            "checkpoint_dir": output_dir,
-            "checkpoint_interval": _CLI_CHECKPOINT_INTERVAL,
-        }
-    )
+        update = {}
+        if "outdir" not in explicitly_set:
+            update["outdir"] = str(output_dir)
+        if "checkpoint_interval" not in explicitly_set:
+            update["checkpoint_interval"] = _CLI_CHECKPOINT_INTERVAL
+    else:
+        # BlackJAX configs carry checkpoint_dir via _CheckpointMixin.
+        update = {}
+        if "checkpoint_dir" not in explicitly_set:
+            update["checkpoint_dir"] = output_dir
+        if "checkpoint_interval" not in explicitly_set:
+            update["checkpoint_interval"] = _CLI_CHECKPOINT_INTERVAL
+    return sampler_config.model_copy(update=update) if update else sampler_config
 
 
 def build_jim(

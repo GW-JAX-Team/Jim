@@ -187,7 +187,11 @@ class FlowMCSampler(Sampler):
 
         resource_strategy_bundle = bundle_cls(**common_kwargs)
 
-        _outdir = str(config.checkpoint_dir) if config.checkpoint_dir is not None else "./outdir/"
+        _outdir = (
+            str(config.checkpoint_dir)
+            if config.checkpoint_dir is not None
+            else "./outdir/"
+        )
         self._flowmc_sampler = FlowMCSamplerBackend(
             n_dim=self.n_dims,
             n_chains=config.n_chains,
@@ -198,8 +202,14 @@ class FlowMCSampler(Sampler):
         )
 
         # Skip initial_position validation when resuming from an existing checkpoint.
-        _ckpt = config.checkpoint_dir / "checkpoint.pkl" if config.checkpoint_dir is not None else None
-        _resuming = config.checkpoint_interval > 0 and _ckpt is not None and _ckpt.exists()
+        _ckpt = (
+            config.checkpoint_dir / "checkpoint.pkl"
+            if config.checkpoint_dir is not None
+            else None
+        )
+        _resuming = (
+            config.checkpoint_interval > 0 and _ckpt is not None and _ckpt.exists()
+        )
         initial_position = jnp.asarray(initial_position)
         if not _resuming:
             if initial_position.ndim == 1:

@@ -100,7 +100,7 @@ class _CheckpointMixin(BaseModel):
             pickle.dump(data, _f)
         tmp.replace(ckpt_path)
         t = time.perf_counter()
-        logger.debug("%s: checkpoint saved at n_iter=%d", tag, data.get("n_iter", "?"))
+        logger.debug("%s: checkpoint saved at n_iter=%s", tag, data.get("n_iter", "?"))
         return t
 
 

@@ -3,7 +3,6 @@ from typing import Sequence
 
 from jimgw.core.jim import Jim
 from jimgw.core.transforms import BijectiveTransform, NtoMTransform
-from jimgw.samplers.config import FlowMCConfig
 
 logger = logging.getLogger(__name__)
 
@@ -19,19 +18,11 @@ def _with_checkpoint(sampler_config, output_dir):
     ``{output_dir}/checkpoint.pkl``.
     """
     explicitly_set = sampler_config.model_fields_set
-    if isinstance(sampler_config, FlowMCConfig):
-        update = {}
-        if "outdir" not in explicitly_set:
-            update["outdir"] = str(output_dir)
-        if "checkpoint_interval" not in explicitly_set:
-            update["checkpoint_interval"] = _CLI_CHECKPOINT_INTERVAL
-    else:
-        # BlackJAX configs carry checkpoint_dir via _CheckpointMixin.
-        update = {}
-        if "checkpoint_dir" not in explicitly_set:
-            update["checkpoint_dir"] = output_dir
-        if "checkpoint_interval" not in explicitly_set:
-            update["checkpoint_interval"] = _CLI_CHECKPOINT_INTERVAL
+    update = {}
+    if "checkpoint_dir" not in explicitly_set:
+        update["checkpoint_dir"] = output_dir
+    if "checkpoint_interval" not in explicitly_set:
+        update["checkpoint_interval"] = _CLI_CHECKPOINT_INTERVAL
     return sampler_config.model_copy(update=update) if update else sampler_config
 
 

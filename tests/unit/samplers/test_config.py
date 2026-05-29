@@ -24,7 +24,7 @@ def test_flowmc_config_defaults():
     assert cfg.local_kernel == "MALA"
     assert cfg.mala.step_size == 2e-3
     assert cfg.parallel_tempering is None
-    assert cfg.outdir == "./outdir/"
+    assert cfg.checkpoint_dir is None
     assert cfg.checkpoint_interval == 0.0
 
 

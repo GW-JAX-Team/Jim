@@ -8,7 +8,6 @@ parallel tempering.
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 from typing import Any, Callable, Optional, Type
 
 import jax
@@ -121,7 +120,7 @@ class FlowMCSampler(Sampler):
         The flowMC bundle (NF + chosen local kernel + optional PT) is built
         here so that the PRNG key is derived from the key Jim passes in.
         Checkpoint writing and resumption (when ``config.checkpoint_interval > 0``)
-        is handled by the flowMC backend via ``config.outdir``.
+        is handled by the flowMC backend via ``config.checkpoint_dir``.
 
         Args:
             rng_key: JAX PRNG key for both bundle initialisation and sampling.
@@ -188,18 +187,19 @@ class FlowMCSampler(Sampler):
 
         resource_strategy_bundle = bundle_cls(**common_kwargs)
 
+        _outdir = str(config.checkpoint_dir) if config.checkpoint_dir is not None else "./outdir/"
         self._flowmc_sampler = FlowMCSamplerBackend(
             n_dim=self.n_dims,
             n_chains=config.n_chains,
             rng_key=sampler_key,
             resource_strategy_bundles=resource_strategy_bundle,
-            outdir=config.outdir,
+            outdir=_outdir,
             checkpoint_interval=config.checkpoint_interval,
         )
 
         # Skip initial_position validation when resuming from an existing checkpoint.
-        _ckpt = Path(config.outdir) / "checkpoint.pkl"
-        _resuming = config.checkpoint_interval > 0 and _ckpt.exists()
+        _ckpt = config.checkpoint_dir / "checkpoint.pkl" if config.checkpoint_dir is not None else None
+        _resuming = config.checkpoint_interval > 0 and _ckpt is not None and _ckpt.exists()
         initial_position = jnp.asarray(initial_position)
         if not _resuming:
             if initial_position.ndim == 1:

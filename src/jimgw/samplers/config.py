@@ -135,7 +135,7 @@ class GRWConfig(BaseModel):
     step_size: float | np.ndarray = 2e-3
 
 
-class FlowMCConfig(BaseSamplerConfig):
+class FlowMCConfig(BaseSamplerConfig, _CheckpointMixin):
     """Configuration for [`FlowMCSampler`][jimgw.samplers.flowmc.FlowMCSampler].
 
     The ``local_kernel`` field selects the MCMC kernel used for local proposals:
@@ -192,18 +192,6 @@ class FlowMCConfig(BaseSamplerConfig):
     early_stopping_tolerance: float = 0.1
     early_stopping_patience: int = 3
     early_stopping_min_acceptance: float = 0.1
-
-    # Checkpoint / resume via flowMC's native outdir mechanism.
-    # checkpoint_interval=0 (default) disables checkpointing.
-    outdir: str = "./outdir/"
-    checkpoint_interval: float = 0.0
-
-    @field_validator("checkpoint_interval")
-    @classmethod
-    def _check_checkpoint_interval(cls, v: float) -> float:
-        if v < 0.0:
-            raise ValueError("checkpoint_interval must be >= 0.0")
-        return v
 
     @field_validator("parallel_tempering", mode="before")
     @classmethod

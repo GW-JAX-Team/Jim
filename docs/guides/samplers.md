@@ -183,6 +183,57 @@ Key parameters:
 
 ---
 
+## Checkpointing and resuming
+
+All samplers support checkpoint/resume so long-running jobs can survive interruptions.
+Set `checkpoint_dir` to a directory and `checkpoint_interval` to the minimum wall-clock seconds between writes:
+
+```python
+from jimgw.samplers.config import BlackJAXSMCConfig
+
+jim = Jim(
+    likelihood,
+    prior,
+    sampler_config=BlackJAXSMCConfig(
+        n_particles=2000,
+        checkpoint_dir="./my_run",
+        checkpoint_interval=600,  # write at most every 10 minutes
+    ),
+)
+jim.sample()
+```
+
+The checkpoint is written atomically (`checkpoint.pkl.tmp` → `checkpoint.pkl`) so a mid-write crash never leaves a corrupt file.
+To resume after an interruption, construct the same config pointing at the same `checkpoint_dir` and call `jim.sample()` again — the sampler detects the existing file and picks up from the last saved state:
+
+```python
+# resume — identical config, same checkpoint_dir
+jim = Jim(
+    likelihood,
+    prior,
+    sampler_config=BlackJAXSMCConfig(
+        n_particles=2000,
+        checkpoint_dir="./my_run",
+        checkpoint_interval=600,
+    ),
+)
+jim.sample()  # resumes from ./my_run/checkpoint.pkl
+```
+
+The same fields work identically for `FlowMCConfig`, `BlackJAXNSAWConfig`, and `BlackJAXNSSConfig`.
+
+| Field | Default | Notes |
+| --- | --- | --- |
+| `checkpoint_dir` | `None` (disabled) | Directory where `checkpoint.pkl` is written. Created automatically if absent. |
+| `checkpoint_interval` | `0.0` (disabled) | Minimum seconds between writes. `0` disables checkpointing entirely. |
+
+> **Validation** — setting `checkpoint_interval > 0` without `checkpoint_dir` raises a `ValidationError` at config construction time.
+
+When using the [CLI](cli.md), checkpointing is enabled automatically (600 s, writing to `output.dir`).
+Set `checkpoint_interval = 0` in the `[sampler]` block to opt out.
+
+---
+
 ## Periodic parameters
 
 All samplers accept a `periodic` field to handle parameters that wrap around (e.g. angles).

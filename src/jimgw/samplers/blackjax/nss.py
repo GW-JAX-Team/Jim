@@ -86,7 +86,7 @@ class BlackJAXNSSSampler(Sampler):
     ) -> None:
         """Run the BlackJAX NSS sampler.
 
-        If ``config.checkpoint_path`` is set, a ``.pkl`` checkpoint is written
+        If ``config.checkpoint_dir`` is set, a ``checkpoint.pkl`` is written
         atomically after each nested-sampling iteration (subject to
         ``config.checkpoint_interval``) and the sampler resumes from the
         checkpoint if one already exists at that path.
@@ -105,7 +105,7 @@ class BlackJAXNSSSampler(Sampler):
         n_live = config.n_live
         n_delete = int(n_live * config.n_delete_frac)
         num_inner_steps = config.num_inner_steps_per_dim * self.n_dims
-        ckpt_path: Optional[Path] = config.checkpoint_path
+        ckpt_path = config.checkpoint_dir / "checkpoint.pkl" if config.checkpoint_dir is not None else None
 
         arr = jnp.asarray(initial_position)
         if not (ckpt_path is not None and ckpt_path.exists()):
@@ -172,6 +172,7 @@ class BlackJAXNSSSampler(Sampler):
                     "rng_key": rng_key,
                     "n_iter": n_iter,
                 }
+                ckpt_path.parent.mkdir(parents=True, exist_ok=True)
                 _tmp = ckpt_path.with_suffix(".pkl.tmp")
                 with open(_tmp, "wb") as _f:
                     pickle.dump(_ckpt_data, _f)

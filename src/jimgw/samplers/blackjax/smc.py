@@ -57,7 +57,7 @@ class BlackJAXSMCSampler(Sampler):
     estimated from the starting particles.  With adaptive temperature
     selection the covariance is re-estimated at each step.
 
-    Supports checkpoint/resume via ``config.checkpoint_path``: a ``.pkl``
+    Supports checkpoint/resume via ``config.checkpoint_dir``: a ``checkpoint.pkl``
     checkpoint is written atomically after each tempering iteration (subject
     to ``config.checkpoint_interval``) and the sampler resumes from it if one
     already exists at that path.
@@ -145,7 +145,7 @@ class BlackJAXSMCSampler(Sampler):
         n_mcmc_steps = config.n_mcmc_steps_per_dim * self.n_dims
         target_ess = config._resolve_target_ess_fraction()
         max_iterations = 1000
-        ckpt_path: Optional[Path] = config.checkpoint_path
+        ckpt_path = config.checkpoint_dir / "checkpoint.pkl" if config.checkpoint_dir is not None else None
 
         mcmc_step = self._build_mcmc_step()
         cov0 = jnp.atleast_2d(jnp.cov(initial_particles.T)) * config.initial_cov_scale
@@ -240,6 +240,7 @@ class BlackJAXSMCSampler(Sampler):
                     "accept_history": accept_h[:n_iter].copy(),
                     "cov_scale_history": cov_scale_h[:n_iter].copy(),
                 }
+                ckpt_path.parent.mkdir(parents=True, exist_ok=True)
                 _tmp = ckpt_path.with_suffix(".pkl.tmp")
                 with open(_tmp, "wb") as _f:
                     pickle.dump(_ckpt_data, _f)
@@ -261,7 +262,7 @@ class BlackJAXSMCSampler(Sampler):
         n_mcmc_steps = config.n_mcmc_steps_per_dim * self.n_dims
         ladder_values = ladder[1:]  # skip 0.0 (already in init state)
         n_schedule = len(ladder_values)
-        ckpt_path: Optional[Path] = config.checkpoint_path
+        ckpt_path = config.checkpoint_dir / "checkpoint.pkl" if config.checkpoint_dir is not None else None
 
         mcmc_step = self._build_mcmc_step()
         cov0 = jnp.atleast_2d(jnp.cov(initial_particles.T)) * config.initial_cov_scale
@@ -326,6 +327,7 @@ class BlackJAXSMCSampler(Sampler):
                     "mode": "fp",
                     "accept_history": accept_h[:n_iter].copy(),
                 }
+                ckpt_path.parent.mkdir(parents=True, exist_ok=True)
                 _tmp = ckpt_path.with_suffix(".pkl.tmp")
                 with open(_tmp, "wb") as _f:
                     pickle.dump(_ckpt_data, _f)
@@ -343,7 +345,7 @@ class BlackJAXSMCSampler(Sampler):
         config = self._config
         n_mcmc_steps = config.n_mcmc_steps_per_dim * self.n_dims
         target_ess = config._resolve_target_ess_fraction()
-        ckpt_path: Optional[Path] = config.checkpoint_path
+        ckpt_path = config.checkpoint_dir / "checkpoint.pkl" if config.checkpoint_dir is not None else None
 
         mcmc_step = self._build_mcmc_step()
         cov0 = jnp.atleast_2d(jnp.cov(initial_particles.T)) * config.initial_cov_scale
@@ -423,6 +425,7 @@ class BlackJAXSMCSampler(Sampler):
                     "tempering_schedule": temp_list.copy(),
                     "is_weights_history": np.stack(is_weights_list),
                 }
+                ckpt_path.parent.mkdir(parents=True, exist_ok=True)
                 _tmp = ckpt_path.with_suffix(".pkl.tmp")
                 with open(_tmp, "wb") as _f:
                     pickle.dump(_ckpt_data, _f)
@@ -449,7 +452,7 @@ class BlackJAXSMCSampler(Sampler):
         n_mcmc_steps = config.n_mcmc_steps_per_dim * self.n_dims
         ladder_values = ladder[1:]  # skip 0.0
         n_schedule = len(ladder_values)
-        ckpt_path: Optional[Path] = config.checkpoint_path
+        ckpt_path = config.checkpoint_dir / "checkpoint.pkl" if config.checkpoint_dir is not None else None
 
         mcmc_step = self._build_mcmc_step()
         cov0 = jnp.atleast_2d(jnp.cov(initial_particles.T)) * config.initial_cov_scale
@@ -517,6 +520,7 @@ class BlackJAXSMCSampler(Sampler):
                     "accept_history": accept_h[:n_iter].copy(),
                     "is_weights_history": np.stack(is_weights_list),
                 }
+                ckpt_path.parent.mkdir(parents=True, exist_ok=True)
                 _tmp = ckpt_path.with_suffix(".pkl.tmp")
                 with open(_tmp, "wb") as _f:
                     pickle.dump(_ckpt_data, _f)
@@ -545,7 +549,7 @@ class BlackJAXSMCSampler(Sampler):
     ) -> None:
         """Run the BlackJAX SMC sampler.
 
-        If ``config.checkpoint_path`` is set, a ``.pkl`` checkpoint is written
+        If ``config.checkpoint_dir`` is set, a ``checkpoint.pkl`` is written
         atomically after each tempering iteration (subject to
         ``config.checkpoint_interval``) and the sampler resumes from the
         checkpoint if one already exists at that path.
@@ -562,7 +566,7 @@ class BlackJAXSMCSampler(Sampler):
         """
         config = self._config
         n_particles = config.n_particles
-        ckpt_path: Optional[Path] = config.checkpoint_path
+        ckpt_path = config.checkpoint_dir / "checkpoint.pkl" if config.checkpoint_dir is not None else None
 
         arr = jnp.asarray(initial_position)
         if not (ckpt_path is not None and ckpt_path.exists()):

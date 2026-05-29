@@ -137,8 +137,7 @@ def test_flowmc_diagnostics():
 
 @pytest.mark.slow
 def test_flowmc_checkpoint_file_created(tmp_path):
-    """A checkpoint .pkl file must be created when checkpoint_path is configured."""
-    ckpt = tmp_path / "ckpt.pkl"
+    """A checkpoint .pkl file must be created when outdir is configured."""
     config = FlowMCConfig(
         n_chains=10,
         n_local_steps=5,
@@ -148,8 +147,8 @@ def test_flowmc_checkpoint_file_created(tmp_path):
         n_production_loops=1,
         n_epochs=2,
         parallel_tempering=None,
-        checkpoint_path=ckpt,
-        checkpoint_interval=0.0,  # always write after each training loop
+        outdir=str(tmp_path),
+        checkpoint_interval=1e-9,
     )
     prior = CombinePrior(
         [
@@ -178,4 +177,71 @@ def test_flowmc_checkpoint_file_created(tmp_path):
         config=config,
     )
     s.sample(jax.random.key(42), jnp.ones((10, 2)) * 0.5)
-    assert ckpt.exists(), "Checkpoint file was not created"
+    assert (tmp_path / "checkpoint.pkl").exists(), "Checkpoint file was not created"
+
+
+@pytest.mark.slow
+def test_flowmc_resume_gives_same_result(tmp_path):
+    """Resumed flowMC run gives identical production samples to an uninterrupted run.
+
+    The checkpoint stores the RNG state at the end of training; resuming skips
+    training and runs production from the same RNG state → identical samples.
+    """
+    prior = CombinePrior(
+        [
+            UniformPrior(0.0, 1.0, parameter_names=["x"]),
+            UniformPrior(0.0, 1.0, parameter_names=["y"]),
+        ]
+    )
+    likelihood = _GaussianLikelihood()
+    parameter_names = prior.parameter_names
+    n_dims = len(parameter_names)
+    init_pos = jnp.ones((10, 2)) * 0.5
+
+    def _make_sampler(outdir, checkpoint_interval=1e-9):
+        config = FlowMCConfig(
+            n_chains=10,
+            n_local_steps=5,
+            n_global_steps=5,
+            global_thinning=1,
+            n_training_loops=2,
+            n_production_loops=1,
+            n_epochs=2,
+            parallel_tempering=None,
+            outdir=outdir,
+            checkpoint_interval=checkpoint_interval,
+        )
+
+        def log_prior_fn(arr):
+            return prior.log_prob(dict(zip(parameter_names, arr, strict=True)))
+
+        def log_likelihood_fn(arr):
+            return likelihood.evaluate(dict(zip(parameter_names, arr, strict=True)))
+
+        def log_posterior_fn(arr):
+            return log_prior_fn(arr) + log_likelihood_fn(arr)
+
+        return FlowMCSampler(
+            n_dims=n_dims,
+            log_prior_fn=log_prior_fn,
+            log_likelihood_fn=log_likelihood_fn,
+            log_posterior_fn=log_posterior_fn,
+            config=config,
+        )
+
+    # Run A: no checkpointing (interval=0 disables it regardless of outdir)
+    s_a = _make_sampler(outdir="./outdir/", checkpoint_interval=0.0)
+    s_a.sample(jax.random.key(42), init_pos)
+    result_a = s_a.get_samples()
+
+    # Run B: write checkpoint at end of each training loop
+    s_b = _make_sampler(outdir=str(tmp_path))
+    s_b.sample(jax.random.key(42), init_pos)
+    assert (tmp_path / "checkpoint.pkl").exists()
+
+    # Run C: resume from B's checkpoint → production uses same RNG state
+    s_c = _make_sampler(outdir=str(tmp_path))
+    s_c.sample(jax.random.key(42), init_pos)
+    result_c = s_c.get_samples()
+
+    np.testing.assert_array_equal(result_a["samples"], result_c["samples"])

@@ -20,33 +20,42 @@ class BaseSamplerConfig(BaseModel):
 
     Args:
         verbose: Enable verbose output during sampling.
-        checkpoint_path: Path to the checkpoint ``.pkl`` file.
-            ``None`` (default) disables checkpointing.  When set, the
-            sampler writes a checkpoint atomically and resumes from it if
-            the file already exists when sampling starts.  The parent
-            directory must already exist.
-        checkpoint_interval: Minimum wall-clock seconds between checkpoint
-            writes.  Default ``600`` (10 minutes).  Set to ``0.0`` to
-            checkpoint after every completed iteration.
     """
 
     model_config = {"extra": "forbid", "arbitrary_types_allowed": True}
 
     verbose: bool = False
-    checkpoint_path: Optional[Path] = None
-    checkpoint_interval: float = 600.0
 
-    @field_validator("checkpoint_path", mode="before")
+
+# ---------------------------------------------------------------------------
+# Checkpoint mixin — included by the three BlackJAX configs that support it
+# ---------------------------------------------------------------------------
+
+
+class _CheckpointMixin(BaseModel):
+    """Checkpoint/resume fields for samplers that support them.
+
+    Args:
+        checkpoint_dir: Directory where ``checkpoint.pkl`` is written.
+            ``None`` (default) disables checkpointing.  The directory is
+            created automatically if it does not exist.  The checkpoint
+            filename is always ``checkpoint.pkl``.
+        checkpoint_interval: Minimum wall-clock seconds between checkpoint
+            writes.  Default ``0`` (checkpointing disabled).  Set to a
+            positive value to enable; ``checkpoint_dir`` must also be set.
+    """
+
+    model_config = {"extra": "forbid", "arbitrary_types_allowed": True}
+
+    checkpoint_dir: Optional[Path] = None
+    checkpoint_interval: float = 0.0
+
+    @field_validator("checkpoint_dir", mode="before")
     @classmethod
-    def _check_checkpoint_path(cls, v: object) -> Optional[Path]:
+    def _coerce_checkpoint_dir(cls, v: object) -> Optional[Path]:
         if v is None:
             return None
-        p = Path(str(v))
-        if not p.parent.exists():
-            raise ValueError(
-                f"checkpoint_path parent directory does not exist: {p.parent}"
-            )
-        return p
+        return Path(str(v))
 
     @field_validator("checkpoint_interval")
     @classmethod
@@ -54,6 +63,15 @@ class BaseSamplerConfig(BaseModel):
         if v < 0.0:
             raise ValueError("checkpoint_interval must be >= 0.0")
         return v
+
+    @model_validator(mode="after")
+    def _check_checkpoint_consistency(self) -> "_CheckpointMixin":
+        if self.checkpoint_interval > 0 and self.checkpoint_dir is None:
+            raise ValueError(
+                "checkpoint_dir must be set when checkpoint_interval > 0. "
+                "Provide a directory path or set checkpoint_interval=0 to disable checkpointing."
+            )
+        return self
 
 
 # ---------------------------------------------------------------------------
@@ -175,6 +193,18 @@ class FlowMCConfig(BaseSamplerConfig):
     early_stopping_patience: int = 3
     early_stopping_min_acceptance: float = 0.1
 
+    # Checkpoint / resume via flowMC's native outdir mechanism.
+    # checkpoint_interval=0 (default) disables checkpointing.
+    outdir: str = "./outdir/"
+    checkpoint_interval: float = 0.0
+
+    @field_validator("checkpoint_interval")
+    @classmethod
+    def _check_checkpoint_interval(cls, v: float) -> float:
+        if v < 0.0:
+            raise ValueError("checkpoint_interval must be >= 0.0")
+        return v
+
     @field_validator("parallel_tempering", mode="before")
     @classmethod
     def _coerce_parallel_tempering(cls, v: object) -> Optional[ParallelTemperingConfig]:
@@ -209,7 +239,7 @@ class FlowMCConfig(BaseSamplerConfig):
         return self
 
 
-class BlackJAXNSAWConfig(BaseSamplerConfig):
+class BlackJAXNSAWConfig(BaseSamplerConfig, _CheckpointMixin):
     """Configuration for the BlackJAX acceptance-walk nested sampler.
 
     !!! note
@@ -254,7 +284,7 @@ class BlackJAXNSAWConfig(BaseSamplerConfig):
         return self
 
 
-class BlackJAXNSSConfig(BaseSamplerConfig):
+class BlackJAXNSSConfig(BaseSamplerConfig, _CheckpointMixin):
     """Configuration for the BlackJAX nested slice sampler.
 
     !!! note
@@ -290,7 +320,7 @@ class BlackJAXNSSConfig(BaseSamplerConfig):
         return self
 
 
-class BlackJAXSMCConfig(BaseSamplerConfig):
+class BlackJAXSMCConfig(BaseSamplerConfig, _CheckpointMixin):
     """Configuration for the BlackJAX SMC sampler.
 
     !!! note

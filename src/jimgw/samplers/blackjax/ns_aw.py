@@ -207,19 +207,15 @@ class BlackJAXNSAWSampler(Sampler):
                 ckpt_path is not None
                 and time.perf_counter() - _last_ckpt_t >= config.checkpoint_interval
             ):
-                _ckpt_data = {
-                    "state": state,
-                    "dead": dead,
-                    "rng_key": rng_key,
-                    "n_iter": n_iter,
-                }
-                ckpt_path.parent.mkdir(parents=True, exist_ok=True)
-                _tmp = ckpt_path.with_suffix(".pkl.tmp")
-                with open(_tmp, "wb") as _f:
-                    pickle.dump(_ckpt_data, _f)
-                _tmp.replace(ckpt_path)
-                _last_ckpt_t = time.perf_counter()
-                logger.debug("NS-AW: checkpoint saved at n_iter=%d", n_iter)
+                _last_ckpt_t = config.write_checkpoint(
+                    {
+                        "state": state,
+                        "dead": dead,
+                        "rng_key": rng_key,
+                        "n_iter": n_iter,
+                    },
+                    "NS-AW",
+                )
 
         from blackjax.ns.utils import finalise
 

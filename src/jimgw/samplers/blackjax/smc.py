@@ -234,22 +234,18 @@ class BlackJAXSMCSampler(Sampler):
                 ckpt_path is not None
                 and time.perf_counter() - _last_ckpt_t >= config.checkpoint_interval
             ):
-                _ckpt_data = {
-                    "state": state,
-                    "rng_key": rng_key,
-                    "n_iter": n_iter,
-                    "mode": "ap",
-                    "cov_scale": cov_scale,
-                    "accept_history": accept_h[:n_iter].copy(),
-                    "cov_scale_history": cov_scale_h[:n_iter].copy(),
-                }
-                ckpt_path.parent.mkdir(parents=True, exist_ok=True)
-                _tmp = ckpt_path.with_suffix(".pkl.tmp")
-                with open(_tmp, "wb") as _f:
-                    pickle.dump(_ckpt_data, _f)
-                _tmp.replace(ckpt_path)
-                _last_ckpt_t = time.perf_counter()
-                logger.debug("SMC-AP: checkpoint saved at n_iter=%d", n_iter)
+                _last_ckpt_t = config.write_checkpoint(
+                    {
+                        "state": state,
+                        "rng_key": rng_key,
+                        "n_iter": n_iter,
+                        "mode": "ap",
+                        "cov_scale": cov_scale,
+                        "accept_history": accept_list.copy(),
+                        "cov_scale_history": cov_scale_list.copy(),
+                    },
+                    "SMC-AP",
+                )
 
         self._final_state = state
         self._mode = "ap"
@@ -327,20 +323,16 @@ class BlackJAXSMCSampler(Sampler):
                 ckpt_path is not None
                 and time.perf_counter() - _last_ckpt_t >= config.checkpoint_interval
             ):
-                _ckpt_data = {
-                    "state": state,
-                    "rng_key": rng_key,
-                    "n_iter": n_iter,
-                    "mode": "fp",
-                    "accept_history": accept_h[:n_iter].copy(),
-                }
-                ckpt_path.parent.mkdir(parents=True, exist_ok=True)
-                _tmp = ckpt_path.with_suffix(".pkl.tmp")
-                with open(_tmp, "wb") as _f:
-                    pickle.dump(_ckpt_data, _f)
-                _tmp.replace(ckpt_path)
-                _last_ckpt_t = time.perf_counter()
-                logger.debug("SMC-FP: checkpoint saved at n_iter=%d", n_iter)
+                _last_ckpt_t = config.write_checkpoint(
+                    {
+                        "state": state,
+                        "rng_key": rng_key,
+                        "n_iter": n_iter,
+                        "mode": "fp",
+                        "accept_history": accept_list.copy(),
+                    },
+                    "SMC-FP",
+                )
 
         self._final_state = state
         self._mode = "fp"
@@ -427,22 +419,18 @@ class BlackJAXSMCSampler(Sampler):
                 ckpt_path is not None
                 and time.perf_counter() - _last_ckpt_t >= config.checkpoint_interval
             ):
-                _ckpt_data = {
-                    "state": state,
-                    "rng_key": rng_key,
-                    "n_iter": n_iter,
-                    "mode": "at",
-                    "accept_history": accept_list.copy(),
-                    "tempering_schedule": temp_list.copy(),
-                    "is_weights_history": np.stack(is_weights_list),
-                }
-                ckpt_path.parent.mkdir(parents=True, exist_ok=True)
-                _tmp = ckpt_path.with_suffix(".pkl.tmp")
-                with open(_tmp, "wb") as _f:
-                    pickle.dump(_ckpt_data, _f)
-                _tmp.replace(ckpt_path)
-                _last_ckpt_t = time.perf_counter()
-                logger.debug("SMC-AT: checkpoint saved at n_iter=%d", n_iter)
+                _last_ckpt_t = config.write_checkpoint(
+                    {
+                        "state": state,
+                        "rng_key": rng_key,
+                        "n_iter": n_iter,
+                        "mode": "at",
+                        "accept_history": accept_list.copy(),
+                        "tempering_schedule": temp_list.copy(),
+                        "is_weights_history": np.stack(is_weights_list),
+                    },
+                    "SMC-AT",
+                )
 
         self._final_state = state
         self._mode = "at"
@@ -527,21 +515,17 @@ class BlackJAXSMCSampler(Sampler):
                 ckpt_path is not None
                 and time.perf_counter() - _last_ckpt_t >= config.checkpoint_interval
             ):
-                _ckpt_data = {
-                    "state": state,
-                    "rng_key": rng_key,
-                    "n_iter": n_iter,
-                    "mode": "ft",
-                    "accept_history": accept_h[:n_iter].copy(),
-                    "is_weights_history": np.stack(is_weights_list),
-                }
-                ckpt_path.parent.mkdir(parents=True, exist_ok=True)
-                _tmp = ckpt_path.with_suffix(".pkl.tmp")
-                with open(_tmp, "wb") as _f:
-                    pickle.dump(_ckpt_data, _f)
-                _tmp.replace(ckpt_path)
-                _last_ckpt_t = time.perf_counter()
-                logger.debug("SMC-FT: checkpoint saved at n_iter=%d", n_iter)
+                _last_ckpt_t = config.write_checkpoint(
+                    {
+                        "state": state,
+                        "rng_key": rng_key,
+                        "n_iter": n_iter,
+                        "mode": "ft",
+                        "accept_history": accept_list.copy(),
+                        "is_weights_history": np.stack(is_weights_list),
+                    },
+                    "SMC-FT",
+                )
 
         self._final_state = state
         self._mode = "ft"

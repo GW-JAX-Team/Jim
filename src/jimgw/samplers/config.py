@@ -7,12 +7,17 @@ Each sampler has its own ``*Config`` class discriminated by a ``type`` literal;
 
 from __future__ import annotations
 
+import logging
+import pickle
+import time
 import warnings
 from pathlib import Path
 from typing import Annotated, Literal, Optional, Union
 
 import numpy as np
 from pydantic import BaseModel, Discriminator, Field, field_validator, model_validator
+
+logger = logging.getLogger(__name__)
 
 
 class BaseSamplerConfig(BaseModel):
@@ -45,7 +50,7 @@ class _CheckpointMixin(BaseModel):
             positive value to enable; ``checkpoint_dir`` must also be set.
     """
 
-    model_config = {"extra": "forbid", "arbitrary_types_allowed": True}
+    # model_config is inherited from BaseSamplerConfig; not redeclared here.
 
     checkpoint_dir: Optional[Path] = None
     checkpoint_interval: float = 0.0
@@ -72,6 +77,31 @@ class _CheckpointMixin(BaseModel):
                 "Provide a directory path or set checkpoint_interval=0 to disable checkpointing."
             )
         return self
+
+    def write_checkpoint(self, data: dict, tag: str) -> float:
+        """Atomically write *data* to ``checkpoint_dir/checkpoint.pkl``.
+
+        The write is done via a temporary ``.pkl.tmp`` file that is renamed
+        into place so a crash mid-write never leaves a corrupt checkpoint.
+
+        Args:
+            data: Serialisable dict to pickle.
+            tag: Short prefix for the debug log message (e.g. ``"SMC-AP"``).
+
+        Returns:
+            Wall-clock time of the write (``time.perf_counter()``), suitable
+            for resetting the caller's ``_last_ckpt_t`` timer.
+        """
+        assert self.checkpoint_dir is not None
+        ckpt_path = self.checkpoint_dir / "checkpoint.pkl"
+        ckpt_path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = ckpt_path.with_suffix(".pkl.tmp")
+        with open(tmp, "wb") as _f:
+            pickle.dump(data, _f)
+        tmp.replace(ckpt_path)
+        t = time.perf_counter()
+        logger.debug("%s: checkpoint saved at n_iter=%d", tag, data.get("n_iter", "?"))
+        return t
 
 
 # ---------------------------------------------------------------------------

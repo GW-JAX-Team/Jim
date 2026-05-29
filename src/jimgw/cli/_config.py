@@ -130,6 +130,7 @@ Approximant = Literal[
     "TaylorF2",
     "IMRPhenomD",
     "IMRPhenomD_NRTidalv2",
+    "IMRPhenomHM",
     "IMRPhenomPv2",
     "IMRPhenomXAS",
     "IMRPhenomXAS_NRTidalv3",

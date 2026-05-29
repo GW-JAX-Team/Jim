@@ -2,6 +2,7 @@ from ripplegw import (
     TaylorF2,
     IMRPhenomD,
     IMRPhenomD_NRTidalv2,
+    IMRPhenomHM,
     IMRPhenomPv2,
     IMRPhenomXAS,
     IMRPhenomXAS_NRTidalv3,
@@ -14,6 +15,7 @@ from ripplegw import (
 RippleTaylorF2 = TaylorF2
 RippleIMRPhenomD = IMRPhenomD
 RippleIMRPhenomD_NRTidalv2 = IMRPhenomD_NRTidalv2
+RippleIMRPhenomHM = IMRPhenomHM
 RippleIMRPhenomPv2 = IMRPhenomPv2
 RippleIMRPhenomXAS = IMRPhenomXAS
 RippleIMRPhenomXAS_NRTidalv3 = IMRPhenomXAS_NRTidalv3
@@ -26,6 +28,7 @@ __all__ = [
     "RippleTaylorF2",
     "RippleIMRPhenomD",
     "RippleIMRPhenomD_NRTidalv2",
+    "RippleIMRPhenomHM",
     "RippleIMRPhenomPv2",
     "RippleIMRPhenomXAS",
     "RippleIMRPhenomXAS_NRTidalv3",

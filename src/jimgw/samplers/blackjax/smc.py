@@ -581,19 +581,13 @@ class BlackJAXSMCSampler(Sampler):
         """
         config = self._config
         n_particles = config.n_particles
-        ckpt_path = (
-            config.checkpoint_dir / "checkpoint.pkl"
-            if config.checkpoint_dir is not None
-            else None
-        )
 
         arr = jnp.asarray(initial_position)
-        if not (ckpt_path is not None and ckpt_path.exists()):
-            if arr.ndim != 2 or arr.shape != (n_particles, self.n_dims):
-                raise ValueError(
-                    f"initial_position must have shape ({n_particles}, {self.n_dims}), "
-                    f"got {arr.shape}."
-                )
+        if arr.ndim != 2 or arr.shape != (n_particles, self.n_dims):
+            raise ValueError(
+                f"initial_position must have shape ({n_particles}, {self.n_dims}), "
+                f"got {arr.shape}."
+            )
         initial_particles = arr
 
         ladder = config.temperature_ladder

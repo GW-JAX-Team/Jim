@@ -110,14 +110,14 @@ class BlackJAXNSSSampler(Sampler):
             else None
         )
 
-        arr = jnp.asarray(initial_position)
-        if not (ckpt_path is not None and ckpt_path.exists()):
+        def _validated_initial_particles(pos):
+            arr = jnp.asarray(pos)
             if arr.ndim != 2 or arr.shape != (n_live, self.n_dims):
                 raise ValueError(
                     f"initial_position must have shape ({n_live}, {self.n_dims}), "
                     f"got {arr.shape}."
                 )
-        initial_particles = arr
+            return arr
 
         nested_sampler = blackjax.nss(
             logprior_fn=self._log_prior_fn,
@@ -145,11 +145,13 @@ class BlackJAXNSSSampler(Sampler):
                     ckpt_path,
                     _e,
                 )
-                state = nested_sampler.init(initial_particles)  # type: ignore[call-arg]  # blackjax fork API
+                state = nested_sampler.init(
+                    _validated_initial_particles(initial_position)
+                )  # type: ignore[call-arg]  # blackjax fork API
                 dead = []
                 n_iter = 0
         else:
-            state = nested_sampler.init(initial_particles)  # type: ignore[call-arg]  # blackjax fork API
+            state = nested_sampler.init(_validated_initial_particles(initial_position))  # type: ignore[call-arg]  # blackjax fork API
             dead = []
             n_iter = 0
 

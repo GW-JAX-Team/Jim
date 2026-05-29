@@ -230,7 +230,7 @@ def test_flowmc_resume_gives_same_result(tmp_path):
         )
 
     # Run A: no checkpointing (interval=0 disables it regardless of outdir)
-    s_a = _make_sampler(outdir="./outdir/", checkpoint_interval=0.0)
+    s_a = _make_sampler(outdir=str(tmp_path / "outdir_a"), checkpoint_interval=0.0)
     s_a.sample(jax.random.key(42), init_pos)
     result_a = s_a.get_samples()
 

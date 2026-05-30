@@ -164,7 +164,7 @@ class FlowMCSampler(Sampler):
             early_stopping_tolerance=config.early_stopping_tolerance,
             early_stopping_patience=config.early_stopping_patience,
             early_stopping_min_acceptance=config.early_stopping_min_acceptance,
-            verbose=config.verbose,
+            verbose=logging.getLogger("jimgw").isEnabledFor(logging.DEBUG),
         )
 
         # Kernel-specific kwargs.

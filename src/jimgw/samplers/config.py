@@ -21,15 +21,9 @@ logger = logging.getLogger(__name__)
 
 
 class BaseSamplerConfig(BaseModel):
-    """Fields shared by all sampler configs.
-
-    Args:
-        verbose: Enable verbose output during sampling.
-    """
+    """Fields shared by all sampler configs."""
 
     model_config = {"extra": "forbid", "arbitrary_types_allowed": True}
-
-    verbose: bool = False
 
 
 # ---------------------------------------------------------------------------

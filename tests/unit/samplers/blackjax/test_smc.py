@@ -367,7 +367,9 @@ def test_smc_resume_gives_same_result(tmp_path):
     assert log_z_a == pytest.approx(log_z_c, rel=1e-6)
 
 
-def _make_sampler_batched(n_particles: int = 200, batch_size: int = 20) -> BlackJAXSMCSampler:
+def _make_sampler_batched(
+    n_particles: int = 200, batch_size: int = 20
+) -> BlackJAXSMCSampler:
     """AP mode sampler with particle_batch_size > 0."""
     prior = CombinePrior(
         [

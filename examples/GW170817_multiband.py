@@ -125,8 +125,8 @@ jim = Jim(
         n_production_loops=10,
         n_NFproposal_batch_size=64,
         global_thinning=100,
-        verbose=True,
     ),
+    verbose=True,
 )
 
 start_time = time.time()

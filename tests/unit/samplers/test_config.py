@@ -96,9 +96,9 @@ def test_n_delete_frac_validator():
     assert cfg.n_delete_frac == 0.5
 
 
-def test_base_config_fields():
-    cfg = FlowMCConfig(verbose=True)
-    assert cfg.verbose is True
+def test_base_config_extra_fields_forbidden():
+    with pytest.raises(Exception):
+        FlowMCConfig(unknown_field=True)
 
 
 # ---------------------------------------------------------------------------

@@ -82,6 +82,8 @@ def run(
     """Run a jimgw parameter-estimation pipeline from CONFIG."""
     level = logging.DEBUG if verbose else logging.INFO
     logging.basicConfig(level=level, format="%(levelname)s | %(name)s | %(message)s")
+    # jimgw logger is isolated (propagate=False), so set its level directly.
+    logging.getLogger("jimgw").setLevel(level)
 
     if init is not None:
         if init.exists():
@@ -208,7 +210,14 @@ def run(
     )
 
     # Stage 7: build Jim + run sampler
-    jim = build_jim(likelihood, prior, sample_transforms, likelihood_transforms, cfg)
+    jim = build_jim(
+        likelihood,
+        prior,
+        sample_transforms,
+        likelihood_transforms,
+        cfg,
+        verbose=verbose,
+    )
 
     jim.sample()
     logger.info("Sampling complete.")

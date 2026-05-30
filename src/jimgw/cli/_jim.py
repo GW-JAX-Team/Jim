@@ -35,6 +35,7 @@ def build_jim(
     sample_transforms: Sequence[BijectiveTransform],
     likelihood_transforms: Sequence[NtoMTransform],
     cfg,
+    verbose: bool = False,
 ):
     """Wire together Jim from the fully-built components."""
     sampler_config = _with_checkpoint(cfg.sampler, cfg.output.dir)
@@ -45,6 +46,7 @@ def build_jim(
         sample_transforms=sample_transforms,
         likelihood_transforms=likelihood_transforms,
         seed=cfg.seed,
+        verbose=verbose,
     )
     logger.info("Built Jim (sampler=%s, seed=%d)", cfg.sampler.type, cfg.seed)
     return jim

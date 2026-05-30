@@ -52,6 +52,7 @@ class Jim:
         likelihood_transforms: Sequence[NtoMTransform] = (),
         periodic: Optional[list[str] | dict[str, tuple[float, float]]] = None,
         seed: int = 0,
+        verbose: bool = False,
     ) -> None:
         """Initialise Jim and build the internal sampler.
 
@@ -73,7 +74,14 @@ class Jim:
                 from this seed at construction time, so `sample` is
                 reproducible regardless of any intermediate operations (sanity
                 checks, initial-position draws, etc.).
+            verbose: Enable DEBUG-level logging for all ``jimgw`` components.
+                At ``False`` (default) INFO-level messages are always shown.
+                Pass ``True`` to also see per-step diagnostics and
+                backend-specific progress output (e.g. flowMC training loss).
         """
+        if verbose:
+            logging.getLogger("jimgw").setLevel(logging.DEBUG)
+
         self._validate_problem(
             likelihood, prior, sample_transforms, likelihood_transforms
         )

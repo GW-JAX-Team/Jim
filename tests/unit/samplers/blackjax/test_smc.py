@@ -385,7 +385,7 @@ def _make_sampler_batched(
         initial_cov_scale=0.5,
         target_acceptance_rate=0.234,
         scale_adaptation_gain=3.0,
-        particle_batch_size=batch_size,
+        batch_size=batch_size,
     )
     parameter_names = prior.parameter_names
 
@@ -438,7 +438,7 @@ def test_smc_particle_batch_size_at_mode():
         n_mcmc_steps_per_dim=5,
         target_ess=50,
         persistent_sampling=False,
-        particle_batch_size=20,
+        batch_size=20,
     )
     parameter_names = prior.parameter_names
 

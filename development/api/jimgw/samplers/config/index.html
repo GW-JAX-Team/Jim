@@ -2566,6 +2566,13 @@ argument to <a class="autorefs autorefs-internal" href="../../core/jim/#jimgw.co
 
 
         <p>Configuration for the BlackJAX SMC sampler.</p>
+<h5 id="jimgw.samplers.config.BlackJAXSMCConfig--parameters">Parameters<a class="headerlink" href="#jimgw.samplers.config.BlackJAXSMCConfig--parameters" title="Permanent link">¤</a></h5>
+<p>batch_size : int, optional
+    Number of particles to process per sequential batch during the MCMC
+    update step. When <code>batch_size &gt; 0</code>, the sampler uses <code>jax.lax.map</code>
+    instead of <code>jax.vmap</code>, which reduces peak GPU memory at the cost
+    of sequential execution. <code>0</code> (default) uses the original full
+    <code>jax.vmap</code> behaviour.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Periodic parameters are <strong>not</strong> configured here.  Pass a <code>periodic</code>

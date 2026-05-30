@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import pickle
 import time
+from functools import partial
 from typing import Any, Callable, Optional
 
 import jax
@@ -14,8 +15,9 @@ from anesthetic.samples import NestedSamples
 from jaxtyping import Array, Float, Key
 
 import blackjax
-from blackjax.ns.adaptive import AdaptiveNSState
-from blackjax.ns.base import NSInfo
+from blackjax.ns.adaptive import AdaptiveNSState, init as _ns_adaptive_init
+from blackjax.ns.base import NSInfo, init_state_strategy as _init_state_strategy
+from blackjax.ns.nss import update_inner_kernel_params as _update_inner_kernel_params
 from blackjax.ns.utils import finalise
 from jimgw.samplers.base import Sampler
 from jimgw.samplers.blackjax._imports import (
@@ -129,6 +131,27 @@ class BlackJAXNSSSampler(Sampler):
             stepper_fn=self._stepper_fn,
         )
 
+        # Bypass BlackJAX's jax.vmap(init_state_fn) to avoid peak-memory OOM.
+        # A full vmap over all live particles materialises O(n_live) concurrent
+        # intermediate buffers, which can exceed available GPU memory for expensive
+        # likelihoods. lax.map with n_delete particles per batch bounds peak memory
+        # to n_delete/n_live of the full-vmap cost at no extra computation.
+        _single_init_fn = partial(
+            _init_state_strategy,
+            logprior_fn=self._log_prior_fn,
+            loglikelihood_fn=self._log_likelihood_fn,
+        )
+
+        def _batched_nss_init(positions):
+            def _batched_fn(pos):
+                return jax.lax.map(_single_init_fn, pos, batch_size=n_delete)
+
+            return _ns_adaptive_init(
+                positions,
+                init_state_fn=_batched_fn,
+                update_inner_kernel_params_fn=_update_inner_kernel_params,
+            )
+
         # Resume from checkpoint if one exists.
         if (
             ckpt_path is not None
@@ -151,13 +174,13 @@ class BlackJAXNSSSampler(Sampler):
                     ckpt_path,
                     _e,
                 )
-                state = nested_sampler.init(
+                state = _batched_nss_init(
                     _validated_initial_particles(initial_position)
-                )  # type: ignore[call-arg]  # blackjax fork API
+                )
                 dead = []
                 n_iter = 0
         else:
-            state = nested_sampler.init(_validated_initial_particles(initial_position))  # type: ignore[call-arg]  # blackjax fork API
+            state = _batched_nss_init(_validated_initial_particles(initial_position))
             dead = []
             n_iter = 0
 

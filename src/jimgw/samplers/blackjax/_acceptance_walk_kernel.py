@@ -351,11 +351,18 @@ def bilby_adaptive_de_sampler(
     base_kernel_step = build_adaptive_kernel(delete_fn, inner_kernel, update_fn)  # type: ignore[arg-type]  # blackjax fork stubs
 
     def init_fn(particles):
-        _init_state_fn = partial(
+        # Use lax.map instead of vmap to bound peak memory during init.
+        # A full vmap over all live particles materialises O(n_live) concurrent
+        # intermediate buffers, which can exhaust GPU memory for expensive likelihoods.
+        # Batching by num_delete caps peak to num_delete/nlive of the full-vmap cost.
+        _single_init_fn = partial(
             init_state_strategy,
-            logprior_fn=jax.vmap(logprior_fn),
-            loglikelihood_fn=jax.vmap(loglikelihood_fn),
+            logprior_fn=logprior_fn,
+            loglikelihood_fn=loglikelihood_fn,
         )
+
+        def _init_state_fn(positions):
+            return jax.lax.map(_single_init_fn, positions, batch_size=num_delete)
 
         def init_params_fn(rng_key, ns_state, info, current_params):
             example_particle = jax.tree_util.tree_map(

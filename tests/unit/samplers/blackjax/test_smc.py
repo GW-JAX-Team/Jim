@@ -365,3 +365,102 @@ def test_smc_resume_gives_same_result(tmp_path):
     log_z_c = s_c.get_diagnostics()["log_Z"]
 
     assert log_z_a == pytest.approx(log_z_c, rel=1e-6)
+
+
+def _make_sampler_batched(n_particles: int = 200, batch_size: int = 20) -> BlackJAXSMCSampler:
+    """AP mode sampler with particle_batch_size > 0."""
+    prior = CombinePrior(
+        [
+            UniformPrior(0.0, 1.0, parameter_names=["x"]),
+            UniformPrior(0.0, 1.0, parameter_names=["y"]),
+        ]
+    )
+    likelihood = _GaussianLikelihood()
+    config = BlackJAXSMCConfig(
+        n_particles=n_particles,
+        n_mcmc_steps_per_dim=5,
+        target_ess=50,
+        initial_cov_scale=0.5,
+        target_acceptance_rate=0.234,
+        scale_adaptation_gain=3.0,
+        particle_batch_size=batch_size,
+    )
+    parameter_names = prior.parameter_names
+
+    def log_prior_fn(arr):
+        named = dict(zip(parameter_names, arr, strict=True))
+        return prior.log_prob(named)
+
+    def log_likelihood_fn(arr):
+        named = dict(zip(parameter_names, arr, strict=True))
+        return likelihood.evaluate(named)
+
+    def log_posterior_fn(arr):
+        return log_prior_fn(arr) + log_likelihood_fn(arr)
+
+    return BlackJAXSMCSampler(
+        n_dims=len(parameter_names),
+        log_prior_fn=log_prior_fn,
+        log_likelihood_fn=log_likelihood_fn,
+        log_posterior_fn=log_posterior_fn,
+        config=config,
+    )
+
+
+def test_smc_particle_batch_size_runs():
+    """particle_batch_size > 0 (AP mode) should run and produce valid samples."""
+    sampler = _make_sampler_batched(n_particles=200, batch_size=20)
+    sampler.sample(jax.random.key(10), _init_pos(200))
+    result = sampler.get_samples()
+
+    assert isinstance(result, dict)
+    assert "samples" in result
+    assert result["samples"].ndim == 2
+    assert result["samples"].shape[1] == 2
+    assert result["samples"].shape[0] > 0
+    # Samples must lie within the prior support [0, 1]^2
+    assert np.all(result["samples"] >= 0.0) and np.all(result["samples"] <= 1.0)
+
+
+def test_smc_particle_batch_size_at_mode():
+    """particle_batch_size > 0 in non-persistent (AT) mode should run correctly."""
+    prior = CombinePrior(
+        [
+            UniformPrior(0.0, 1.0, parameter_names=["x"]),
+            UniformPrior(0.0, 1.0, parameter_names=["y"]),
+        ]
+    )
+    likelihood = _GaussianLikelihood()
+    config = BlackJAXSMCConfig(
+        n_particles=200,
+        n_mcmc_steps_per_dim=5,
+        target_ess=50,
+        persistent_sampling=False,
+        particle_batch_size=20,
+    )
+    parameter_names = prior.parameter_names
+
+    def log_prior_fn(arr):
+        named = dict(zip(parameter_names, arr, strict=True))
+        return prior.log_prob(named)
+
+    def log_likelihood_fn(arr):
+        named = dict(zip(parameter_names, arr, strict=True))
+        return likelihood.evaluate(named)
+
+    def log_posterior_fn(arr):
+        return log_prior_fn(arr) + log_likelihood_fn(arr)
+
+    sampler = BlackJAXSMCSampler(
+        n_dims=len(parameter_names),
+        log_prior_fn=log_prior_fn,
+        log_likelihood_fn=log_likelihood_fn,
+        log_posterior_fn=log_posterior_fn,
+        config=config,
+    )
+    sampler.sample(jax.random.key(11), _init_pos(200))
+    result = sampler.get_samples()
+
+    assert isinstance(result, dict)
+    assert "samples" in result
+    assert result["samples"].shape[0] > 0

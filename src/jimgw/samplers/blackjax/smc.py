@@ -167,6 +167,7 @@ class BlackJAXSMCSampler(Sampler):
             initial_parameter_value=extend_params({"cov": cov0}),  # type: ignore[arg-type]  # blackjax fork stubs: extend_params accepts dict
             num_mcmc_steps=n_mcmc_steps,
             target_ess=target_ess,
+            batch_size=config.batch_size,
         )
 
         accept_list: list[float] = []
@@ -283,6 +284,7 @@ class BlackJAXSMCSampler(Sampler):
             mcmc_parameters=extend_params({"cov": cov0}),  # type: ignore[arg-type]  # blackjax fork stubs: extend_params accepts dict
             resampling_fn=systematic,
             num_mcmc_steps=n_mcmc_steps,
+            batch_size=config.batch_size,
         )
 
         accept_list: list[float] = []
@@ -386,6 +388,7 @@ class BlackJAXSMCSampler(Sampler):
             initial_parameter_value=extend_params({"cov": cov0}),  # type: ignore[arg-type]  # blackjax fork stubs: extend_params accepts dict
             num_mcmc_steps=n_mcmc_steps,
             target_ess=target_ess,
+            batch_size=config.batch_size,
         )
 
         accept_list: list[float] = []
@@ -492,6 +495,7 @@ class BlackJAXSMCSampler(Sampler):
             mcmc_parameters=extend_params({"cov": cov0}),  # type: ignore[arg-type]  # blackjax fork stubs: extend_params accepts dict
             resampling_fn=systematic,
             num_mcmc_steps=n_mcmc_steps,
+            batch_size=config.batch_size,
         )
 
         accept_list: list[float] = []
@@ -688,13 +692,21 @@ class BlackJAXSMCSampler(Sampler):
         elif mode == "at":
             ps = state.sampler_state
             final_particles = np.array(ps.particles)
-            log_likelihoods = np.array(jax.vmap(self._log_likelihood_fn)(ps.particles))
+            pbs = self._config.batch_size
+            log_likelihoods = np.array(
+                jax.lax.map(self._log_likelihood_fn, ps.particles, batch_size=pbs)
+                if pbs > 0
+                else jax.vmap(self._log_likelihood_fn)(ps.particles)
+            )
             return {"samples": final_particles, "log_likelihood": log_likelihoods}
 
         else:  # mode == "ft"
             final_particles = np.array(state.particles)
+            pbs = self._config.batch_size
             log_likelihoods = np.array(
-                jax.vmap(self._log_likelihood_fn)(state.particles)
+                jax.lax.map(self._log_likelihood_fn, state.particles, batch_size=pbs)
+                if pbs > 0
+                else jax.vmap(self._log_likelihood_fn)(state.particles)
             )
             return {"samples": final_particles, "log_likelihood": log_likelihoods}
 

@@ -2164,6 +2164,10 @@
 <p>Uses a Gaussian random-walk MCMC inner kernel with initial covariance
 estimated from the starting particles.  With adaptive temperature
 selection the covariance is re-estimated at each step.</p>
+<p>Supports checkpoint/resume via <code>config.checkpoint_dir</code>: a <code>checkpoint.pkl</code>
+checkpoint is written atomically after each tempering iteration (subject
+to <code>config.checkpoint_interval</code>) and the sampler resumes from it if one
+already exists at that path.</p>
 <p>Operates on flat <code>(n_dims,)</code> arrays.</p>
 
 

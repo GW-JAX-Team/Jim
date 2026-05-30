@@ -960,6 +960,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#checkpointing-and-resuming" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Checkpointing and resuming
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#periodic-parameters" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -2194,6 +2205,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#checkpointing-and-resuming" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Checkpointing and resuming
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#periodic-parameters" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -2438,6 +2460,64 @@ Unlike NS-AW, it does not require a unit-cube prior and works in any bounded sam
 </ul>
 <p><strong>Repository:</strong> <a href="https://github.com/handley-lab/blackjax">handley-lab/blackjax</a></p>
 <p><strong>References:</strong> Yallup, D., Prathaban, M., Alvey, J., Handley, W., <em>"Parallel Nested Slice Sampling for Gravitational Wave Parameter Estimation"</em>, <a href="https://arxiv.org/abs/2509.24949">arXiv:2509.24949</a> (Sep 2025). Yallup, D., Kroupa, N., Handley, W., <em>"Nested Slice Sampling"</em>, <a href="https://openreview.net/forum?id=ekbkMSuPo4">OpenReview</a> (2025).</p>
+<hr />
+<h2 id="checkpointing-and-resuming">Checkpointing and resuming<a class="headerlink" href="#checkpointing-and-resuming" title="Permanent link">¤</a></h2>
+<p>All samplers support checkpoint/resume so long-running jobs can survive interruptions.
+Set <code>checkpoint_dir</code> to a directory and <code>checkpoint_interval</code> to the minimum wall-clock seconds between writes:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.samplers.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">BlackJAXSMCConfig</span>
+
+<span class="n">jim</span> <span class="o">=</span> <span class="n">Jim</span><span class="p">(</span>
+    <span class="n">likelihood</span><span class="p">,</span>
+    <span class="n">prior</span><span class="p">,</span>
+    <span class="n">sampler_config</span><span class="o">=</span><span class="n">BlackJAXSMCConfig</span><span class="p">(</span>
+        <span class="n">n_particles</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span>
+        <span class="n">checkpoint_dir</span><span class="o">=</span><span class="s2">&quot;./my_run&quot;</span><span class="p">,</span>
+        <span class="n">checkpoint_interval</span><span class="o">=</span><span class="mi">600</span><span class="p">,</span>  <span class="c1"># write at most every 10 minutes</span>
+    <span class="p">),</span>
+<span class="p">)</span>
+<span class="n">jim</span><span class="o">.</span><span class="n">sample</span><span class="p">()</span>
+</code></pre></div>
+<p>The checkpoint is written atomically (<code>checkpoint.pkl.tmp</code> → <code>checkpoint.pkl</code>) so a mid-write crash never leaves a corrupt file.
+To resume after an interruption, construct the same config pointing at the same <code>checkpoint_dir</code> and call <code>jim.sample()</code> again — the sampler detects the existing file and picks up from the last saved state:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># resume — identical config, same checkpoint_dir</span>
+<span class="n">jim</span> <span class="o">=</span> <span class="n">Jim</span><span class="p">(</span>
+    <span class="n">likelihood</span><span class="p">,</span>
+    <span class="n">prior</span><span class="p">,</span>
+    <span class="n">sampler_config</span><span class="o">=</span><span class="n">BlackJAXSMCConfig</span><span class="p">(</span>
+        <span class="n">n_particles</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span>
+        <span class="n">checkpoint_dir</span><span class="o">=</span><span class="s2">&quot;./my_run&quot;</span><span class="p">,</span>
+        <span class="n">checkpoint_interval</span><span class="o">=</span><span class="mi">600</span><span class="p">,</span>
+    <span class="p">),</span>
+<span class="p">)</span>
+<span class="n">jim</span><span class="o">.</span><span class="n">sample</span><span class="p">()</span>  <span class="c1"># resumes from ./my_run/checkpoint.pkl</span>
+</code></pre></div>
+<p>The same fields work identically for <code>FlowMCConfig</code>, <code>BlackJAXNSAWConfig</code>, and <code>BlackJAXNSSConfig</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Default</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>checkpoint_dir</code></td>
+<td><code>None</code> (disabled)</td>
+<td>Directory where <code>checkpoint.pkl</code> is written. Created automatically if absent.</td>
+</tr>
+<tr>
+<td><code>checkpoint_interval</code></td>
+<td><code>0.0</code> (disabled)</td>
+<td>Minimum seconds between writes. <code>0</code> disables checkpointing entirely.</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Validation</strong> — setting <code>checkpoint_interval &gt; 0</code> without <code>checkpoint_dir</code> raises a <code>ValidationError</code> at config construction time.</p>
+</blockquote>
+<p>When using the <a href="../cli/">CLI</a>, checkpointing is enabled automatically (600 s, writing to <code>output.dir</code>).
+Set <code>checkpoint_interval = 0</code> in the <code>[sampler]</code> block to opt out.</p>
 <hr />
 <h2 id="periodic-parameters">Periodic parameters<a class="headerlink" href="#periodic-parameters" title="Permanent link">¤</a></h2>
 <p>All samplers accept a <code>periodic</code> field to handle parameters that wrap around (e.g. angles).

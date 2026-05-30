@@ -3325,6 +3325,16 @@ Supported PSD formats: <code>.npz</code>, <code>.txt</code>, <code>.dat</code>, 
 <td>disabled</td>
 <td>Set to <code>true</code> to enable with defaults, or provide a dict for custom settings</td>
 </tr>
+<tr>
+<td><code>checkpoint_dir</code></td>
+<td><code>{output.dir}/</code></td>
+<td>Directory for <code>checkpoint.pkl</code>; set by the CLI automatically</td>
+</tr>
+<tr>
+<td><code>checkpoint_interval</code></td>
+<td><code>600.0</code></td>
+<td>Seconds between checkpoint writes; <code>0</code> disables checkpointing</td>
+</tr>
 </tbody>
 </table>
 <p>Parallel-tempering sub-table:</p>
@@ -3383,6 +3393,16 @@ Supported PSD formats: <code>.npz</code>, <code>.txt</code>, <code>.dat</code>, 
 <td>—</td>
 <td>Optional — fixed list of temperatures from 0.0 to 1.0; omit to use adaptive tempering</td>
 </tr>
+<tr>
+<td><code>checkpoint_dir</code></td>
+<td><code>{output.dir}/</code></td>
+<td>Directory for <code>checkpoint.pkl</code>; set by the CLI automatically</td>
+</tr>
+<tr>
+<td><code>checkpoint_interval</code></td>
+<td><code>600.0</code></td>
+<td>Seconds between checkpoint writes; <code>0</code> disables checkpointing</td>
+</tr>
 </tbody>
 </table>
 <h3 id="type-blackjax-nss"><code>type = "blackjax-nss"</code><a class="headerlink" href="#type-blackjax-nss" title="Permanent link">¤</a></h3>
@@ -3414,6 +3434,16 @@ Supported PSD formats: <code>.npz</code>, <code>.txt</code>, <code>.dat</code>, 
 <td><code>termination_dlogz</code></td>
 <td><code>0.1</code></td>
 <td>Stop when the remaining log-evidence contribution falls below this</td>
+</tr>
+<tr>
+<td><code>checkpoint_dir</code></td>
+<td><code>{output.dir}/</code></td>
+<td>Directory for <code>checkpoint.pkl</code>; set by the CLI automatically</td>
+</tr>
+<tr>
+<td><code>checkpoint_interval</code></td>
+<td><code>600.0</code></td>
+<td>Seconds between checkpoint writes; <code>0</code> disables checkpointing</td>
 </tr>
 </tbody>
 </table>
@@ -3457,6 +3487,16 @@ Supported PSD formats: <code>.npz</code>, <code>.txt</code>, <code>.dat</code>, 
 <td><code>termination_dlogz</code></td>
 <td><code>0.1</code></td>
 <td>Termination criterion on remaining log-evidence</td>
+</tr>
+<tr>
+<td><code>checkpoint_dir</code></td>
+<td><code>{output.dir}/</code></td>
+<td>Directory for <code>checkpoint.pkl</code>; set by the CLI automatically</td>
+</tr>
+<tr>
+<td><code>checkpoint_interval</code></td>
+<td><code>600.0</code></td>
+<td>Seconds between checkpoint writes; <code>0</code> disables checkpointing</td>
 </tr>
 </tbody>
 </table>

@@ -10,6 +10,9 @@ import numpy as np
 from jaxtyping import Array, Float, Key
 from anesthetic.samples import NestedSamples
 import blackjax
+from blackjax.ns.adaptive import AdaptiveNSState
+from blackjax.ns.base import NSInfo
+from blackjax.ns.utils import finalise
 
 from jimgw.samplers.base import Sampler
 from jimgw.samplers.blackjax._acceptance_walk_kernel import bilby_adaptive_de_sampler
@@ -54,7 +57,7 @@ class BlackJAXNSAWSampler(Sampler):
 
     _config: BlackJAXNSAWConfig
     _stepper_fn: Callable
-    _final_state: Any
+    _final_state: NSInfo
     _nested_samples: NestedSamples
     _n_iterations: int
 
@@ -146,7 +149,7 @@ class BlackJAXNSAWSampler(Sampler):
 
         state = nested_sampler.init(initial_particles)  # type: ignore[call-arg]  # blackjax fork API
 
-        def _terminate(state: Any) -> bool:
+        def _terminate(state: AdaptiveNSState) -> bool:
             dlogz = jnp.logaddexp(0, state.integrator.logZ_live - state.integrator.logZ)
             return bool(jnp.isfinite(dlogz) and dlogz < config.termination_dlogz)
 
@@ -159,8 +162,6 @@ class BlackJAXNSAWSampler(Sampler):
             state, dead_info = step_fn(subkey, state)
             dead.append(dead_info)
             n_iter += 1
-
-        from blackjax.ns.utils import finalise
 
         self._final_state = finalise(state, dead)
         self._n_iterations = n_iter
@@ -211,7 +212,9 @@ class BlackJAXNSAWSampler(Sampler):
         """
         if not self._sampled:
             raise RuntimeError("get_diagnostics() called before sample()")
-        ui = self._final_state.update_info  # DEWalkInfo concatenated across all steps
+        ui: Any = (
+            self._final_state.update_info
+        )  # DEWalkInfo — blackjax stubs type this as base NamedTuple
         n_evals = int(jnp.sum(ui.n_likelihood_evals))
 
         log_Z = np.asarray(self._nested_samples.logZ()).item()

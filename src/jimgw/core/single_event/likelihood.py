@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Callable, Optional, Sequence, Union
+from typing import Callable, Optional, Sequence, Union
 from abc import abstractmethod
 import jax
 import jax.numpy as jnp
@@ -1117,7 +1117,7 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
 
     # ── Prior-inference and validation helpers ────────────────────────────────
 
-    def _find_leaf_prior(self, prior: Any, param_name: str) -> Optional[Any]:
+    def _find_leaf_prior(self, prior: Prior, param_name: str) -> Optional[Prior]:
         """Recursively search *prior* for the bounded leaf that owns *param_name*.
 
         Returns the first component that has ``xmin``/``xmax`` attributes and
@@ -1128,7 +1128,7 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
         if hasattr(prior, "xmin"):
             return prior
         if hasattr(prior, "base_prior"):
-            components = prior.base_prior
+            components = getattr(prior, "base_prior")
             if hasattr(components, "__iter__"):
                 for p in components:
                     result = self._find_leaf_prior(p, param_name)
@@ -1139,7 +1139,7 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
     def _resolve_reference_chirp_mass(
         self,
         reference_chirp_mass: Optional[Float],
-        prior: Optional[Any],
+        prior: Optional[Prior],
     ) -> float:
         """Return ``reference_chirp_mass``, inferring from the M_c prior minimum when not provided."""
         if reference_chirp_mass is not None:
@@ -1154,7 +1154,7 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
                 "reference_chirp_mass=None but no M_c prior found. "
                 "Pass either reference_chirp_mass or a prior with an M_c component."
             )
-        mc_min = float(mc_prior.xmin)
+        mc_min = float(getattr(mc_prior, "xmin"))
         logger.info(
             "reference_chirp_mass inferred from M_c prior minimum: %.4f M_sun", mc_min
         )
@@ -1164,9 +1164,9 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
         self,
         time_offset: Optional[Float],
         delta_f_end: Optional[Float],
-        prior: Optional[Any],
+        prior: Optional[Prior],
         trigger_time: float,
-        detectors: Any,
+        detectors: Sequence[Detector],
     ) -> tuple[Float, Float]:
         """Return ``(time_offset, delta_f_end)``, inferring from t_c prior bounds when not provided.
 
@@ -1187,7 +1187,7 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
                     for d in detectors
                 )
                 s = EARTH_RADIUS_LIGHT_S
-                tc_max = float(tc_prior.xmax)
+                tc_max = float(getattr(tc_prior, "xmax"))
                 denom = t_end - tc_max - s
                 if denom <= 0:
                     raise ValueError(
@@ -1195,7 +1195,7 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
                         f"t_end - xmax - s = {t_end:.4f} - {tc_max:.4f} - {s:.6f} = {denom:.6f} <= 0. "
                         "Check that the t_c prior upper bound is well within the data segment."
                     )
-                inferred_to = t_end - float(tc_prior.xmin) + s
+                inferred_to = t_end - float(getattr(tc_prior, "xmin")) + s
                 inferred_dfe = 100.0 / denom
 
         if time_offset is None:

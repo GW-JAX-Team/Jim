@@ -13,13 +13,14 @@ kernel within blackjax-ns", arXiv:2509.04336 (Sep 2025).
 from __future__ import annotations
 
 from functools import partial
-from typing import Any, NamedTuple, cast
+from typing import NamedTuple, cast
 
 import jax
 import jax.flatten_util
 import jax.numpy as jnp
 
 from blackjax.base import SamplingAlgorithm
+from blackjax.types import ArrayLikeTree
 from blackjax.ns.base import (
     NSState,
     StateWithLogLikelihood,
@@ -34,27 +35,27 @@ from blackjax.ns.adaptive import (
 
 
 class DEInfo(NamedTuple):
-    is_accepted: Any
-    evals: Any
-    likelihood_evals: Any
+    is_accepted: jax.Array
+    evals: jax.Array
+    likelihood_evals: jax.Array
 
 
 class DEWalkInfo(NamedTuple):
-    n_accept: Any
-    walks_completed: Any
-    n_likelihood_evals: Any
-    total_proposals: Any
+    n_accept: jax.Array
+    walks_completed: jax.Array
+    n_likelihood_evals: jax.Array
+    total_proposals: jax.Array
 
 
 class DEKernelParams(NamedTuple):
-    live_points: Any
-    loglikelihoods: Any
-    mix: Any
-    scale: Any
-    num_walks: Any
-    walks_float: Any
-    n_accept_total: Any
-    n_likelihood_evals_total: Any
+    live_points: ArrayLikeTree
+    loglikelihoods: jax.Array
+    mix: float
+    scale: jax.Array
+    num_walks: jax.Array
+    walks_float: jax.Array
+    n_accept_total: jax.Array
+    n_likelihood_evals_total: jax.Array
 
 
 def _de_one_step(

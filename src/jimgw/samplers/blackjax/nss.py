@@ -11,6 +11,8 @@ from anesthetic.samples import NestedSamples
 from jaxtyping import Array, Float, Key
 
 import blackjax
+from blackjax.ns.adaptive import AdaptiveNSState
+from blackjax.ns.base import NSInfo
 from blackjax.ns.utils import finalise
 from jimgw.samplers.base import Sampler
 from jimgw.samplers.blackjax._imports import (
@@ -48,7 +50,7 @@ class BlackJAXNSSSampler(Sampler):
 
     _config: BlackJAXNSSConfig
     _stepper_fn: Callable
-    _final_state: Any
+    _final_state: NSInfo
     _nested_samples: NestedSamples
     _n_iterations: int
 
@@ -112,7 +114,7 @@ class BlackJAXNSSSampler(Sampler):
 
         state = nested_sampler.init(initial_particles)  # type: ignore[call-arg]  # blackjax fork API
 
-        def _terminate(state: Any) -> bool:
+        def _terminate(state: AdaptiveNSState) -> bool:
             dlogz = jnp.logaddexp(0, state.integrator.logZ_live - state.integrator.logZ)
             return bool(jnp.isfinite(dlogz) and dlogz < config.termination_dlogz)
 
@@ -177,7 +179,9 @@ class BlackJAXNSSSampler(Sampler):
         """
         if not self._sampled:
             raise RuntimeError("get_diagnostics() called before sample()")
-        ui = self._final_state.update_info  # SliceInfo concatenated across all steps
+        ui: Any = (
+            self._final_state.update_info
+        )  # SliceInfo — blackjax stubs type this as base NamedTuple
         total_steps = int(jnp.sum(ui.num_steps))
         total_shrink = int(jnp.sum(ui.num_shrink))
 

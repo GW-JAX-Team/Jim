@@ -185,9 +185,9 @@ class FlowMCSampler(Sampler):
         resource_strategy_bundle = bundle_cls(**common_kwargs)
 
         self._flowmc_sampler = FlowMCSamplerBackend(
-            self.n_dims,
-            config.n_chains,
-            sampler_key,
+            n_dim=self.n_dims,
+            n_chains=config.n_chains,
+            rng_key=sampler_key,
             resource_strategy_bundles=resource_strategy_bundle,
         )
 

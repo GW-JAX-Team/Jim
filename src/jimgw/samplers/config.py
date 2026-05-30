@@ -341,6 +341,15 @@ class BlackJAXNSSConfig(BaseSamplerConfig, _CheckpointMixin):
 class BlackJAXSMCConfig(BaseSamplerConfig, _CheckpointMixin):
     """Configuration for the BlackJAX SMC sampler.
 
+    Parameters
+    ----------
+    batch_size : int, optional
+        Number of particles to process per sequential batch during the MCMC
+        update step. When ``batch_size > 0``, the sampler uses ``jax.lax.map``
+        instead of ``jax.vmap``, which reduces peak GPU memory at the cost
+        of sequential execution. ``0`` (default) uses the original full
+        ``jax.vmap`` behaviour.
+
     !!! note
         Periodic parameters are **not** configured here.  Pass a ``periodic``
         argument to [`Jim`][jimgw.core.jim.Jim] instead.
@@ -352,6 +361,7 @@ class BlackJAXSMCConfig(BaseSamplerConfig, _CheckpointMixin):
     n_mcmc_steps_per_dim: int = 100
     target_ess: Optional[int] = None
     target_ess_fraction: Optional[float] = None
+    batch_size: int = 0  # 0 = full vmap; >0 = lax.map batch size to reduce peak memory
     initial_cov_scale: float = 0.5
     target_acceptance_rate: float = 0.234
     scale_adaptation_gain: float = 3.0

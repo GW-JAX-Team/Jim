@@ -191,8 +191,8 @@ wheels = [
 
 [[package]]
 name = "blackjax"
-version = "0.1.dev935+gd21f3c7a6"
-source = { git = "https://github.com/GW-JAX-Team/blackjax.git?branch=jim#d21f3c7a6a38b5ace698babbf69549ee785e1e47" }
+version = "0.1.dev946+g65e92bf32"
+source = { git = "https://github.com/GW-JAX-Team/blackjax.git?branch=jim#65e92bf32a017b5f1d6a6a02c0dc303a700b2e4e" }
 dependencies = [
     { name = "jax" },
     { name = "jaxlib" },
@@ -2283,14 +2283,14 @@ wheels = [
 
 [[package]]
 name = "nvidia-cudnn-cu12"
-version = "9.22.0.52"
+version = "9.23.0.39"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "nvidia-cublas-cu12", marker = "sys_platform != 'emscripten' and sys_platform != 'win32'" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/51/ff/c6a098c1e0bccc68aac5f1684526cf8936abb7024dcc46dca315b8a6f47f/nvidia_cudnn_cu12-9.22.0.52-py3-none-manylinux_2_27_aarch64.whl", hash = "sha256:cd9011812498376f866b9826331cc965ac922eb2df8549c9f2989f10255e5001", size = 774536507, upload-time = "2026-05-08T15:36:09.067Z" },
-    { url = "https://files.pythonhosted.org/packages/a0/8f/2ede6b758b7524608472010f632bdd3370ea271d715d1d66044614b84cdc/nvidia_cudnn_cu12-9.22.0.52-py3-none-manylinux_2_27_x86_64.whl", hash = "sha256:391b9a7ee6386daaca7f8dca41e83c2c99f760c9581a0400755e87b4287b8847", size = 718382818, upload-time = "2026-05-08T15:37:38.061Z" },
+    { url = "https://files.pythonhosted.org/packages/33/11/63d298eed4fdee62acfe7d60040406668b20e8d270e743f9d1345a24f9f9/nvidia_cudnn_cu12-9.23.0.39-py3-none-manylinux_2_27_aarch64.whl", hash = "sha256:3da81d70ef4db38952a7f37403434cf52dddbc1b8bee428016fa0ca9f2ff2697", size = 777929400, upload-time = "2026-05-30T03:29:20.469Z" },
+    { url = "https://files.pythonhosted.org/packages/7d/9d/1a383211b0967e702b9e84643986fb31bf35ca07bddc19e0cf139fd3291d/nvidia_cudnn_cu12-9.23.0.39-py3-none-manylinux_2_27_x86_64.whl", hash = "sha256:89d53e2a2b0614278afbeda67ac89594bdd74f9f283f22f2d34409d55859846f", size = 720831886, upload-time = "2026-05-30T03:31:06.419Z" },
 ]
 
 [[package]]

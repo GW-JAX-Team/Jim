@@ -1,5 +1,6 @@
 import warnings
 
+import jax
 import numpy as np
 import pytest
 from pydantic import ValidationError
@@ -328,3 +329,31 @@ def test_checkpoint_interval_with_dir_ok(tmp_path):
     cfg = BlackJAXNSAWConfig(checkpoint_dir=tmp_path, checkpoint_interval=600.0)
     assert cfg.checkpoint_dir == tmp_path
     assert cfg.checkpoint_interval == 600.0
+
+
+# ---------------------------------------------------------------------------
+# F: configure_jax_cache
+# ---------------------------------------------------------------------------
+
+
+def test_configure_jax_cache_sets_dir(tmp_path):
+    original = getattr(jax.config, "jax_compilation_cache_dir", None)
+    try:
+        BlackJAXNSAWConfig(
+            checkpoint_dir=tmp_path, checkpoint_interval=60.0
+        ).configure_jax_cache()
+        assert (tmp_path / "jax_cache").is_dir()
+        assert getattr(jax.config, "jax_compilation_cache_dir", None) == str(
+            tmp_path / "jax_cache"
+        )
+    finally:
+        jax.config.update("jax_compilation_cache_dir", original)
+
+
+def test_configure_jax_cache_noop_when_no_dir():
+    original = getattr(jax.config, "jax_compilation_cache_dir", None)
+    try:
+        BlackJAXNSAWConfig().configure_jax_cache()
+        assert getattr(jax.config, "jax_compilation_cache_dir", None) == original
+    finally:
+        jax.config.update("jax_compilation_cache_dir", original)

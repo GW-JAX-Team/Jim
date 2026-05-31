@@ -148,6 +148,7 @@ class BlackJAXSMCSampler(Sampler):
             if config.checkpoint_dir is not None
             else None
         )
+        config.configure_jax_cache()
 
         mcmc_step = self._build_mcmc_step()
         cov0 = jnp.atleast_2d(jnp.cov(initial_particles.T)) * config.initial_cov_scale
@@ -271,6 +272,7 @@ class BlackJAXSMCSampler(Sampler):
             if config.checkpoint_dir is not None
             else None
         )
+        config.configure_jax_cache()
 
         mcmc_step = self._build_mcmc_step()
         cov0 = jnp.atleast_2d(jnp.cov(initial_particles.T)) * config.initial_cov_scale
@@ -370,6 +372,7 @@ class BlackJAXSMCSampler(Sampler):
             if config.checkpoint_dir is not None
             else None
         )
+        config.configure_jax_cache()
 
         mcmc_step = self._build_mcmc_step()
         cov0 = jnp.atleast_2d(jnp.cov(initial_particles.T)) * config.initial_cov_scale
@@ -483,6 +486,7 @@ class BlackJAXSMCSampler(Sampler):
             if config.checkpoint_dir is not None
             else None
         )
+        config.configure_jax_cache()
 
         mcmc_step = self._build_mcmc_step()
         cov0 = jnp.atleast_2d(jnp.cov(initial_particles.T)) * config.initial_cov_scale

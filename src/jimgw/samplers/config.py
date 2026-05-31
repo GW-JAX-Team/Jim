@@ -14,6 +14,7 @@ import warnings
 from pathlib import Path
 from typing import Annotated, Literal, Optional, Union
 
+import jax
 import numpy as np
 from pydantic import BaseModel, Discriminator, Field, field_validator, model_validator
 
@@ -96,6 +97,25 @@ class _CheckpointMixin(BaseModel):
         t = time.perf_counter()
         logger.debug("%s: checkpoint saved at n_iter=%s", tag, data.get("n_iter", "?"))
         return t
+
+    def configure_jax_cache(self) -> None:
+        """Enable JAX's persistent XLA compilation cache under ``checkpoint_dir/jax_cache``.
+
+        Sets ``jax_compilation_cache_dir`` to ``{checkpoint_dir}/jax_cache`` so
+        that compiled functions are stored to disk and reused across processes
+        (e.g., after a crash-and-resume).  Also sets
+        ``jax_persistent_cache_min_compile_time_secs`` to ``0.0`` so that all
+        compilations are cached regardless of their duration.
+
+        No-op if ``checkpoint_dir`` is ``None``.  Safe to call multiple times.
+        """
+        if self.checkpoint_dir is None:
+            return
+
+        cache_dir = self.checkpoint_dir / "jax_cache"
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        jax.config.update("jax_compilation_cache_dir", str(cache_dir))
+        jax.config.update("jax_persistent_cache_min_compile_time_secs", 0.0)
 
 
 # ---------------------------------------------------------------------------

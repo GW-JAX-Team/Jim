@@ -113,6 +113,7 @@ class BlackJAXNSSSampler(Sampler):
             if config.checkpoint_dir is not None
             else None
         )
+        config.configure_jax_cache()
 
         def _validated_initial_particles(pos):
             arr = jnp.asarray(pos)

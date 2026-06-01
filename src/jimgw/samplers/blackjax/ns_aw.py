@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import pickle
+import shutil
 import time
 from typing import Any, Callable, Optional
 
@@ -248,6 +249,8 @@ class BlackJAXNSAWSampler(Sampler):
         )
         if ckpt_path is not None:
             ckpt_path.unlink(missing_ok=True)
+        if config.checkpoint_dir is not None:
+            shutil.rmtree(config.checkpoint_dir / "jax_cache", ignore_errors=True)
 
     def get_samples(self) -> dict[str, np.ndarray]:
         """Return equally-weighted posterior samples.

@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import logging
 import pickle
+import shutil
 import time
 from collections.abc import Callable
 from typing import Any, Optional
@@ -266,6 +267,8 @@ class BlackJAXSMCSampler(Sampler):
         self._cov_scale_history = np.asarray(cov_scale_list)
         if ckpt_path is not None:
             ckpt_path.unlink(missing_ok=True)
+        if config.checkpoint_dir is not None:
+            shutil.rmtree(config.checkpoint_dir / "jax_cache", ignore_errors=True)
 
     def _run_fixed_persistent(
         self, rng_key: Key, initial_particles, ladder: list[float]
@@ -378,6 +381,8 @@ class BlackJAXSMCSampler(Sampler):
         self._acceptance_history = np.asarray(accept_list)
         if ckpt_path is not None:
             ckpt_path.unlink(missing_ok=True)
+        if config.checkpoint_dir is not None:
+            shutil.rmtree(config.checkpoint_dir / "jax_cache", ignore_errors=True)
 
     def _run_adaptive_tempered(self, rng_key: Key, initial_particles) -> None:
         """Mode AT: adaptive_tempered_smc + inner_kernel_tuning + Python while."""
@@ -497,6 +502,8 @@ class BlackJAXSMCSampler(Sampler):
         )
         if ckpt_path is not None:
             ckpt_path.unlink(missing_ok=True)
+        if config.checkpoint_dir is not None:
+            shutil.rmtree(config.checkpoint_dir / "jax_cache", ignore_errors=True)
 
     def _run_fixed_tempered(
         self, rng_key: Key, initial_particles, ladder: list[float]
@@ -618,6 +625,8 @@ class BlackJAXSMCSampler(Sampler):
         )
         if ckpt_path is not None:
             ckpt_path.unlink(missing_ok=True)
+        if config.checkpoint_dir is not None:
+            shutil.rmtree(config.checkpoint_dir / "jax_cache", ignore_errors=True)
 
     # ------------------------------------------------------------------
     # Public API

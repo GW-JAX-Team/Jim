@@ -36,7 +36,7 @@ wheels = [
 
 [[package]]
 name = "anesthetic"
-version = "2.14.6"
+version = "2.14.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "matplotlib" },
@@ -44,9 +44,9 @@ dependencies = [
     { name = "pandas" },
     { name = "scipy" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/57/85/139b64ffa95bdf5f769ba62cad19ab93b91c701331465f9187f62bd1b47e/anesthetic-2.14.6.tar.gz", hash = "sha256:ad816c47fb8664ffb1470b24854ebd9b54832dd9dbb9dcc28f6507f5eceafcd6", size = 123143, upload-time = "2026-05-27T14:57:23.549Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/7f/1e/a92637a69bd3a55cd9d2d28bbcd1f662cf0379698afa6a729333aa9305e9/anesthetic-2.14.7.tar.gz", hash = "sha256:de22501026c1f646decaccf2f14a380e52532826d57f40a081c9b14345539295", size = 123145, upload-time = "2026-06-01T15:15:49.338Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6e/8c/f62243f4557b697d901d4bed4208cf16814844004a70454e76aeadd2814b/anesthetic-2.14.6-py3-none-any.whl", hash = "sha256:18f172f685836503e5ec9622d96e08b43b0f94d049161a4d62e43c547df5fc9e", size = 89125, upload-time = "2026-05-27T14:57:21.899Z" },
+    { url = "https://files.pythonhosted.org/packages/a6/42/7d0db733603f4224bab83c30782f7240ed4e40ab2323edb3c2b498410c62/anesthetic-2.14.7-py3-none-any.whl", hash = "sha256:732943f65f982b209cfc05e400ccf472b812e54ba6488fbd3d8e279688a981ec", size = 89127, upload-time = "2026-06-01T15:15:47.899Z" },
 ]
 
 [[package]]
@@ -92,11 +92,11 @@ wheels = [
 
 [[package]]
 name = "astropy-iers-data"
-version = "0.2026.5.25.1.14.13"
+version = "0.2026.6.1.17.39.59"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/4f/35/13bc06eb74a65f2aae2b74f9a813db464c6b35666947431115c5b8a9fc6e/astropy_iers_data-0.2026.5.25.1.14.13.tar.gz", hash = "sha256:928eee767c743ee3d510e44f7d29b6f3bd57556b56e42cd2436bd5d9f22cc00e", size = 1934842, upload-time = "2026-05-25T01:14:54.669Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/79/55/a840631c7c77db6a211eebfee30b477dd73b4f7c293b2163b5d373baaf17/astropy_iers_data-0.2026.6.1.17.39.59.tar.gz", hash = "sha256:a6976783e40a774f5aac417c0f5154c544728a44be17b27b05fae08b0d400e91", size = 1937788, upload-time = "2026-06-01T17:40:51.873Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9e/81/05126142b678332f5e0238519607b23fec2bbdeb5e4051981c90111b4984/astropy_iers_data-0.2026.5.25.1.14.13-py3-none-any.whl", hash = "sha256:6cf42bbe05299378d6b109493de136e0bb07f4b39d7051f8d34f84e5f996c9e0", size = 1991597, upload-time = "2026-05-25T01:14:53.233Z" },
+    { url = "https://files.pythonhosted.org/packages/0a/51/a5d2cb8df5e9514b204ae26c24d22b3543938d0a4a5213a41af8d761f02b/astropy_iers_data-0.2026.6.1.17.39.59-py3-none-any.whl", hash = "sha256:14670333b6999594890688e98d623182157428326fbe4c9de24a872dae76002b", size = 1992435, upload-time = "2026-06-01T17:40:49.88Z" },
 ]
 
 [[package]]
@@ -2912,15 +2912,15 @@ wheels = [
 
 [[package]]
 name = "pyright"
-version = "1.1.409"
+version = "1.1.410"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "nodeenv" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/51/4e/3aa27f74211522dba7e9cbc3e74de779c6d4b654c54e50a4840623be8014/pyright-1.1.409.tar.gz", hash = "sha256:986ee05beca9e077c165758ad123667c679e050059a2546aa02473930394bc93", size = 4430434, upload-time = "2026-04-23T11:02:03.799Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/10/53/e4d8ea1391bd4355231be6f91bf239479aa0014260ed3fb5526eeb12a1f2/pyright-1.1.410.tar.gz", hash = "sha256:07a073b8ba6749826773c1269773efa11b93440d9a6aa60419d9a3172d6dc488", size = 4062013, upload-time = "2026-06-01T17:35:48.894Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/16/6b/330d8ebae582b30c2959a1ef4c3bc344ebde48c2ff0c3f113c4710735e11/pyright-1.1.409-py3-none-any.whl", hash = "sha256:aa3ea228cab90c845c7a60d28db7a844c04315356392aa09fafcee98c8c22fb3", size = 6438161, upload-time = "2026-04-23T11:02:01.309Z" },
+    { url = "https://files.pythonhosted.org/packages/d7/33/288b5868fa00846dacf249633719d747893e54aebd196b9968ac1878a5d3/pyright-1.1.410-py3-none-any.whl", hash = "sha256:5e961bed37cacf96b3f7cd7b1da39b350a9239aa2e69138d0e88f728cfaf296c", size = 6082448, upload-time = "2026-06-01T17:35:46.387Z" },
 ]
 
 [[package]]

@@ -6,6 +6,7 @@ import jax
 import numpy as np
 import pickle
 import pytest
+from pathlib import Path
 
 blackjax = pytest.importorskip("blackjax")
 
@@ -275,9 +276,8 @@ def test_smc_fp_diagnostics():
     assert diag["log_Z_error"] >= 0.0
 
 
-def test_smc_checkpoint_file_created(tmp_path):
-    """Checkpoint .pkl must be created when checkpoint_dir is configured."""
-
+def test_smc_checkpoint_file_created(tmp_path, monkeypatch):
+    """Checkpoint .pkl is written during sampling and cleaned up on success."""
     prior = CombinePrior(
         [
             UniformPrior(0.0, 1.0, parameter_names=["x"]),
@@ -310,17 +310,31 @@ def test_smc_checkpoint_file_created(tmp_path):
         log_posterior_fn=log_posterior_fn,
         config=config,
     )
-    sampler.sample(jax.random.key(42), _init_pos(200))
+    # Suppress deletion of only the checkpoint file so we can inspect it after sampling.
     ckpt_path = tmp_path / "checkpoint.pkl"
-    assert ckpt_path.exists(), "Checkpoint file was not created"
+    _orig_unlink = Path.unlink
+    monkeypatch.setattr(
+        Path,
+        "unlink",
+        lambda self, missing_ok=False: (
+            None if self == ckpt_path else _orig_unlink(self, missing_ok=missing_ok)
+        ),
+    )
+    sampler.sample(jax.random.key(42), _init_pos(200))
+    monkeypatch.setattr(Path, "unlink", _orig_unlink)
+    assert ckpt_path.exists(), "Checkpoint was never written"
     with open(ckpt_path, "rb") as f:
         ckpt = pickle.load(f)
     assert "elapsed_time" in ckpt
     assert ckpt["elapsed_time"] >= 0.0
 
+    # Now let a clean run delete it.
+    ckpt_path.unlink()
+    assert not ckpt_path.exists()
 
-def test_smc_resume_gives_same_result(tmp_path):
-    """Resumed SMC run gives identical log_Z to an uninterrupted run."""
+
+def test_smc_resume_gives_same_result(tmp_path, monkeypatch):
+    """A run resumed from a crashed checkpoint gives the same log_Z as an uninterrupted run."""
     prior = CombinePrior(
         [
             UniformPrior(0.0, 1.0, parameter_names=["x"]),
@@ -363,17 +377,28 @@ def test_smc_resume_gives_same_result(tmp_path):
     s_a.sample(jax.random.key(0), _init_pos(200))
     log_z_a = s_a.get_diagnostics()["log_Z"]
 
+    # Run B: suppress deletion of the checkpoint file only (simulates a crash leaving it behind).
+    ckpt_path = tmp_path / "checkpoint.pkl"
+    _orig_unlink = Path.unlink
+    monkeypatch.setattr(
+        Path,
+        "unlink",
+        lambda self, missing_ok=False: (
+            None if self == ckpt_path else _orig_unlink(self, missing_ok=missing_ok)
+        ),
+    )
     s_b = _make(checkpoint_dir=tmp_path)
     s_b.sample(jax.random.key(0), _init_pos(200))
-    with open(tmp_path / "checkpoint.pkl", "rb") as f:
-        ckpt_b = pickle.load(f)
+    monkeypatch.setattr(Path, "unlink", _orig_unlink)
+    assert ckpt_path.exists(), "Checkpoint was never written"
 
+    # Run C: resumes from B's checkpoint → same RNG sequence → same log_Z.
+    # On clean completion C deletes the checkpoint.
     s_c = _make(checkpoint_dir=tmp_path)
     s_c.sample(jax.random.key(0), _init_pos(200))
-    diag_c = s_c.get_diagnostics()
 
-    assert diag_c["log_Z"] == pytest.approx(log_z_a, rel=1e-6)
-    assert diag_c["sampling_time"] >= ckpt_b["elapsed_time"]
+    assert s_c.get_diagnostics()["log_Z"] == pytest.approx(log_z_a, rel=1e-6)
+    assert not (tmp_path / "checkpoint.pkl").exists(), "Checkpoint was not cleaned up"
 
 
 def _make_sampler_batched(

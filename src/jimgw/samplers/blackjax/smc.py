@@ -264,6 +264,8 @@ class BlackJAXSMCSampler(Sampler):
         self._n_iterations = n_iter
         self._acceptance_history = np.asarray(accept_list)
         self._cov_scale_history = np.asarray(cov_scale_list)
+        if ckpt_path is not None:
+            ckpt_path.unlink(missing_ok=True)
 
     def _run_fixed_persistent(
         self, rng_key: Key, initial_particles, ladder: list[float]
@@ -374,6 +376,8 @@ class BlackJAXSMCSampler(Sampler):
         self._mode = "fp"
         self._n_iterations = n_schedule
         self._acceptance_history = np.asarray(accept_list)
+        if ckpt_path is not None:
+            ckpt_path.unlink(missing_ok=True)
 
     def _run_adaptive_tempered(self, rng_key: Key, initial_particles) -> None:
         """Mode AT: adaptive_tempered_smc + inner_kernel_tuning + Python while."""
@@ -491,6 +495,8 @@ class BlackJAXSMCSampler(Sampler):
             if is_weights_list
             else np.empty((0, initial_particles.shape[0]))
         )
+        if ckpt_path is not None:
+            ckpt_path.unlink(missing_ok=True)
 
     def _run_fixed_tempered(
         self, rng_key: Key, initial_particles, ladder: list[float]
@@ -610,6 +616,8 @@ class BlackJAXSMCSampler(Sampler):
             if is_weights_list
             else np.empty((0, initial_particles.shape[0]))
         )
+        if ckpt_path is not None:
+            ckpt_path.unlink(missing_ok=True)
 
     # ------------------------------------------------------------------
     # Public API

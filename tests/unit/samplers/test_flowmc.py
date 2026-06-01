@@ -9,6 +9,7 @@ import jax.numpy as jnp
 import numpy as np
 import pickle
 import pytest
+from pathlib import Path
 
 from jimgw.core.base import LikelihoodBase
 from jimgw.core.prior import CombinePrior, UniformPrior  # type: ignore[attr-defined]
@@ -137,8 +138,8 @@ def test_flowmc_diagnostics():
 
 
 @pytest.mark.slow
-def test_flowmc_checkpoint_file_created(tmp_path):
-    """A checkpoint .pkl file must be created when checkpoint_dir is configured."""
+def test_flowmc_checkpoint_file_created(tmp_path, monkeypatch):
+    """Checkpoint .pkl is written during sampling and cleaned up on success."""
     config = FlowMCConfig(
         n_chains=10,
         n_local_steps=5,
@@ -177,18 +178,28 @@ def test_flowmc_checkpoint_file_created(tmp_path):
         log_posterior_fn=log_posterior_fn,
         config=config,
     )
-    s.sample(jax.random.key(42), jnp.ones((10, 2)) * 0.5)
     ckpt_path = tmp_path / "checkpoint.pkl"
-    assert ckpt_path.exists(), "Checkpoint file was not created"
+    _orig_unlink = Path.unlink
+    monkeypatch.setattr(
+        Path,
+        "unlink",
+        lambda self, missing_ok=False: (
+            None if self == ckpt_path else _orig_unlink(self, missing_ok=missing_ok)
+        ),
+    )
+    s.sample(jax.random.key(42), jnp.ones((10, 2)) * 0.5)
+    monkeypatch.setattr(Path, "unlink", _orig_unlink)
+    assert ckpt_path.exists(), "Checkpoint was never written"
     with open(ckpt_path, "rb") as f:
         ckpt = pickle.load(f)
     assert "elapsed_time" in ckpt
     assert ckpt["elapsed_time"] >= 0.0
+    ckpt_path.unlink()
 
 
 @pytest.mark.slow
-def test_flowmc_resume_gives_same_result(tmp_path):
-    """Resumed flowMC run gives identical production samples to an uninterrupted run.
+def test_flowmc_resume_gives_same_result(tmp_path, monkeypatch):
+    """A run resumed from a crashed checkpoint gives identical samples to an uninterrupted run.
 
     The checkpoint stores the RNG state at the end of training; resuming skips
     training and runs production from the same RNG state → identical samples.
@@ -235,19 +246,31 @@ def test_flowmc_resume_gives_same_result(tmp_path):
             config=config,
         )
 
-    # Run A: no checkpointing (interval=0 disables it regardless of checkpoint_dir)
+    # Run A: no checkpointing (reference).
     s_a = _make_sampler(checkpoint_dir=None, checkpoint_interval=0.0)
     s_a.sample(jax.random.key(42), init_pos)
     result_a = s_a.get_samples()
 
-    # Run B: write checkpoint at end of each training loop
+    # Run B: suppress deletion of the checkpoint file only (simulates a crash leaving it behind).
+    ckpt_path = tmp_path / "checkpoint.pkl"
+    _orig_unlink = Path.unlink
+    monkeypatch.setattr(
+        Path,
+        "unlink",
+        lambda self, missing_ok=False: (
+            None if self == ckpt_path else _orig_unlink(self, missing_ok=missing_ok)
+        ),
+    )
     s_b = _make_sampler(checkpoint_dir=tmp_path)
     s_b.sample(jax.random.key(42), init_pos)
-    assert (tmp_path / "checkpoint.pkl").exists()
+    monkeypatch.setattr(Path, "unlink", _orig_unlink)
+    assert ckpt_path.exists(), "Checkpoint was never written"
 
-    # Run C: resume from B's checkpoint → production uses same RNG state
+    # Run C: resumes from B's checkpoint → production uses same RNG state → identical samples.
+    # On clean completion C deletes the checkpoint.
     s_c = _make_sampler(checkpoint_dir=tmp_path)
     s_c.sample(jax.random.key(42), init_pos)
     result_c = s_c.get_samples()
 
     np.testing.assert_array_equal(result_a["samples"], result_c["samples"])
+    assert not (tmp_path / "checkpoint.pkl").exists(), "Checkpoint was not cleaned up"

@@ -232,6 +232,8 @@ class BlackJAXNSSSampler(Sampler):
             logzero=np.nan,
             dtype=np.float64,
         )
+        if ckpt_path is not None:
+            ckpt_path.unlink(missing_ok=True)
 
     def get_samples(self) -> dict[str, np.ndarray]:
         """Return equally-weighted posterior samples via anesthetic's ``posterior_points``.

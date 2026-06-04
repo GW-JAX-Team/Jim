@@ -13,10 +13,12 @@ class UniformComponentChirpMassPrior(PowerLawPrior):
     When both component masses are drawn uniformly, the chirp mass follows a
     power-law distribution with exponent ``alpha = 1``:
 
-    .. math::
+    $$
 
-        p(\\mathcal{M}_c) \\propto \\mathcal{M}_c, \\quad
-        \\mathcal{M}_c \\in [x_{\\min}, x_{\\max})
+    p(\\mathcal{M}_c) \\propto \\mathcal{M}_c, \\quad
+    \\mathcal{M}_c \\in [x_{\\min}, x_{\\max})
+
+    $$
     """
 
     def __repr__(self):

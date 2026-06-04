@@ -18,10 +18,16 @@ nav = [
     {"Tutorials" = [
         "tutorials/index.md",
         {"Getting Started" = "tutorials/getting_started.md"},
-        {"Data" = "tutorials/data.md"},
-        {"Likelihood" = "tutorials/likelihood.md"},
-        {"Prior" = "tutorials/prior.md"},
-        {"Transforms" = "tutorials/transforms.md"},
+        {"GW150914 with CLI" = "tutorials/gw150914_cli.md"},
+    ]},
+    {"Guides" = [
+        "guides/index.md",
+        {"Command Line Interface" = "guides/cli.md"},
+        {"Data" = "guides/data.md"},
+        {"Likelihood" = "guides/likelihood.md"},
+        {"Prior" = "guides/prior.md"},
+        {"Samplers" = "guides/samplers.md"},
+        {"Transforms" = "guides/transforms.md"},
     ]},
     {"FAQ" = "FAQ.md"},
     {"Contributing" = "contributing.md"},
@@ -50,6 +56,7 @@ palette = [
 generic = true
 
 [project.markdown_extensions.pymdownx.superfences]
+custom_fences = [{name = "mermaid", class = "mermaid", format = "pymdownx.superfences.fence_code_format"}]
 
 [project.markdown_extensions.admonition]
 
@@ -62,12 +69,15 @@ paths = ["src"]
 
 [project.plugins.mkdocstrings.handlers.python.options]
 docstring_style = "google"
-filters = ["!^logger$"]
-inherited_members = true
-show_root_heading = true
-show_root_full_path = true
-show_if_no_docstring = true
+filters = ["!^_[^_]", "!^logger$"]
+inherited_members = false
+group_by_category = true
+show_category_heading = false
+summary = {attributes = true, functions = true}
+show_root_heading = false
+show_root_full_path = false
+show_if_no_docstring = false
 show_signature_annotations = true
 show_source = false
-members_order = "source"
+members_order = ["__all__", "alphabetical"]
 heading_level = 3

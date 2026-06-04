@@ -9,6 +9,7 @@ Environment variables:
                    appends the alias to site_url in the output config so
                    that versioned builds have correct canonical URLs.
 """
+
 import os
 import re
 import shutil
@@ -18,14 +19,22 @@ from pathlib import Path
 # Module path prefixes (relative to src/) to exclude from the API docs.
 # Use forward slashes, e.g. "mypkg/internal".
 SKIP_PREFIXES: list[str] = []
+REFERENCE_TAB_NAME = "Reference"
 
 
 # ── module scanning ───────────────────────────────────────────────────────────
 
+
 def scan_modules(src_dir: Path) -> list[tuple[list[str], Path]]:
     """Return (module_parts, stub_path) for every public Python module."""
     results = []
-    for py_file in sorted(src_dir.rglob("*.py")):
+    py_files = sorted(
+        src_dir.rglob("*.py"),
+        key=lambda p: tuple(
+            part.casefold() for part in p.relative_to(src_dir).with_suffix("").parts
+        ),
+    )
+    for py_file in py_files:
         parts = list(py_file.relative_to(src_dir).with_suffix("").parts)
         if parts[-1] in ("__init__", "__main__"):
             continue
@@ -66,6 +75,7 @@ def write_stubs(modules: list[tuple[list[str], Path]], docs_dir: Path) -> None:
 
 # ── nav generation ────────────────────────────────────────────────────────────
 
+
 def build_nav_tree(modules: list[tuple[list[str], Path]]) -> list:
     """Convert flat module list into a nested nav structure."""
     tree: dict = {}
@@ -85,12 +95,15 @@ def build_nav_tree(modules: list[tuple[list[str], Path]]) -> list:
 
     def dict_to_nav(d: dict) -> list:
         result = []
-        for k, v in d.items():
+        for k in sorted(d, key=str.casefold):
+            v = d[k]
             if isinstance(v, dict):
                 children = []
                 if "__init__" in v:
                     children.append({"Overview": v["__init__"]})
-                children.extend(dict_to_nav({ck: cv for ck, cv in v.items() if ck != "__init__"}))
+                children.extend(
+                    dict_to_nav({ck: cv for ck, cv in v.items() if ck != "__init__"})
+                )
                 result.append({k: children})
             else:
                 result.append({k: v})
@@ -115,7 +128,9 @@ def nav_to_toml_str(nav: list, depth: int = 0) -> str:
         else:
             for k, v in item.items():
                 if isinstance(v, str):
-                    lines.append(f'{inner}{{"{_toml_escape(k)}" = "{_toml_escape(v)}"}},')
+                    lines.append(
+                        f'{inner}{{"{_toml_escape(k)}" = "{_toml_escape(v)}"}},'
+                    )
                 else:
                     nested = nav_to_toml_str(v, depth + 1)
                     lines.append(f'{inner}{{"{_toml_escape(k)}" = {nested}}},')
@@ -124,6 +139,7 @@ def nav_to_toml_str(nav: list, depth: int = 0) -> str:
 
 
 # ── TOML patching ─────────────────────────────────────────────────────────────
+
 
 def replace_nav(toml_text: str, new_nav: list) -> str:
     """Replace the nav = [...] block in TOML text with a new nav list."""
@@ -153,7 +169,7 @@ def replace_nav(toml_text: str, new_nav: list) -> str:
     if end is None:
         raise ValueError("unterminated nav array in zensical.toml")
     new_block = "nav = " + nav_to_toml_str(new_nav) + "\n"
-    return "".join([*lines[:start], new_block, *lines[end + 1:]])
+    return "".join([*lines[:start], new_block, *lines[end + 1 :]])
 
 
 def patch_site_url(toml_text: str, new_url: str) -> str:
@@ -167,11 +183,14 @@ def patch_site_url(toml_text: str, new_url: str) -> str:
         flags=re.MULTILINE,
     )
     if count == 0:
-        raise ValueError("site_url not found in zensical.toml; cannot patch versioned URL")
+        raise ValueError(
+            "site_url not found in zensical.toml; cannot patch versioned URL"
+        )
     return new_text
 
 
 # ── main ──────────────────────────────────────────────────────────────────────
+
 
 def main() -> None:
     repo_root = Path(__file__).resolve().parent.parent
@@ -193,13 +212,17 @@ def main() -> None:
     api_nav = build_nav_tree(modules)
     print(f"Generated {len(modules)} API stubs")
 
-    # Rebuild nav: keep everything except existing API entry, append new one
-    def drop_api_entries(nav):
-        """Return a copy of *nav* with any dict that has an "API" key removed."""
-        return [item for item in nav if not (isinstance(item, dict) and "API" in item)]
+    # Rebuild nav: keep everything except existing Reference entry, append new one
+    def drop_reference_entries(nav):
+        """Drop auto-generated reference sections so rebuilds stay idempotent."""
+        return [
+            item
+            for item in nav
+            if not (isinstance(item, dict) and REFERENCE_TAB_NAME in item)
+        ]
 
-    base_nav = drop_api_entries(config.get("project", {}).get("nav", []))
-    new_nav = [*base_nav, {"API": api_nav}]
+    base_nav = drop_reference_entries(config.get("project", {}).get("nav", []))
+    new_nav = [*base_nav, {REFERENCE_TAB_NAME: api_nav}]
 
     new_toml = replace_nav(toml_text, new_nav)
 
@@ -211,7 +234,9 @@ def main() -> None:
             base_url = site_url.rstrip("/") + "/"
             new_toml = patch_site_url(new_toml, f"{base_url}{alias}/")
         else:
-            print("Warning: VERSION_ALIAS set but site_url not found in zensical.toml; skipping URL patch")
+            print(
+                "Warning: VERSION_ALIAS set but site_url not found in zensical.toml; skipping URL patch"
+            )
 
     out_path.write_text(new_toml, encoding="utf-8")
     print(f"Written {out_path}")

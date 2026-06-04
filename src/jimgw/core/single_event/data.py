@@ -15,9 +15,9 @@ logger = logging.getLogger(__name__)
 
 # TODO: Need to expand this list. Currently it is only O3.
 asd_file_dict = {
-    "H1": "https://dcc.ligo.org/public/0169/P2000251/001/O3-H1-C01_CLEAN_SUB60HZ-1251752040.0_sensitivity_strain_asd.txt",  # noqa: E501
-    "L1": "https://dcc.ligo.org/public/0169/P2000251/001/O3-L1-C01_CLEAN_SUB60HZ-1240573680.0_sensitivity_strain_asd.txt",  # noqa: E501
-    "V1": "https://dcc.ligo.org/public/0169/P2000251/001/O3-V1_sensitivity_strain_asd.txt",  # noqa: E501
+    "H1": "https://dcc.ligo.org/public/0169/P2000251/001/O3-H1-C01_CLEAN_SUB60HZ-1251752040.0_sensitivity_strain_asd.txt",
+    "L1": "https://dcc.ligo.org/public/0169/P2000251/001/O3-L1-C01_CLEAN_SUB60HZ-1240573680.0_sensitivity_strain_asd.txt",
+    "V1": "https://dcc.ligo.org/public/0169/P2000251/001/O3-V1_sensitivity_strain_asd.txt",
 }
 
 
@@ -181,7 +181,7 @@ class Data(ABC):
             alpha: Shape parameter of the Tukey window (default: 0.2); this is
                 the fraction of the segment that is tapered on each side.
         """
-        logger.info(f"Setting Tukey window to {self.name} data")
+        logger.debug(f"Setting Tukey window on {self.name or '(unnamed)'}")
         self.window = jnp.array(tukey(self.n_time, alpha))
 
     def fft(
@@ -238,7 +238,7 @@ class Data(ABC):
         if not self.has_fd:
             self.fft()
         freq, psd = welch(self.td, fs=self.sampling_frequency, **kws)
-        return PowerSpectrum(psd, freq, self.name)  # type: ignore
+        return PowerSpectrum(jnp.asarray(psd), jnp.asarray(freq), self.name)
 
     @classmethod
     def from_gwosc(
@@ -270,7 +270,7 @@ class Data(ABC):
         data_td = TimeSeries.fetch_open_data(
             ifo, gps_start_time, gps_end_time, cache=cache, **kws
         )
-        return cls(data_td.value, data_td.dt.value, data_td.epoch.value, ifo)  # type: ignore # noqa: E501
+        return cls(data_td.value, data_td.dt.value, data_td.epoch.value, ifo)  # type: ignore[union-attr]
 
     @classmethod
     def from_fd(
@@ -338,37 +338,239 @@ class Data(ABC):
         return data
 
     @classmethod
-    def from_file(cls, path: str) -> Self:
-        """Load data from a file. This assumes the data to be in .npz format.
-        It should at least contain the keys 'td', 'dt', and 'start_time' (GPS start time).
+    def _from_gwf(
+        cls,
+        path: str,
+        channel: Optional[str] = None,
+        start_time: Optional[float] = None,
+        end_time: Optional[float] = None,
+    ) -> Self:
+        """Load data from a GWF (Gravitational Wave Frame) file using gwpy.
 
         Args:
-            path (str): Path to the .npz file containing the data.
+            path: Path to the .gwf file.
+            channel: Channel name (e.g., ``'H1:GDS-CALIB_STRAIN'``). If ``None``,
+                common preset channel names are tried automatically.
+            start_time: GPS start time to read (optional).
+            end_time: GPS end time to read (optional).
+
+        Returns:
+            Data: Data object with the loaded time domain data.
         """
-        with np.load(path) as data:
-            if "td" not in data or "dt" not in data or "start_time" not in data:
+        kwargs: dict = {}
+        if start_time is not None:
+            kwargs["start"] = start_time
+        if end_time is not None:
+            kwargs["end"] = end_time
+
+        strain = None
+
+        if channel is not None:
+            try:
+                strain = TimeSeries.read(source=path, channel=channel, **kwargs)
+                logger.info(f"Successfully loaded channel {channel} from {path}")
+            except (RuntimeError, ValueError) as exc:
                 raise ValueError(
-                    "The file must contain 'td', 'dt', and 'start_time' keys."
-                )
-            td = jnp.array(data["td"])
-            dt = float(data["dt"])
-            start_time = float(data["start_time"])
-            name = str(data.get("name", ""))
-        return cls(td, dt, start_time, name)
+                    f"Could not read channel '{channel}' from {path}: {exc}"
+                ) from exc
+        else:
+            _ligo_channels = [
+                "GDS-CALIB_STRAIN",
+                "DCS-CALIB_STRAIN_C01",
+                "DCS-CALIB_STRAIN_C02",
+                "DCH-CLEAN_STRAIN_C02",
+                "GWOSC-16KHZ_R1_STRAIN",
+                "GWOSC-4KHZ_R1_STRAIN",
+            ]
+            _virgo_channels = [
+                "Hrec_hoft_V1O2Repro2A_16384Hz",
+                "FAKE_h_16384Hz_4R",
+                "GWOSC-16KHZ_R1_STRAIN",
+                "GWOSC-4KHZ_R1_STRAIN",
+            ]
+            _preset_channels: dict[str, list[str]] = {
+                "H1": _ligo_channels,
+                "L1": _ligo_channels,
+                "V1": _virgo_channels,
+            }
+            for det, ch_types in _preset_channels.items():
+                if strain is not None:
+                    break
+                for ch_type in ch_types:
+                    ch = f"{det}:{ch_type}"
+                    try:
+                        strain = TimeSeries.read(source=path, channel=ch, **kwargs)
+                        logger.info(f"Successfully loaded channel {ch} from {path}")
+                        channel = ch
+                        break
+                    except (RuntimeError, ValueError):
+                        pass
 
-    def to_file(self, path: str):
-        """Save the data to a file in .npz format.
+            if strain is None:
+                raise ValueError(
+                    f"Could not load any data from '{path}'. "
+                    "Please specify the channel name explicitly via the 'channel' argument."
+                )
+
+        name = channel.split(":")[0] if channel and ":" in channel else ""
+        return cls(
+            jnp.array(strain.value),
+            float(strain.dt.value),
+            float(strain.epoch.value),
+            name,
+        )
+
+    @classmethod
+    def from_file(
+        cls,
+        path: str,
+        channel: Optional[str] = None,
+        start_time: Optional[float] = None,
+        end_time: Optional[float] = None,
+    ) -> Self:
+        """Load data from a file.
+
+        Supported formats:
+
+        * ``.npz`` — NumPy archive containing ``td`` (time-domain strain),
+          ``dt`` (time step in seconds), and ``start_time`` (GPS start time).
+        * ``.gwf`` / ``.gwf.gz`` — LIGO/Virgo Gravitational Wave Frame file.
+          Requires `gwpy`. Specify *channel* (e.g. ``'H1:GDS-CALIB_STRAIN'``);
+          if omitted, common preset channel names are tried automatically.
+        * ``.hdf5`` / ``.h5`` / ``.hdf`` — HDF5 file readable by gwpy.
+          *channel* is required when the file contains multiple channels.
+        * ``.csv`` — Two-column CSV time-series file (gwpy format).
 
         Args:
-            path (str): Path to save the .npz file.
+            path: Path to the file.
+            channel: Channel name for frame or HDF5 files
+                (e.g. ``'H1:GDS-CALIB_STRAIN'``). Ignored for ``.npz``.
+            start_time: GPS start time to read (optional; for gwpy-backed formats).
+            end_time: GPS end time to read (optional; for gwpy-backed formats).
+
+        Returns:
+            Data: Data object with the loaded time domain data.
         """
-        jnp.savez(
-            path,
-            td=self.td,
-            dt=self.delta_t,
-            start_time=self.start_time,
-            name=self.name,
-        )
+        path_lower = path.lower()
+        if path_lower.endswith(".npz"):
+            with np.load(path) as npz:
+                if "td" not in npz or "dt" not in npz or "start_time" not in npz:
+                    raise ValueError(
+                        "The file must contain 'td', 'dt', and 'start_time' keys."
+                    )
+                td = jnp.array(npz["td"])
+                dt = float(npz["dt"])
+                t0 = float(npz["start_time"])
+                name = str(npz.get("name", ""))
+            return cls(td, dt, t0, name)
+        elif path_lower.endswith(".gwf") or path_lower.endswith(".gwf.gz"):
+            return cls._from_gwf(
+                path, channel=channel, start_time=start_time, end_time=end_time
+            )
+        elif (
+            path_lower.endswith(".hdf5")
+            or path_lower.endswith(".h5")
+            or path_lower.endswith(".hdf")
+            or path_lower.endswith(".csv")
+        ):
+            kwargs: dict = {}
+            if channel is not None:
+                kwargs["channel"] = channel
+            if start_time is not None:
+                kwargs["start"] = start_time
+            if end_time is not None:
+                kwargs["end"] = end_time
+            strain = TimeSeries.read(source=path, **kwargs)
+            name = channel.split(":")[0] if channel and ":" in channel else ""
+            return cls(
+                jnp.array(strain.value),
+                float(strain.dt.value),
+                float(strain.epoch.value),
+                name,
+            )
+        else:
+            raise ValueError(
+                f"Unsupported file format for '{path}'. "
+                "Supported formats: .npz, .gwf, .gwf.gz, .hdf5, .h5, .hdf, .csv"
+            )
+
+    def to_file(self, path: str) -> None:
+        """Save the data to a file.
+
+        Supported formats:
+
+        * ``.npz`` — NumPy archive with keys ``td`` (time-domain strain),
+          ``dt`` (time step in seconds), ``start_time`` (GPS), and ``name``.
+        * ``.txt`` / ``.dat`` — Three-column whitespace-separated text file
+          containing ``[f, real(h(f)), imag(h(f))]`` (frequency-domain strain).
+        * ``.csv`` — Same as ``.txt`` but comma-separated.
+        * ``.gwf`` — LIGO/Virgo Gravitational Wave Frame file (time-domain).
+          Requires ``gwpy``.
+        * ``.hdf5`` / ``.h5`` — HDF5 file (time-domain). Requires ``gwpy``.
+
+        Args:
+            path: Path to the output file (extension determines format).
+
+        Raises:
+            ValueError: If the file extension is not supported.
+        """
+        path_lower = path.lower()
+        if path_lower.endswith(".npz"):
+            np.savez(
+                path,
+                td=np.array(self.td),
+                dt=self.delta_t,
+                start_time=self.start_time,
+                name=self.name,
+            )
+        elif (
+            path_lower.endswith(".txt")
+            or path_lower.endswith(".dat")
+            or path_lower.endswith(".csv")
+        ):
+            self.fft()
+            fd = np.array(self.fd)
+            data = np.column_stack(
+                [
+                    np.array(self.frequencies),
+                    np.real(fd),
+                    np.imag(fd),
+                ]
+            )
+            if path_lower.endswith(".csv"):
+                np.savetxt(
+                    path,
+                    data,
+                    delimiter=",",
+                    header="f,real_h(f),imag_h(f)",
+                    comments="# ",
+                )
+            else:
+                np.savetxt(path, data, header="f real_h(f) imag_h(f)")
+        elif (
+            path_lower.endswith(".gwf")
+            or path_lower.endswith(".hdf5")
+            or path_lower.endswith(".h5")
+        ):
+            channel = (
+                self.name
+                if ":" in self.name
+                else f"{self.name}:STRAIN"
+                if self.name
+                else "STRAIN"
+            )
+            ts = TimeSeries(
+                np.array(self.td),
+                t0=self.start_time,
+                dt=self.delta_t,
+                channel=channel,
+            )
+            ts.write(path)
+        else:
+            raise ValueError(
+                f"Unsupported file format for '{path}'. "
+                "Supported formats: .npz, .txt, .dat, .csv, .gwf, .hdf5, .h5"
+            )
 
 
 class PowerSpectrum(ABC):
@@ -507,7 +709,7 @@ class PowerSpectrum(ABC):
             self.frequencies,
             self.values,
             kind=kind,
-            fill_value=(self.values[0], self.values[-1]),  # type: ignore
+            fill_value=(self.values[0], self.values[-1]),  # type: ignore[arg-type]  # scipy stubs
             bounds_error=False,
             **kws,
         )
@@ -532,23 +734,57 @@ class PowerSpectrum(ABC):
         return noise_real + 1j * noise_imag
 
     @classmethod
-    def from_file(cls, path: str) -> Self:
-        """Load power spectrum from a file. This assumes the data to be in .npz format.
-        It should at least contains the keys 'values', 'frequencies', and 'name'.
-        `values` is the PSD values, `frequencies` is the frequencies of the PSD.
+    def from_file(cls, path: str, is_asd: bool = False) -> Self:
+        """Load a power spectrum from a file.
+
+        Supported formats:
+
+        * ``.npz`` — NumPy archive containing ``values`` (PSD, Hz⁻¹) and
+          ``frequencies`` arrays. *is_asd* is ignored.
+        * ``.txt`` / ``.dat`` — two-column whitespace-separated text file
+          ``(frequency, value)``.  Set *is_asd=True* if the second column
+          contains amplitude spectral density (Hz⁻¹/²); it will be squared
+          internally to give the PSD.
+        * ``.csv`` — same two-column format as ``.txt``/``.dat`` but
+          comma-separated.
 
         Args:
-            path (str): Path to the .npz file containing the data.
+            path: Path to the PSD file.
+            is_asd: If ``True``, the file contains ASD values (Hz⁻¹/²) that
+                are squared to obtain the PSD. Applies only to text/CSV files;
+                ignored for ``.npz``. Defaults to ``False``.
+
+        Returns:
+            PowerSpectrum: Loaded power spectrum.
         """
-        with np.load(path) as data:
-            if "values" not in data or "frequencies" not in data:
-                raise ValueError(
-                    "The file must contain 'values' and 'frequencies' keys."
-                )
-            values = jnp.array(data["values"])
-            frequencies = jnp.array(data["frequencies"])
-            name = str(data.get("name", ""))
-        return cls(values, frequencies, name)
+        path_lower = path.lower()
+        if path_lower.endswith(".npz"):
+            with np.load(path) as data:
+                if "values" not in data or "frequencies" not in data:
+                    raise ValueError(
+                        "The file must contain 'values' and 'frequencies' keys."
+                    )
+                values = jnp.array(data["values"])
+                frequencies = jnp.array(data["frequencies"])
+                name = str(data.get("name", ""))
+            return cls(values, frequencies, name)
+        elif (
+            path_lower.endswith(".txt")
+            or path_lower.endswith(".dat")
+            or path_lower.endswith(".csv")
+        ):
+            delimiter = "," if path_lower.endswith(".csv") else None
+            frequencies_np, values_np = np.genfromtxt(
+                path, delimiter=delimiter, unpack=True
+            )
+            if is_asd:
+                values_np = values_np**2
+            return cls(jnp.array(values_np), jnp.array(frequencies_np))
+        else:
+            raise ValueError(
+                f"Unsupported file format for '{path}'. "
+                "Supported formats: .npz, .txt, .dat, .csv"
+            )
 
     def to_file(self, path: str):
         """Save the power spectrum to a file in .npz format.

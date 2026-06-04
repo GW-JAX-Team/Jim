@@ -21,16 +21,25 @@ classifiers = [
 ]
 
 dependencies = [
+    "anesthetic>=2",
     "astropy>=7.0.1",
     "beartype>=0.19.0",
+    "blackjax>=1.4",
+    "equinox>=0.11",
     "evosax>=0.2.0",
-    "flowmc>=0.5.0",
+    "flowmc>=0.6.0",
     "gwpy>=3.0.12",
     "jax>=0.8.2",
     "jaxtyping>=0.3.3",
-    "ripplegw>=0.1.1",
+    "pydantic>=2",
+    "ripplegw>=0.2.0",
     "scipy>=1.17.1",
+    "tomli-w>=1.0",
+    "typer>=0.12",
 ]
+
+[project.scripts]
+jim-run = "jimgw.cli:app"
 
 [project.optional-dependencies]
 cuda = [
@@ -57,10 +66,13 @@ cross-validation = [
     "bilby[gw]>=2.8.0",
 ]
 doc = [
-    "jupytext",
+    "nbconvert",
     "mkdocstrings[python]",
     "pymdown-extensions",
     "zensical",
+]
+nested-sampling = [
+    "blackjax",
 ]
 
 [project.urls]
@@ -72,6 +84,11 @@ Changelog = "https://github.com/GW-JAX-Team/jim/releases"
 
 [tool.uv.sources]
 jimgw = { workspace = true }
+# Pinned to a maintained fork on a dedicated `jim` branch that carries:
+#   - blackjax.ns.{base,adaptive,utils}                                     (NS-AW, NSS)
+#   - blackjax.nss                                                          (NSS)
+# When the NS module land upstream, drop this pin and the nested-sampling group.
+blackjax = { git = "https://github.com/GW-JAX-Team/blackjax.git", branch = "jim" }
 
 [build-system]
 requires = ["hatchling", "hatch-vcs"]
@@ -83,7 +100,10 @@ fallback-version = "0.3.0"
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
-norecursedirs = ["tests/integration", "tests/cross_validation"]
+markers = [
+    "integration: end-to-end Jim runs",
+    "slow: slow tests",
+]
 
 [tool.pyright]
 include = ["src"]

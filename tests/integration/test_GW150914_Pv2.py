@@ -1,10 +1,9 @@
-import time
+import pytest
 
-import jax
+pytestmark = pytest.mark.integration
+
 import jax.numpy as jnp
 from pathlib import Path
-
-jax.config.update("jax_enable_x64", True)
 
 from jimgw.core.jim import Jim
 from jimgw.core.prior import (
@@ -23,84 +22,73 @@ from jimgw.core.single_event.transforms import (
     SphereSpinToCartesianSpinTransform,
     MassRatioToSymmetricMassRatioTransform,
 )
-
-###########################################
-########## First we grab data #############
-###########################################
-
-total_time_start = time.time()
-
-# Load cached GW150914 data
-gps = 1126259462.4
-fmin = 20.0
-fmax = 1024.0
+from jimgw.samplers.config import FlowMCConfig
 
 FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
 
-detector_preset = get_detector_preset()
-ifos = [detector_preset["H1"], detector_preset["L1"]]
 
-for ifo in ifos:
-    data = Data.from_file(str(FIXTURES_DIR / f"GW150914_strain_{ifo.name}.npz"))
-    ifo.set_data(data)
-    psd = PowerSpectrum.from_file(str(FIXTURES_DIR / f"GW150914_psd_{ifo.name}.npz"))
-    ifo.set_psd(psd)
+def test_runs():
+    gps = 1126259462.4
+    fmin = 20.0
+    fmax = 1024.0
 
-M_c_min, M_c_max = 10.0, 80.0
-q_min, q_max = 0.125, 1.0
-Mc_prior = UniformPrior(M_c_min, M_c_max, parameter_names=["M_c"])
-q_prior = UniformPrior(q_min, q_max, parameter_names=["q"])
-s1_prior = UniformSpherePrior(parameter_names=["s1"])
-s2_prior = UniformSpherePrior(parameter_names=["s2"])
-iota_prior = SinePrior(parameter_names=["iota"])
-dL_prior = PowerLawPrior(1.0, 2000.0, 2.0, parameter_names=["d_L"])
-t_c_prior = UniformPrior(-0.05, 0.05, parameter_names=["t_c"])
-phase_c_prior = UniformPrior(0.0, 2 * jnp.pi, parameter_names=["phase_c"])
-psi_prior = UniformPrior(0.0, jnp.pi, parameter_names=["psi"])
-ra_prior = UniformPrior(0.0, 2 * jnp.pi, parameter_names=["ra"])
-dec_prior = CosinePrior(parameter_names=["dec"])
+    detector_preset = get_detector_preset()
+    ifos = [detector_preset["H1"], detector_preset["L1"]]
 
-prior = CombinePrior(
-    [
-        Mc_prior,
-        q_prior,
-        s1_prior,
-        s2_prior,
-        iota_prior,
-        dL_prior,
-        t_c_prior,
-        phase_c_prior,
-        psi_prior,
-        ra_prior,
-        dec_prior,
+    for ifo in ifos:
+        data = Data.from_file(str(FIXTURES_DIR / f"GW150914_strain_{ifo.name}.npz"))
+        ifo.set_data(data)
+        psd = PowerSpectrum.from_file(
+            str(FIXTURES_DIR / f"GW150914_psd_{ifo.name}.npz")
+        )
+        ifo.set_psd(psd)
+
+    M_c_min, M_c_max = 10.0, 80.0
+    q_min, q_max = 0.125, 1.0
+    prior = CombinePrior(
+        [
+            UniformPrior(M_c_min, M_c_max, parameter_names=["M_c"]),
+            UniformPrior(q_min, q_max, parameter_names=["q"]),
+            UniformSpherePrior(parameter_names=["s1"]),
+            UniformSpherePrior(parameter_names=["s2"]),
+            SinePrior(parameter_names=["iota"]),
+            PowerLawPrior(1.0, 2000.0, 2.0, parameter_names=["d_L"]),
+            UniformPrior(-0.05, 0.05, parameter_names=["t_c"]),
+            UniformPrior(0.0, 2 * jnp.pi, parameter_names=["phase_c"]),
+            UniformPrior(0.0, jnp.pi, parameter_names=["psi"]),
+            UniformPrior(0.0, 2 * jnp.pi, parameter_names=["ra"]),
+            CosinePrior(parameter_names=["dec"]),
+        ]
+    )
+
+    likelihood_transforms = [
+        MassRatioToSymmetricMassRatioTransform,
+        SphereSpinToCartesianSpinTransform("s1"),
+        SphereSpinToCartesianSpinTransform("s2"),
     ]
-)
 
-likelihood_transforms = [
-    MassRatioToSymmetricMassRatioTransform,
-    SphereSpinToCartesianSpinTransform("s1"),
-    SphereSpinToCartesianSpinTransform("s2"),
-]
+    likelihood = TransientLikelihoodFD(
+        ifos,
+        waveform=RippleIMRPhenomPv2(),
+        f_min=fmin,
+        f_max=fmax,
+        trigger_time=gps,
+    )
 
-likelihood = TransientLikelihoodFD(
-    ifos,
-    waveform=RippleIMRPhenomPv2(),
-    f_min=fmin,
-    f_max=fmax,
-    trigger_time=gps,
-)
+    jim = Jim(
+        likelihood,
+        prior,
+        sampler_config=FlowMCConfig(
+            n_chains=2,
+            n_local_steps=2,
+            n_global_steps=2,
+            global_thinning=1,
+            n_training_loops=1,
+            n_production_loops=1,
+            n_epochs=1,
+        ),
+        likelihood_transforms=likelihood_transforms,
+    )
 
-jim = Jim(
-    likelihood,
-    prior,
-    likelihood_transforms=likelihood_transforms,
-    n_training_loops=1,
-    n_production_loops=1,
-    n_local_steps=2,
-    n_global_steps=2,
-    n_chains=2,
-    global_thinning=1,
-)
-
-jim.sample()
-jim.get_samples()
+    jim.sample()
+    jim.get_samples()

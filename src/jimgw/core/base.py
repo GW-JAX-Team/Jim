@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 
-import equinox as eqx
-from jaxtyping import Array, Float
+from jaxtyping import Float
 
 
 class Data(ABC):
@@ -17,32 +16,11 @@ class Data(ABC):
         raise NotImplementedError
 
 
-class Model(eqx.Module):
-    """Abstract base class for probabilistic models."""
-
-    params: dict
-
-    @abstractmethod
-    def __init__(self):
-        raise NotImplementedError
-
-    def __call__(self, x: Array) -> Float:
-        """Evaluate the model at x.
-
-        Args:
-            x (Array): Input array.
-
-        Returns:
-            Float: Model output (e.g. log-probability).
-        """
-        raise NotImplementedError
-
-
 class LikelihoodBase(ABC):
     """Abstract base class for likelihoods.
 
     Handles two main components: the data and the model.
-    Subclasses must implement :meth:`evaluate`.
+    Subclasses must implement `evaluate`.
     """
 
     _model: object
@@ -59,14 +37,13 @@ class LikelihoodBase(ABC):
         return self._data
 
     @abstractmethod
-    def evaluate(self, params: dict[str, Float], data: dict) -> Float:
+    def evaluate(self, params: dict[str, Float]) -> Float:
         """Evaluate the log-likelihood for a given set of parameters.
 
         Args:
-            params (dict[str, Float]): Dictionary mapping parameter names to values.
-            data (dict): Auxiliary data (typically empty for pre-loaded data).
+            params: Dictionary mapping parameter names to values.
 
         Returns:
-            Float: Log-likelihood value.
+            Log-likelihood value.
         """
         raise NotImplementedError

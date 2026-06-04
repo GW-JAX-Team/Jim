@@ -44,7 +44,7 @@ jobs:
       - name: Convert notebooks to Markdown
         run: |
           for nb in docs/tutorials/*.ipynb; do
-            [ -f "$nb" ] && uv run jupytext --to markdown "$nb"
+            [ -f "$nb" ] && uv run jupyter nbconvert --to markdown "$nb"
           done
 
       - name: Generate API stubs and versioned config

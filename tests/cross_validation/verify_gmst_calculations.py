@@ -1,18 +1,18 @@
 #!/usr/bin/env python
-"""Cross-validate JAX GMST/UTC implementation against LAL and Bilby.
+"""Cross-validate JAX GMST/UTC implementation against LAL and bilby.
 
 This script verifies the JAX implementation of the conversion from GPS time
-to UTC date and GMST values against the LAL and Bilby implementations, all
+to UTC date and GMST values against the LAL and bilby implementations, all
 the way up to year 2500 (and potentially beyond this).
 
 The verification is done in two parts:
-1. Without JIT, which gives an EXACT match with Bilby values.
+1. Without JIT, which gives an EXACT match with bilby values.
 2. With JIT enabled, which gives an error of order 1e-10 s.
 
 The GPS times are generated from 1980-01-06 to 2500-12-31.
 Note that the LAL implementation, limited by overflow errors, can only compute
 up to the year 2038. The remaining years till 2500 (and beyond) are way beyond
-practical purposes, and are purely for algorithmic comparison with Bilby.
+practical purposes, and are purely for algorithmic comparison with bilby.
 
 Requires:
     - bilby
@@ -41,14 +41,12 @@ except ImportError as e:
     print("This script requires bilby.")
     exit(1)
 
-jax.config.update("jax_enable_x64", True)
 jax.config.update("jax_platforms", "cpu")
 
 from jimgw.core.single_event.time_utils import (
     gps_to_utc_date,
     greenwich_mean_sidereal_time as jim_gmst,
 )
-
 
 # Configuration
 SIZE = 10_000_000  # Total number of samples
@@ -62,7 +60,7 @@ def compute_seconds_from_utc_date(hour: int, min: int, sec: int) -> int:
 
 
 print("=" * 50)
-print("Generating GPS times and computing LAL/Bilby values")
+print("Generating GPS times and computing LAL/bilby values")
 print("=" * 50)
 
 # The test range is the designed time range of the Jim UTC date implementation
@@ -74,7 +72,7 @@ print(f"Generating {SIZE} samples...")
 gps_times = np.geomspace(start_gps, end_gps, SIZE, dtype=np.int64)
 none_tuple = tuple([0] * 9)
 
-# Prepare data from LAL and Bilby
+# Prepare data from LAL and bilby
 start_time = time.time()
 results = []
 for i, gps_time in enumerate(gps_times):
@@ -142,7 +140,7 @@ computed_times = np.array(
 computed_times = jnp.array(computed_times)
 
 print("\n" + "=" * 50)
-print("CROSS-VALIDATION: Jim vs LAL/Bilby")
+print("CROSS-VALIDATION: Jim vs LAL/bilby")
 print("=" * 50)
 
 with jax.disable_jit():
@@ -161,7 +159,7 @@ with jax.disable_jit():
         gmst_vals = jax.vmap(jim_gmst)(gps_times_chunk)
         print(f"  Jim computation: {time.time() - start_time:.4f}s")
 
-        print("\n  LAL vs Bilby comparison:")
+        print("\n  LAL vs bilby comparison:")
         for item in ("year", "month", "day", "sec", "gmst"):
             is_agree = jnp.where(
                 _computed_times["lal"]["year"] != 0,
@@ -170,7 +168,7 @@ with jax.disable_jit():
             ).all()
             print(f"    {item:6s}: {'✓ MATCH' if is_agree else '✗ DIFFER'}")
 
-        print("\n  Jim vs Bilby comparison (exact):")
+        print("\n  Jim vs bilby comparison (exact):")
         for key, jim_val in zip(
             ("year", "month", "day", "sec", "gmst"), (*utc_dates, gmst_vals)
         ):
@@ -197,7 +195,7 @@ for end in jnp.linspace(0, SIZE + 1, CHUNKS, dtype=jnp.int32)[1:]:
     gmst_vals = jax.vmap(jim_gmst)(gps_times_chunk)
     print(f"  Jim computation: {time.time() - start_time:.4f}s")
 
-    print("\n  Jim vs Bilby comparison (with tolerance):")
+    print("\n  Jim vs bilby comparison (with tolerance):")
     for key, jim_val in zip(
         ("year", "month", "day", "sec", "gmst"), (*utc_dates, gmst_vals)
     ):
@@ -213,7 +211,7 @@ print("=" * 50)
 print("""
 Notes:
 - LAL implementation is limited to year 2038 due to overflow
-- Years beyond 2038 are compared only with Bilby (algorithmic test)
+- Years beyond 2038 are compared only with bilby (algorithmic test)
 - Without JIT: Exact match expected for all fields
 - With JIT: Numerical differences ~1e-10s are acceptable for GMST/sec
 """)

@@ -1,0 +1,44 @@
+seed = 0
+
+[data]
+type = "gwosc"
+detectors = ["H1", "L1"]
+trigger_time = 1126259462.4
+duration = 4.0
+post_trigger_duration = 2.0
+psd_duration = 1024.0
+
+[waveform]
+approximant = "IMRPhenomXAS"
+f_ref = 20.0
+
+[prior]
+M_c     = { type = "uniform",   min = 20.0,  max = 40.0  }
+q       = { type = "uniform",   min = 0.125, max = 1.0   }
+s1_z    = { type = "uniform",   min = -0.99, max = 0.99  }
+s2_z    = { type = "uniform",   min = -0.99, max = 0.99  }
+iota    = { type = "sine" }
+d_L     = { type = "power_law", min = 1.0,   max = 2000.0, alpha = 2.0 }
+t_c     = { type = "uniform",   min = -0.1,  max = 0.1   }
+phase_c = { type = "uniform",   min = 0.0,   max = 6.283185307179586 }
+psi     = { type = "uniform",   min = 0.0,   max = 3.141592653589793 }
+ra      = { type = "uniform",   min = 0.0,   max = 6.283185307179586 }
+dec     = { type = "cosine" }
+
+[likelihood]
+f_min = 20.0
+f_max = 1024.0
+
+[sampler]
+type = "flowmc"
+n_chains = 1000
+n_local_steps = 100
+n_global_steps = 1000
+n_training_loops = 50
+n_production_loops = 10
+n_NFproposal_batch_size = 100
+global_thinning = 100
+
+[output]
+dir = "output/GW150914_flowmc"
+save_corner = true

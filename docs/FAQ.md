@@ -52,18 +52,26 @@ Most computation goes into the training phase. The production phase with a train
 
 ### I am running out of GPU memory
 
-The most targeted fix is to set `chain_batch_size` when constructing `Jim`. By default (`chain_batch_size=0`) all chains are evaluated simultaneously; setting it to a smaller integer processes chains in batches, directly reducing peak memory at the cost of slightly slower throughput:
+This section applies to the flowMC backend.
+
+The most targeted fix is to set `chain_batch_size` inside `FlowMCConfig`. By default, (`chain_batch_size=0`) all chains are evaluated simultaneously; setting it to a smaller integer processes chains in batches, directly reducing peak memory at the cost of slightly slower throughput:
 
 ```python
+from jimgw.samplers.config import FlowMCConfig
+
 jim = Jim(
     likelihood,
     prior,
-    chain_batch_size=100,  # process 100 chains at a time instead of all at once
+    sampler_config=FlowMCConfig(
+        n_chains=1000,
+        chain_batch_size=100,  # process 100 chains at a time instead of all at once
+        # ... other parameters
+    ),
     ...
 )
 ```
 
-If memory is still tight, reducing the number of chains (`n_chains`) will also help.
+If memory is still tight, reducing `n_chains` inside `FlowMCConfig` will also help.
 
 ## Quality Assessment
 

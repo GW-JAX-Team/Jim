@@ -34,8 +34,6 @@ pytestmark = pytest.mark.skipif(
     reason="bilby required for cross-validation tests",
 )
 
-jax.config.update("jax_enable_x64", True)
-
 N_SAMPLES = 1000
 
 
@@ -142,7 +140,7 @@ class TestThetaPhiToRaDec:
 
     def test_theta_phi_to_ra_dec(self):
         """Compare Jim's _theta_phi_to_ra_dec with bilby's implementation."""
-        from jimgw.core.single_event.utils import (
+        from jimgw.core.single_event.transform_utils import (
             _theta_phi_to_ra_dec as jim_theta_phi_to_ra_dec,
         )
         from bilby.core.utils import theta_phi_to_ra_dec as bilby_theta_phi_to_ra_dec
@@ -185,8 +183,10 @@ class TestAngleRotation:
 
     def test_angle_rotation(self):
         """Compare Jim's angle_rotation with bilby_cython's zenith_azimuth_to_theta_phi."""
-        from jimgw.core.single_event.utils import angle_rotation as jim_angle_rotation
-        from jimgw.core.single_event.utils import euler_rotation
+        from jimgw.core.single_event.transform_utils import (
+            angle_rotation as jim_angle_rotation,
+        )
+        from jimgw.core.single_event.transform_utils import euler_rotation
         from bilby_cython.geometry import (
             zenith_azimuth_to_theta_phi as bilby_angle_rotation,
         )
@@ -338,7 +338,7 @@ class TestAngleRotationEquivalence:
 
     def test_old_vs_new_implementation(self):
         """Ensure new and old angle rotation implementations are equivalent."""
-        from jimgw.core.single_event.utils import euler_rotation
+        from jimgw.core.single_event.transform_utils import euler_rotation
 
         key = jax.random.key(123)
         key, subkey = jax.random.split(key)

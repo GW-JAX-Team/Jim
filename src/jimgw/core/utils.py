@@ -36,7 +36,7 @@ def safe_arctan2(
         default_value (float): arctan2 value to return at (0, 0). Default is 0.0.
 
     Returns:
-        array-like: The signed azimuthal angle, in radians, within [-π, π].
+        array-like: The signed azimuthal angle, in radians, within [-pi, pi].
     """
     return jnp.where(
         (jnp.abs(x) < EPS) & (jnp.abs(y) < EPS),
@@ -64,7 +64,7 @@ def safe_polar_angle(
         z (array-like): z-coordinate of the point.
 
     Returns:
-        array-like: The polar angle, in radians, within [0, π].
+        array-like: The polar angle, in radians, within [0, pi].
     """
     return jnp.where(
         (jnp.abs(x) < EPS) & (jnp.abs(y) < EPS),
@@ -94,8 +94,8 @@ def carte_to_spherical_angles(
 
     Returns:
         tuple: A tuple containing:
-            - theta (array-like): The polar angle, in radians, within [0, π].
-            - phi (array-like): The signed azimuthal angle, in radians, within [-π, π].
+            - theta (array-like): The polar angle, in radians, within [0, pi].
+            - phi (array-like): The signed azimuthal angle, in radians, within [-pi, pi].
     """
     align_condition = (jnp.absolute(x) < EPS) & (jnp.absolute(y) < EPS)
     theta = jnp.where(

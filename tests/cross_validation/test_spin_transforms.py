@@ -25,8 +25,6 @@ pytestmark = pytest.mark.skipif(
     reason="bilby required for cross-validation tests",
 )
 
-jax.config.update("jax_enable_x64", True)
-
 
 class TestSpinAnglesToCartesianSpinTransformBilby:
     """Cross-validation tests comparing Jim spin transforms to bilby."""

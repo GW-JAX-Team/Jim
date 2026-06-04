@@ -27,20 +27,25 @@ jobs:
         run: uv python install ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
-          uv sync --python ${{ matrix.python-version }} --group test --group cross-validation
+          uv sync --python ${{ matrix.python-version }} --group test --group cross-validation --group nested-sampling
           if [[ "${{ github.ref }}" == "refs/heads/jim-dev" || "${{ github.base_ref }}" == "jim-dev" ]]; then
             uv pip install git+https://github.com/GW-JAX-Team/flowMC.git@flowMC-dev
             uv pip install git+https://github.com/GW-JAX-Team/ripple.git@ripple-dev
+            uv pip install git+https://github.com/GW-JAX-Team/blackjax.git@jim-dev
           elif [[ "${{ github.event_name }}" != "release" ]]; then
             uv pip install git+https://github.com/GW-JAX-Team/flowMC.git@main
             uv pip install git+https://github.com/GW-JAX-Team/ripple.git@main
           fi
       - name: Run tests
         run: |
-          if [[ "${{ matrix.python-version }}" == "3.12" ]]; then
-            uv run --no-sync pytest --cov=jimgw --cov-report=term-missing tests/unit tests/cross_validation
+          is_main=false
+          [[ "${{ github.ref }}" == "refs/heads/main" || "${{ github.base_ref }}" == "main" ]] && is_main=true
+          cov_flags=""
+          [[ "${{ matrix.python-version }}" == "3.12" ]] && cov_flags="--cov=jimgw --cov-report=term-missing"
+          if [[ "$is_main" == "true" ]]; then
+            uv run --no-sync pytest $cov_flags tests -v --tb=short
           else
-            uv run --no-sync pytest tests/unit tests/cross_validation
+            uv run --no-sync pytest -m "not slow and not integration" $cov_flags tests
           fi
       - name: Upload coverage to Coveralls
         if: matrix.python-version == '3.12'

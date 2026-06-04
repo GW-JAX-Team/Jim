@@ -1,6 +1,6 @@
 """
 This module computes a JAX-compatible conversion from GPS to UTC time and Julian day.
-Following the implementation in LALSuite and Bilby.
+Following the implementation in LALSuite and bilby.
 
 The conversion from GPS time to UTC date is typically done using the following packages:
     * datetime, astropy, numpy
@@ -80,7 +80,7 @@ def n_leap_seconds(date: Int) -> Int:
     Search in reverse order as in practice, almost all requested times will
     be after the most recent leap.
 
-    The Bilby Cython implementation:
+    The bilby Cython implementation:
     NUM_LEAPS: int = 18
     n_leaps: int = NUM_LEAPS
 

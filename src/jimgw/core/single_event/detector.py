@@ -2,11 +2,12 @@ from abc import ABC, abstractmethod
 from typing import Optional
 import logging
 import time
+import tempfile
+import os
 
 import jax
 import jax.numpy as jnp
 from jaxtyping import Array, Float, Complex, Key, jaxtyped, Bool
-from numpy import loadtxt
 import requests
 from beartype import beartype as typechecker
 
@@ -50,7 +51,7 @@ class Detector(ABC):
     data: Data
     psd: PowerSpectrum
 
-    frequency_bounds: tuple[float, float] = (0.0, float("inf"))
+    frequency_bounds: tuple[float, float] = (0.0, jnp.inf)
 
     _sliced_frequencies: Float[Array, " n_sample"] = jnp.array([])
     _sliced_fd_data: Float[Array, " n_sample"] = jnp.array([])
@@ -84,7 +85,6 @@ class Detector(ABC):
         frequency: Float[Array, " n_sample"],
         h_sky: dict[str, Float[Array, " n_sample"]],
         params: dict,
-        **kwargs,
     ) -> Complex[Array, " n_sample"]:
         """Modulate the waveform in the sky frame by the detector response in the frequency domain.
 
@@ -100,7 +100,6 @@ class Detector(ABC):
                 - trigger_time (Float): The trigger time in sec
                 - t_c (Float): The difference between peak time and trigger time in sec
                 - gmst (Float): The greenwich mean sidereal time at the trigger time in radian
-            **kwargs: Additional keyword arguments.
 
         Returns:
             Complex[Array, "n_sample"]: Complex strain measured by the detector in frequency domain.
@@ -113,7 +112,6 @@ class Detector(ABC):
         time: Float[Array, " n_sample"],
         h_sky: dict[str, Float[Array, " n_sample"]],
         params: dict,
-        **kwargs,
     ) -> Float[Array, " n_sample"]:
         """Modulate the waveform in the sky frame by the detector response in the time domain.
 
@@ -121,7 +119,6 @@ class Detector(ABC):
             time: Array of time samples.
             h_sky: Dictionary mapping polarization names to time-domain waveforms.
             params: Dictionary of source parameters.
-            **kwargs: Additional keyword arguments.
 
         Returns:
             Array of detector response in time domain.
@@ -143,7 +140,7 @@ class Detector(ABC):
             bounds[0] = f_min
         if f_max is not None:
             bounds[1] = f_max
-        self.frequency_bounds = tuple(bounds)  # type: ignore
+        self.frequency_bounds = (bounds[0], bounds[1])
 
         # Compute sliced frequencies, data and psd.
         data, freqs_1 = self.data.frequency_slice(*self.frequency_bounds)
@@ -161,10 +158,12 @@ class Detector(ABC):
         """Clear the data and PSD of the detector."""
         self.data = Data()
         self.psd = PowerSpectrum()
-        self.frequency_bounds = (0.0, float("inf"))
+        self.frequency_bounds = (0.0, jnp.inf)
         self._sliced_frequencies = jnp.array([])
         self._sliced_fd_data = jnp.array([])
         self._sliced_psd = jnp.array([])
+        self.optimal_snr = None
+        self.match_filtered_snr = None
 
     @property
     def sliced_frequencies(self) -> Float[Array, " n_freq"]:
@@ -239,6 +238,9 @@ class GroundBased2G(Detector):
     xarm_tilt: Float = 0
     yarm_tilt: Float = 0
     elevation: Float = 0
+
+    optimal_snr: Optional[Float] = None
+    match_filtered_snr: Optional[Complex] = None
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.name})"
@@ -336,11 +338,13 @@ class GroundBased2G(Detector):
 
         For a 2-arm differential-length detector, this is given by:
 
-        .. math::
+        $$
 
-            D_{ij} = \\left(x_i x_j - y_i y_j\\right)/2
+        D_{ij} = \\left(x_i x_j - y_i y_j\\right)/2
 
-        for unit vectors :math:`x` and :math:`y` along the x and y arms.
+        $$
+
+        for unit vectors $x$ and $y$ along the x and y arms.
 
         Returns:
             Float[Array, "3 3"]: The 3x3 detector tensor in geocentric coordinates.
@@ -380,7 +384,6 @@ class GroundBased2G(Detector):
         frequency: Float[Array, " n_sample"],
         h_sky: dict[str, Float[Array, " n_sample"]],
         params: dict[str, Float],
-        **kwargs,
     ) -> Complex[Array, " n_sample"]:
         """Modulate the waveform in the sky frame by the detector response in the frequency domain.
 
@@ -396,7 +399,6 @@ class GroundBased2G(Detector):
                 - trigger_time (Float): The trigger time in sec
                 - t_c (Float): The difference between peak time and trigger time in sec
                 - gmst (Float): The greenwich mean sidereal time at the trigger time in radian
-            **kwargs: Additional keyword arguments.
 
         Returns:
             Array: Complex strain measured by the detector in frequency domain, obtained by
@@ -424,7 +426,6 @@ class GroundBased2G(Detector):
         time: Float[Array, " n_sample"],
         h_sky: dict[str, Float[Array, " n_sample"]],
         params: dict,
-        **kwargs,
     ) -> Array:
         """Modulate the waveform in the sky frame by the detector response in the time domain.
 
@@ -432,7 +433,6 @@ class GroundBased2G(Detector):
             time: Array of time samples.
             h_sky: Dictionary mapping polarization names to time-domain waveforms.
             params: Dictionary of source parameters.
-            **kwargs: Additional keyword arguments.
 
         Returns:
             Array of detector response in time domain.
@@ -500,27 +500,37 @@ class GroundBased2G(Detector):
         """Load power spectral density (PSD) from file or default GWTC-2 catalog,
             and set it to the detector.
 
+        Supported formats: .npz, .txt, .dat, .csv.
+        Pass ``asd_file`` (or ``is_asd=True`` via :meth:`PowerSpectrum.from_file`)
+        when the file contains amplitude spectral density values (Hz⁻¹/²); they
+        are squared internally to produce a PSD.
+
         Args:
-            psd_file (str, optional): Path to file containing PSD data. If empty, uses GWTC-2 PSD.
+            psd_file (str, optional): Path to a PSD file (Hz⁻¹). If empty, uses GWTC-2 ASD.
+            asd_file (str, optional): Path to an ASD file (Hz⁻¹/²). Values are squared.
 
         Returns:
-            Float[Array, "n_sample"]: Array of PSD values of the detector.
+            PowerSpectrum: The loaded PSD, already set on the detector.
         """
-        if psd_file != "":
-            f, psd_vals = loadtxt(psd_file, unpack=True)
-        elif asd_file != "":
-            f, asd_vals = loadtxt(asd_file, unpack=True)
-            psd_vals = asd_vals**2
+        if psd_file:
+            _loaded_psd = PowerSpectrum.from_file(psd_file, is_asd=False)
+        elif asd_file:
+            _loaded_psd = PowerSpectrum.from_file(asd_file, is_asd=True)
         else:
             logger.info("Grabbing GWTC-2 PSD for " + self.name)
             url = asd_file_dict[self.name]
-            data = requests.get(url)
-            tmp_file_name = f"fetched_default_asd_{self.name}.txt"
-            open(tmp_file_name, "wb").write(data.content)
-            f, asd_vals = loadtxt(tmp_file_name, unpack=True)
-            psd_vals = asd_vals**2
-
-        _loaded_psd = PowerSpectrum(psd_vals, f, name=f"{self.name}_psd")
+            response = requests.get(url, timeout=30)
+            response.raise_for_status()
+            fd, tmp_file_name = tempfile.mkstemp(
+                suffix=".txt", prefix=f"jim_asd_{self.name}_"
+            )
+            try:
+                with os.fdopen(fd, "wb") as _fh:
+                    _fh.write(response.content)
+                _loaded_psd = PowerSpectrum.from_file(tmp_file_name, is_asd=True)
+            finally:
+                os.unlink(tmp_file_name)
+        _loaded_psd.name = f"{self.name}_psd"
         self.set_psd(_loaded_psd)
         return self.psd
 
@@ -592,7 +602,7 @@ class GroundBased2G(Detector):
         f_min: float,
         f_max: float,
         start_time: Optional[float] = None,
-        is_zero_noise: bool = False,
+        zero_noise: bool = False,
         rng_key: Optional[Key] = None,
     ) -> None:
         """Inject a signal into the detector data.
@@ -654,7 +664,7 @@ class GroundBased2G(Detector):
 
         # 3. Set the new data
         strain_data = jnp.where(self.frequency_mask, projected_strain, 0.0 + 0.0j)
-        if not is_zero_noise:
+        if not zero_noise:
             if rng_key is None:
                 seed = int(time.time())
                 rng_key = jax.random.key(seed)
@@ -662,9 +672,8 @@ class GroundBased2G(Detector):
                     "No rng_key provided for noise simulation. Using time-based key with seed=%d.",
                     seed,
                 )
-            strain_data += jnp.where(
-                self.frequency_mask, self.psd.simulate_data(rng_key), 0.0 + 0.0j
-            )
+            noise = self.psd.simulate_data(rng_key)
+            strain_data += jnp.where(self.frequency_mask, noise, 0.0 + 0.0j)
 
         self.set_data(
             Data.from_fd(
@@ -688,6 +697,10 @@ class GroundBased2G(Detector):
             masked_signal, self.sliced_fd_data, self.sliced_psd, df
         )
         match_filtered_snr /= optimal_snr
+
+        # Save as attributes
+        self.optimal_snr = optimal_snr
+        self.match_filtered_snr = match_filtered_snr
 
         logger.info(f"For detector {self.name}, the injected signal has:")
         logger.info(f"  - Optimal SNR: {optimal_snr:.4f}")
@@ -749,7 +762,7 @@ class GroundBased2G(Detector):
 
 
 def get_H1() -> GroundBased2G:
-    """Return a :class:`GroundBased2G` instance for LIGO Hanford (H1)."""
+    """Return a [`GroundBased2G`][jimgw.core.single_event.detector.GroundBased2G] instance for LIGO Hanford (H1)."""
     return GroundBased2G(
         "H1",
         latitude=(46 + 27.0 / 60 + 18.528 / 3600) * DEG_TO_RAD,
@@ -764,7 +777,7 @@ def get_H1() -> GroundBased2G:
 
 
 def get_L1() -> GroundBased2G:
-    """Return a :class:`GroundBased2G` instance for LIGO Livingston (L1)."""
+    """Return a [`GroundBased2G`][jimgw.core.single_event.detector.GroundBased2G] instance for LIGO Livingston (L1)."""
     return GroundBased2G(
         "L1",
         latitude=(30 + 33.0 / 60 + 46.4196 / 3600) * DEG_TO_RAD,
@@ -779,7 +792,7 @@ def get_L1() -> GroundBased2G:
 
 
 def get_V1() -> GroundBased2G:
-    """Return a :class:`GroundBased2G` instance for Virgo (V1)."""
+    """Return a [`GroundBased2G`][jimgw.core.single_event.detector.GroundBased2G] instance for Virgo (V1)."""
     return GroundBased2G(
         "V1",
         latitude=(43 + 37.0 / 60 + 53.0921 / 3600) * DEG_TO_RAD,
@@ -794,7 +807,7 @@ def get_V1() -> GroundBased2G:
 
 
 def get_ET() -> list[GroundBased2G]:
-    """Return a list of three :class:`GroundBased2G` instances for Einstein Telescope (ET).
+    """Return a list of three [`GroundBased2G`][jimgw.core.single_event.detector.GroundBased2G] instances for Einstein Telescope (ET).
 
     ET is modelled as a triangle of three interferometers at adjacent vertices,
     with arms rotated by 120° relative to each other. Vertex positions are
@@ -859,7 +872,7 @@ def get_ET() -> list[GroundBased2G]:
 
 
 def get_CE() -> GroundBased2G:
-    """Return a :class:`GroundBased2G` instance for Cosmic Explorer (CE).
+    """Return a [`GroundBased2G`][jimgw.core.single_event.detector.GroundBased2G] instance for Cosmic Explorer (CE).
 
     CE shares the LIGO Hanford site geometry.
     """
@@ -882,7 +895,7 @@ def get_detector_preset() -> dict[str, GroundBased2G | list[GroundBased2G]]:
     Returns:
         dict: Mapping of detector name to detector object(s).
             Keys are ``"H1"``, ``"L1"``, ``"V1"``, ``"CE"`` (single
-            :class:`GroundBased2G`) and ``"ET"`` (list of three).
+            [`GroundBased2G`][jimgw.core.single_event.detector.GroundBased2G]) and ``"ET"`` (list of three).
     """
     return {
         "H1": get_H1(),

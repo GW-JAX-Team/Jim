@@ -230,7 +230,7 @@ class FlowMCConfig(BaseSamplerConfig, _CheckpointMixin):
 
     chain_batch_size: int = 0
     local_thinning: int = 1
-    global_thinning: int = 1
+    global_thinning: int = 100
 
     early_stopping: bool = True
     early_stopping_tolerance: float = 0.1

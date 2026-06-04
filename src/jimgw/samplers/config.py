@@ -12,7 +12,7 @@ import pickle
 import time
 import warnings
 from pathlib import Path
-from typing import Annotated, Literal, Optional, Union
+from typing import Annotated, Any, Literal, Optional, Union
 
 import jax
 import numpy as np
@@ -214,9 +214,10 @@ class FlowMCConfig(BaseSamplerConfig, _CheckpointMixin):
 
     local_kernel: Literal["MALA", "HMC", "GRW"] = "MALA"
     parallel_tempering: Optional[ParallelTemperingConfig] = None
-    mala: MALAConfig = Field(default_factory=MALAConfig)
-    hmc: HMCConfig = Field(default_factory=HMCConfig)
-    grw: GRWConfig = Field(default_factory=GRWConfig)
+    # dict[str, Any] accepted here; Pydantic coerces it to the typed config via field_validator.
+    mala: MALAConfig | dict[str, Any] = Field(default_factory=MALAConfig)
+    hmc: HMCConfig | dict[str, Any] = Field(default_factory=HMCConfig)
+    grw: GRWConfig | dict[str, Any] = Field(default_factory=GRWConfig)
 
     rq_spline_hidden_units: list[int] = Field(default_factory=lambda: [128, 128])
     rq_spline_n_bins: int = 10

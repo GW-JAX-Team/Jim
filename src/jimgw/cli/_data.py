@@ -9,7 +9,11 @@ from jimgw.cli._config import (
 )
 from jimgw.cli._transforms import to_likelihood_space
 from jimgw.core.single_event.data import Data, PowerSpectrum
-from jimgw.core.single_event.detector import GroundBased2G, asd_file_dict, get_detector_preset
+from jimgw.core.single_event.detector import (
+    GroundBased2G,
+    asd_file_dict,
+    get_detector_preset,
+)
 
 logger = logging.getLogger(__name__)
 

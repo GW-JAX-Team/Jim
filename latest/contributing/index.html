@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="zensical-0.0.37">
+      <meta name="generator" content="zensical-0.0.44">
     
     
       
@@ -36,7 +36,7 @@
       
         
       
-      <link rel="stylesheet" href="../assets/stylesheets/modern/main.1e981d71.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/modern/main.fba56155.min.css">
       
         
           
@@ -60,7 +60,7 @@
       
     
     
-    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,a=__md_scope)=>JSON.parse(t.getItem(a.pathname+"."+e)),__md_set=(e,t,a=localStorage,_=__md_scope)=>{try{a.setItem(_.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    <script>__md_scope=new URL("..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
     
       
 
@@ -255,12 +255,37 @@
   
   
     
+      
+    
+    
     
       <li class="md-tabs__item">
         <a href="../tutorials/" class="md-tabs__link">
           
   
   Tutorials
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+      
+    
+    
+    
+      <li class="md-tabs__item">
+        <a href="../guides/" class="md-tabs__link">
+          
+  
+  Guides
 
         </a>
       </li>
@@ -308,6 +333,9 @@
   
   
     
+      
+    
+    
     
       
   
@@ -315,19 +343,25 @@
   
   
     
+      
+    
+    
     
       
   
   
   
   
+    
+      
+    
     
     
       <li class="md-tabs__item">
         <a href="../api/jimgw/core/base/" class="md-tabs__link">
           
   
-  API
+  Reference
 
         </a>
       </li>
@@ -400,8 +434,7 @@
   <span class="md-ellipsis">
     
   
-    Home
-  
+  Home
 
     
   </span>
@@ -427,8 +460,7 @@
   <span class="md-ellipsis">
     
   
-    Installation
-  
+  Installation
 
     
   </span>
@@ -454,8 +486,7 @@
   <span class="md-ellipsis">
     
   
-    Quick Start
-  
+  Quick Start
 
     
   </span>
@@ -495,8 +526,7 @@
   <span class="md-ellipsis">
     
   
-    Tutorials
-  
+  Tutorials
 
     
   </span>
@@ -511,8 +541,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Tutorials
-  
+  Tutorials
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
@@ -531,8 +560,7 @@
   <span class="md-ellipsis">
     
   
-    Tutorials
-  
+  Tutorials
 
     
   </span>
@@ -559,8 +587,7 @@
   <span class="md-ellipsis">
     
   
-    Getting Started
-  
+  Getting Started
 
     
   </span>
@@ -580,15 +607,96 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorials/data/" class="md-nav__link">
+      <a href="../tutorials/gw150914_cli/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Data
+  GW150914 with CLI
+
+    
+  </span>
   
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Guides
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+  Guides
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Guides
 
     
   </span>
@@ -608,15 +716,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorials/likelihood/" class="md-nav__link">
+      <a href="../guides/cli/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Likelihood
-  
+  Command Line Interface
 
     
   </span>
@@ -636,15 +743,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorials/prior/" class="md-nav__link">
+      <a href="../guides/data/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Prior
-  
+  Data
 
     
   </span>
@@ -664,15 +770,95 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorials/transforms/" class="md-nav__link">
+      <a href="../guides/likelihood/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Transforms
+  Likelihood
+
+    
+  </span>
   
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/prior/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Prior
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/samplers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Samplers
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/transforms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Transforms
 
     
   </span>
@@ -706,8 +892,7 @@
   <span class="md-ellipsis">
     
   
-    FAQ
-  
+  FAQ
 
     
   </span>
@@ -742,8 +927,7 @@
   <span class="md-ellipsis">
     
   
-    Contributing
-  
+  Contributing
 
     
   </span>
@@ -760,8 +944,7 @@
   <span class="md-ellipsis">
     
   
-    Contributing
-  
+  Contributing
 
     
   </span>
@@ -867,18 +1050,17 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
         
           
-          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
             
   
   
   <span class="md-ellipsis">
     
   
-    API
-  
+  Reference
 
     
   </span>
@@ -888,13 +1070,12 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_7">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
             <span class="md-nav__icon md-icon"></span>
             
   
-    API
-  
+  Reference
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
@@ -917,18 +1098,17 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_1" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_1" >
         
           
-          <label class="md-nav__link" for="__nav_7_1" id="__nav_7_1_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_8_1" id="__nav_8_1_label" tabindex="0">
             
   
   
   <span class="md-ellipsis">
     
   
-    jimgw
-  
+  jimgw
 
     
   </span>
@@ -938,13 +1118,12 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_1_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_7_1">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_1">
             <span class="md-nav__icon md-icon"></span>
             
   
-    jimgw
-  
+  jimgw
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
@@ -967,18 +1146,17 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_1_1" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_1_1" >
         
           
-          <label class="md-nav__link" for="__nav_7_1_1" id="__nav_7_1_1_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_8_1_1" id="__nav_8_1_1_label" tabindex="0">
             
   
   
   <span class="md-ellipsis">
     
   
-    core
-  
+  core
 
     
   </span>
@@ -988,13 +1166,12 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_7_1_1_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_7_1_1">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_8_1_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_1_1">
             <span class="md-nav__icon md-icon"></span>
             
   
-    core
-  
+  core
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
@@ -1013,8 +1190,7 @@
   <span class="md-ellipsis">
     
   
-    base
-  
+  base
 
     
   </span>
@@ -1041,8 +1217,7 @@
   <span class="md-ellipsis">
     
   
-    constants
-  
+  constants
 
     
   </span>
@@ -1069,8 +1244,7 @@
   <span class="md-ellipsis">
     
   
-    jim
-  
+  jim
 
     
   </span>
@@ -1097,8 +1271,7 @@
   <span class="md-ellipsis">
     
   
-    prior
-  
+  prior
 
     
   </span>
@@ -1129,18 +1302,17 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_1_1_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_1_1_5" >
         
           
-          <label class="md-nav__link" for="__nav_7_1_1_5" id="__nav_7_1_1_5_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_8_1_1_5" id="__nav_8_1_1_5_label" tabindex="0">
             
   
   
   <span class="md-ellipsis">
     
   
-    single_event
-  
+  single_event
 
     
   </span>
@@ -1150,13 +1322,12 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_7_1_1_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_7_1_1_5">
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_8_1_1_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_1_1_5">
             <span class="md-nav__icon md-icon"></span>
             
   
-    single_event
-  
+  single_event
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
@@ -1175,8 +1346,7 @@
   <span class="md-ellipsis">
     
   
-    data
-  
+  data
 
     
   </span>
@@ -1203,8 +1373,7 @@
   <span class="md-ellipsis">
     
   
-    detector
-  
+  detector
 
     
   </span>
@@ -1231,8 +1400,34 @@
   <span class="md-ellipsis">
     
   
-    likelihood
+  likelihood
+
+    
+  </span>
   
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/jimgw/core/single_event/marginalization_config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  marginalization_config
 
     
   </span>
@@ -1259,8 +1454,7 @@
   <span class="md-ellipsis">
     
   
-    polarization
-  
+  polarization
 
     
   </span>
@@ -1287,8 +1481,7 @@
   <span class="md-ellipsis">
     
   
-    prior
-  
+  prior
 
     
   </span>
@@ -1315,8 +1508,34 @@
   <span class="md-ellipsis">
     
   
-    time_utils
+  time_utils
+
+    
+  </span>
   
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/jimgw/core/single_event/transform_utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  transform_utils
 
     
   </span>
@@ -1343,8 +1562,7 @@
   <span class="md-ellipsis">
     
   
-    transforms
-  
+  transforms
 
     
   </span>
@@ -1371,8 +1589,7 @@
   <span class="md-ellipsis">
     
   
-    utils
-  
+  utils
 
     
   </span>
@@ -1399,8 +1616,7 @@
   <span class="md-ellipsis">
     
   
-    waveform
-  
+  waveform
 
     
   </span>
@@ -1435,8 +1651,7 @@
   <span class="md-ellipsis">
     
   
-    transforms
-  
+  transforms
 
     
   </span>
@@ -1463,8 +1678,308 @@
   <span class="md-ellipsis">
     
   
-    utils
+  utils
+
+    
+  </span>
   
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_1_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_8_1_2" id="__nav_8_1_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  samplers
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_8_1_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_1_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+  samplers
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/jimgw/samplers/base/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  base
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_1_2_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_8_1_2_2" id="__nav_8_1_2_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  blackjax
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_8_1_2_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_1_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+  blackjax
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/jimgw/samplers/blackjax/ns_aw/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  ns_aw
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/jimgw/samplers/blackjax/nss/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  nss
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/jimgw/samplers/blackjax/smc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  smc
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/jimgw/samplers/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  config
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/jimgw/samplers/flowmc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  flowmc
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/jimgw/samplers/periodic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  periodic
 
     
   </span>
@@ -1614,22 +2129,24 @@
 
 
 <h1 id="contributing">Contributing<a class="headerlink" href="#contributing" title="Permanent link">¤</a></h1>
-<p>Contributions of any kind are welcome and appreciated. See the guidelines below.</p>
+<p>Contributions of any kind are welcome and appreciated.
+See the guidelines below.</p>
 <h2 id="expectations">Expectations<a class="headerlink" href="#expectations" title="Permanent link">¤</a></h2>
 <p>Jim is developed and maintained by the GW JAX Team and community contributors.
 While we try to be responsive, we don’t always get to every issue immediately.
 If it has been more than a week or two, feel free to ping the maintainers on the issue.</p>
 <h2 id="did-you-find-a-bug">Did you find a bug?<a class="headerlink" href="#did-you-find-a-bug" title="Permanent link">¤</a></h2>
-<p><strong>Ensure the bug was not already reported</strong> by searching on GitHub under
-<a href="https://github.com/GW-JAX-Team/jim/issues">Issues</a>. If you’re unable to find an
+<p><strong>Ensure the bug was not already reported</strong> by searching on GitHub under <a href="https://github.com/GW-JAX-Team/jim/issues">Issues</a>.
+If you’re unable to find an
 open issue addressing the problem, <a href="https://github.com/GW-JAX-Team/jim/issues/new">open a new one</a>.
-Be sure to include a <strong>title and clear description</strong>, as much relevant information as possible,
-and the simplest possible <strong>code sample</strong> demonstrating the expected behaviour that is not occurring.</p>
+Be sure to include a <strong>title and clear description</strong>, as much relevant information as possible, and the simplest possible <strong>code sample</strong> demonstrating the expected behaviour that is not occurring.</p>
 <h2 id="did-you-write-a-patch-that-fixes-a-bug">Did you write a patch that fixes a bug?<a class="headerlink" href="#did-you-write-a-patch-that-fixes-a-bug" title="Permanent link">¤</a></h2>
-<p>Open a new GitHub pull request with the patch. Ensure the PR description clearly
-describes the problem and solution. Include the relevant issue number if applicable.</p>
+<p>Open a new GitHub pull request with the patch.
+Ensure the PR description clearly describes the problem and solution.
+Include the relevant issue number if applicable.</p>
 <h2 id="do-you-intend-to-add-a-new-feature-or-change-an-existing-one">Do you intend to add a new feature or change an existing one?<a class="headerlink" href="#do-you-intend-to-add-a-new-feature-or-change-an-existing-one" title="Permanent link">¤</a></h2>
-<p>Open a new GitHub pull request with the feature or change. Please follow these principles:</p>
+<p>Open a new GitHub pull request with the feature or change.
+Please follow these principles:</p>
 <ol>
 <li>New features should be JAX-compatible.</li>
 <li>Lightweight and modular implementation is preferred.</li>
@@ -1637,9 +2154,9 @@ describes the problem and solution. Include the relevant issue number if applica
 </ol>
 <p>If you are unsure whether a feature fits, open an issue first to discuss it with the maintainers.</p>
 <h2 id="do-you-intend-to-add-an-example-or-tutorial">Do you intend to add an example or tutorial?<a class="headerlink" href="#do-you-intend-to-add-an-example-or-tutorial" title="Permanent link">¤</a></h2>
-<p>Open a new GitHub pull request with the example or tutorial. The example should
-be self-contained and keep imports from other packages to a minimum. Leave
-case-specific analysis details out.</p>
+<p>Open a new GitHub pull request with the example or tutorial.
+The example should be self-contained and keep imports from other packages to a minimum.
+Leave case-specific analysis details out.</p>
 
 
 
@@ -1700,7 +2217,7 @@ case-specific analysis details out.</p>
       <script id="__config" type="application/json">{"annotate":null,"base":"..","features":["navigation.instant","navigation.tabs","navigation.top","toc.follow","header.autohide"],"search":"../assets/javascripts/workers/search.e2d2d235.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":{"default":"stable","provider":"mike"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.dbc0afdc.min.js"></script>
+      <script src="../assets/javascripts/bundle.6e5f0216.min.js"></script>
       
         <script src="../javascripts/mathjax.js"></script>
       

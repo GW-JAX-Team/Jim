@@ -18,14 +18,14 @@
         <link rel="prev" href="../prior/">
       
       
-        <link rel="next" href="../transforms/">
+        <link rel="next" href="../transform_utils/">
       
       
         
       
       
       <link rel="icon" href="../../../../../assets/images/favicon.png">
-      <meta name="generator" content="zensical-0.0.37">
+      <meta name="generator" content="zensical-0.0.44">
     
     
       
@@ -36,7 +36,7 @@
       
         
       
-      <link rel="stylesheet" href="../../../../../assets/stylesheets/modern/main.1e981d71.min.css">
+      <link rel="stylesheet" href="../../../../../assets/stylesheets/modern/main.fba56155.min.css">
       
         
           
@@ -60,7 +60,7 @@
       
     
     
-    <script>__md_scope=new URL("../../../../..",location),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,a=__md_scope)=>JSON.parse(t.getItem(a.pathname+"."+e)),__md_set=(e,t,a=localStorage,_=__md_scope)=>{try{a.setItem(_.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    <script>__md_scope=new URL("../../../../..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
     
       
 
@@ -255,12 +255,37 @@
   
   
     
+      
+    
+    
     
       <li class="md-tabs__item">
         <a href="../../../../../tutorials/" class="md-tabs__link">
           
   
   Tutorials
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+      
+    
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../../../guides/" class="md-tabs__link">
+          
+  
+  Guides
 
         </a>
       </li>
@@ -308,6 +333,9 @@
   
   
     
+      
+    
+    
     
       
   
@@ -317,6 +345,9 @@
   
   
     
+      
+    
+    
     
       
   
@@ -325,13 +356,16 @@
     
   
   
+    
+      
+    
     
     
       <li class="md-tabs__item md-tabs__item--active">
         <a href="../../base/" class="md-tabs__link">
           
   
-  API
+  Reference
 
         </a>
       </li>
@@ -404,8 +438,7 @@
   <span class="md-ellipsis">
     
   
-    Home
-  
+  Home
 
     
   </span>
@@ -431,8 +464,7 @@
   <span class="md-ellipsis">
     
   
-    Installation
-  
+  Installation
 
     
   </span>
@@ -458,8 +490,7 @@
   <span class="md-ellipsis">
     
   
-    Quick Start
-  
+  Quick Start
 
     
   </span>
@@ -499,8 +530,7 @@
   <span class="md-ellipsis">
     
   
-    Tutorials
-  
+  Tutorials
 
     
   </span>
@@ -515,8 +545,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Tutorials
-  
+  Tutorials
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
@@ -535,8 +564,7 @@
   <span class="md-ellipsis">
     
   
-    Tutorials
-  
+  Tutorials
 
     
   </span>
@@ -563,8 +591,7 @@
   <span class="md-ellipsis">
     
   
-    Getting Started
-  
+  Getting Started
 
     
   </span>
@@ -584,15 +611,96 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../tutorials/data/" class="md-nav__link">
+      <a href="../../../../../tutorials/gw150914_cli/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Data
+  GW150914 with CLI
+
+    
+  </span>
   
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Guides
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+  Guides
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../../guides/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Guides
 
     
   </span>
@@ -612,15 +720,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../tutorials/likelihood/" class="md-nav__link">
+      <a href="../../../../../guides/cli/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Likelihood
-  
+  Command Line Interface
 
     
   </span>
@@ -640,15 +747,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../tutorials/prior/" class="md-nav__link">
+      <a href="../../../../../guides/data/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Prior
-  
+  Data
 
     
   </span>
@@ -668,15 +774,95 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../tutorials/transforms/" class="md-nav__link">
+      <a href="../../../../../guides/likelihood/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Transforms
+  Likelihood
+
+    
+  </span>
   
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../../guides/prior/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Prior
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../../guides/samplers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Samplers
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../../guides/transforms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Transforms
 
     
   </span>
@@ -710,8 +896,7 @@
   <span class="md-ellipsis">
     
   
-    FAQ
-  
+  FAQ
 
     
   </span>
@@ -737,8 +922,7 @@
   <span class="md-ellipsis">
     
   
-    Contributing
-  
+  Contributing
 
     
   </span>
@@ -773,18 +957,17 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" checked>
         
           
-          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
             
   
   
   <span class="md-ellipsis">
     
   
-    API
-  
+  Reference
 
     
   </span>
@@ -794,13 +977,12 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_7">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_8">
             <span class="md-nav__icon md-icon"></span>
             
   
-    API
-  
+  Reference
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
@@ -825,18 +1007,17 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_1" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_1" checked>
         
           
-          <label class="md-nav__link" for="__nav_7_1" id="__nav_7_1_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_8_1" id="__nav_8_1_label" tabindex="0">
             
   
   
   <span class="md-ellipsis">
     
   
-    jimgw
-  
+  jimgw
 
     
   </span>
@@ -846,13 +1027,12 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_1_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_7_1">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_1_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_8_1">
             <span class="md-nav__icon md-icon"></span>
             
   
-    jimgw
-  
+  jimgw
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
@@ -877,18 +1057,17 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_1_1" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_1_1" checked>
         
           
-          <label class="md-nav__link" for="__nav_7_1_1" id="__nav_7_1_1_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_8_1_1" id="__nav_8_1_1_label" tabindex="0">
             
   
   
   <span class="md-ellipsis">
     
   
-    core
-  
+  core
 
     
   </span>
@@ -898,13 +1077,12 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_7_1_1_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_7_1_1">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_8_1_1_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_8_1_1">
             <span class="md-nav__icon md-icon"></span>
             
   
-    core
-  
+  core
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
@@ -923,8 +1101,7 @@
   <span class="md-ellipsis">
     
   
-    base
-  
+  base
 
     
   </span>
@@ -951,8 +1128,7 @@
   <span class="md-ellipsis">
     
   
-    constants
-  
+  constants
 
     
   </span>
@@ -979,8 +1155,7 @@
   <span class="md-ellipsis">
     
   
-    jim
-  
+  jim
 
     
   </span>
@@ -1007,8 +1182,7 @@
   <span class="md-ellipsis">
     
   
-    prior
-  
+  prior
 
     
   </span>
@@ -1041,18 +1215,17 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_1_1_5" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_1_1_5" checked>
         
           
-          <label class="md-nav__link" for="__nav_7_1_1_5" id="__nav_7_1_1_5_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_8_1_1_5" id="__nav_8_1_1_5_label" tabindex="0">
             
   
   
   <span class="md-ellipsis">
     
   
-    single_event
-  
+  single_event
 
     
   </span>
@@ -1062,13 +1235,12 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_7_1_1_5_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_7_1_1_5">
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_8_1_1_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_8_1_1_5">
             <span class="md-nav__icon md-icon"></span>
             
   
-    single_event
-  
+  single_event
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
@@ -1087,8 +1259,7 @@
   <span class="md-ellipsis">
     
   
-    data
-  
+  data
 
     
   </span>
@@ -1115,8 +1286,7 @@
   <span class="md-ellipsis">
     
   
-    detector
-  
+  detector
 
     
   </span>
@@ -1143,8 +1313,34 @@
   <span class="md-ellipsis">
     
   
-    likelihood
+  likelihood
+
+    
+  </span>
   
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../marginalization_config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  marginalization_config
 
     
   </span>
@@ -1171,8 +1367,7 @@
   <span class="md-ellipsis">
     
   
-    polarization
-  
+  polarization
 
     
   </span>
@@ -1199,8 +1394,7 @@
   <span class="md-ellipsis">
     
   
-    prior
-  
+  prior
 
     
   </span>
@@ -1234,8 +1428,7 @@
   <span class="md-ellipsis">
     
   
-    time_utils
-  
+  time_utils
 
     
   </span>
@@ -1252,8 +1445,7 @@
   <span class="md-ellipsis">
     
   
-    time_utils
-  
+  time_utils
 
     
   </span>
@@ -1285,21 +1477,9 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="time_utils">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#jimgw.core.single_event.time_utils.GPS_EPOCH" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        GPS_EPOCH
-      </span>
-    </span>
-  </a>
-  
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#jimgw.core.single_event.time_utils.EPOCH_J2000_0_JD" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1309,173 +1489,8 @@
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#jimgw.core.single_event.time_utils.LEAP_SECONDS" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        LEAP_SECONDS
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#jimgw.core.single_event.time_utils.SECONDS_IN_DAY" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        SECONDS_IN_DAY
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#jimgw.core.single_event.time_utils.SECONDS_IN_YEAR" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        SECONDS_IN_YEAR
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#jimgw.core.single_event.time_utils.LEAP_YEAR_SECONDS" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        LEAP_YEAR_SECONDS
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#jimgw.core.single_event.time_utils.MONTH_ARRAY" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        MONTH_ARRAY
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#jimgw.core.single_event.time_utils.DAYS_IN_MONTH" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        DAYS_IN_MONTH
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#jimgw.core.single_event.time_utils.UNIX_EPOCH_YEAR" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        UNIX_EPOCH_YEAR
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#jimgw.core.single_event.time_utils.YEAR_ARRAY" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        YEAR_ARRAY
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#jimgw.core.single_event.time_utils.IS_LEAP_YEARS" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        IS_LEAP_YEARS
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#jimgw.core.single_event.time_utils.LEAP_SEC_ARRAY" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        LEAP_SEC_ARRAY
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#jimgw.core.single_event.time_utils.int_div" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        int_div
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#jimgw.core.single_event.time_utils.n_leap_seconds" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        n_leap_seconds
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#jimgw.core.single_event.time_utils.is_leap_year" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        is_leap_year
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#jimgw.core.single_event.time_utils.utc_date_from_timestamp" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        utc_date_from_timestamp
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#jimgw.core.single_event.time_utils.gps_to_utc_date" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        gps_to_utc_date
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#jimgw.core.single_event.time_utils.gps_to_julian_day" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1485,8 +1500,19 @@
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
+  <a href="#jimgw.core.single_event.time_utils.gps_to_utc_date" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        gps_to_utc_date
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#jimgw.core.single_event.time_utils.greenwich_mean_sidereal_time" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1496,8 +1522,8 @@
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#jimgw.core.single_event.time_utils.greenwich_sidereal_time" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1507,9 +1533,48 @@
   </a>
   
 </li>
-        
-      </ul>
-    </nav>
+      
+        <li class="md-nav__item">
+  <a href="#jimgw.core.single_event.time_utils.int_div" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        int_div
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jimgw.core.single_event.time_utils.is_leap_year" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        is_leap_year
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jimgw.core.single_event.time_utils.n_leap_seconds" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        n_leap_seconds
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jimgw.core.single_event.time_utils.utc_date_from_timestamp" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        utc_date_from_timestamp
+      </span>
+    </span>
+  </a>
   
 </li>
       
@@ -1529,6 +1594,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../transform_utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  transform_utils
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../transforms/" class="md-nav__link">
         
   
@@ -1536,8 +1628,7 @@
   <span class="md-ellipsis">
     
   
-    transforms
-  
+  transforms
 
     
   </span>
@@ -1564,8 +1655,7 @@
   <span class="md-ellipsis">
     
   
-    utils
-  
+  utils
 
     
   </span>
@@ -1592,8 +1682,7 @@
   <span class="md-ellipsis">
     
   
-    waveform
-  
+  waveform
 
     
   </span>
@@ -1628,8 +1717,7 @@
   <span class="md-ellipsis">
     
   
-    transforms
-  
+  transforms
 
     
   </span>
@@ -1656,8 +1744,308 @@
   <span class="md-ellipsis">
     
   
-    utils
+  utils
+
+    
+  </span>
   
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_1_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_8_1_2" id="__nav_8_1_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  samplers
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_8_1_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_1_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+  samplers
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../samplers/base/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  base
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_1_2_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_8_1_2_2" id="__nav_8_1_2_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  blackjax
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_8_1_2_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_1_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+  blackjax
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../samplers/blackjax/ns_aw/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  ns_aw
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../samplers/blackjax/nss/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  nss
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../samplers/blackjax/smc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  smc
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../samplers/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  config
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../samplers/flowmc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  flowmc
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../samplers/periodic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  periodic
 
     
   </span>
@@ -1738,21 +2126,9 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="time_utils">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#jimgw.core.single_event.time_utils.GPS_EPOCH" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        GPS_EPOCH
-      </span>
-    </span>
-  </a>
-  
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#jimgw.core.single_event.time_utils.EPOCH_J2000_0_JD" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1762,173 +2138,8 @@
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#jimgw.core.single_event.time_utils.LEAP_SECONDS" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        LEAP_SECONDS
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#jimgw.core.single_event.time_utils.SECONDS_IN_DAY" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        SECONDS_IN_DAY
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#jimgw.core.single_event.time_utils.SECONDS_IN_YEAR" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        SECONDS_IN_YEAR
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#jimgw.core.single_event.time_utils.LEAP_YEAR_SECONDS" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        LEAP_YEAR_SECONDS
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#jimgw.core.single_event.time_utils.MONTH_ARRAY" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        MONTH_ARRAY
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#jimgw.core.single_event.time_utils.DAYS_IN_MONTH" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        DAYS_IN_MONTH
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#jimgw.core.single_event.time_utils.UNIX_EPOCH_YEAR" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        UNIX_EPOCH_YEAR
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#jimgw.core.single_event.time_utils.YEAR_ARRAY" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        YEAR_ARRAY
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#jimgw.core.single_event.time_utils.IS_LEAP_YEARS" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        IS_LEAP_YEARS
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#jimgw.core.single_event.time_utils.LEAP_SEC_ARRAY" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        LEAP_SEC_ARRAY
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#jimgw.core.single_event.time_utils.int_div" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        int_div
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#jimgw.core.single_event.time_utils.n_leap_seconds" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        n_leap_seconds
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#jimgw.core.single_event.time_utils.is_leap_year" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        is_leap_year
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#jimgw.core.single_event.time_utils.utc_date_from_timestamp" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        utc_date_from_timestamp
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#jimgw.core.single_event.time_utils.gps_to_utc_date" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        gps_to_utc_date
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#jimgw.core.single_event.time_utils.gps_to_julian_day" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1938,8 +2149,19 @@
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
+  <a href="#jimgw.core.single_event.time_utils.gps_to_utc_date" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        gps_to_utc_date
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#jimgw.core.single_event.time_utils.greenwich_mean_sidereal_time" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1949,8 +2171,8 @@
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#jimgw.core.single_event.time_utils.greenwich_sidereal_time" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1960,9 +2182,48 @@
   </a>
   
 </li>
-        
-      </ul>
-    </nav>
+      
+        <li class="md-nav__item">
+  <a href="#jimgw.core.single_event.time_utils.int_div" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        int_div
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jimgw.core.single_event.time_utils.is_leap_year" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        is_leap_year
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jimgw.core.single_event.time_utils.n_leap_seconds" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        n_leap_seconds
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jimgw.core.single_event.time_utils.utc_date_from_timestamp" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        utc_date_from_timestamp
+      </span>
+    </span>
+  </a>
   
 </li>
       
@@ -1990,16 +2251,11 @@
 
 
 
-<h3 id="jimgw.core.single_event.time_utils" class="doc doc-heading">
-            <code>jimgw.core.single_event.time_utils</code>
-
-
-<a href="#jimgw.core.single_event.time_utils" class="headerlink" title="Permanent link">¤</a></h3>
-
+<a id="jimgw.core.single_event.time_utils"></a>
     <div class="doc doc-contents first">
 
         <p>This module computes a JAX-compatible conversion from GPS to UTC time and Julian day.
-Following the implementation in LALSuite and Bilby.</p>
+Following the implementation in LALSuite and bilby.</p>
 
 
 <details class="the-conversion-from-gps-time-to-utc-date-is-typically-done-using-the-following-packages" open>
@@ -2019,6 +2275,116 @@ See: https://github.com/google/jax-datetime/</p>
 
 
 
+<p><span class="doc-section-title">Functions:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;gps_to_julian_day&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;gps_time&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Float&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.core.single_event.time_utils.gps_to_julian_day">gps_to_julian_day</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Convert from UTC to Julian day, this is a necessary intermediate step in</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;gps_to_utc_date&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;gps_time&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;tuple&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.core.single_event.time_utils.gps_to_utc_date">gps_to_utc_date</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Args:</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;greenwich_mean_sidereal_time&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;gps_time&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Float&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.core.single_event.time_utils.greenwich_mean_sidereal_time">greenwich_mean_sidereal_time</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Compute the Greenwich Mean Sidereal Time (GMST) from the GPS time.</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;greenwich_sidereal_time&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;gps_time&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;equation_of_equinoxes&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Float&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.core.single_event.time_utils.greenwich_sidereal_time">greenwich_sidereal_time</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Compute the Greenwich mean sidereal time from the GPS time and equation of</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;int_div&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Int&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.core.single_event.time_utils.int_div">int_div</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>This is to emulate the C-style integer division in Python.</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;is_leap_year&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;year&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Int&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.core.single_event.time_utils.is_leap_year">is_leap_year</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Check whether a year is a leap year.</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;n_leap_seconds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;date&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Int&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.core.single_event.time_utils.n_leap_seconds">n_leap_seconds</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Find the number of leap seconds required for the specified date.</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;utc_date_from_timestamp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;timestamp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;tuple&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.core.single_event.time_utils.utc_date_from_timestamp">utc_date_from_timestamp</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>This function converts a UTC timestamp to a UTC date (year, month, day, seconds).</p>
+                </div>
+              </td>
+            </tr>
+      </tbody>
+    </table>
+
+
+
+
+<p><span class="doc-section-title">Attributes:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;EPOCH_J2000_0_JD&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;float&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;2451545.0&lt;/span&gt;&lt;/code&gt;
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="./#jimgw.core.single_event.time_utils.EPOCH_J2000_0_JD">EPOCH_J2000_0_JD</a></code></td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <ul>
+<li>Leap seconds list</li>
+</ul>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
 
 <div class="doc doc-children">
 
@@ -2032,34 +2398,14 @@ See: https://github.com/google/jax-datetime/</p>
 
 
 
-<h4 id="jimgw.core.single_event.time_utils.GPS_EPOCH" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">GPS_EPOCH</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">315964800</span></code>
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
-  </span>
-
-<a href="#jimgw.core.single_event.time_utils.GPS_EPOCH" class="headerlink" title="Permanent link">¤</a></h4>
-
-
-    <div class="doc doc-contents ">
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-attribute">
-
-
-
-<h4 id="jimgw.core.single_event.time_utils.EPOCH_J2000_0_JD" class="doc doc-heading">
+<h3 id="jimgw.core.single_event.time_utils.EPOCH_J2000_0_JD" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">EPOCH_J2000_0_JD</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2451545.0</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
   </span>
 
-<a href="#jimgw.core.single_event.time_utils.EPOCH_J2000_0_JD" class="headerlink" title="Permanent link">¤</a></h4>
+<a href="#jimgw.core.single_event.time_utils.EPOCH_J2000_0_JD" class="headerlink" title="Permanent link">¤</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -2081,442 +2427,16 @@ See: https://github.com/google/jax-datetime/</p>
 
 </div>
 
-<div class="doc doc-object doc-attribute">
-
-
-
-<h4 id="jimgw.core.single_event.time_utils.LEAP_SECONDS" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">LEAP_SECONDS</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">46828800</span><span class="p">,</span> <span class="mi">78364801</span><span class="p">,</span> <span class="mi">109900802</span><span class="p">,</span> <span class="mi">173059203</span><span class="p">,</span> <span class="mi">252028804</span><span class="p">,</span> <span class="mi">315187205</span><span class="p">,</span> <span class="mi">346723206</span><span class="p">,</span> <span class="mi">393984007</span><span class="p">,</span> <span class="mi">425520008</span><span class="p">,</span> <span class="mi">457056009</span><span class="p">,</span> <span class="mi">504489610</span><span class="p">,</span> <span class="mi">551750411</span><span class="p">,</span> <span class="mi">599184012</span><span class="p">,</span> <span class="mi">820108813</span><span class="p">,</span> <span class="mi">914803214</span><span class="p">,</span> <span class="mi">1025136015</span><span class="p">,</span> <span class="mi">1119744016</span><span class="p">,</span> <span class="mi">1167264017</span><span class="p">])</span></code>
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
-  </span>
-
-<a href="#jimgw.core.single_event.time_utils.LEAP_SECONDS" class="headerlink" title="Permanent link">¤</a></h4>
-
-
-    <div class="doc doc-contents ">
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-attribute">
-
-
-
-<h4 id="jimgw.core.single_event.time_utils.SECONDS_IN_DAY" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">SECONDS_IN_DAY</span> <span class="o">=</span> <span class="mi">24</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">60</span></code>
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
-  </span>
-
-<a href="#jimgw.core.single_event.time_utils.SECONDS_IN_DAY" class="headerlink" title="Permanent link">¤</a></h4>
-
-
-    <div class="doc doc-contents ">
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-attribute">
-
-
-
-<h4 id="jimgw.core.single_event.time_utils.SECONDS_IN_YEAR" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">SECONDS_IN_YEAR</span> <span class="o">=</span> <span class="mi">365</span> <span class="o">*</span> <span class="n">SECONDS_IN_DAY</span></code>
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
-  </span>
-
-<a href="#jimgw.core.single_event.time_utils.SECONDS_IN_YEAR" class="headerlink" title="Permanent link">¤</a></h4>
-
-
-    <div class="doc doc-contents ">
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-attribute">
-
-
-
-<h4 id="jimgw.core.single_event.time_utils.LEAP_YEAR_SECONDS" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">LEAP_YEAR_SECONDS</span> <span class="o">=</span> <span class="mi">366</span> <span class="o">*</span> <span class="n">SECONDS_IN_DAY</span></code>
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
-  </span>
-
-<a href="#jimgw.core.single_event.time_utils.LEAP_YEAR_SECONDS" class="headerlink" title="Permanent link">¤</a></h4>
-
-
-    <div class="doc doc-contents ">
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-attribute">
-
-
-
-<h4 id="jimgw.core.single_event.time_utils.MONTH_ARRAY" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">MONTH_ARRAY</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">13</span><span class="p">)</span></code>
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
-  </span>
-
-<a href="#jimgw.core.single_event.time_utils.MONTH_ARRAY" class="headerlink" title="Permanent link">¤</a></h4>
-
-
-    <div class="doc doc-contents ">
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-attribute">
-
-
-
-<h4 id="jimgw.core.single_event.time_utils.DAYS_IN_MONTH" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">DAYS_IN_MONTH</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">31</span><span class="p">,</span> <span class="mi">28</span><span class="p">,</span> <span class="mi">31</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">31</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">31</span><span class="p">,</span> <span class="mi">31</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">31</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">31</span><span class="p">])</span></code>
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
-  </span>
-
-<a href="#jimgw.core.single_event.time_utils.DAYS_IN_MONTH" class="headerlink" title="Permanent link">¤</a></h4>
-
-
-    <div class="doc doc-contents ">
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-attribute">
-
-
-
-<h4 id="jimgw.core.single_event.time_utils.UNIX_EPOCH_YEAR" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">UNIX_EPOCH_YEAR</span> <span class="o">=</span> <span class="mi">1970</span></code>
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
-  </span>
-
-<a href="#jimgw.core.single_event.time_utils.UNIX_EPOCH_YEAR" class="headerlink" title="Permanent link">¤</a></h4>
-
-
-    <div class="doc doc-contents ">
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-attribute">
-
-
-
-<h4 id="jimgw.core.single_event.time_utils.YEAR_ARRAY" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">YEAR_ARRAY</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">UNIX_EPOCH_YEAR</span><span class="p">,</span> <span class="mi">2510</span><span class="p">)</span></code>
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
-  </span>
-
-<a href="#jimgw.core.single_event.time_utils.YEAR_ARRAY" class="headerlink" title="Permanent link">¤</a></h4>
-
-
-    <div class="doc doc-contents ">
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-attribute">
-
-
-
-<h4 id="jimgw.core.single_event.time_utils.IS_LEAP_YEARS" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">IS_LEAP_YEARS</span> <span class="o">=</span> <span class="n">is_leap_year</span><span class="p">(</span><span class="n">YEAR_ARRAY</span><span class="p">)</span></code>
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
-  </span>
-
-<a href="#jimgw.core.single_event.time_utils.IS_LEAP_YEARS" class="headerlink" title="Permanent link">¤</a></h4>
-
-
-    <div class="doc doc-contents ">
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-attribute">
-
-
-
-<h4 id="jimgw.core.single_event.time_utils.LEAP_SEC_ARRAY" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">LEAP_SEC_ARRAY</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">IS_LEAP_YEARS</span><span class="p">,</span> <span class="n">LEAP_YEAR_SECONDS</span><span class="p">,</span> <span class="n">SECONDS_IN_YEAR</span><span class="p">)</span></code>
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
-  </span>
-
-<a href="#jimgw.core.single_event.time_utils.LEAP_SEC_ARRAY" class="headerlink" title="Permanent link">¤</a></h4>
-
-
-    <div class="doc doc-contents ">
-
-    </div>
-
-</div>
-
 
 
 
 <div class="doc doc-object doc-function">
 
 
-<h4 id="jimgw.core.single_event.time_utils.int_div" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">int_div</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="n">Int</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Int</span></code>
-
-<a href="#jimgw.core.single_event.time_utils.int_div" class="headerlink" title="Permanent link">¤</a></h4>
-
-
-    <div class="doc doc-contents ">
-
-        <p>This is to emulate the C-style integer division in Python.
-See: https://stackoverflow.com/a/61386872</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h4 id="jimgw.core.single_event.time_utils.n_leap_seconds" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">n_leap_seconds</span><span class="p">(</span><span class="n">date</span><span class="p">:</span> <span class="n">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Int</span></code>
-
-<a href="#jimgw.core.single_event.time_utils.n_leap_seconds" class="headerlink" title="Permanent link">¤</a></h4>
-
-
-    <div class="doc doc-contents ">
-
-        <p>Find the number of leap seconds required for the specified date.</p>
-<p>Search in reverse order as in practice, almost all requested times will
-be after the most recent leap.</p>
-<p>The Bilby Cython implementation:
-NUM_LEAPS: int = 18
-n_leaps: int = NUM_LEAPS</p>
-<p>if date &gt; LEAP_SECONDS[NUM_LEAPS - 1]:
-    return NUM_LEAPS
-while (n_leaps &gt; 0) and (date &lt; LEAP_SECONDS[n_leaps - 1]):
-    n_leaps -= 1
-return n_leaps</p>
-
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>date</code>
-            </td>
-            <td>
-                  <code><span title="int">int</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The date in seconds since the GPS epoch.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-        <p>Returns:
-    int: The number of leap seconds.</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h4 id="jimgw.core.single_event.time_utils.is_leap_year" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">is_leap_year</span><span class="p">(</span><span class="n">year</span><span class="p">:</span> <span class="n">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Int</span></code>
-
-<a href="#jimgw.core.single_event.time_utils.is_leap_year" class="headerlink" title="Permanent link">¤</a></h4>
-
-
-    <div class="doc doc-contents ">
-
-        <p>Check whether a year is a leap year.</p>
-
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>year</code>
-            </td>
-            <td>
-                  <code><span title="jaxtyping.Int">Int</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The year to check.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-<th>Name</th>          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-<td><code>Int</code></td>            <td>
-                  <code><span title="jaxtyping.Int">Int</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>1 if the year is a leap year, 0 otherwise (JAX boolean as integer).</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h4 id="jimgw.core.single_event.time_utils.utc_date_from_timestamp" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">utc_date_from_timestamp</span><span class="p">(</span><span class="n">timestamp</span><span class="p">:</span> <span class="n">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Int</span><span class="p">,</span> <span class="n">Int</span><span class="p">,</span> <span class="n">Int</span><span class="p">,</span> <span class="n">Int</span><span class="p">]</span></code>
-
-<a href="#jimgw.core.single_event.time_utils.utc_date_from_timestamp" class="headerlink" title="Permanent link">¤</a></h4>
-
-
-    <div class="doc doc-contents ">
-
-        <p>This function converts a UTC timestamp to a UTC date (year, month, day, seconds).</p>
-<p>This sole intention of this function is to be JAX-compatible and be used within Jim .
-While it has been agressively tested against the C-implementation in LAL,
-and the datetime module, it is advised to use those other modules for
-other purposes.</p>
-<p>Note that the current implementation has an upper limit of year up to 2500,
-which is sufficient for most practical purposes.</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h4 id="jimgw.core.single_event.time_utils.gps_to_utc_date" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">gps_to_utc_date</span><span class="p">(</span><span class="n">gps_time</span><span class="p">:</span> <span class="n">Float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Int</span><span class="p">,</span> <span class="n">Int</span><span class="p">,</span> <span class="n">Int</span><span class="p">,</span> <span class="n">Int</span><span class="p">]</span></code>
-
-<a href="#jimgw.core.single_event.time_utils.gps_to_utc_date" class="headerlink" title="Permanent link">¤</a></h4>
-
-
-    <div class="doc doc-contents ">
-
-
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>gps_time</code>
-            </td>
-            <td>
-                  <code><span title="float">float</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The GPS time to convert.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-        <p>Returns:
-    tuple (int): A tuple containing the year, month, day, and seconds.</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h4 id="jimgw.core.single_event.time_utils.gps_to_julian_day" class="doc doc-heading">
+<h3 id="jimgw.core.single_event.time_utils.gps_to_julian_day" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">gps_to_julian_day</span><span class="p">(</span><span class="n">gps_time</span><span class="p">:</span> <span class="n">Float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Float</span></code>
 
-<a href="#jimgw.core.single_event.time_utils.gps_to_julian_day" class="headerlink" title="Permanent link">¤</a></h4>
+<a href="#jimgw.core.single_event.time_utils.gps_to_julian_day" class="headerlink" title="Permanent link">¤</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -2589,10 +2509,60 @@ implementation. Without which the error is of order 0.1.</p>
 <div class="doc doc-object doc-function">
 
 
-<h4 id="jimgw.core.single_event.time_utils.greenwich_mean_sidereal_time" class="doc doc-heading">
+<h3 id="jimgw.core.single_event.time_utils.gps_to_utc_date" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">gps_to_utc_date</span><span class="p">(</span><span class="n">gps_time</span><span class="p">:</span> <span class="n">Float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Int</span><span class="p">,</span> <span class="n">Int</span><span class="p">,</span> <span class="n">Int</span><span class="p">,</span> <span class="n">Int</span><span class="p">]</span></code>
+
+<a href="#jimgw.core.single_event.time_utils.gps_to_utc_date" class="headerlink" title="Permanent link">¤</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>gps_time</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The GPS time to convert.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+        <p>Returns:
+    tuple (int): A tuple containing the year, month, day, and seconds.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="jimgw.core.single_event.time_utils.greenwich_mean_sidereal_time" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">greenwich_mean_sidereal_time</span><span class="p">(</span><span class="n">gps_time</span><span class="p">:</span> <span class="n">Float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Float</span></code>
 
-<a href="#jimgw.core.single_event.time_utils.greenwich_mean_sidereal_time" class="headerlink" title="Permanent link">¤</a></h4>
+<a href="#jimgw.core.single_event.time_utils.greenwich_mean_sidereal_time" class="headerlink" title="Permanent link">¤</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -2661,10 +2631,10 @@ implementation. Without which the error is of order 0.1.</p>
 <div class="doc doc-object doc-function">
 
 
-<h4 id="jimgw.core.single_event.time_utils.greenwich_sidereal_time" class="doc doc-heading">
+<h3 id="jimgw.core.single_event.time_utils.greenwich_sidereal_time" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">greenwich_sidereal_time</span><span class="p">(</span><span class="n">gps_time</span><span class="p">:</span> <span class="n">Float</span><span class="p">,</span> <span class="n">equation_of_equinoxes</span><span class="p">:</span> <span class="n">Float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Float</span></code>
 
-<a href="#jimgw.core.single_event.time_utils.greenwich_sidereal_time" class="headerlink" title="Permanent link">¤</a></h4>
+<a href="#jimgw.core.single_event.time_utils.greenwich_sidereal_time" class="headerlink" title="Permanent link">¤</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -2721,6 +2691,182 @@ equinoxes.</p>
     </table>
         <p>Returns:
     float: The Greenwich sidereal time in radians.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="jimgw.core.single_event.time_utils.int_div" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">int_div</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="n">Int</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Int</span></code>
+
+<a href="#jimgw.core.single_event.time_utils.int_div" class="headerlink" title="Permanent link">¤</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>This is to emulate the C-style integer division in Python.
+See: https://stackoverflow.com/a/61386872</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="jimgw.core.single_event.time_utils.is_leap_year" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">is_leap_year</span><span class="p">(</span><span class="n">year</span><span class="p">:</span> <span class="n">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Int</span></code>
+
+<a href="#jimgw.core.single_event.time_utils.is_leap_year" class="headerlink" title="Permanent link">¤</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Check whether a year is a leap year.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>year</code>
+            </td>
+            <td>
+                  <code><span title="jaxtyping.Int">Int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The year to check.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+<th>Name</th>          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+<td><code>Int</code></td>            <td>
+                  <code><span title="jaxtyping.Int">Int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>1 if the year is a leap year, 0 otherwise (JAX boolean as integer).</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="jimgw.core.single_event.time_utils.n_leap_seconds" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">n_leap_seconds</span><span class="p">(</span><span class="n">date</span><span class="p">:</span> <span class="n">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Int</span></code>
+
+<a href="#jimgw.core.single_event.time_utils.n_leap_seconds" class="headerlink" title="Permanent link">¤</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Find the number of leap seconds required for the specified date.</p>
+<p>Search in reverse order as in practice, almost all requested times will
+be after the most recent leap.</p>
+<p>The bilby Cython implementation:
+NUM_LEAPS: int = 18
+n_leaps: int = NUM_LEAPS</p>
+<p>if date &gt; LEAP_SECONDS[NUM_LEAPS - 1]:
+    return NUM_LEAPS
+while (n_leaps &gt; 0) and (date &lt; LEAP_SECONDS[n_leaps - 1]):
+    n_leaps -= 1
+return n_leaps</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>date</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The date in seconds since the GPS epoch.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+        <p>Returns:
+    int: The number of leap seconds.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="jimgw.core.single_event.time_utils.utc_date_from_timestamp" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">utc_date_from_timestamp</span><span class="p">(</span><span class="n">timestamp</span><span class="p">:</span> <span class="n">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Int</span><span class="p">,</span> <span class="n">Int</span><span class="p">,</span> <span class="n">Int</span><span class="p">,</span> <span class="n">Int</span><span class="p">]</span></code>
+
+<a href="#jimgw.core.single_event.time_utils.utc_date_from_timestamp" class="headerlink" title="Permanent link">¤</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>This function converts a UTC timestamp to a UTC date (year, month, day, seconds).</p>
+<p>This sole intention of this function is to be JAX-compatible and be used within Jim .
+While it has been agressively tested against the C-implementation in LAL,
+and the datetime module, it is advised to use those other modules for
+other purposes.</p>
+<p>Note that the current implementation has an upper limit of year up to 2500,
+which is sufficient for most practical purposes.</p>
 
 
     </div>
@@ -2794,7 +2940,7 @@ equinoxes.</p>
       <script id="__config" type="application/json">{"annotate":null,"base":"../../../../..","features":["navigation.instant","navigation.tabs","navigation.top","toc.follow","header.autohide"],"search":"../../../../../assets/javascripts/workers/search.e2d2d235.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":{"default":"stable","provider":"mike"}}</script>
     
     
-      <script src="../../../../../assets/javascripts/bundle.dbc0afdc.min.js"></script>
+      <script src="../../../../../assets/javascripts/bundle.6e5f0216.min.js"></script>
       
         <script src="../../../../../javascripts/mathjax.js"></script>
       

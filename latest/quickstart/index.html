@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="zensical-0.0.37">
+      <meta name="generator" content="zensical-0.0.44">
     
     
       
@@ -36,7 +36,7 @@
       
         
       
-      <link rel="stylesheet" href="../assets/stylesheets/modern/main.1e981d71.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/modern/main.fba56155.min.css">
       
         
           
@@ -60,7 +60,7 @@
       
     
     
-    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,a=__md_scope)=>JSON.parse(t.getItem(a.pathname+"."+e)),__md_set=(e,t,a=localStorage,_=__md_scope)=>{try{a.setItem(_.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    <script>__md_scope=new URL("..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
     
       
 
@@ -257,12 +257,37 @@
   
   
     
+      
+    
+    
     
       <li class="md-tabs__item">
         <a href="../tutorials/" class="md-tabs__link">
           
   
   Tutorials
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+      
+    
+    
+    
+      <li class="md-tabs__item">
+        <a href="../guides/" class="md-tabs__link">
+          
+  
+  Guides
 
         </a>
       </li>
@@ -308,6 +333,9 @@
   
   
     
+      
+    
+    
     
       
   
@@ -315,19 +343,25 @@
   
   
     
+      
+    
+    
     
       
   
   
   
   
+    
+      
+    
     
     
       <li class="md-tabs__item">
         <a href="../api/jimgw/core/base/" class="md-tabs__link">
           
   
-  API
+  Reference
 
         </a>
       </li>
@@ -400,8 +434,7 @@
   <span class="md-ellipsis">
     
   
-    Home
-  
+  Home
 
     
   </span>
@@ -427,8 +460,7 @@
   <span class="md-ellipsis">
     
   
-    Installation
-  
+  Installation
 
     
   </span>
@@ -463,8 +495,7 @@
   <span class="md-ellipsis">
     
   
-    Quick Start
-  
+  Quick Start
 
     
   </span>
@@ -481,8 +512,7 @@
   <span class="md-ellipsis">
     
   
-    Quick Start
-  
+  Quick Start
 
     
   </span>
@@ -508,85 +538,68 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
+  <a href="#bootstrap-a-config" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Overview
-      </span>
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Overview">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#data" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Data
+        Bootstrap a config
       </span>
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#waveform-model" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#config-at-a-glance" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Waveform Model
+        Config at a glance
       </span>
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#likelihood" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#run" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Likelihood
+        Run
       </span>
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#prior" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#outputs" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Prior
+        Outputs
       </span>
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#transforms" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#whats-next" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Transforms
+        What's next
       </span>
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#putting-it-together" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#using-the-python-api-directly" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Putting It Together
+        Using the Python API directly
       </span>
     </span>
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -626,8 +639,7 @@
   <span class="md-ellipsis">
     
   
-    Tutorials
-  
+  Tutorials
 
     
   </span>
@@ -642,8 +654,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Tutorials
-  
+  Tutorials
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
@@ -662,8 +673,7 @@
   <span class="md-ellipsis">
     
   
-    Tutorials
-  
+  Tutorials
 
     
   </span>
@@ -690,8 +700,7 @@
   <span class="md-ellipsis">
     
   
-    Getting Started
-  
+  Getting Started
 
     
   </span>
@@ -711,15 +720,96 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorials/data/" class="md-nav__link">
+      <a href="../tutorials/gw150914_cli/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Data
+  GW150914 with CLI
+
+    
+  </span>
   
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Guides
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+  Guides
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Guides
 
     
   </span>
@@ -739,15 +829,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorials/likelihood/" class="md-nav__link">
+      <a href="../guides/cli/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Likelihood
-  
+  Command Line Interface
 
     
   </span>
@@ -767,15 +856,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorials/prior/" class="md-nav__link">
+      <a href="../guides/data/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Prior
-  
+  Data
 
     
   </span>
@@ -795,15 +883,95 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorials/transforms/" class="md-nav__link">
+      <a href="../guides/likelihood/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Transforms
+  Likelihood
+
+    
+  </span>
   
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/prior/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Prior
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/samplers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Samplers
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/transforms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Transforms
 
     
   </span>
@@ -837,8 +1005,7 @@
   <span class="md-ellipsis">
     
   
-    FAQ
-  
+  FAQ
 
     
   </span>
@@ -864,8 +1031,7 @@
   <span class="md-ellipsis">
     
   
-    Contributing
-  
+  Contributing
 
     
   </span>
@@ -895,18 +1061,17 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
         
           
-          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
             
   
   
   <span class="md-ellipsis">
     
   
-    API
-  
+  Reference
 
     
   </span>
@@ -916,13 +1081,12 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_7">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
             <span class="md-nav__icon md-icon"></span>
             
   
-    API
-  
+  Reference
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
@@ -945,18 +1109,17 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_1" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_1" >
         
           
-          <label class="md-nav__link" for="__nav_7_1" id="__nav_7_1_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_8_1" id="__nav_8_1_label" tabindex="0">
             
   
   
   <span class="md-ellipsis">
     
   
-    jimgw
-  
+  jimgw
 
     
   </span>
@@ -966,13 +1129,12 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_1_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_7_1">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_1">
             <span class="md-nav__icon md-icon"></span>
             
   
-    jimgw
-  
+  jimgw
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
@@ -995,18 +1157,17 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_1_1" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_1_1" >
         
           
-          <label class="md-nav__link" for="__nav_7_1_1" id="__nav_7_1_1_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_8_1_1" id="__nav_8_1_1_label" tabindex="0">
             
   
   
   <span class="md-ellipsis">
     
   
-    core
-  
+  core
 
     
   </span>
@@ -1016,13 +1177,12 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_7_1_1_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_7_1_1">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_8_1_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_1_1">
             <span class="md-nav__icon md-icon"></span>
             
   
-    core
-  
+  core
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
@@ -1041,8 +1201,7 @@
   <span class="md-ellipsis">
     
   
-    base
-  
+  base
 
     
   </span>
@@ -1069,8 +1228,7 @@
   <span class="md-ellipsis">
     
   
-    constants
-  
+  constants
 
     
   </span>
@@ -1097,8 +1255,7 @@
   <span class="md-ellipsis">
     
   
-    jim
-  
+  jim
 
     
   </span>
@@ -1125,8 +1282,7 @@
   <span class="md-ellipsis">
     
   
-    prior
-  
+  prior
 
     
   </span>
@@ -1157,18 +1313,17 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_1_1_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_1_1_5" >
         
           
-          <label class="md-nav__link" for="__nav_7_1_1_5" id="__nav_7_1_1_5_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_8_1_1_5" id="__nav_8_1_1_5_label" tabindex="0">
             
   
   
   <span class="md-ellipsis">
     
   
-    single_event
-  
+  single_event
 
     
   </span>
@@ -1178,13 +1333,12 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_7_1_1_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_7_1_1_5">
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_8_1_1_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_1_1_5">
             <span class="md-nav__icon md-icon"></span>
             
   
-    single_event
-  
+  single_event
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
@@ -1203,8 +1357,7 @@
   <span class="md-ellipsis">
     
   
-    data
-  
+  data
 
     
   </span>
@@ -1231,8 +1384,7 @@
   <span class="md-ellipsis">
     
   
-    detector
-  
+  detector
 
     
   </span>
@@ -1259,8 +1411,34 @@
   <span class="md-ellipsis">
     
   
-    likelihood
+  likelihood
+
+    
+  </span>
   
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/jimgw/core/single_event/marginalization_config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  marginalization_config
 
     
   </span>
@@ -1287,8 +1465,7 @@
   <span class="md-ellipsis">
     
   
-    polarization
-  
+  polarization
 
     
   </span>
@@ -1315,8 +1492,7 @@
   <span class="md-ellipsis">
     
   
-    prior
-  
+  prior
 
     
   </span>
@@ -1343,8 +1519,34 @@
   <span class="md-ellipsis">
     
   
-    time_utils
+  time_utils
+
+    
+  </span>
   
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/jimgw/core/single_event/transform_utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  transform_utils
 
     
   </span>
@@ -1371,8 +1573,7 @@
   <span class="md-ellipsis">
     
   
-    transforms
-  
+  transforms
 
     
   </span>
@@ -1399,8 +1600,7 @@
   <span class="md-ellipsis">
     
   
-    utils
-  
+  utils
 
     
   </span>
@@ -1427,8 +1627,7 @@
   <span class="md-ellipsis">
     
   
-    waveform
-  
+  waveform
 
     
   </span>
@@ -1463,8 +1662,7 @@
   <span class="md-ellipsis">
     
   
-    transforms
-  
+  transforms
 
     
   </span>
@@ -1491,8 +1689,308 @@
   <span class="md-ellipsis">
     
   
-    utils
+  utils
+
+    
+  </span>
   
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_1_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_8_1_2" id="__nav_8_1_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  samplers
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_8_1_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_1_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+  samplers
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/jimgw/samplers/base/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  base
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_1_2_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_8_1_2_2" id="__nav_8_1_2_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  blackjax
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_8_1_2_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_1_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+  blackjax
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/jimgw/samplers/blackjax/ns_aw/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  ns_aw
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/jimgw/samplers/blackjax/nss/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  nss
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/jimgw/samplers/blackjax/smc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  smc
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/jimgw/samplers/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  config
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/jimgw/samplers/flowmc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  flowmc
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/jimgw/samplers/periodic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  periodic
 
     
   </span>
@@ -1569,85 +2067,68 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
+  <a href="#bootstrap-a-config" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Overview
-      </span>
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Overview">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#data" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Data
+        Bootstrap a config
       </span>
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#waveform-model" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#config-at-a-glance" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Waveform Model
+        Config at a glance
       </span>
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#likelihood" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#run" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Likelihood
+        Run
       </span>
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#prior" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#outputs" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Prior
+        Outputs
       </span>
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#transforms" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#whats-next" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Transforms
+        What's next
       </span>
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#putting-it-together" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#using-the-python-api-directly" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Putting It Together
+        Using the Python API directly
       </span>
     </span>
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1670,95 +2151,179 @@
 
 
 <h1 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">¤</a></h1>
-<p>This page gives you a bird's-eye view of Jim's main components and how they fit together. For deeper dives into each piece, see the <a href="../tutorials/">Tutorials</a>.</p>
-<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">¤</a></h2>
-<p>A Jim analysis is assembled from the following building blocks:</p>
-<div class="highlight"><pre><span></span><code>Waveform Model ── Likelihood ───────────────┬──────────── 1 ──┐
-                      │                     │                 │
-Data ─────────────────┘          Likelihood Transforms ── 2 ──│
-                                            │                 ├─→ Jim 
-                    Prior ──────────────────┴──────────── 3 ──│
-                      │                                       │
-                      └─────────── Sample Transforms ──── 4 ──┘
+<p>The fastest way to run a gravitational-wave parameter-estimation analysis with Jim is the <code>jim-run</code> command-line tool. It takes a single TOML config file and handles the full pipeline — data loading, prior construction, transform inference, sampling, and output — with no Python scripting required.</p>
+<h2 id="bootstrap-a-config">Bootstrap a config<a class="headerlink" href="#bootstrap-a-config" title="Permanent link">¤</a></h2>
+<p>Generate a GW150914-style template to start from:</p>
+<div class="highlight"><pre><span></span><code>jim-run<span class="w"> </span>--init<span class="w"> </span>gw150914.toml
 </code></pre></div>
-<h3 id="data">Data<a class="headerlink" href="#data" title="Permanent link">¤</a></h3>
-<p>Detector data lives in <code>Detector</code> objects. You can fetch public LIGO/Virgo strain from GWOSC, load local files, or inject a simulated signal:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.single_event.detector</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_H1</span><span class="p">,</span> <span class="n">get_L1</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.single_event.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">Data</span>
+<p>This writes a ready-to-run config (shown below) and exits. Edit it to match your analysis before running.</p>
+<h2 id="config-at-a-glance">Config at a glance<a class="headerlink" href="#config-at-a-glance" title="Permanent link">¤</a></h2>
+<div class="highlight"><pre><span></span><code><span class="n">seed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
 
-<span class="n">H1</span> <span class="o">=</span> <span class="n">get_H1</span><span class="p">()</span>
-<span class="n">L1</span> <span class="o">=</span> <span class="n">get_L1</span><span class="p">()</span>
+<span class="k">[data]</span>
+<span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;gwosc&quot;</span>
+<span class="n">detectors</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;H1&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;L1&quot;</span><span class="p">]</span>
+<span class="n">trigger_time</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1126259462.4</span>
+<span class="n">duration</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">4.0</span>
+<span class="n">post_trigger_duration</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">2.0</span>
+<span class="n">psd_duration</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1024.0</span>
 
-<span class="c1"># Option 1: fetch from GWOSC</span>
-<span class="n">data</span> <span class="o">=</span> <span class="n">Data</span><span class="o">.</span><span class="n">from_gwosc</span><span class="p">(</span><span class="s2">&quot;H1&quot;</span><span class="p">,</span> <span class="n">gps_start</span><span class="p">,</span> <span class="n">gps_end</span><span class="p">)</span>
-<span class="n">H1</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+<span class="k">[waveform]</span>
+<span class="n">approximant</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;IMRPhenomXAS&quot;</span>
+<span class="n">f_ref</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">20.0</span>
 
-<span class="c1"># Option 2: load from a .npz file</span>
-<span class="n">data</span> <span class="o">=</span> <span class="n">Data</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;path/to/data.npz&quot;</span><span class="p">)</span>
-<span class="n">H1</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+<span class="k">[prior]</span>
+<span class="n">M_c</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;uniform&quot;</span><span class="p">,</span><span class="w">   </span><span class="n">min</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mf">10.0</span><span class="p">,</span><span class="w">  </span><span class="n">max</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mf">80.0</span><span class="w">  </span><span class="p">}</span>
+<span class="n">q</span><span class="w">       </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;uniform&quot;</span><span class="p">,</span><span class="w">   </span><span class="n">min</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mf">0.125</span><span class="p">,</span><span class="w"> </span><span class="n">max</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mf">1.0</span><span class="w">   </span><span class="p">}</span>
+<span class="n">s1_z</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;uniform&quot;</span><span class="p">,</span><span class="w">   </span><span class="n">min</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mf">-0.99</span><span class="p">,</span><span class="w"> </span><span class="n">max</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mf">0.99</span><span class="w">  </span><span class="p">}</span>
+<span class="n">s2_z</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;uniform&quot;</span><span class="p">,</span><span class="w">   </span><span class="n">min</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mf">-0.99</span><span class="p">,</span><span class="w"> </span><span class="n">max</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mf">0.99</span><span class="w">  </span><span class="p">}</span>
+<span class="n">iota</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;sine&quot;</span><span class="w"> </span><span class="p">}</span>
+<span class="n">d_L</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;power_law&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">min</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mf">1.0</span><span class="p">,</span><span class="w">   </span><span class="n">max</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mf">2000.0</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mf">2.0</span><span class="w"> </span><span class="p">}</span>
+<span class="n">t_c</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;uniform&quot;</span><span class="p">,</span><span class="w">   </span><span class="n">min</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mf">-0.1</span><span class="p">,</span><span class="w">  </span><span class="n">max</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mf">0.1</span><span class="w">   </span><span class="p">}</span>
+<span class="n">phase_c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;uniform&quot;</span><span class="p">,</span><span class="w">   </span><span class="n">min</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mf">0.0</span><span class="p">,</span><span class="w">   </span><span class="n">max</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mf">6.283185307179586</span><span class="w"> </span><span class="p">}</span>
+<span class="n">psi</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;uniform&quot;</span><span class="p">,</span><span class="w">   </span><span class="n">min</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mf">0.0</span><span class="p">,</span><span class="w">   </span><span class="n">max</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mf">3.141592653589793</span><span class="w"> </span><span class="p">}</span>
+<span class="n">ra</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;uniform&quot;</span><span class="p">,</span><span class="w">   </span><span class="n">min</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mf">0.0</span><span class="p">,</span><span class="w">   </span><span class="n">max</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mf">6.283185307179586</span><span class="w"> </span><span class="p">}</span>
+<span class="n">dec</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;cosine&quot;</span><span class="w"> </span><span class="p">}</span>
+
+<span class="k">[likelihood]</span>
+<span class="n">f_min</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">20.0</span>
+<span class="n">f_max</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1024.0</span>
+
+<span class="k">[sampler]</span>
+<span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;flowmc&quot;</span>
+<span class="n">n_chains</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1000</span>
+<span class="n">n_local_steps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">100</span>
+<span class="n">n_global_steps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1000</span>
+<span class="n">n_training_loops</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">50</span>
+<span class="n">n_production_loops</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10</span>
+<span class="n">n_NFproposal_batch_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">100</span>
+<span class="n">global_thinning</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">100</span>
+
+<span class="k">[output]</span>
+<span class="n">dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;output/my_run&quot;</span>
+<span class="n">save_corner</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
 </code></pre></div>
-<h3 id="waveform-model">Waveform Model<a class="headerlink" href="#waveform-model" title="Permanent link">¤</a></h3>
-<p>Jim uses <a href="https://github.com/GW-JAX-Team/ripple">ripple</a> waveform models, which are JAX-native and fully differentiable:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.single_event.waveform</span><span class="w"> </span><span class="kn">import</span> <span class="n">RippleIMRPhenomD</span>
+<p>Each top-level section has a single responsibility:</p>
+<table>
+<thead>
+<tr>
+<th>Section</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>[data]</code></td>
+<td>Where to get strain and PSD data — GWOSC, an injection, or local files</td>
+</tr>
+<tr>
+<td><code>[waveform]</code></td>
+<td>Which ripple waveform approximant to use</td>
+</tr>
+<tr>
+<td><code>[prior]</code></td>
+<td>Parameter names and their prior distributions</td>
+</tr>
+<tr>
+<td><code>[likelihood]</code></td>
+<td>Frequency band and optional features (heterodyning, marginalisations)</td>
+</tr>
+<tr>
+<td><code>[sampler]</code></td>
+<td>Sampler backend and its tuning parameters</td>
+</tr>
+<tr>
+<td><code>[output]</code></td>
+<td>Where to write results and which artefacts to save</td>
+</tr>
+</tbody>
+</table>
+<h2 id="run">Run<a class="headerlink" href="#run" title="Permanent link">¤</a></h2>
+<div class="highlight"><pre><span></span><code>jim-run<span class="w"> </span>gw150914.toml
+</code></pre></div>
+<p>Add <code>-v</code> for debug-level logging. Progress is written to stdout:</p>
+<div class="highlight"><pre><span></span><code>INFO | jimgw.cli | Loaded config from gw150914.toml
+INFO | jimgw.cli | seed: 0
+INFO | jimgw.cli | data: type=gwosc, detectors=[&#39;H1&#39;, &#39;L1&#39;]
+INFO | jimgw.cli | waveform: IMRPhenomXAS (f_ref=20.0 Hz)
+INFO | jimgw.cli | prior: 11 parameter(s): [&#39;M_c&#39;, &#39;q&#39;, ...]
+INFO | jimgw.cli | sampler: type=flowmc
+INFO | jimgw.cli | Sampling complete.
+</code></pre></div>
+<h2 id="outputs">Outputs<a class="headerlink" href="#outputs" title="Permanent link">¤</a></h2>
+<p>Results are written to the directory specified by <code>output.dir</code>:</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Contents</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>samples.npz</code></td>
+<td>Posterior samples array</td>
+</tr>
+<tr>
+<td><code>diagnostics.json</code></td>
+<td>Scalar sampler diagnostics (log evidence, acceptance rates, …)</td>
+</tr>
+<tr>
+<td><code>diagnostics.npz</code></td>
+<td>Array diagnostics (chains, log-prob traces, …)</td>
+</tr>
+<tr>
+<td><code>config.final.toml</code></td>
+<td>The resolved config — useful for reproducing a run exactly</td>
+</tr>
+<tr>
+<td><code>corner.png</code></td>
+<td>Corner plot (only when <code>save_corner = true</code>)</td>
+</tr>
+</tbody>
+</table>
+<p>Load the posterior samples in Python:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
-<span class="n">waveform</span> <span class="o">=</span> <span class="n">RippleIMRPhenomD</span><span class="p">(</span><span class="n">f_ref</span><span class="o">=</span><span class="mf">20.0</span><span class="p">)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;output/my_run/samples.npz&quot;</span><span class="p">)</span>
+<span class="n">samples</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;samples&quot;</span><span class="p">]</span>  <span class="c1"># shape: (n_samples, n_params)</span>
+<span class="n">params</span>  <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;parameter_names&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
 </code></pre></div>
-<h3 id="likelihood">Likelihood<a class="headerlink" href="#likelihood" title="Permanent link">¤</a></h3>
-<p>The likelihood connects detector data with a waveform model. <code>TransientLikelihoodFD</code> is the standard frequency-domain likelihood for compact binary signals:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.single_event.likelihood</span><span class="w"> </span><span class="kn">import</span> <span class="n">TransientLikelihoodFD</span>
-
-<span class="n">likelihood</span> <span class="o">=</span> <span class="n">TransientLikelihoodFD</span><span class="p">(</span>
-    <span class="n">detectors</span><span class="o">=</span><span class="p">[</span><span class="n">H1</span><span class="p">,</span> <span class="n">L1</span><span class="p">],</span>
-    <span class="n">waveform</span><span class="o">=</span><span class="n">waveform</span><span class="p">,</span>
-    <span class="n">trigger_time</span><span class="o">=</span><span class="n">gps_time</span><span class="p">,</span>
-    <span class="n">f_min</span><span class="o">=</span><span class="mf">20.0</span><span class="p">,</span>
-    <span class="n">f_max</span><span class="o">=</span><span class="mf">1024.0</span><span class="p">,</span>
-<span class="p">)</span>
-</code></pre></div>
-<h3 id="prior">Prior<a class="headerlink" href="#prior" title="Permanent link">¤</a></h3>
-<p>Priors are built by combining components with <code>CombinePrior</code>:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.prior</span><span class="w"> </span><span class="kn">import</span> <span class="n">CombinePrior</span><span class="p">,</span> <span class="n">UniformPrior</span><span class="p">,</span> <span class="n">SinePrior</span><span class="p">,</span> <span class="n">CosinePrior</span>
-
-<span class="n">prior</span> <span class="o">=</span> <span class="n">CombinePrior</span><span class="p">([</span>
-    <span class="n">UniformPrior</span><span class="p">(</span><span class="mf">10.0</span><span class="p">,</span> <span class="mf">80.0</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;M_c&quot;</span><span class="p">]),</span>
-    <span class="n">UniformPrior</span><span class="p">(</span><span class="mf">0.125</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;q&quot;</span><span class="p">]),</span>
-    <span class="n">SinePrior</span><span class="p">([</span><span class="s2">&quot;iota&quot;</span><span class="p">]),</span>
-    <span class="n">CosinePrior</span><span class="p">([</span><span class="s2">&quot;dec&quot;</span><span class="p">]),</span>
-    <span class="c1"># ... add more parameters</span>
-<span class="p">])</span>
-</code></pre></div>
-<h3 id="transforms">Transforms<a class="headerlink" href="#transforms" title="Permanent link">¤</a></h3>
-<p>Jim uses two kinds of transforms to bridge three parameter spaces:</p>
-<div class="highlight"><pre><span></span><code>     ┌───────── Likelihood Transforms ────────→ Likelihood Space
-Prior Space
-     └─────────── Sample Transforms ───────────→ Sampling Space
-</code></pre></div>
+<h2 id="whats-next">What's next<a class="headerlink" href="#whats-next" title="Permanent link">¤</a></h2>
 <ul>
-<li>
-<p><strong>Likelihood transforms</strong> — map from the prior parameter space to the likelihood parameter space. The likelihood space is fixed by your waveform model (e.g. ripple expects <code>eta</code>, Cartesian spins), so the likelihood transforms you need depend on how you define your prior. For example, if your prior is on mass ratio <code>q</code> but the waveform expects symmetric mass ratio <code>eta</code>, a likelihood transform handles that conversion.</p>
-</li>
-<li>
-<p><strong>Sample transforms</strong> — map from the prior space to the sampling space. This lets the sampler explore a different parameterisation than the one your prior is defined in, typically one where correlations between parameters are reduced (e.g. sampling in detector-frame sky coordinates instead of equatorial coordinates).</p>
-</li>
+<li><strong><a href="../tutorials/gw150914_cli/">Analysing GW150914 with the CLI</a></strong> — a step-by-step walkthrough of a real event analysis.</li>
+<li><strong><a href="../guides/cli/">CLI Config Reference</a></strong> — all config sections, fields, and defaults in one place.</li>
+<li><strong><a href="../guides/">Guides</a></strong> — in-depth coverage of data loading, likelihoods, priors, samplers, and transforms.</li>
+<li><strong><a href="https://github.com/GW-JAX-Team/jim/tree/main/examples">Examples</a></strong> — Standalone Python scripts and CLI configs covering multiple events and samplers.</li>
 </ul>
-<h3 id="putting-it-together">Putting It Together<a class="headerlink" href="#putting-it-together" title="Permanent link">¤</a></h3>
+<hr />
+<h2 id="using-the-python-api-directly">Using the Python API directly<a class="headerlink" href="#using-the-python-api-directly" title="Permanent link">¤</a></h2>
+<p>For analyses that need custom transforms, non-standard likelihoods, or scripted workflows, Jim can be assembled programmatically. The core components are:</p>
+<pre class="mermaid"><code>flowchart LR
+    WM[Waveform Model] &amp; D[Data] --&gt; L[Likelihood]
+    L --&gt; J((Jim))
+    L --- LT[Likelihood Transforms]
+    P[Prior] --- LT
+    LT --&gt; J
+    P --&gt; J
+    P --- ST[Sample Transforms]
+    ST --&gt; J
+    J &lt;--&gt; S[Sampler]</code></pre>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.jim</span><span class="w"> </span><span class="kn">import</span> <span class="n">Jim</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.samplers.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">FlowMCConfig</span>
 
 <span class="n">jim</span> <span class="o">=</span> <span class="n">Jim</span><span class="p">(</span>
     <span class="n">likelihood</span><span class="o">=</span><span class="n">likelihood</span><span class="p">,</span>
     <span class="n">prior</span><span class="o">=</span><span class="n">prior</span><span class="p">,</span>
+    <span class="n">sampler_config</span><span class="o">=</span><span class="n">FlowMCConfig</span><span class="p">(</span><span class="n">n_chains</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">n_training_loops</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">n_production_loops</span><span class="o">=</span><span class="mi">10</span><span class="p">),</span>
     <span class="n">sample_transforms</span><span class="o">=</span><span class="n">sample_transforms</span><span class="p">,</span>
     <span class="n">likelihood_transforms</span><span class="o">=</span><span class="n">likelihood_transforms</span><span class="p">,</span>
-    <span class="n">n_chains</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span>
-    <span class="n">n_training_loops</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
-    <span class="n">n_production_loops</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
-    <span class="c1"># ... other hyperparameters</span>
 <span class="p">)</span>
 
 <span class="n">jim</span><span class="o">.</span><span class="n">sample</span><span class="p">()</span>
 <span class="n">samples</span> <span class="o">=</span> <span class="n">jim</span><span class="o">.</span><span class="n">get_samples</span><span class="p">()</span>
 </code></pre></div>
-<p>For a full worked example, see the <a href="../tutorials/getting_started">Getting Started tutorial</a>. For production-grade scripts, browse the <a href="https://github.com/kazewong/jim/tree/main/example"><code>example/</code> directory on GitHub</a>.</p>
+<p>See the <a href="../tutorials/getting_started">Getting Started tutorial</a> for a complete programmatic example, and the <a href="../guides/">Guides</a> for detailed documentation of each building block.</p>
 
 
 
@@ -1819,7 +2384,7 @@ Prior Space
       <script id="__config" type="application/json">{"annotate":null,"base":"..","features":["navigation.instant","navigation.tabs","navigation.top","toc.follow","header.autohide"],"search":"../assets/javascripts/workers/search.e2d2d235.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":{"default":"stable","provider":"mike"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.dbc0afdc.min.js"></script>
+      <script src="../assets/javascripts/bundle.6e5f0216.min.js"></script>
       
         <script src="../javascripts/mathjax.js"></script>
       

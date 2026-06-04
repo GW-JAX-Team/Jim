@@ -1,0 +1,2714 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A JAX-based gravitational-wave inference toolkit">
+      
+      
+        <meta name="author" content="GW JAX Team">
+      
+      
+        <link rel="canonical" href="https://gw-jax-team.github.io/jim/latest/guides/samplers/">
+      
+      
+        <link rel="prev" href="../prior/">
+      
+      
+        <link rel="next" href="../transforms/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="zensical-0.0.44">
+    
+    
+      
+        <title>Samplers - Jim</title>
+      
+    
+    
+      
+        
+      
+      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.fba56155.min.css">
+      
+        
+          
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/modern/palette.dfe2e883.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,500,500i,700,700i%7CJetBrains+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer" aria-label="Navigation"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#samplers" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Jim" class="md-header__button md-logo" aria-label="Jim" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-book-open" viewBox="0 0 24 24"><path d="M12 7v14M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer" aria-label="Navigation">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Jim
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Samplers
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="none" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="none" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search" aria-label="Search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
+  <button type="button" class="md-search__button">
+    Search
+  </button>
+</div>
+      
+    
+    <div class="md-header__source">
+      
+        <a href="https://github.com/GW-JAX-Team/jim" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GW-JAX-Team/jim
+  </div>
+</a>
+      
+    </div>
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../installation/" class="md-tabs__link">
+        
+  
+  Installation
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../quickstart/" class="md-tabs__link">
+        
+  
+  Quick Start
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+      
+    
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../tutorials/" class="md-tabs__link">
+          
+  
+  Tutorials
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+      
+    
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
+          
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../FAQ/" class="md-tabs__link">
+        
+  
+  FAQ
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../contributing/" class="md-tabs__link">
+        
+  
+  Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+      
+    
+    
+    
+      
+  
+  
+  
+  
+    
+      
+    
+    
+    
+      
+  
+  
+  
+  
+    
+      
+    
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../api/jimgw/core/base/" class="md-tabs__link">
+          
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+    
+  
+
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Jim" class="md-nav__button md-logo" aria-label="Jim" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-book-open" viewBox="0 0 24 24"><path d="M12 7v14M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>
+
+    </a>
+    Jim
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/GW-JAX-Team/jim" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GW-JAX-Team/jim
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Home
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Installation
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Quick Start
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Tutorials
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+  Tutorials
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Tutorials
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/getting_started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Getting Started
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/gw150914_cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  GW150914 with CLI
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Guides
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+  Guides
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Guides
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Command Line Interface
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../likelihood/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Likelihood
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../prior/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Prior
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Samplers
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="././" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Samplers
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#sampler-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Sampler overview
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#flowmc" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        flowMC
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#blackjax-smc" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        BlackJAX SMC
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#blackjax-nested-samplers" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        BlackJAX nested samplers
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="BlackJAX nested samplers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#blackjax-ns-aw" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        BlackJAX NS-AW
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#blackjax-nss" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        BlackJAX NSS
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#checkpointing-and-resuming" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Checkpointing and resuming
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#periodic-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Periodic parameters
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#posterior-samples" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Posterior samples
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#run-diagnostics" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Run diagnostics
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#writing-your-own-sampler" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Writing your own sampler
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../transforms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Transforms
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../FAQ/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  FAQ
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Contributing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Reference
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+  Reference
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_8_1" id="__nav_8_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  jimgw
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+  jimgw
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_1_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_8_1_1" id="__nav_8_1_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  core
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_8_1_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_1_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+  core
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/jimgw/core/base/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  base
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/jimgw/core/constants/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  constants
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/jimgw/core/jim/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  jim
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/jimgw/core/prior/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  prior
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_1_1_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_8_1_1_5" id="__nav_8_1_1_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  single_event
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_8_1_1_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_1_1_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+  single_event
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/jimgw/core/single_event/data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  data
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/jimgw/core/single_event/detector/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  detector
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/jimgw/core/single_event/likelihood/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  likelihood
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/jimgw/core/single_event/marginalization_config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  marginalization_config
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/jimgw/core/single_event/polarization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  polarization
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/jimgw/core/single_event/prior/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  prior
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/jimgw/core/single_event/time_utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  time_utils
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/jimgw/core/single_event/transform_utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  transform_utils
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/jimgw/core/single_event/transforms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  transforms
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/jimgw/core/single_event/utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  utils
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/jimgw/core/single_event/waveform/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  waveform
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/jimgw/core/transforms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  transforms
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/jimgw/core/utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  utils
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_1_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_8_1_2" id="__nav_8_1_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  samplers
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_8_1_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_1_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+  samplers
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/jimgw/samplers/base/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  base
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_1_2_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_8_1_2_2" id="__nav_8_1_2_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  blackjax
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_8_1_2_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_1_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+  blackjax
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/jimgw/samplers/blackjax/ns_aw/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  ns_aw
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/jimgw/samplers/blackjax/nss/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  nss
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/jimgw/samplers/blackjax/smc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  smc
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/jimgw/samplers/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  config
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/jimgw/samplers/flowmc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  flowmc
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/jimgw/samplers/periodic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  periodic
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  
+                    
+                    
+                    
+                      
+                    
+                    
+                      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+                      <div class="md-sidebar-button__wrapper">
+                        <label class="md-sidebar-button" for="__toc"></label>
+                      </div>
+                    
+                  
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#sampler-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Sampler overview
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#flowmc" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        flowMC
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#blackjax-smc" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        BlackJAX SMC
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#blackjax-nested-samplers" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        BlackJAX nested samplers
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="BlackJAX nested samplers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#blackjax-ns-aw" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        BlackJAX NS-AW
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#blackjax-nss" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        BlackJAX NSS
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#checkpointing-and-resuming" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Checkpointing and resuming
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#periodic-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Periodic parameters
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#posterior-samples" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Posterior samples
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#run-diagnostics" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Run diagnostics
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#writing-your-own-sampler" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Writing your own sampler
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+  
+  
+
+
+<h1 id="samplers">Samplers<a class="headerlink" href="#samplers" title="Permanent link">¤</a></h1>
+<p>Jim supports several JAX sampler backends behind a unified interface.
+You select one by passing a typed config object to <code>Jim</code>.</p>
+<p>After <code>jim.sample()</code>, retrieve posterior samples with:</p>
+<div class="highlight"><pre><span></span><code><span class="n">samples</span> <span class="o">=</span> <span class="n">jim</span><span class="o">.</span><span class="n">get_samples</span><span class="p">()</span>  <span class="c1"># dict[str, np.ndarray] keyed by parameter name</span>
+</code></pre></div>
+<h2 id="sampler-overview">Sampler overview<a class="headerlink" href="#sampler-overview" title="Permanent link">¤</a></h2>
+<table>
+<thead>
+<tr>
+<th>Sampler</th>
+<th>Algorithm</th>
+<th>Evidence</th>
+<th>Extra install</th>
+<th>Prior constraint</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="#flowmc">flowMC</a></td>
+<td>normalizing-flow-enhanced MCMC</td>
+<td>No</td>
+<td>No</td>
+<td>None</td>
+</tr>
+<tr>
+<td><a href="#blackjax-ns-aw">NS-AW</a></td>
+<td>Nested sampling (bilby/dynesty-style acceptance-walk)</td>
+<td>Yes</td>
+<td>Yes (<code>nested-sampling</code>)</td>
+<td>Uniform prior; unit-cube sampling space</td>
+</tr>
+<tr>
+<td><a href="#blackjax-nss">NSS</a></td>
+<td>Nested slice sampling</td>
+<td>Yes</td>
+<td>Yes (<code>nested-sampling</code>)</td>
+<td>Normalised prior</td>
+</tr>
+<tr>
+<td><a href="#blackjax-smc">SMC</a></td>
+<td>Sequential Monte Carlo</td>
+<td>Yes</td>
+<td>No</td>
+<td>Normalised prior</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="flowmc">flowMC<a class="headerlink" href="#flowmc" title="Permanent link">¤</a></h2>
+<p>flowMC runs parallel MCMC chains enhanced by a normalizing flow that learns the posterior shape during training, then uses that learned geometry to make global proposals during production.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.jim</span><span class="w"> </span><span class="kn">import</span> <span class="n">Jim</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.samplers.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">FlowMCConfig</span>
+
+<span class="n">jim</span> <span class="o">=</span> <span class="n">Jim</span><span class="p">(</span>
+    <span class="n">likelihood</span><span class="p">,</span>
+    <span class="n">prior</span><span class="p">,</span>
+    <span class="n">sampler_config</span><span class="o">=</span><span class="n">FlowMCConfig</span><span class="p">(</span>
+        <span class="n">n_chains</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+        <span class="n">n_local_steps</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+        <span class="n">n_global_steps</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+        <span class="n">n_training_loops</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+        <span class="n">n_production_loops</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="p">),</span>
+<span class="p">)</span>
+
+<span class="n">jim</span><span class="o">.</span><span class="n">sample</span><span class="p">()</span>
+<span class="n">samples</span> <span class="o">=</span> <span class="n">jim</span><span class="o">.</span><span class="n">get_samples</span><span class="p">()</span>
+</code></pre></div>
+<p>Key parameters:</p>
+<ul>
+<li><code>n_chains</code> — number of parallel MCMC chains.</li>
+<li><code>n_training_loops</code> / <code>n_production_loops</code> — how many rounds of training (flow updates) and production (sample collection) to run.</li>
+<li><code>n_local_steps</code> / <code>n_global_steps</code> — local MCMC steps and flow-proposal steps per loop.</li>
+<li><code>local_kernel</code> — MCMC kernel for local steps; one of <code>"MALA"</code> (default), <code>"HMC"</code>, or <code>"GRW"</code>.</li>
+<li><code>parallel_tempering</code> — parallel tempering settings; disabled by default. Enable with <code>parallel_tempering=True</code> (uses defaults), a plain dict of settings such as <code>{"n_temperatures": 8}</code>, or a <code>ParallelTemperingConfig</code> instance.</li>
+</ul>
+<p><strong>Repository:</strong> <a href="https://github.com/GW-JAX-Team/flowMC">GW-JAX-Team/flowMC</a></p>
+<p><strong>References:</strong> Wong, K. W. K., Gabrié, M., Foreman-Mackey, D., <em>"flowMC: Normalizing flow enhanced sampling package for probabilistic inference in JAX"</em>, <a href="https://arxiv.org/abs/2211.06397">arXiv:2211.06397</a>, JOSS 8 (83) 5021 (2023). Wong, K. W. K., Isi, M., Edwards, T. D. P., <em>"Fast Gravitational-wave Parameter Estimation without Compromises"</em>, <a href="https://arxiv.org/abs/2302.05333">arXiv:2302.05333</a>, ApJ 958 129 (2023).</p>
+<hr />
+<h2 id="blackjax-smc">BlackJAX SMC<a class="headerlink" href="#blackjax-smc" title="Permanent link">¤</a></h2>
+<p>Sequential Monte Carlo (SMC) maintains a population of particles and gradually shifts them from the prior toward the posterior through a sequence of intermediate temperature steps.</p>
+<blockquote>
+<p><strong>Normalised-prior requirement</strong> — SMC computes a Bayesian evidence estimate and therefore requires a normalised prior. All built-in Jim priors are normalised. If you add custom constraints, check whether the resulting distribution is still normalised; if so, override <code>is_normalized</code> to return <code>True</code>. Jim raises a <code>ValueError</code> at construction if this condition is not met.</p>
+</blockquote>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.samplers.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">BlackJAXSMCConfig</span>
+
+<span class="n">jim</span> <span class="o">=</span> <span class="n">Jim</span><span class="p">(</span>
+    <span class="n">likelihood</span><span class="p">,</span>
+    <span class="n">prior</span><span class="p">,</span>
+    <span class="n">sampler_config</span><span class="o">=</span><span class="n">BlackJAXSMCConfig</span><span class="p">(</span>
+        <span class="n">n_particles</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span>
+        <span class="n">n_mcmc_steps_per_dim</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="p">),</span>
+<span class="p">)</span>
+<span class="n">jim</span><span class="o">.</span><span class="n">sample</span><span class="p">()</span>
+<span class="n">samples</span> <span class="o">=</span> <span class="n">jim</span><span class="o">.</span><span class="n">get_samples</span><span class="p">()</span>
+</code></pre></div>
+<p>Key parameters:</p>
+<ul>
+<li><code>n_particles</code> — particle ensemble size.</li>
+<li><code>n_mcmc_steps_per_dim</code> — MCMC steps per dimension at each temperature step.</li>
+<li><code>target_ess_fraction</code> — target ESS as a fraction of <code>n_particles</code> (default <code>0.9</code>). The algorithm advances the temperature when the fraction of effectively contributing particles hits this threshold.  Values in <code>(0, 1]</code> are valid when <code>persistent_sampling=False</code>; persistent sampling may exceed <code>1.0</code> because particles are recycled across steps.  Only used with adaptive temperature selection (no effect with a fixed <code>temperature_ladder</code>).</li>
+<li><code>target_ess</code> — target ESS as an absolute particle count. <code>target_ess_fraction</code> and <code>target_ess</code> are mutually exclusive; set one or the other, not both. When <code>persistent_sampling=False</code>, must be <code>&lt;= n_particles</code>.</li>
+<li><code>persistent_sampling</code> — whether to retain particles from all temperature steps (default <code>True</code>).</li>
+<li><code>temperature_ladder</code> — explicit temperature schedule. If given, the sampler advances through this fixed ladder and ignores <code>target_ess_fraction</code> and <code>target_ess</code>.</li>
+</ul>
+<p><strong>Repository:</strong> <a href="https://github.com/blackjax-devs/blackjax">blackjax-devs/blackjax</a></p>
+<hr />
+<h2 id="blackjax-nested-samplers">BlackJAX nested samplers<a class="headerlink" href="#blackjax-nested-samplers" title="Permanent link">¤</a></h2>
+<p>The two BlackJAX nested-sampling backends require additional dependencies.
+They need a maintained fork of BlackJAX; install it with:</p>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>sync<span class="w"> </span>--group<span class="w"> </span>nested-sampling
+</code></pre></div>
+<p>This pulls in:</p>
+<ul>
+<li><strong>blackjax</strong> — pinned to the <code>GW-JAX-Team/blackjax@jim</code> branch, which carries the BlackJAX nested-sampling module.</li>
+</ul>
+<hr />
+<h3 id="blackjax-ns-aw">BlackJAX NS-AW<a class="headerlink" href="#blackjax-ns-aw" title="Permanent link">¤</a></h3>
+<p>Nested sampling with a bilby/dynesty-style adaptive differential-evolution acceptance-walk inner kernel.</p>
+<blockquote>
+<p><strong>Unit-cube requirement</strong> — this sampler works in the unit hypercube <code>[0, 1]^n_dims</code>.  All parameters must be mapped into <code>[0, 1]</code> via sample transforms, which the CLI constructs automatically.</p>
+</blockquote>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.samplers.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">BlackJAXNSAWConfig</span>
+
+<span class="n">jim</span> <span class="o">=</span> <span class="n">Jim</span><span class="p">(</span>
+    <span class="n">likelihood</span><span class="p">,</span>
+    <span class="n">prior</span><span class="p">,</span>
+    <span class="n">sampler_config</span><span class="o">=</span><span class="n">BlackJAXNSAWConfig</span><span class="p">(</span>
+        <span class="n">n_live</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+        <span class="n">n_delete_frac</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+        <span class="n">n_target</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span>
+        <span class="n">max_mcmc</span><span class="o">=</span><span class="mi">5000</span><span class="p">,</span>
+        <span class="n">max_proposals</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+        <span class="n">termination_dlogz</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">sample_transforms</span><span class="o">=</span><span class="n">sample_transforms</span><span class="p">,</span>
+    <span class="n">likelihood_transforms</span><span class="o">=</span><span class="n">likelihood_transforms</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">jim</span><span class="o">.</span><span class="n">sample</span><span class="p">()</span>
+<span class="n">samples</span> <span class="o">=</span> <span class="n">jim</span><span class="o">.</span><span class="n">get_samples</span><span class="p">()</span>
+</code></pre></div>
+<p>Key parameters:</p>
+<ul>
+<li><code>n_live</code> — number of live points; more live points → more accurate but slower.</li>
+<li><code>n_delete_frac</code> — fraction of live points replaced per iteration (e.g. <code>0.5</code> replaces half the live points each step).</li>
+<li><code>n_target</code> — target number of accepted proposals per walk.</li>
+<li><code>max_mcmc</code> — maximum number of proposals before giving up on a dead point.</li>
+</ul>
+<p><strong>Reference:</strong> Prathaban, M., Yallup, D., Alvey, J., Yang, M., Templeton, W., Handley, W., <em>"Gravitational-wave inference at GPU speed: A bilby-like nested sampling kernel within blackjax-ns"</em>, arXiv:2509.04336 (Sep 2025).</p>
+<hr />
+<h3 id="blackjax-nss">BlackJAX NSS<a class="headerlink" href="#blackjax-nss" title="Permanent link">¤</a></h3>
+<p>Nested sampling with a slice-sampling inner kernel.
+Unlike NS-AW, it does not require a unit-cube prior and works in any bounded sampling space.</p>
+<blockquote>
+<p><strong>Normalised-prior requirement</strong> — NSS computes a Bayesian evidence estimate and therefore requires a normalised prior. All built-in Jim priors are normalised. If you add custom constraints, check whether the resulting distribution is still normalised; if so, override <code>is_normalized</code> to return <code>True</code>. Jim raises a <code>ValueError</code> at construction if this condition is not met.</p>
+</blockquote>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.samplers.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">BlackJAXNSSConfig</span>
+
+<span class="n">jim</span> <span class="o">=</span> <span class="n">Jim</span><span class="p">(</span>
+    <span class="n">likelihood</span><span class="p">,</span>
+    <span class="n">prior</span><span class="p">,</span>
+    <span class="n">sampler_config</span><span class="o">=</span><span class="n">BlackJAXNSSConfig</span><span class="p">(</span>
+        <span class="n">n_live</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+        <span class="n">n_delete_frac</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+        <span class="n">num_inner_steps_per_dim</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+        <span class="n">termination_dlogz</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">sample_transforms</span><span class="o">=</span><span class="n">sample_transforms</span><span class="p">,</span>
+    <span class="n">likelihood_transforms</span><span class="o">=</span><span class="n">likelihood_transforms</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">jim</span><span class="o">.</span><span class="n">sample</span><span class="p">()</span>
+<span class="n">samples</span> <span class="o">=</span> <span class="n">jim</span><span class="o">.</span><span class="n">get_samples</span><span class="p">()</span>
+</code></pre></div>
+<p>Key parameters:</p>
+<ul>
+<li><code>n_live</code> — number of live points.</li>
+<li><code>n_delete_frac</code> — fraction of live points replaced per iteration.</li>
+<li><code>num_inner_steps_per_dim</code> — slice-sampler steps per dimension per dead point; increase for strongly correlated posteriors.</li>
+</ul>
+<p><strong>Repository:</strong> <a href="https://github.com/handley-lab/blackjax">handley-lab/blackjax</a></p>
+<p><strong>References:</strong> Yallup, D., Prathaban, M., Alvey, J., Handley, W., <em>"Parallel Nested Slice Sampling for Gravitational Wave Parameter Estimation"</em>, <a href="https://arxiv.org/abs/2509.24949">arXiv:2509.24949</a> (Sep 2025). Yallup, D., Kroupa, N., Handley, W., <em>"Nested Slice Sampling"</em>, <a href="https://openreview.net/forum?id=ekbkMSuPo4">OpenReview</a> (2025).</p>
+<hr />
+<h2 id="checkpointing-and-resuming">Checkpointing and resuming<a class="headerlink" href="#checkpointing-and-resuming" title="Permanent link">¤</a></h2>
+<p>All samplers support checkpoint/resume so long-running jobs can survive interruptions.
+Set <code>checkpoint_dir</code> to a directory and <code>checkpoint_interval</code> to the minimum wall-clock seconds between writes:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.samplers.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">BlackJAXSMCConfig</span>
+
+<span class="n">jim</span> <span class="o">=</span> <span class="n">Jim</span><span class="p">(</span>
+    <span class="n">likelihood</span><span class="p">,</span>
+    <span class="n">prior</span><span class="p">,</span>
+    <span class="n">sampler_config</span><span class="o">=</span><span class="n">BlackJAXSMCConfig</span><span class="p">(</span>
+        <span class="n">n_particles</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span>
+        <span class="n">checkpoint_dir</span><span class="o">=</span><span class="s2">&quot;./my_run&quot;</span><span class="p">,</span>
+        <span class="n">checkpoint_interval</span><span class="o">=</span><span class="mi">600</span><span class="p">,</span>  <span class="c1"># write at most every 10 minutes</span>
+    <span class="p">),</span>
+<span class="p">)</span>
+<span class="n">jim</span><span class="o">.</span><span class="n">sample</span><span class="p">()</span>
+</code></pre></div>
+<p>The checkpoint is written atomically (<code>checkpoint.pkl.tmp</code> → <code>checkpoint.pkl</code>) so a mid-write crash never leaves a corrupt file.
+To resume after an interruption, construct the same config pointing at the same <code>checkpoint_dir</code> and call <code>jim.sample()</code> again — the sampler detects the existing file and picks up from the last saved state:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># resume — identical config, same checkpoint_dir</span>
+<span class="n">jim</span> <span class="o">=</span> <span class="n">Jim</span><span class="p">(</span>
+    <span class="n">likelihood</span><span class="p">,</span>
+    <span class="n">prior</span><span class="p">,</span>
+    <span class="n">sampler_config</span><span class="o">=</span><span class="n">BlackJAXSMCConfig</span><span class="p">(</span>
+        <span class="n">n_particles</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span>
+        <span class="n">checkpoint_dir</span><span class="o">=</span><span class="s2">&quot;./my_run&quot;</span><span class="p">,</span>
+        <span class="n">checkpoint_interval</span><span class="o">=</span><span class="mi">600</span><span class="p">,</span>
+    <span class="p">),</span>
+<span class="p">)</span>
+<span class="n">jim</span><span class="o">.</span><span class="n">sample</span><span class="p">()</span>  <span class="c1"># resumes from ./my_run/checkpoint.pkl</span>
+</code></pre></div>
+<p>The same fields work identically for <code>FlowMCConfig</code>, <code>BlackJAXNSAWConfig</code>, and <code>BlackJAXNSSConfig</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Default</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>checkpoint_dir</code></td>
+<td><code>None</code> (disabled)</td>
+<td>Directory where <code>checkpoint.pkl</code> is written. Created automatically if absent.</td>
+</tr>
+<tr>
+<td><code>checkpoint_interval</code></td>
+<td><code>0.0</code> (disabled)</td>
+<td>Minimum seconds between writes. <code>0</code> disables checkpointing entirely.</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Validation</strong> — setting <code>checkpoint_interval &gt; 0</code> without <code>checkpoint_dir</code> raises a <code>ValidationError</code> at config construction time.</p>
+</blockquote>
+<p>When using the <a href="../cli/">CLI</a>, checkpointing is enabled automatically (600 s, writing to <code>output.dir</code>).
+Set <code>checkpoint_interval = 0</code> in the <code>[sampler]</code> block to opt out.</p>
+<hr />
+<h2 id="periodic-parameters">Periodic parameters<a class="headerlink" href="#periodic-parameters" title="Permanent link">¤</a></h2>
+<p>All samplers accept a <code>periodic</code> field to handle parameters that wrap around (e.g. angles).
+Pass a dict of <code>parameter_name: (lower, upper)</code> bounds:</p>
+<div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FlowMCConfig</span><span class="p">(</span>
+    <span class="o">...</span><span class="p">,</span>
+    <span class="n">periodic</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;phase_c&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">6.283185</span><span class="p">),</span> <span class="s2">&quot;psi&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">3.141593</span><span class="p">)},</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>BlackJAX NS-AW operates in <code>[0, 1]</code> per dimension, so its <code>periodic</code> field takes a plain list of parameter names:</p>
+<div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">BlackJAXNSAWConfig</span><span class="p">(</span>
+    <span class="o">...</span><span class="p">,</span>
+    <span class="n">periodic</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;phase_c&quot;</span><span class="p">,</span> <span class="s2">&quot;psi&quot;</span><span class="p">],</span>
+<span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="posterior-samples">Posterior samples<a class="headerlink" href="#posterior-samples" title="Permanent link">¤</a></h2>
+<p><code>jim.get_samples()</code> is the primary way to retrieve posterior samples.</p>
+<div class="highlight"><pre><span></span><code><span class="n">samples</span> <span class="o">=</span> <span class="n">jim</span><span class="o">.</span><span class="n">get_samples</span><span class="p">()</span>
+<span class="c1"># keys: prior parameter names + &quot;log_likelihood&quot;</span>
+<span class="n">samples</span><span class="p">[</span><span class="s2">&quot;M_c&quot;</span><span class="p">]</span>             <span class="c1"># np.ndarray — chirp mass in prior space</span>
+<span class="n">samples</span><span class="p">[</span><span class="s2">&quot;log_likelihood&quot;</span><span class="p">]</span>  <span class="c1"># np.ndarray — per-sample log-likelihood</span>
+</code></pre></div>
+<p>Each backend's <code>get_samples()</code> returns equally-weighted posterior samples:</p>
+<ul>
+<li><strong>NS-AW / NSS</strong>: uses anesthetic's <code>posterior_points()</code> to resample the dead-point collection to equal-weight samples.</li>
+<li><strong>SMC (persistent)</strong>: resamples all-temperature particles weighted by the persistent-sampling weights.</li>
+<li><strong>SMC (non-persistent)</strong>: returns all final-temperature particles.</li>
+<li><strong>flowMC</strong>: returns all production samples across all chains.</li>
+</ul>
+<p>Pass <code>n_samples</code> to <code>jim.get_samples()</code> to further downsample uniformly without replacement:</p>
+<div class="highlight"><pre><span></span><code><span class="n">samples</span> <span class="o">=</span> <span class="n">jim</span><span class="o">.</span><span class="n">get_samples</span><span class="p">(</span><span class="n">n_samples</span><span class="o">=</span><span class="mi">2000</span><span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="run-diagnostics">Run diagnostics<a class="headerlink" href="#run-diagnostics" title="Permanent link">¤</a></h2>
+<p><code>jim.get_diagnostics()</code> is a thin wrapper around the sampler's own <code>get_diagnostics()</code>, which returns a plain <code>dict[str, Any]</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">diag</span> <span class="o">=</span> <span class="n">jim</span><span class="o">.</span><span class="n">get_diagnostics</span><span class="p">()</span>
+
+<span class="n">diag</span><span class="p">[</span><span class="s2">&quot;n_likelihood_evaluations&quot;</span><span class="p">]</span>  <span class="c1"># int   — total number of likelihood calls</span>
+<span class="n">diag</span><span class="p">[</span><span class="s2">&quot;sampling_time&quot;</span><span class="p">]</span>             <span class="c1"># float — wall-clock sampling time in seconds</span>
+</code></pre></div>
+<p>Backend-specific keys:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># flowMC</span>
+<span class="n">diag</span><span class="p">[</span><span class="s2">&quot;n_training_loops_actual&quot;</span><span class="p">]</span>         <span class="c1"># int        — training loops run (may be less than configured)</span>
+<span class="n">diag</span><span class="p">[</span><span class="s2">&quot;training_loss_history&quot;</span><span class="p">]</span>           <span class="c1"># np.ndarray — normalizing-flow loss per epoch</span>
+<span class="n">diag</span><span class="p">[</span><span class="s2">&quot;acceptance_training_local&quot;</span><span class="p">]</span>       <span class="c1"># np.ndarray — local acceptance rate per training loop</span>
+<span class="n">diag</span><span class="p">[</span><span class="s2">&quot;acceptance_training_global&quot;</span><span class="p">]</span>      <span class="c1"># np.ndarray — global acceptance rate per training loop</span>
+<span class="n">diag</span><span class="p">[</span><span class="s2">&quot;acceptance_production_local&quot;</span><span class="p">]</span>     <span class="c1"># np.ndarray — local acceptance rate per production loop</span>
+<span class="n">diag</span><span class="p">[</span><span class="s2">&quot;acceptance_production_global&quot;</span><span class="p">]</span>    <span class="c1"># np.ndarray — global acceptance rate per production loop</span>
+
+<span class="c1"># NS-AW and NSS — also include evidence estimate</span>
+<span class="n">diag</span><span class="p">[</span><span class="s2">&quot;n_iterations&quot;</span><span class="p">]</span>              <span class="c1"># int   — number of nested-sampling steps</span>
+<span class="n">diag</span><span class="p">[</span><span class="s2">&quot;log_Z&quot;</span><span class="p">]</span>                     <span class="c1"># float — log Bayesian evidence</span>
+<span class="n">diag</span><span class="p">[</span><span class="s2">&quot;log_Z_error&quot;</span><span class="p">]</span>               <span class="c1"># float — standard deviation from 100 bootstrap samples</span>
+
+<span class="c1"># SMC</span>
+<span class="n">diag</span><span class="p">[</span><span class="s2">&quot;acceptance_history&quot;</span><span class="p">]</span>        <span class="c1"># np.ndarray — mean acceptance rate at each step</span>
+<span class="n">diag</span><span class="p">[</span><span class="s2">&quot;ess_history&quot;</span><span class="p">]</span>               <span class="c1"># np.ndarray — ESS at each step</span>
+<span class="c1"># Adaptive temperature only:</span>
+<span class="n">diag</span><span class="p">[</span><span class="s2">&quot;n_iterations&quot;</span><span class="p">]</span>              <span class="c1"># int        — number of temperature steps</span>
+<span class="n">diag</span><span class="p">[</span><span class="s2">&quot;tempering_schedule&quot;</span><span class="p">]</span>        <span class="c1"># np.ndarray — inverse temperature at each step</span>
+<span class="c1"># Persistent sampling only:</span>
+<span class="n">diag</span><span class="p">[</span><span class="s2">&quot;persistent_log_Z&quot;</span><span class="p">]</span>          <span class="c1"># np.ndarray — cumulative log Z after each step</span>
+<span class="n">diag</span><span class="p">[</span><span class="s2">&quot;log_Z&quot;</span><span class="p">]</span>                     <span class="c1"># float      — final log Bayesian evidence</span>
+</code></pre></div>
+<hr />
+<h2 id="writing-your-own-sampler">Writing your own sampler<a class="headerlink" href="#writing-your-own-sampler" title="Permanent link">¤</a></h2>
+<blockquote>
+<p>This section is for advanced users who want to integrate a custom sampling backend with Jim.  It requires familiarity with JAX and the Jim sampler internals.</p>
+</blockquote>
+<p>Subclass <code>Sampler</code>, implement three methods, and register it:</p>
+<ul>
+<li><code>_sample(rng_key, initial_position)</code> — run the sampler and store results. The base class wraps this in <code>sample()</code>, which also records <code>sampling_time</code>.</li>
+<li><code>get_samples()</code> — return a dict with <code>"samples"</code> and <code>"log_likelihood"</code> keys.</li>
+<li><code>_get_diagnostics()</code> — return a plain dict with diagnostic information. The base class wraps this in <code>get_diagnostics()</code>, which injects <code>sampling_time</code>.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Optional</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.samplers</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_sampler</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.samplers.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sampler</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.samplers.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseSamplerConfig</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">MyConfig</span><span class="p">(</span><span class="n">BaseSamplerConfig</span><span class="p">):</span>
+    <span class="nb">type</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;my-sampler&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;my-sampler&quot;</span>
+    <span class="n">n_steps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">MySampler</span><span class="p">(</span><span class="n">Sampler</span><span class="p">):</span>
+    <span class="n">_config</span><span class="p">:</span> <span class="n">MyConfig</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">n_dims</span><span class="p">,</span> <span class="n">log_prior_fn</span><span class="p">,</span> <span class="n">log_likelihood_fn</span><span class="p">,</span>
+                 <span class="n">log_posterior_fn</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">MyConfig</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">parameter_names</span><span class="o">=</span><span class="p">(),</span> <span class="n">periodic</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">config</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">config</span> <span class="o">=</span> <span class="n">MyConfig</span><span class="p">()</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">n_dims</span><span class="o">=</span><span class="n">n_dims</span><span class="p">,</span> <span class="n">log_prior_fn</span><span class="o">=</span><span class="n">log_prior_fn</span><span class="p">,</span>
+                         <span class="n">log_likelihood_fn</span><span class="o">=</span><span class="n">log_likelihood_fn</span><span class="p">,</span>
+                         <span class="n">log_posterior_fn</span><span class="o">=</span><span class="n">log_posterior_fn</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_result</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rng_key</span><span class="p">,</span> <span class="n">initial_position</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># initial_position: shape (n_chains, n_dims), drawn from the prior by Jim.</span>
+        <span class="c1"># ... run your sampler for self._config.n_steps steps ...</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">initial_position</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_samples</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_result</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;call sample() first&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;samples&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_result</span><span class="p">,</span>
+            <span class="s2">&quot;log_likelihood&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_result</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_result</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;call sample() first&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;n_likelihood_evaluations&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">n_steps</span><span class="p">,</span>
+        <span class="p">}</span>
+
+
+<span class="n">register_sampler</span><span class="p">(</span><span class="s2">&quot;my-sampler&quot;</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">MySampler</span><span class="p">)</span>
+</code></pre></div>
+<p>Then pass <code>MyConfig(n_steps=500)</code> as <code>sampler_config</code> to <code>Jim</code>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-circle-arrow-up" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4M12 16V8"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://zensical.org/" target="_blank" rel="noopener">
+      Zensical
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate":null,"base":"../..","features":["navigation.instant","navigation.tabs","navigation.top","toc.follow","header.autohide"],"search":"../../assets/javascripts/workers/search.e2d2d235.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":{"default":"stable","provider":"mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.6e5f0216.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

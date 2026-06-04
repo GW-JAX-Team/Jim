@@ -113,15 +113,17 @@ def adapt_prior_for_ns_time(
 
     # Case 1: t_c in prior + detector time_frame → adapt to t_det prior.
     t_c_spec = prior_cfg.root["t_c"]
-
+    assert isinstance(t_c_spec, UniformSpec), (
+        "NS-AW validation should ensure t_c is UniformSpec"
+    )
     logger.warning(
         "NS-AW sampler: replacing t_c ~ Uniform(%.4f, %.4f) in [prior] with "
         "t_det ~ Uniform(%.4f, %.4f) (same relative-offset bounds). "
         "To sample t_c directly instead, set [sampling] time_frame = 'geocentric'.",
-        t_c_spec.min,  # type: ignore[attr-defined]
-        t_c_spec.max,  # type: ignore[attr-defined]
-        t_c_spec.min,  # type: ignore[attr-defined]
-        t_c_spec.max,  # type: ignore[attr-defined]
+        t_c_spec.min,
+        t_c_spec.max,
+        t_c_spec.min,
+        t_c_spec.max,
     )
 
     # Rebuild the prior dict, preserving insertion order, substituting t_c → t_det.

@@ -525,8 +525,8 @@ class GroundBased2G(Detector):
                 suffix=".txt", prefix=f"jim_asd_{self.name}_"
             )
             try:
-                os.write(fd, response.content)
-                os.close(fd)
+                with os.fdopen(fd, "wb") as _fh:
+                    _fh.write(response.content)
                 _loaded_psd = PowerSpectrum.from_file(tmp_file_name, is_asd=True)
             finally:
                 os.unlink(tmp_file_name)

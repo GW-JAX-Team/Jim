@@ -1,5 +1,5 @@
 [project]
-name = "jimgw"
+name = "JimGW"
 dynamic = ["version"]
 description = "A JAX-based gravitational-wave inference toolkit"
 readme = "README.md"

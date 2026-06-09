@@ -42,6 +42,7 @@ default = "stable"
 [project.theme]
 variant = "modern"
 features = [
+    "content.code.copy",
     "navigation.instant",
     "navigation.tabs",
     "navigation.top",

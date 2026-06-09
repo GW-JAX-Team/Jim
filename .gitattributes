@@ -1,4 +1,4 @@
-docs/** linguist-vendored
-example/** linguist-vendored
-tests/** linguist-vendored
-uv.lock linguist-generated
+docs/**      linguist-documentation
+examples/**  linguist-detectable=false
+tests/**     linguist-detectable=false
+uv.lock      linguist-generated

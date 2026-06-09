@@ -1,3 +1,4 @@
 docs/** linguist-vendored
 example/** linguist-vendored
 tests/** linguist-vendored
+uv.lock linguist-generated

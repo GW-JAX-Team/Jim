@@ -1,0 +1,30 @@
+name: pre-commit autoupdate
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"  # 7am CET (UTC+1, winter) / 8am CEST (UTC+2, summer)
+  workflow_dispatch:
+
+jobs:
+  autoupdate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jim-dev
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - run: pip install pre-commit
+      - run: pre-commit autoupdate
+      - name: Commit if hooks changed
+        run: |
+          if git diff --quiet; then
+            echo "All hooks up to date"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .pre-commit-config.yaml
+          git commit -m "[pre-commit] autoupdate hook versions"
+          git push

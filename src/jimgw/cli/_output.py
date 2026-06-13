@@ -76,6 +76,7 @@ def write_outputs(jim, cfg) -> None:
                 trigger_time=cfg.data.trigger_time,
                 ifos=list(jim.likelihood.detectors),
                 time_frame=cfg.sampling.time_frame,
+                jim=jim,
             )
             if cfg.data.type == "injection"
             else None
@@ -90,13 +91,15 @@ def _injection_truths_in_prior_space(
     trigger_time: float,
     ifos: list[GroundBased2G],
     time_frame: str,
+    jim,
 ) -> Optional[dict[str, float]]:
     """Convert injection parameters to prior space for corner plot truth markers.
 
     injection_parameters may be in any supported parametrization (J-frame spins,
     spherical spins, q/eta, azimuth/zenith, t_det, etc.).  We convert to
     likelihood space first, then reverse the likelihood transforms to land in
-    prior space — the same space that jim.get_samples() returns.
+    prior space — the same space that jim.get_samples() returns. Also evaluates
+    and stores ``log_likelihood`` in the returned dict.
     """
     p: dict = to_likelihood_space(
         injection_parameters,
@@ -120,7 +123,18 @@ def _injection_truths_in_prior_space(
             )
             return None
 
-    return {k: float(v) for k, v in p.items()}
+    result: dict[str, float] = {k: float(v) for k, v in p.items()}
+
+    try:
+        named: dict = {k: jnp.float64(v) for k, v in result.items()}
+        for transform in jim.sample_transforms:
+            named = transform.forward(named)
+        arr = jnp.array([named[k] for k in jim.parameter_names])
+        result["log_likelihood"] = float(jim._log_likelihood_fn(arr))
+    except Exception as exc:
+        logger.warning("Could not compute injection log-likelihood: %s", exc)
+
+    return result
 
 
 def _save_corner(

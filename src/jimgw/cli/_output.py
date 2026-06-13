@@ -143,6 +143,11 @@ def _save_corner(
             labels = filtered
     data = np.column_stack([np.asarray(samples[p]) for p in labels])
 
+    # Limit number of samples for corner plot to avoid excessive memory usage and slow plotting.
+    n_corner = 5000
+    if data.shape[0] > n_corner:
+        data = data[:n_corner]
+
     truth_values = [truths.get(p) for p in labels] if truths else None
 
     fig = corner.corner(data, labels=labels, truths=truth_values)

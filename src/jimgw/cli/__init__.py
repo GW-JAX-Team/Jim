@@ -6,6 +6,7 @@ from typing import Optional
 import typer
 from pydantic import ValidationError
 
+from jimgw._logging import LOG_FORMAT
 from jimgw.cli._config import PipelineConfig
 
 logger = logging.getLogger(__name__)
@@ -81,7 +82,8 @@ def run(
 ) -> None:
     """Run a jimgw parameter-estimation pipeline from CONFIG."""
     level = logging.DEBUG if verbose else logging.INFO
-    logging.basicConfig(level=level, format="%(levelname)s | %(name)s | %(message)s")
+    logging.basicConfig(level=level, format=LOG_FORMAT)
+    # jimgw logger is isolated (propagate=False), so set its level directly.
     logging.getLogger("jimgw").setLevel(level)
 
     if init is not None:

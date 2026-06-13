@@ -13,6 +13,8 @@ from jimgw.core.prior import Prior
 from jimgw.core.transforms import BijectiveTransform, NtoMTransform
 from jimgw.core.single_event.likelihood import SingleEventLikelihood
 from jimgw.samplers import Sampler, SamplerConfig, build_sampler
+from jimgw.samplers.config import FlowMCConfig
+from jimgw._logging import ensure_logger_handler
 
 logger = logging.getLogger(__name__)
 
@@ -79,8 +81,12 @@ class Jim:
                 Pass ``True`` to also see per-step diagnostics and
                 backend-specific progress output (e.g. flowMC training loss).
         """
+        if isinstance(sampler_config, FlowMCConfig):
+            ensure_logger_handler("flowMC", logging.INFO)
         if verbose:
             logging.getLogger("jimgw").setLevel(logging.DEBUG)
+            if isinstance(sampler_config, FlowMCConfig):
+                logging.getLogger("flowMC").setLevel(logging.DEBUG)
 
         self._validate_problem(
             likelihood, prior, sample_transforms, likelihood_transforms

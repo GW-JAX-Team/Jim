@@ -1091,6 +1091,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="I am running out of GPU memory">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#flowmc-flowmcconfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        flowMC (<code>FlowMCConfig</code>)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#blackjax-nested-sampling-blackjaxnsawconfig-blackjaxnssconfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        BlackJAX nested sampling (<code>BlackJAXNSAWConfig</code>, <code>BlackJAXNSSConfig</code>)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#blackjax-smc-blackjaxsmcconfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        BlackJAX SMC (<code>BlackJAXSMCConfig</code>)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
       </ul>
@@ -2341,6 +2380,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="I am running out of GPU memory">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#flowmc-flowmcconfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        flowMC (<code>FlowMCConfig</code>)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#blackjax-nested-sampling-blackjaxnsawconfig-blackjaxnssconfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        BlackJAX nested sampling (<code>BlackJAXNSAWConfig</code>, <code>BlackJAXNSSConfig</code>)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#blackjax-smc-blackjaxsmcconfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        BlackJAX SMC (<code>BlackJAXSMCConfig</code>)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
       </ul>
@@ -2422,8 +2500,17 @@
 <p>Most computation goes into the training phase. The production phase with a trained normalizing flow is usually cheap. When in doubt, increase <code>n_training_loops</code> in the <code>Jim</code> constructor — blow it up until you cannot stand waiting.</p>
 <h2 id="gpu-and-memory">GPU and Memory<a class="headerlink" href="#gpu-and-memory" title="Permanent link">¤</a></h2>
 <h3 id="i-am-running-out-of-gpu-memory">I am running out of GPU memory<a class="headerlink" href="#i-am-running-out-of-gpu-memory" title="Permanent link">¤</a></h3>
-<p>This section applies to the flowMC backend.</p>
-<p>The most targeted fix is to set <code>chain_batch_size</code> inside <code>FlowMCConfig</code>. By default, (<code>chain_batch_size=0</code>) all chains are evaluated simultaneously; setting it to a smaller integer processes chains in batches, directly reducing peak memory at the cost of slightly slower throughput:</p>
+<p>The right knob depends on which sampler backend you use. In every case the goal is the same: shrink how much work runs simultaneously.</p>
+<h4 id="flowmc-flowmcconfig">flowMC (<code>FlowMCConfig</code>)<a class="headerlink" href="#flowmc-flowmcconfig" title="Permanent link">¤</a></h4>
+<p>flowMC has two independent memory bottlenecks:</p>
+<ol>
+<li>
+<p><strong>The NF proposal step — usually the bottleneck.</strong> During each global step the likelihood is evaluated at <code>n_chains × n_global_steps</code> normalizing-flow proposals at once. Reduce <code>n_NFproposal_batch_size</code> (default <code>1000</code>); flowMC then evaluates the proposals in smaller <code>jax.lax.map</code> chunks instead of one big batch. <strong>Try this first.</strong></p>
+</li>
+<li>
+<p><strong>The local step — when the likelihood is very expensive.</strong> Sometimes the problem is not the <code>n_chains × n_global_steps</code> proposals, but that even a <em>single</em> likelihood evaluation per chain across all <code>n_chains</code> chains will not fit. In that case also set <code>chain_batch_size</code> to a small positive integer (default <code>0</code> means all chains at once; smaller values use less memory) so chains are processed in sub-batches.</p>
+</li>
+</ol>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.samplers.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">FlowMCConfig</span>
 
 <span class="n">jim</span> <span class="o">=</span> <span class="n">Jim</span><span class="p">(</span>
@@ -2431,13 +2518,17 @@
     <span class="n">prior</span><span class="p">,</span>
     <span class="n">sampler_config</span><span class="o">=</span><span class="n">FlowMCConfig</span><span class="p">(</span>
         <span class="n">n_chains</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
-        <span class="n">chain_batch_size</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>  <span class="c1"># process 100 chains at a time instead of all at once</span>
+        <span class="n">n_NFproposal_batch_size</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>  <span class="c1"># smaller NF-proposal batches (try this first)</span>
+        <span class="n">chain_batch_size</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>         <span class="c1"># also batch chains if the likelihood alone is too big</span>
         <span class="c1"># ... other parameters</span>
     <span class="p">),</span>
     <span class="o">...</span>
 <span class="p">)</span>
 </code></pre></div>
-<p>If memory is still tight, reducing <code>n_chains</code> inside <code>FlowMCConfig</code> will also help.</p>
+<h4 id="blackjax-nested-sampling-blackjaxnsawconfig-blackjaxnssconfig">BlackJAX nested sampling (<code>BlackJAXNSAWConfig</code>, <code>BlackJAXNSSConfig</code>)<a class="headerlink" href="#blackjax-nested-sampling-blackjaxnsawconfig-blackjaxnssconfig" title="Permanent link">¤</a></h4>
+<p>Each iteration deletes and replaces <code>n_live × n_delete_frac</code> live points in parallel. Reduce <code>n_delete_frac</code> (default <code>0.5</code>) to evaluate fewer replacements at a time.</p>
+<h4 id="blackjax-smc-blackjaxsmcconfig">BlackJAX SMC (<code>BlackJAXSMCConfig</code>)<a class="headerlink" href="#blackjax-smc-blackjaxsmcconfig" title="Permanent link">¤</a></h4>
+<p>Set <code>batch_size</code> to a small positive integer (default <code>0</code> = full <code>jax.vmap</code> over all particles; smaller values use less memory). The MCMC update then runs over particles in <code>jax.lax.map</code> batches instead of vmapping all <code>n_particles</code> at once.</p>
 <h2 id="quality-assessment">Quality Assessment<a class="headerlink" href="#quality-assessment" title="Permanent link">¤</a></h2>
 <h3 id="how-do-i-know-if-my-run-converged">How do I know if my run converged?<a class="headerlink" href="#how-do-i-know-if-my-run-converged" title="Permanent link">¤</a></h3>
 <p>After sampling, always check:</p>

@@ -95,7 +95,8 @@ build-backend = "hatchling.build"
 
 [tool.hatch.version]
 source = "vcs"
-fallback-version = "0.4.0"
+fallback-version = "0.0.0"
+raw-options = { local_scheme = "no-local-version" }
 
 [tool.pytest.ini_options]
 pythonpath = ["."]

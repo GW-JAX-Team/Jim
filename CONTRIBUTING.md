@@ -11,9 +11,9 @@ If it has been more than a week or two, feel free to ping the maintainers on the
 
 ## Did you find a bug?
 
-**Ensure the bug was not already reported** by searching on GitHub under [Issues](https://github.com/GW-JAX-Team/jim/issues).
+**Ensure the bug was not already reported** by searching on GitHub under [Issues](https://github.com/GW-JAX-Team/Jim/issues).
 If you’re unable to find an
-open issue addressing the problem, [open a new one](https://github.com/GW-JAX-Team/jim/issues/new).
+open issue addressing the problem, [open a new one](https://github.com/GW-JAX-Team/Jim/issues/new).
 Be sure to include a **title and clear description**, as much relevant information as possible, and the simplest possible **code sample** demonstrating the expected behaviour that is not occurring.
 
 ## Did you write a patch that fixes a bug?

@@ -10,4 +10,4 @@ jim-run GW150914_flowmc.toml
 
 Outputs are written to the directory specified by `output.dir` in the config. Run `jim-run --help` for available options.
 
-For a detailed walkthrough of what each config section does, see the [GW150914 tutorial](https://gw-jax-team.github.io/jim/stable/tutorials/gw150914_cli/) or the [CLI Config Reference](https://gw-jax-team.github.io/jim/stable/guides/cli/).
+For a detailed walkthrough of what each config section does, see the [GW150914 tutorial](https://gw-jax-team.github.io/Jim/stable/tutorials/gw150914_cli/) or the [CLI Config Reference](https://gw-jax-team.github.io/Jim/stable/guides/cli/).

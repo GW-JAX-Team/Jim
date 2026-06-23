@@ -1,5 +1,5 @@
 [project]
-name = "jimgw"
+name = "JimGW"
 dynamic = ["version"]
 description = "A JAX-based gravitational-wave inference toolkit"
 readme = "README.md"
@@ -25,13 +25,17 @@ dependencies = [
     "astropy>=7.0.1",
     "beartype>=0.19.0",
     "blackjax>=1.4",
+    "corner>=2.2.3",
     "equinox>=0.11",
     "evosax>=0.2.0",
     "flowmc>=0.6.0",
     "gwpy>=3.0.12",
     "jax>=0.8.2",
     "jaxtyping>=0.3.3",
+    "matplotlib>=3.10.7",
+    "numpy>=1.26",
     "pydantic>=2",
+    "requests>=2.32.3",
     "ripplegw>=0.2.0",
     "scipy>=1.17.1",
     "tomli-w>=1.0",
@@ -44,11 +48,6 @@ jim-run = "jimgw.cli:app"
 [project.optional-dependencies]
 cuda = [
     "jax[cuda]>=0.8.2",
-]
-visualize = [
-    "numpy",
-    "corner>=2.2.3",
-    "matplotlib>=3.10.7",
 ]
 
 [dependency-groups]
@@ -76,11 +75,11 @@ nested-sampling = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/GW-JAX-Team/jim"
-Documentation = "https://gw-jax-team.github.io/jim/"
-Repository = "https://github.com/GW-JAX-Team/jim"
-"Bug Tracker" = "https://github.com/GW-JAX-Team/jim/issues"
-Changelog = "https://github.com/GW-JAX-Team/jim/releases"
+Homepage = "https://github.com/GW-JAX-Team/Jim"
+Documentation = "https://gw-jax-team.github.io/Jim/"
+Repository = "https://github.com/GW-JAX-Team/Jim"
+"Bug Tracker" = "https://github.com/GW-JAX-Team/Jim/issues"
+Changelog = "https://github.com/GW-JAX-Team/Jim/releases"
 
 [tool.uv.sources]
 jimgw = { workspace = true }
@@ -96,7 +95,8 @@ build-backend = "hatchling.build"
 
 [tool.hatch.version]
 source = "vcs"
-fallback-version = "0.3.0"
+fallback-version = "0.0.0"
+raw-options = { local_scheme = "no-local-version" }
 
 [tool.pytest.ini_options]
 pythonpath = ["."]

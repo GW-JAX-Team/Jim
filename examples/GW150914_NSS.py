@@ -3,7 +3,6 @@
 import time
 from pathlib import Path
 
-# Plotting requires the visualize extra: pip install jimgw[visualize]
 import corner
 import numpy as np
 import jax

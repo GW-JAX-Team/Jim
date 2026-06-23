@@ -444,7 +444,7 @@ class OutputConfig(BaseModel):
     dir: Path
     save_corner: bool = False
     n_samples: int = Field(
-        default=0, description="Number of posterior samples to save. 0 = all."
+        default=10000, description="Number of posterior samples to save. 0 = all."
     )
     overwrite: bool = False
     corner_parameters: Optional[list[str]] = None

@@ -4,9 +4,11 @@ import shutil
 from pathlib import Path
 from typing import Optional
 
+import corner  # type: ignore[import]
+import jax.numpy as jnp
+import matplotlib.pyplot as plt
 import numpy as np
 import tomli_w
-import jax.numpy as jnp
 
 from jimgw.cli._transforms import to_likelihood_space
 from jimgw.core.single_event.detector import GroundBased2G
@@ -143,13 +145,6 @@ def _save_corner(
     param_names: Optional[list[str]] = None,
     truths: Optional[dict[str, float]] = None,
 ) -> None:
-    try:
-        import corner  # type: ignore[import]
-        import matplotlib.pyplot as plt  # type: ignore[import]
-    except ImportError:
-        logger.warning("corner or matplotlib not available — skipping corner plot")
-        return
-
     labels = list(samples.keys())
     if param_names:
         filtered = [p for p in param_names if p in samples]

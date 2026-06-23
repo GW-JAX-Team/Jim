@@ -155,9 +155,12 @@ def _save_corner(
     data = np.column_stack([np.asarray(samples[p]) for p in labels])
 
     # Limit number of samples for corner plot to avoid excessive memory usage and slow plotting.
+    # Use random subsampling rather than a head-slice to avoid bias from chain ordering.
     n_corner = 5000
     if data.shape[0] > n_corner:
-        data = data[:n_corner]
+        rng = np.random.default_rng(seed=0)
+        idx = rng.choice(data.shape[0], size=n_corner, replace=False)
+        data = data[idx]
 
     truth_values = [truths.get(p) for p in labels] if truths else None
 

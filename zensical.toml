@@ -1,10 +1,10 @@
 [project]
 site_name = "Jim"
-site_url = "https://gw-jax-team.github.io/jim/"
+site_url = "https://gw-jax-team.github.io/Jim/"
 site_description = "A JAX-based gravitational-wave inference toolkit"
 site_author = "GW JAX Team"
-repo_url = "https://github.com/GW-JAX-Team/jim"
-repo_name = "GW-JAX-Team/jim"
+repo_url = "https://github.com/GW-JAX-Team/Jim"
+repo_name = "GW-JAX-Team/Jim"
 
 extra_javascript = [
     "javascripts/mathjax.js",

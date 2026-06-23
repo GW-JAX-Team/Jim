@@ -75,11 +75,11 @@ nested-sampling = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/GW-JAX-Team/jim"
-Documentation = "https://gw-jax-team.github.io/jim/"
-Repository = "https://github.com/GW-JAX-Team/jim"
-"Bug Tracker" = "https://github.com/GW-JAX-Team/jim/issues"
-Changelog = "https://github.com/GW-JAX-Team/jim/releases"
+Homepage = "https://github.com/GW-JAX-Team/Jim"
+Documentation = "https://gw-jax-team.github.io/Jim/"
+Repository = "https://github.com/GW-JAX-Team/Jim"
+"Bug Tracker" = "https://github.com/GW-JAX-Team/Jim/issues"
+Changelog = "https://github.com/GW-JAX-Team/Jim/releases"
 
 [tool.uv.sources]
 jimgw = { workspace = true }

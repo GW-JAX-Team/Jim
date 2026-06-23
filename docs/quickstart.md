@@ -117,7 +117,7 @@ params  = data["parameter_names"].tolist()
 - **[Analysing GW150914 with the CLI](tutorials/gw150914_cli.md)** — a step-by-step walkthrough of a real event analysis.
 - **[CLI Config Reference](guides/cli.md)** — all config sections, fields, and defaults in one place.
 - **[Guides](guides/index.md)** — in-depth coverage of data loading, likelihoods, priors, samplers, and transforms.
-- **[Examples](https://github.com/GW-JAX-Team/jim/tree/main/examples)** — Standalone Python scripts and CLI configs covering multiple events and samplers.
+- **[Examples](https://github.com/GW-JAX-Team/Jim/tree/main/examples)** — Standalone Python scripts and CLI configs covering multiple events and samplers.
 
 ---
 

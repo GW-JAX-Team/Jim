@@ -18,8 +18,8 @@ pip install "JimGW[cuda]"
 If you want to install the latest version of Jim, you can clone this repo and install it locally:
 
 ```bash
-git clone https://github.com/GW-JAX-Team/jim.git
-cd jim
+git clone https://github.com/GW-JAX-Team/Jim.git
+cd Jim
 pip install -e .
 ```
 
@@ -35,8 +35,8 @@ They are distributed via a maintained fork and must be installed separately.
 Clone the repository if you haven't already, then sync the nested-sampling group:
 
 ```bash
-git clone https://github.com/GW-JAX-Team/jim.git
-cd jim
+git clone https://github.com/GW-JAX-Team/Jim.git
+cd Jim
 uv sync --group nested-sampling
 ```
 

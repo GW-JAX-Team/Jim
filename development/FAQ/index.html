@@ -2505,10 +2505,15 @@
 <p>flowMC has two independent memory bottlenecks:</p>
 <ol>
 <li>
-<p><strong>The NF proposal step — usually the bottleneck.</strong> During each global step the likelihood is evaluated at <code>n_chains × n_global_steps</code> normalizing-flow proposals at once. Reduce <code>n_NFproposal_batch_size</code> (default <code>1000</code>); flowMC then evaluates the proposals in smaller <code>jax.lax.map</code> chunks instead of one big batch. <strong>Try this first.</strong></p>
+<p><strong>The NF proposal step — usually the bottleneck.</strong>
+During each global step, normalizing-flow proposals are generated for all chains at once.
+Reduce <code>n_NFproposal_batch_size</code> (default <code>1000</code>); flowMC then evaluates the proposals in smaller <code>jax.lax.map</code> chunks instead of one big batch.
+<strong>Try this first.</strong></p>
 </li>
 <li>
-<p><strong>The local step — when the likelihood is very expensive.</strong> Sometimes the problem is not the <code>n_chains × n_global_steps</code> proposals, but that even a <em>single</em> likelihood evaluation per chain across all <code>n_chains</code> chains will not fit. In that case also set <code>chain_batch_size</code> to a small positive integer (default <code>0</code> means all chains at once; smaller values use less memory) so chains are processed in sub-batches.</p>
+<p><strong>The local step — when the likelihood is very expensive.</strong>
+Sometimes the problem is not the NF proposals, but that even a <em>single</em> likelihood evaluation per chain across all <code>n_chains</code> chains will not fit.
+In that case also set <code>chain_batch_size</code> to a small positive integer (default <code>0</code> means all chains at once; smaller values use less memory) so chains are processed in sub-batches.</p>
 </li>
 </ol>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.samplers.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">FlowMCConfig</span>

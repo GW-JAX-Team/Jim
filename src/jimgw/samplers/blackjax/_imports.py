@@ -6,8 +6,6 @@ Install them via the ``nested-sampling`` dependency group:
     uv sync --group nested-sampling
 """
 
-from __future__ import annotations
-
 _INSTALL_MSG = (
     "The BlackJAX nested-sampling submodules are required for this sampler "
     "but are not available in the installed version.  Install them with:\n"

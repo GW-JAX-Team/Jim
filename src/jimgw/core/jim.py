@@ -6,6 +6,7 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 from jaxtyping import Array, Float, Key
+from jimgw.typing import FloatScalar
 from ripplegw.interfaces import Waveform
 
 from jimgw.core.base import LikelihoodBase
@@ -293,15 +294,15 @@ class Jim:
         # (n_dims,) and are injected into the sampler.
         names = self.parameter_names
 
-        def _log_prior_fn(arr: Float[Array, " n_dims"]) -> Float:
+        def _log_prior_fn(arr: Float[Array, " n_dims"]) -> FloatScalar:
             named = dict(zip(names, arr, strict=True))
-            jac: Float = 0.0
+            jac: FloatScalar = jnp.zeros(())
             for transform in reversed(sample_transforms):
                 named, j = transform.inverse(named)
                 jac += j
             return prior.log_prob(named) + jac
 
-        def _log_likelihood_fn(arr: Float[Array, " n_dims"]) -> Float:
+        def _log_likelihood_fn(arr: Float[Array, " n_dims"]) -> FloatScalar:
             named = dict(zip(names, arr, strict=True))
             for transform in reversed(sample_transforms):
                 named, _ = transform.inverse(named)
@@ -309,9 +310,9 @@ class Jim:
                 named = transform.forward(named)
             return likelihood.evaluate(named)
 
-        def _log_posterior_fn(arr: Float[Array, " n_dims"]) -> Float:
+        def _log_posterior_fn(arr: Float[Array, " n_dims"]) -> FloatScalar:
             named = dict(zip(names, arr, strict=True))
-            jac: Float = 0.0
+            jac: FloatScalar = jnp.zeros(())
             for transform in reversed(sample_transforms):
                 named, j = transform.inverse(named)
                 jac = jac + j

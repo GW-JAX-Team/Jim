@@ -5,14 +5,12 @@ Each sampler has its own ``*Config`` class discriminated by a ``type`` literal;
 ``Jim(..., sampler_config=...)``.
 """
 
-from __future__ import annotations
-
 import logging
 import pickle
 import time
 import warnings
 from pathlib import Path
-from typing import Annotated, Any, Literal, Optional, Union
+from typing import Annotated, Any, Literal, Optional, Self, Union
 
 import jax
 import numpy as np
@@ -65,7 +63,7 @@ class _CheckpointMixin(BaseModel):
         return v
 
     @model_validator(mode="after")
-    def _check_checkpoint_consistency(self) -> "_CheckpointMixin":
+    def _check_checkpoint_consistency(self) -> Self:
         if self.checkpoint_interval > 0 and self.checkpoint_dir is None:
             raise ValueError(
                 "checkpoint_dir must be set when checkpoint_interval > 0. "
@@ -255,7 +253,7 @@ class FlowMCConfig(BaseSamplerConfig, _CheckpointMixin):
         )
 
     @model_validator(mode="after")
-    def _warn_if_irrelevant_kernel_set(self) -> FlowMCConfig:
+    def _warn_if_irrelevant_kernel_set(self) -> Self:
         active = self.local_kernel
         for name in ("MALA", "HMC", "GRW"):
             if name == active:
@@ -304,7 +302,7 @@ class BlackJAXNSAWConfig(BaseSamplerConfig, _CheckpointMixin):
         return v
 
     @model_validator(mode="after")
-    def _n_live_n_delete_consistency(self) -> "BlackJAXNSAWConfig":
+    def _n_live_n_delete_consistency(self) -> Self:
         if self.n_live < 2:
             raise ValueError(f"n_live must be >= 2 (got {self.n_live}).")
         n_delete = int(self.n_live * self.n_delete_frac)
@@ -340,7 +338,7 @@ class BlackJAXNSSConfig(BaseSamplerConfig, _CheckpointMixin):
         return v
 
     @model_validator(mode="after")
-    def _n_live_n_delete_consistency(self) -> "BlackJAXNSSConfig":
+    def _n_live_n_delete_consistency(self) -> Self:
         if self.n_live < 2:
             raise ValueError(f"n_live must be >= 2 (got {self.n_live}).")
         n_delete = int(self.n_live * self.n_delete_frac)
@@ -403,7 +401,7 @@ class BlackJAXSMCConfig(BaseSamplerConfig, _CheckpointMixin):
         return v
 
     @model_validator(mode="after")
-    def _validate_ess_args(self) -> BlackJAXSMCConfig:
+    def _validate_ess_args(self) -> Self:
         both_set = self.target_ess is not None and self.target_ess_fraction is not None
         if both_set:
             raise ValueError(

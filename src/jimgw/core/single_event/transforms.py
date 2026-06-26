@@ -2,6 +2,7 @@ from typing import Sequence
 import jax.numpy as jnp
 from beartype import beartype as typechecker
 from jaxtyping import Float, Array, jaxtyped
+from jimgw.typing import FloatScalar
 
 from jimgw.core.single_event.detector import GroundBased2G
 from jimgw.core.transforms import (
@@ -46,14 +47,14 @@ class SpinAnglesToCartesianSpinTransform(ConditionalBijectiveTransform):
         freq_ref (Float): Reference frequency used in the spin conversion.
     """
 
-    freq_ref: Float
+    freq_ref: float
 
     def __repr__(self):
         return f"SpinAnglesToCartesianSpinTransform(freq_ref={self.freq_ref})"
 
     def __init__(
         self,
-        freq_ref: Float,
+        freq_ref: float,
         fixed_phase: bool = False,
     ) -> None:
         """
@@ -262,7 +263,7 @@ class SkyFrameToDetectorFrameSkyPositionTransform(BijectiveTransform):
         rotation_inv (Float[Array, "3 3"]): Inverse rotation matrix.
     """
 
-    gmst: Float
+    gmst: FloatScalar
     rotation: Float[Array, "3 3"]
     rotation_inv: Float[Array, "3 3"]
 
@@ -271,7 +272,7 @@ class SkyFrameToDetectorFrameSkyPositionTransform(BijectiveTransform):
 
     def __init__(
         self,
-        trigger_time: Float,
+        trigger_time: float,
         ifos: Sequence[GroundBased2G],
     ) -> None:
         """
@@ -323,7 +324,7 @@ class GeocentricArrivalTimeToDetectorArrivalTimeTransform(
         ifo (GroundBased2G): The target detector.
     """
 
-    gmst: Float
+    gmst: FloatScalar
     ifo: GroundBased2G
 
     def __repr__(self):
@@ -331,7 +332,7 @@ class GeocentricArrivalTimeToDetectorArrivalTimeTransform(
 
     def __init__(
         self,
-        trigger_time: Float,
+        trigger_time: float,
         ifo: GroundBased2G,
     ) -> None:
         """
@@ -408,7 +409,7 @@ class GeocentricArrivalPhaseToDetectorArrivalPhaseTransform(
         ifo (GroundBased2G): The target detector.
     """
 
-    gmst: Float
+    gmst: FloatScalar
     ifo: GroundBased2G
 
     def __repr__(self):
@@ -416,7 +417,7 @@ class GeocentricArrivalPhaseToDetectorArrivalPhaseTransform(
 
     def __init__(
         self,
-        trigger_time: Float,
+        trigger_time: float,
         ifo: GroundBased2G,
     ) -> None:
         """
@@ -501,7 +502,7 @@ class DistanceToSNRWeightedDistanceTransform(ConditionalBijectiveTransform):
         ifos (Sequence[GroundBased2G]): List of detectors forming the network.
     """
 
-    gmst: Float
+    gmst: FloatScalar
     ifos: Sequence[GroundBased2G]
 
     def __repr__(self):
@@ -509,7 +510,7 @@ class DistanceToSNRWeightedDistanceTransform(ConditionalBijectiveTransform):
 
     def __init__(
         self,
-        trigger_time: Float,
+        trigger_time: float,
         ifos: Sequence[GroundBased2G],
     ) -> None:
         """

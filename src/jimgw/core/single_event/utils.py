@@ -7,7 +7,8 @@ and the fixed-parameter application helper.
 """
 
 import jax.numpy as jnp
-from jaxtyping import Array, Float, Complex
+from jaxtyping import Array, Float
+from jimgw.typing import ComplexScalar, FloatLike, FloatScalar
 from typing import Callable
 
 
@@ -62,8 +63,8 @@ def complex_inner_product(
     h1: Float[Array, " n_freq"],
     h2: Float[Array, " n_freq"],
     psd: Float[Array, " n_freq"],
-    df: Float,
-) -> Complex:
+    df: FloatLike,
+) -> ComplexScalar:
     """Compute the complex noise-weighted inner product of two frequency-domain waveforms.
 
     The first waveform ``h1`` is complex-conjugated. The result is:
@@ -92,8 +93,8 @@ def inner_product(
     h1: Float[Array, " n_freq"],
     h2: Float[Array, " n_freq"],
     psd: Float[Array, " n_freq"],
-    df: Float,
-) -> Float:
+    df: FloatLike,
+) -> FloatScalar:
     """Compute the real noise-weighted inner product of two frequency-domain waveforms.
 
     Returns the real part of `complex_inner_product`:

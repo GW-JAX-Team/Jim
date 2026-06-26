@@ -10,8 +10,6 @@ Prathaban, M., Yallup, D., Alvey, J., Yang, M., Templeton, W., Handley, W.,
 kernel within blackjax-ns", arXiv:2509.04336 (Sep 2025).
 """
 
-from __future__ import annotations
-
 from functools import partial
 from typing import NamedTuple, cast
 

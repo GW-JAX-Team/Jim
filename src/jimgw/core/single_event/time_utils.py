@@ -11,7 +11,8 @@ See: https://github.com/google/jax-datetime/
 
 from jax import config
 import jax.numpy as jnp
-from jaxtyping import Float, Int
+from jaxtyping import Array, Bool, Int
+from jimgw.typing import FloatLike, FloatScalar, IntScalar
 
 if not config.read("jax_enable_x64"):
     raise RuntimeError(
@@ -65,7 +66,7 @@ LEAP_SECONDS = jnp.array(
 )
 
 
-def int_div(a: Int, b: Int) -> Int:
+def int_div(a: int | IntScalar, b: int | IntScalar) -> IntScalar:
     """This is to emulate the C-style integer division in Python.
     See: https://stackoverflow.com/a/61386872
     """
@@ -73,7 +74,7 @@ def int_div(a: Int, b: Int) -> Int:
     return jnp.where(((a >= 0) != (b >= 0)) & r, q + 1, q)
 
 
-def n_leap_seconds(date: Int) -> Int:
+def n_leap_seconds(date: FloatLike) -> FloatScalar:
     """
     Find the number of leap seconds required for the specified date.
 
@@ -98,7 +99,7 @@ def n_leap_seconds(date: Int) -> Int:
     return jnp.sum(date > LEAP_SECONDS).astype(jnp.float64)
 
 
-def is_leap_year(year: Int) -> Int:
+def is_leap_year(year: int | Int[Array, "..."]) -> bool | Bool[Array, "..."]:
     """Check whether a year is a leap year.
 
     Args:
@@ -126,7 +127,9 @@ IS_LEAP_YEARS = is_leap_year(YEAR_ARRAY)
 LEAP_SEC_ARRAY = jnp.where(IS_LEAP_YEARS, LEAP_YEAR_SECONDS, SECONDS_IN_YEAR)
 
 
-def utc_date_from_timestamp(timestamp: Int) -> tuple[Int, Int, Int, Int]:
+def utc_date_from_timestamp(
+    timestamp: int | IntScalar,
+) -> tuple[IntScalar, IntScalar, IntScalar, IntScalar]:
     """
     This function converts a UTC timestamp to a UTC date (year, month, day, seconds).
 
@@ -181,7 +184,9 @@ def utc_date_from_timestamp(timestamp: Int) -> tuple[Int, Int, Int, Int]:
     return year, month, day + 1, seconds.astype(jnp.int64)
 
 
-def gps_to_utc_date(gps_time: Float) -> tuple[Int, Int, Int, Int]:
+def gps_to_utc_date(
+    gps_time: FloatLike,
+) -> tuple[IntScalar, IntScalar, IntScalar, IntScalar]:
     """
     Args:
         gps_time (float): The GPS time to convert.
@@ -192,7 +197,7 @@ def gps_to_utc_date(gps_time: Float) -> tuple[Int, Int, Int, Int]:
     return utc_date_from_timestamp(GPS_EPOCH + _sec.astype(int))
 
 
-def gps_to_julian_day(gps_time: Float) -> Float:
+def gps_to_julian_day(gps_time: FloatLike) -> FloatScalar:
     """
     Convert from UTC to Julian day, this is a necessary intermediate step in
     converting from GPS to GMST.
@@ -220,7 +225,9 @@ def gps_to_julian_day(gps_time: Float) -> Float:
     )
 
 
-def greenwich_mean_sidereal_time(gps_time: Float) -> Float:
+def greenwich_mean_sidereal_time(
+    gps_time: FloatLike,
+) -> FloatScalar:
     """Compute the Greenwich Mean Sidereal Time (GMST) from the GPS time.
 
     Args:
@@ -232,7 +239,9 @@ def greenwich_mean_sidereal_time(gps_time: Float) -> Float:
     return greenwich_sidereal_time(gps_time, 0.0)
 
 
-def greenwich_sidereal_time(gps_time: Float, equation_of_equinoxes: Float) -> Float:
+def greenwich_sidereal_time(
+    gps_time: FloatLike, equation_of_equinoxes: float
+) -> FloatScalar:
     """
     Compute the Greenwich mean sidereal time from the GPS time and equation of
     equinoxes.

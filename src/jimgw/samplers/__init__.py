@@ -12,8 +12,6 @@ raised only when the caller actually asks for that backend via
 `build_sampler`.
 """
 
-from __future__ import annotations
-
 from collections.abc import Callable
 from typing import Optional
 

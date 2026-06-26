@@ -1,7 +1,5 @@
 """BlackJAX Nested Slice Sampling (NSS)."""
 
-from __future__ import annotations
-
 import logging
 import pickle
 import shutil
@@ -243,6 +241,7 @@ class BlackJAXNSSSampler(Sampler):
             ckpt_path.unlink(missing_ok=True)
         if config.checkpoint_dir is not None:
             shutil.rmtree(config.checkpoint_dir / "jax_cache", ignore_errors=True)
+            jax.config.update("jax_compilation_cache_dir", None)
 
     def get_samples(self) -> dict[str, np.ndarray]:
         """Return equally-weighted posterior samples via anesthetic's ``posterior_points``.

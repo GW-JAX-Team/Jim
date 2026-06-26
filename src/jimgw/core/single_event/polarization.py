@@ -3,6 +3,7 @@
 import equinox as eqx
 import jax.numpy as jnp
 from jaxtyping import Array, Float
+from jimgw.typing import FloatScalar
 
 KNOWN_POLS = "pcxybl"
 
@@ -51,7 +52,11 @@ class Polarization(eqx.Module):
             raise ValueError(f"unrecognized polarization {self.name}")
 
     def tensor_from_sky(
-        self, ra: Float, dec: Float, psi: Float, gmst: Float
+        self,
+        ra: FloatScalar,
+        dec: FloatScalar,
+        psi: FloatScalar,
+        gmst: FloatScalar,
     ) -> Float[Array, "3 3"]:
         """Computes {name} polarization tensor in celestial
         coordinates from sky location and orientation parameters.

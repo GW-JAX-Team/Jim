@@ -11,8 +11,6 @@ displacement wrapper.  The adapters below handle those conversions.
 All adapters operate on flat JAX arrays of shape ``(n_dims,)``.
 """
 
-from __future__ import annotations
-
 from typing import Callable, Optional
 
 import jax.numpy as jnp

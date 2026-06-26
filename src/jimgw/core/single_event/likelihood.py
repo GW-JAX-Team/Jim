@@ -5,6 +5,7 @@ import jax
 import jax.numpy as jnp
 from jax.scipy.special import logsumexp
 from jaxtyping import Array, Float
+from jimgw.typing import ComplexScalar, FloatLike, FloatScalar
 from scipy.interpolate import interp1d
 from evosax.algorithms import CMA_ES
 from ripplegw.interfaces import Waveform
@@ -40,7 +41,7 @@ class SingleEventLikelihood(LikelihoodBase):
     ]
 
     @property
-    def duration(self) -> Float:
+    def duration(self) -> FloatLike:
         """Duration of the data segment in seconds (taken from the first detector)."""
         return self.detectors[0].data.duration
 
@@ -91,7 +92,7 @@ class SingleEventLikelihood(LikelihoodBase):
         self.waveform = waveform
         self.fixed_parameters = fixed_parameters if fixed_parameters is not None else {}
 
-    def evaluate(self, params: dict[str, Float]) -> Float:
+    def evaluate(self, params: dict[str, Float]) -> FloatScalar:
         """Apply ``fixed_parameters`` overrides and evaluate the likelihood.
 
         Constants are injected directly; callables receive the current params
@@ -103,7 +104,7 @@ class SingleEventLikelihood(LikelihoodBase):
         return self._likelihood(params)
 
     @abstractmethod
-    def _likelihood(self, params: dict[str, Float]) -> Float:
+    def _likelihood(self, params: dict[str, Float]) -> FloatScalar:
         """Core likelihood evaluation method to be implemented by subclasses."""
         raise NotImplementedError("Subclasses must implement this method.")
 
@@ -117,16 +118,16 @@ class ZeroLikelihood(LikelihoodBase):
     def __init__(self) -> None:
         pass
 
-    def evaluate(self, params: dict[str, Float]) -> Float:
+    def evaluate(self, params: dict[str, Float]) -> FloatScalar:
         """Return zero regardless of the parameters.
 
         Args:
             params (dict[str, Float]): Ignored.
 
         Returns:
-            Float: Always 0.0.
+            FloatScalar: Always 0.0.
         """
-        return 0.0
+        return jnp.zeros(())
 
 
 # ---------------------------------------------------------------------------
@@ -192,7 +193,7 @@ class TransientLikelihoodFD(SingleEventLikelihood):
         ] = None,
         f_min: float | dict[str, float] = 0.0,
         f_max: float | dict[str, float] = jnp.inf,
-        trigger_time: Float = 0,
+        trigger_time: float = 0,
         time_marginalization: Optional[Union[TimeMargConfig, dict, bool]] = None,
         phase_marginalization: Optional[Union[PhaseMargConfig, dict, bool]] = None,
         distance_marginalization: Optional[
@@ -285,7 +286,7 @@ class TransientLikelihoodFD(SingleEventLikelihood):
                 distance_marginalization.ref_dist,
             )
 
-    def evaluate(self, params: dict[str, Float]) -> Float:
+    def evaluate(self, params: dict[str, Float]) -> FloatScalar:
         params = params.copy()
         params["trigger_time"] = self.trigger_time
         params["gmst"] = self.gmst
@@ -298,14 +299,14 @@ class TransientLikelihoodFD(SingleEventLikelihood):
         apply_fixed_parameters(params, self.fixed_parameters)
         return self._likelihood(params)
 
-    def _likelihood(self, params: dict[str, Float]) -> Float:
+    def _likelihood(self, params: dict[str, Float]) -> FloatScalar:
         waveform_sky = self.waveform(self.frequencies, params)
 
         # --- choose accumulation type based on flags ---
         if self.time_marginalization:
             # Per-frequency complex array for FFT-based time marginalization
             complex_d_inner_h = jnp.zeros(len(self.frequencies), dtype=jnp.complex128)
-            log_likelihood = 0.0
+            log_likelihood: FloatScalar = jnp.zeros(())
 
             for i, ifo in enumerate(self.detectors):
                 psd = ifo.sliced_psd
@@ -332,9 +333,9 @@ class TransientLikelihoodFD(SingleEventLikelihood):
 
         elif self.phase_marginalization or self.distance_marginalization:
             # Need complex or real accumulation across detectors
-            complex_d_inner_h = 0.0 + 0.0j
-            match_filter_snr = 0.0
-            optimal_snr = 0.0
+            complex_d_inner_h: ComplexScalar = jnp.zeros((), dtype=jnp.complex128)
+            match_filter_snr: FloatScalar = jnp.zeros(())
+            optimal_snr: FloatScalar = jnp.zeros(())
 
             for i, ifo in enumerate(self.detectors):
                 psd = ifo.sliced_psd
@@ -367,7 +368,7 @@ class TransientLikelihoodFD(SingleEventLikelihood):
 
         else:
             # No marginalization
-            log_likelihood = 0.0
+            log_likelihood: FloatScalar = jnp.zeros(())
             for i, ifo in enumerate(self.detectors):
                 psd = ifo.sliced_psd
                 waveform_sky_ifo = {
@@ -399,7 +400,7 @@ class TransientLikelihoodFD(SingleEventLikelihood):
         )
         self.pad_high = jnp.zeros(max(0, n_pad_high))
 
-    def _reduce_time(self, complex_d_inner_h: Float[Array, " n_freq"]) -> Float:
+    def _reduce_time(self, complex_d_inner_h: Float[Array, " n_freq"]) -> FloatScalar:
         """FFT-based time marginalization (real part)."""
         complex_d_inner_h_positive_f = jnp.concatenate(
             (self.pad_low, complex_d_inner_h, self.pad_high)
@@ -420,7 +421,11 @@ class TransientLikelihoodFD(SingleEventLikelihood):
                 "Cannot have phase_c fixed while marginalizing over phase_c"
             )
 
-    def _reduce_phase(self, complex_d_inner_h: complex, optimal_snr: Float) -> Float:
+    def _reduce_phase(
+        self,
+        complex_d_inner_h: complex | ComplexScalar,
+        optimal_snr: FloatScalar,
+    ) -> FloatScalar:
         """Phase marginalization via modified Bessel function (Thrane & Talbot 2019, Eq. 24)."""
         return -optimal_snr / 2 + log_i0(jnp.absolute(complex_d_inner_h))
 
@@ -475,7 +480,9 @@ class TransientLikelihoodFD(SingleEventLikelihood):
         log_w = log_prob_fn(distance_grid) + jnp.log(delta_d)
         self.log_weights = log_w - logsumexp(log_w)
 
-    def _reduce_distance(self, match_filter_snr: Float, optimal_snr: Float) -> Float:
+    def _reduce_distance(
+        self, match_filter_snr: FloatScalar, optimal_snr: FloatScalar
+    ) -> FloatScalar:
         """Distance marginalization using scaling + logsumexp."""
         log_integrand = (
             match_filter_snr * self.scaling
@@ -486,7 +493,9 @@ class TransientLikelihoodFD(SingleEventLikelihood):
 
     # --- combined marginalization helpers ---
 
-    def _reduce_phase_time(self, complex_d_inner_h: Float[Array, " n_freq"]) -> Float:
+    def _reduce_phase_time(
+        self, complex_d_inner_h: Float[Array, " n_freq"]
+    ) -> FloatScalar:
         """FFT-based time + phase marginalization (Bessel-weighted FFT)."""
         complex_d_inner_h_positive_f = jnp.concatenate(
             (self.pad_low, complex_d_inner_h, self.pad_high)
@@ -500,8 +509,10 @@ class TransientLikelihoodFD(SingleEventLikelihood):
         return logsumexp(log_i0_abs_fft) - jnp.log(len(self.tc_array))
 
     def _reduce_phase_distance(
-        self, complex_d_inner_h: complex, optimal_snr: Float
-    ) -> Float:
+        self,
+        complex_d_inner_h: complex | ComplexScalar,
+        optimal_snr: FloatScalar,
+    ) -> FloatScalar:
         """Phase + distance marginalization (Thrane & Talbot 2019, Eq. 79)."""
         abs_kappa = jnp.absolute(complex_d_inner_h)
         log_integrand = (
@@ -726,7 +737,7 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
             self.B0_array[detector.name] = B0[mask_heterodyne_center]
             self.B1_array[detector.name] = B1[mask_heterodyne_center]
 
-    def evaluate(self, params: dict[str, Float]) -> Float:
+    def evaluate(self, params: dict[str, Float]) -> FloatScalar:
         params = params.copy()
         params["trigger_time"] = self.trigger_time
         params["gmst"] = self.gmst
@@ -735,14 +746,14 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         apply_fixed_parameters(params, self.fixed_parameters)
         return self._likelihood(params)
 
-    def _likelihood(self, params: dict[str, Float]) -> Float:
+    def _likelihood(self, params: dict[str, Float]) -> FloatScalar:
         frequencies_low = self.freq_grid_low
         frequencies_center = self.freq_grid_center
-        log_likelihood = 0.0
+        log_likelihood: FloatScalar = jnp.zeros(())
         waveform_sky_low = self.waveform(frequencies_low, params)
         waveform_sky_center = self.waveform(frequencies_center, params)
 
-        complex_d_inner_h = 0.0 + 0.0j
+        complex_d_inner_h: ComplexScalar = jnp.zeros((), dtype=jnp.complex128)
 
         for detector in self.detectors:
             waveform_low = detector.fd_response(
@@ -786,8 +797,8 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
     @staticmethod
     def max_phase_diff(
         freqs: Float[Array, " n_freq"],
-        f_low: float | Float[Array, ""],
-        f_high: float | Float[Array, ""],
+        f_low: FloatLike,
+        f_high: FloatLike,
         chi: float = 1.0,
     ) -> Float[Array, " n_freq"]:
         """
@@ -902,7 +913,7 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         prior_mean = jnp.mean(sample_matrix, axis=0)
         prior_std = jnp.std(sample_matrix, axis=0)
 
-        def _log_likelihood(z: Float[Array, " n_dim"]) -> Float:
+        def _log_likelihood(z: Float[Array, " n_dim"]) -> FloatScalar:
             """Evaluate -logL for a single normalized parameter vector."""
             x = prior_mean + prior_std * z
             named_params = dict(zip(parameter_names, x, strict=True))
@@ -1015,13 +1026,13 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
     """
 
     highest_mode: int
-    accuracy_factor: Float
-    reference_chirp_mass: Float
-    reference_chirp_mass_in_second: Float
-    time_offset: Float
-    delta_f_end: Float
-    max_banding_frequency: Float
-    min_banding_duration: Float
+    accuracy_factor: float
+    reference_chirp_mass: float
+    reference_chirp_mass_in_second: float
+    time_offset: float
+    delta_f_end: float
+    max_banding_frequency: float
+    min_banding_duration: float
 
     durations: Float[Array, " n_bands"]
     fb_dfb: Float[Array, "n_bands+1 2"]
@@ -1039,17 +1050,17 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
         fixed_parameters: Optional[
             dict[str, Float | Callable[[dict[str, Float]], Float | dict[str, Float]]]
         ] = None,
-        f_min: Float | dict[str, Float] = 0,
-        f_max: Float | dict[str, Float] = jnp.inf,
-        trigger_time: Float = 0,
+        f_min: float | dict[str, float] = 0,
+        f_max: float | dict[str, float] = jnp.inf,
+        trigger_time: float = 0,
         highest_mode: int = 2,
-        accuracy_factor: Float = 5.0,
+        accuracy_factor: float = 5.0,
         prior: Optional[Prior] = None,
-        reference_chirp_mass: Optional[Float] = None,
-        time_offset: Optional[Float] = None,
-        delta_f_end: Optional[Float] = None,
-        max_banding_frequency: Optional[Float] = None,
-        min_banding_duration: Float = 0.0,
+        reference_chirp_mass: Optional[float] = None,
+        time_offset: Optional[float] = None,
+        delta_f_end: Optional[float] = None,
+        max_banding_frequency: Optional[float] = None,
+        min_banding_duration: float = 0.0,
     ):
 
         super().__init__(detectors, waveform, fixed_parameters)
@@ -1162,12 +1173,12 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
 
     def _resolve_time_params(
         self,
-        time_offset: Optional[Float],
-        delta_f_end: Optional[Float],
+        time_offset: Optional[float],
+        delta_f_end: Optional[float],
         prior: Optional[Prior],
         trigger_time: float,
         detectors: Sequence[Detector],
-    ) -> tuple[Float, Float]:
+    ) -> tuple[float, float]:
         """Return ``(time_offset, delta_f_end)``, inferring from t_c prior bounds when not provided.
 
         Inference uses the geocentric coalescence time ``t_c`` only.
@@ -1176,8 +1187,8 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
         so ``t_c`` bounds cannot be derived from a ``t_det`` prior at setup time.
         Falls back to defaults (2.12 s, 53.0 Hz) when inference is not possible.
         """
-        inferred_to: Optional[Float] = None
-        inferred_dfe: Optional[Float] = None
+        inferred_to: Optional[float] = None
+        inferred_dfe: Optional[float] = None
 
         if prior is not None and (time_offset is None or delta_f_end is None):
             tc_prior = self._find_leaf_prior(prior, "t_c")
@@ -1222,13 +1233,13 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
 
     def _validate_banding_params(
         self,
-        reference_chirp_mass: Float,
+        reference_chirp_mass: float,
         highest_mode: int,
-        accuracy_factor: Float,
-        time_offset: Float,
-        delta_f_end: Float,
-        min_banding_duration: Float,
-        max_banding_frequency: Optional[Float],
+        accuracy_factor: float,
+        time_offset: float,
+        delta_f_end: float,
+        min_banding_duration: float,
+        max_banding_frequency: Optional[float],
     ) -> None:
         """Raise ValueError for any out-of-range banding parameter."""
         if reference_chirp_mass <= 0:
@@ -1259,7 +1270,7 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
         """Number of frequency bands."""
         return len(self.durations)
 
-    def _tau(self, f: Float) -> Float:
+    def _tau(self, f: float) -> float:
         """Compute time-to-merger using 0PN formula.
 
         Parameters
@@ -1280,7 +1291,7 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
             * (jnp.pi * self.reference_chirp_mass_in_second * f_22) ** (-8 / 3)
         )
 
-    def _dtaudf(self, f: Float) -> Float:
+    def _dtaudf(self, f: float) -> float:
         """Compute derivative of time-to-merger using 0PN formula.
 
         Parameters
@@ -1303,8 +1314,8 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
         )
 
     def _find_starting_frequency(
-        self, duration: Float, f_now: Float
-    ) -> tuple[Optional[Float], Optional[Float]]:
+        self, duration: float, f_now: float
+    ) -> tuple[Optional[float], Optional[float]]:
         """Find starting frequency of next band via bisection search.
 
         Finds frequency satisfying conditions (10) and (51) of arXiv:2104.07813:
@@ -1348,7 +1359,7 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
             else:
                 fmin = f
 
-        return f, 1.0 / jnp.sqrt(-self._dtaudf(f))
+        return f, float(1.0 / jnp.sqrt(-self._dtaudf(f)))
 
     def _setup_frequency_bands(self) -> None:
         """Set up frequency bands with geometrically decreasing durations.
@@ -1359,12 +1370,12 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
             self.durations: Array of band durations
             self.fb_dfb: Array of [starting_freq, taper_width] for each band
         """
-        original_duration = self.detectors[0].data.duration
+        original_duration = float(self.detectors[0].data.duration)
 
         durations_list = [original_duration]
         fb_dfb_list = [[self.minimum_frequency, 0.0]]
 
-        dnext = original_duration / 2
+        dnext: float = original_duration / 2
 
         while dnext > max(self.time_offset, self.min_banding_duration):
             f_now, _ = fb_dfb_list[-1]
@@ -1406,7 +1417,7 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
             self.Mbs: Number of samples in shortened data per band
             self.Ks_Ke: Start/end frequency indices per band
         """
-        original_duration = self.detectors[0].data.duration
+        original_duration = float(self.detectors[0].data.duration)
         durations = self.durations.tolist()
         fb_dfb = self.fb_dfb.tolist()
 
@@ -1471,7 +1482,7 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
         self.unique_to_original = idxs.astype(jnp.int32)
 
     def _get_window_sequence(
-        self, delta_f: Float, start_idx: int, length: int, band: int
+        self, delta_f: float, start_idx: int, length: int, band: int
     ) -> Array:
         """Compute cosine-tapered window function for a frequency band.
 
@@ -1589,7 +1600,7 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
             self.quadratic_coeffs: Dict mapping detector name to coefficient array
         """
 
-        original_duration = self.detectors[0].data.duration
+        original_duration = float(self.detectors[0].data.duration)
         start_end_idxs = self.start_end_idxs.tolist()
         durations = self.durations.tolist()
         fb_dfb = self.fb_dfb.tolist()
@@ -1672,7 +1683,7 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
 
             self.quadratic_coeffs[detector.name] = jnp.concatenate(band_coeffs)
 
-    def evaluate(self, params: dict[str, Float]) -> Float:
+    def evaluate(self, params: dict[str, Float]) -> FloatScalar:
         """Evaluate the log-likelihood for given parameters.
 
         Parameters
@@ -1682,7 +1693,7 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
 
         Returns
         -------
-        Float
+        FloatScalar
             Log-likelihood value.
         """
         params = params.copy()
@@ -1691,7 +1702,7 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
         apply_fixed_parameters(params, self.fixed_parameters)
         return self._likelihood(params)
 
-    def _likelihood(self, params: dict[str, Float]) -> Float:
+    def _likelihood(self, params: dict[str, Float]) -> FloatScalar:
         """Core likelihood evaluation using multi-banding.
 
         Parameters
@@ -1701,13 +1712,13 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
 
         Returns
         -------
-        Float
+        FloatScalar
             Log-likelihood value.
         """
         # Generate waveform at unique frequencies
         waveform_sky = self.waveform(self.unique_frequencies, params)
 
-        log_likelihood = 0.0
+        log_likelihood: FloatScalar = jnp.zeros(())
 
         for detector in self.detectors:
             # Get detector response at banded frequencies

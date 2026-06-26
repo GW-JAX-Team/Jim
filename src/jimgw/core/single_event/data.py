@@ -4,6 +4,7 @@ import numpy as np
 import jax
 import jax.numpy as jnp
 from jaxtyping import Array, Float, Complex, Key
+from jimgw.typing import FloatLike, FloatScalar
 
 from gwpy.timeseries import TimeSeries
 from typing import Optional, Self
@@ -43,8 +44,8 @@ class Data(ABC):
     td: Float[Array, "n_time"]
     fd: Complex[Array, "n_time // 2 + 1"]
 
-    start_time: Float
-    delta_t: Float
+    start_time: float
+    delta_t: FloatLike
 
     window: Float[Array, "n_time"]
 
@@ -92,7 +93,7 @@ class Data(ABC):
         return self.n_time == 0
 
     @property
-    def duration(self) -> float:
+    def duration(self) -> FloatLike:
         """Gets duration of the data in seconds.
 
         Returns:
@@ -101,7 +102,7 @@ class Data(ABC):
         return self.n_time * self.delta_t
 
     @property
-    def sampling_frequency(self) -> float:
+    def sampling_frequency(self) -> FloatLike:
         """Gets sampling frequency of the data.
 
         Returns:
@@ -139,8 +140,8 @@ class Data(ABC):
     def __init__(
         self,
         td: Float[Array, "n_time"] = jnp.array([]),
-        delta_t: Float = 0.0,
-        start_time: Float = 0.0,
+        delta_t: FloatLike = 0.0,
+        start_time: float = 0.0,
         name: str = "",
         window: Optional[Float[Array, "n_time"]] = None,
     ) -> None:
@@ -208,7 +209,10 @@ class Data(ABC):
         return self.fd
 
     def frequency_slice(
-        self, f_min: Float, f_max: Float, auto_fft: bool = True
+        self,
+        f_min: FloatLike,
+        f_max: FloatLike,
+        auto_fft: bool = True,
     ) -> tuple[Complex[Array, " n_sample"], Float[Array, " n_sample"]]:
         """Slice the data in the frequency domain.
         This is the main function which interacts with the likelihood.
@@ -237,15 +241,15 @@ class Data(ABC):
         """
         if not self.has_fd:
             self.fft()
-        freq, psd = welch(self.td, fs=self.sampling_frequency, **kws)
+        freq, psd = welch(self.td, fs=float(self.sampling_frequency), **kws)
         return PowerSpectrum(jnp.asarray(psd), jnp.asarray(freq), self.name)
 
     @classmethod
     def from_gwosc(
         cls,
         ifo: str,
-        gps_start_time: Float,
-        gps_end_time: Float,
+        gps_start_time: float,
+        gps_end_time: float,
         cache: bool = True,
         **kws,
     ) -> Self:
@@ -562,7 +566,7 @@ class Data(ABC):
             ts = TimeSeries(
                 np.array(self.td),
                 t0=self.start_time,
-                dt=self.delta_t,
+                dt=float(self.delta_t),
                 channel=channel,
             )
             ts.write(path)
@@ -605,7 +609,7 @@ class PowerSpectrum(ABC):
         return self.n_freq == 0
 
     @property
-    def delta_f(self) -> Float:
+    def delta_f(self) -> FloatScalar:
         """Gets frequency resolution.
 
         Returns:
@@ -614,7 +618,7 @@ class PowerSpectrum(ABC):
         return self.frequencies[1] - self.frequencies[0]
 
     @property
-    def delta_t(self) -> Float:
+    def delta_t(self) -> FloatScalar:
         """Gets time resolution.
 
         Returns:
@@ -623,7 +627,7 @@ class PowerSpectrum(ABC):
         return 1 / self.sampling_frequency
 
     @property
-    def duration(self) -> Float:
+    def duration(self) -> FloatScalar:
         """Gets duration of the data.
 
         Returns:
@@ -632,7 +636,7 @@ class PowerSpectrum(ABC):
         return 1 / self.delta_f
 
     @property
-    def sampling_frequency(self) -> Float:
+    def sampling_frequency(self) -> FloatScalar:
         """Gets sampling frequency.
 
         Returns:

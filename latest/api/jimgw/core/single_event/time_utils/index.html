@@ -2108,6 +2108,33 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../typing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  typing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -2327,7 +2354,7 @@ See: https://github.com/google/jax-datetime/</p>
       </thead>
       <tbody>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;gps_to_julian_day&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;gps_time&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Float&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.core.single_event.time_utils.gps_to_julian_day">gps_to_julian_day</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;gps_to_julian_day&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;gps_time&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;FloatLike&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;FloatScalar&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.core.single_event.time_utils.gps_to_julian_day">gps_to_julian_day</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Convert from UTC to Julian day, this is a necessary intermediate step in</p>
@@ -2335,7 +2362,7 @@ See: https://github.com/google/jax-datetime/</p>
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;gps_to_utc_date&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;gps_time&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;tuple&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.core.single_event.time_utils.gps_to_utc_date">gps_to_utc_date</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;gps_to_utc_date&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;gps_time&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;FloatLike&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;tuple&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;IntScalar&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IntScalar&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IntScalar&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IntScalar&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.core.single_event.time_utils.gps_to_utc_date">gps_to_utc_date</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Args:</p>
@@ -2343,7 +2370,7 @@ See: https://github.com/google/jax-datetime/</p>
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;greenwich_mean_sidereal_time&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;gps_time&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Float&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.core.single_event.time_utils.greenwich_mean_sidereal_time">greenwich_mean_sidereal_time</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;greenwich_mean_sidereal_time&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;gps_time&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;FloatLike&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;FloatScalar&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.core.single_event.time_utils.greenwich_mean_sidereal_time">greenwich_mean_sidereal_time</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Compute the Greenwich Mean Sidereal Time (GMST) from the GPS time.</p>
@@ -2351,7 +2378,7 @@ See: https://github.com/google/jax-datetime/</p>
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;greenwich_sidereal_time&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;gps_time&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;equation_of_equinoxes&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Float&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.core.single_event.time_utils.greenwich_sidereal_time">greenwich_sidereal_time</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;greenwich_sidereal_time&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;gps_time&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;FloatLike&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;equation_of_equinoxes&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;FloatScalar&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.core.single_event.time_utils.greenwich_sidereal_time">greenwich_sidereal_time</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Compute the Greenwich mean sidereal time from the GPS time and equation of</p>
@@ -2359,7 +2386,7 @@ See: https://github.com/google/jax-datetime/</p>
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;int_div&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Int&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.core.single_event.time_utils.int_div">int_div</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;int_div&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IntScalar&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IntScalar&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IntScalar&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.core.single_event.time_utils.int_div">int_div</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>This is to emulate the C-style integer division in Python.</p>
@@ -2367,7 +2394,7 @@ See: https://github.com/google/jax-datetime/</p>
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;is_leap_year&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;year&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Int&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.core.single_event.time_utils.is_leap_year">is_leap_year</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;is_leap_year&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;year&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Array&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;...&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;bool&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Bool&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Array&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;...&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.core.single_event.time_utils.is_leap_year">is_leap_year</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Check whether a year is a leap year.</p>
@@ -2375,7 +2402,7 @@ See: https://github.com/google/jax-datetime/</p>
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;n_leap_seconds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;date&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Int&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.core.single_event.time_utils.n_leap_seconds">n_leap_seconds</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;n_leap_seconds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;date&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;FloatLike&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;FloatScalar&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.core.single_event.time_utils.n_leap_seconds">n_leap_seconds</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Find the number of leap seconds required for the specified date.</p>
@@ -2383,7 +2410,7 @@ See: https://github.com/google/jax-datetime/</p>
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;utc_date_from_timestamp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;timestamp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;tuple&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.core.single_event.time_utils.utc_date_from_timestamp">utc_date_from_timestamp</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;utc_date_from_timestamp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;timestamp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IntScalar&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;tuple&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;IntScalar&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IntScalar&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IntScalar&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IntScalar&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.core.single_event.time_utils.utc_date_from_timestamp">utc_date_from_timestamp</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>This function converts a UTC timestamp to a UTC date (year, month, day, seconds).</p>
@@ -2476,7 +2503,7 @@ See: https://github.com/google/jax-datetime/</p>
 
 
 <h3 id="jimgw.core.single_event.time_utils.gps_to_julian_day" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">gps_to_julian_day</span><span class="p">(</span><span class="n">gps_time</span><span class="p">:</span> <span class="n">Float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Float</span></code>
+            <code class="highlight language-python"><span class="n">gps_to_julian_day</span><span class="p">(</span><span class="n">gps_time</span><span class="p">:</span> <span class="n">FloatLike</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FloatScalar</span></code>
 
 <a href="#jimgw.core.single_event.time_utils.gps_to_julian_day" class="headerlink" title="Permanent link">¤</a></h3>
 
@@ -2532,7 +2559,7 @@ implementation. Without which the error is of order 0.1.</p>
       <tbody>
           <tr class="doc-section-item">
 <td><code>float</code></td>            <td>
-                  <code><span title="jaxtyping.Float">Float</span></code>
+                  <code><span title="jimgw.typing.FloatScalar">FloatScalar</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -2552,7 +2579,7 @@ implementation. Without which the error is of order 0.1.</p>
 
 
 <h3 id="jimgw.core.single_event.time_utils.gps_to_utc_date" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">gps_to_utc_date</span><span class="p">(</span><span class="n">gps_time</span><span class="p">:</span> <span class="n">Float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Int</span><span class="p">,</span> <span class="n">Int</span><span class="p">,</span> <span class="n">Int</span><span class="p">,</span> <span class="n">Int</span><span class="p">]</span></code>
+            <code class="highlight language-python"><span class="n">gps_to_utc_date</span><span class="p">(</span><span class="n">gps_time</span><span class="p">:</span> <span class="n">FloatLike</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">IntScalar</span><span class="p">,</span> <span class="n">IntScalar</span><span class="p">,</span> <span class="n">IntScalar</span><span class="p">,</span> <span class="n">IntScalar</span><span class="p">]</span></code>
 
 <a href="#jimgw.core.single_event.time_utils.gps_to_utc_date" class="headerlink" title="Permanent link">¤</a></h3>
 
@@ -2602,7 +2629,7 @@ implementation. Without which the error is of order 0.1.</p>
 
 
 <h3 id="jimgw.core.single_event.time_utils.greenwich_mean_sidereal_time" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">greenwich_mean_sidereal_time</span><span class="p">(</span><span class="n">gps_time</span><span class="p">:</span> <span class="n">Float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Float</span></code>
+            <code class="highlight language-python"><span class="n">greenwich_mean_sidereal_time</span><span class="p">(</span><span class="n">gps_time</span><span class="p">:</span> <span class="n">FloatLike</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FloatScalar</span></code>
 
 <a href="#jimgw.core.single_event.time_utils.greenwich_mean_sidereal_time" class="headerlink" title="Permanent link">¤</a></h3>
 
@@ -2628,7 +2655,7 @@ implementation. Without which the error is of order 0.1.</p>
                 <code>gps_time</code>
             </td>
             <td>
-                  <code><span title="jaxtyping.Float">Float</span></code>
+                  <code><span title="Float">Float</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -2654,7 +2681,7 @@ implementation. Without which the error is of order 0.1.</p>
       <tbody>
           <tr class="doc-section-item">
 <td><code>Float</code></td>            <td>
-                  <code><span title="jaxtyping.Float">Float</span></code>
+                  <code><span title="jimgw.typing.FloatScalar">FloatScalar</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -2674,7 +2701,7 @@ implementation. Without which the error is of order 0.1.</p>
 
 
 <h3 id="jimgw.core.single_event.time_utils.greenwich_sidereal_time" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">greenwich_sidereal_time</span><span class="p">(</span><span class="n">gps_time</span><span class="p">:</span> <span class="n">Float</span><span class="p">,</span> <span class="n">equation_of_equinoxes</span><span class="p">:</span> <span class="n">Float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Float</span></code>
+            <code class="highlight language-python"><span class="n">greenwich_sidereal_time</span><span class="p">(</span><span class="n">gps_time</span><span class="p">:</span> <span class="n">FloatLike</span><span class="p">,</span> <span class="n">equation_of_equinoxes</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FloatScalar</span></code>
 
 <a href="#jimgw.core.single_event.time_utils.greenwich_sidereal_time" class="headerlink" title="Permanent link">¤</a></h3>
 
@@ -2743,7 +2770,7 @@ equinoxes.</p>
 
 
 <h3 id="jimgw.core.single_event.time_utils.int_div" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">int_div</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="n">Int</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Int</span></code>
+            <code class="highlight language-python"><span class="n">int_div</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="n">IntScalar</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="n">IntScalar</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IntScalar</span></code>
 
 <a href="#jimgw.core.single_event.time_utils.int_div" class="headerlink" title="Permanent link">¤</a></h3>
 
@@ -2762,7 +2789,7 @@ See: https://stackoverflow.com/a/61386872</p>
 
 
 <h3 id="jimgw.core.single_event.time_utils.is_leap_year" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">is_leap_year</span><span class="p">(</span><span class="n">year</span><span class="p">:</span> <span class="n">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Int</span></code>
+            <code class="highlight language-python"><span class="n">is_leap_year</span><span class="p">(</span><span class="n">year</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="n">Int</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="o">...</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span> <span class="o">|</span> <span class="n">Bool</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span></code>
 
 <a href="#jimgw.core.single_event.time_utils.is_leap_year" class="headerlink" title="Permanent link">¤</a></h3>
 
@@ -2814,7 +2841,7 @@ See: https://stackoverflow.com/a/61386872</p>
       <tbody>
           <tr class="doc-section-item">
 <td><code>Int</code></td>            <td>
-                  <code><span title="jaxtyping.Int">Int</span></code>
+                  <code><span title="bool">bool</span> | <span title="jaxtyping.Bool">Bool</span>[<span title="jaxtyping.Array">Array</span>, ...]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -2834,7 +2861,7 @@ See: https://stackoverflow.com/a/61386872</p>
 
 
 <h3 id="jimgw.core.single_event.time_utils.n_leap_seconds" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">n_leap_seconds</span><span class="p">(</span><span class="n">date</span><span class="p">:</span> <span class="n">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Int</span></code>
+            <code class="highlight language-python"><span class="n">n_leap_seconds</span><span class="p">(</span><span class="n">date</span><span class="p">:</span> <span class="n">FloatLike</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FloatScalar</span></code>
 
 <a href="#jimgw.core.single_event.time_utils.n_leap_seconds" class="headerlink" title="Permanent link">¤</a></h3>
 
@@ -2895,7 +2922,7 @@ return n_leaps</p>
 
 
 <h3 id="jimgw.core.single_event.time_utils.utc_date_from_timestamp" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">utc_date_from_timestamp</span><span class="p">(</span><span class="n">timestamp</span><span class="p">:</span> <span class="n">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Int</span><span class="p">,</span> <span class="n">Int</span><span class="p">,</span> <span class="n">Int</span><span class="p">,</span> <span class="n">Int</span><span class="p">]</span></code>
+            <code class="highlight language-python"><span class="n">utc_date_from_timestamp</span><span class="p">(</span><span class="n">timestamp</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="n">IntScalar</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">IntScalar</span><span class="p">,</span> <span class="n">IntScalar</span><span class="p">,</span> <span class="n">IntScalar</span><span class="p">,</span> <span class="n">IntScalar</span><span class="p">]</span></code>
 
 <a href="#jimgw.core.single_event.time_utils.utc_date_from_timestamp" class="headerlink" title="Permanent link">¤</a></h3>
 

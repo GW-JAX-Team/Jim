@@ -2491,6 +2491,33 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../typing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  typing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -3224,7 +3251,7 @@ which is valid when all component priors are independent.</p>
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;log_prob&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;z&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;dict&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Float&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.core.prior.CombinePrior.log_prob">log_prob</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;log_prob&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;z&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;dict&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;FloatScalar&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.core.prior.CombinePrior.log_prob">log_prob</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Evaluate the joint log-probability as the sum of component log-probabilities.</p>
@@ -3310,7 +3337,7 @@ which is valid when all component priors are independent.</p>
 
 
 <h4 id="jimgw.core.prior.CombinePrior.log_prob" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">log_prob</span><span class="p">(</span><span class="n">z</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Float</span></code>
+            <code class="highlight language-python"><span class="n">log_prob</span><span class="p">(</span><span class="n">z</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">FloatScalar</span></code>
 
 <a href="#jimgw.core.prior.CombinePrior.log_prob" class="headerlink" title="Permanent link">¤</a></h4>
 
@@ -3362,7 +3389,7 @@ which is valid when all component priors are independent.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code><span title="jaxtyping.Float">Float</span></code>
+                  <code><span title="jimgw.typing.FloatScalar">FloatScalar</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -4359,7 +4386,7 @@ bookkeeping for parameter names and transforms.</p>
       </thead>
       <tbody>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;fm&quot;&gt;__call__&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;dict&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Float&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.core.prior.Prior.__call__">__call__</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;fm&quot;&gt;__call__&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;dict&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;FloatScalar&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.core.prior.Prior.__call__">__call__</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Alias for <code>log_prob</code>.</p>
@@ -4383,7 +4410,7 @@ bookkeeping for parameter names and transforms.</p>
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;log_prob&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;z&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;dict&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Float&lt;/span&gt;&lt;/code&gt;
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;log_prob&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;z&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;dict&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;FloatScalar&lt;/span&gt;&lt;/code&gt;
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-abstractmethod&quot;&gt;&lt;code&gt;abstractmethod&lt;/code&gt;&lt;/small&gt;
@@ -4522,7 +4549,7 @@ Jim will raise at construction time if this returns False for those backends.</p
 
 
 <h4 id="jimgw.core.prior.Prior.__call__" class="doc doc-heading">
-            <code class="highlight language-python"><span class="fm">__call__</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Float</span></code>
+            <code class="highlight language-python"><span class="fm">__call__</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">FloatScalar</span></code>
 
 <a href="#jimgw.core.prior.Prior.__call__" class="headerlink" title="Permanent link">¤</a></h4>
 
@@ -4664,7 +4691,7 @@ Jim will raise at construction time if this returns False for those backends.</p
 
 
 <h4 id="jimgw.core.prior.Prior.log_prob" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">log_prob</span><span class="p">(</span><span class="n">z</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Float</span></code>
+            <code class="highlight language-python"><span class="n">log_prob</span><span class="p">(</span><span class="n">z</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">FloatScalar</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
@@ -4720,7 +4747,7 @@ Jim will raise at construction time if this returns False for those backends.</p
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code><span title="jaxtyping.Float">Float</span></code>
+                  <code><span title="jimgw.typing.FloatScalar">FloatScalar</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -5089,7 +5116,7 @@ in the forward direction.</p>
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;log_prob&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;z&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;dict&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Float&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.core.prior.SequentialTransformPrior.log_prob">log_prob</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;log_prob&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;z&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;dict&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;FloatScalar&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.core.prior.SequentialTransformPrior.log_prob">log_prob</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Evaluate the log-probability of a transformed sample z.</p>
@@ -5200,7 +5227,7 @@ samples from the base prior.</p>
 
 
 <h4 id="jimgw.core.prior.SequentialTransformPrior.log_prob" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">log_prob</span><span class="p">(</span><span class="n">z</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Float</span></code>
+            <code class="highlight language-python"><span class="n">log_prob</span><span class="p">(</span><span class="n">z</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">FloatScalar</span></code>
 
 <a href="#jimgw.core.prior.SequentialTransformPrior.log_prob" class="headerlink" title="Permanent link">¤</a></h4>
 
@@ -5254,7 +5281,7 @@ log-Jacobian determinants, then evaluates the base prior.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code><span title="jaxtyping.Float">Float</span></code>
+                  <code><span title="jimgw.typing.FloatScalar">FloatScalar</span></code>
             </td>
             <td>
               <div class="doc-md-description">

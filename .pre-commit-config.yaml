@@ -4,13 +4,13 @@ ci:
 
 repos:
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.11.19
+    rev: 0.11.25
     hooks:
       - id: uv-lock
         args: ["--upgrade"]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.16
+    rev: v0.15.20
     hooks:
       - id: ruff-check
         args: ["--fix"]
@@ -19,7 +19,7 @@ repos:
         files: src/
   
   - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.410
+    rev: v1.1.411
     hooks:
     - id: pyright
       files: src/

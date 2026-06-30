@@ -154,7 +154,7 @@ class BlackJAXSMCSampler(Sampler):
         cov0 = jnp.atleast_2d(jnp.cov(initial_particles.T)) * config.initial_cov_scale
 
         def mcmc_parameter_update_fn(_key, state, _info):
-            return extend_params({"cov": jnp.atleast_2d(jnp.cov(state.particles.T))})  # type: ignore[arg-type]  # blackjax fork stubs: extend_params accepts dict
+            return extend_params({"cov": jnp.atleast_2d(jnp.cov(state.particles.T))})  # type: ignore[arg-type]  # blackjax stubs: extend_params accepts dict
 
         smc_alg = inner_kernel_tuning(
             smc_algorithm=adaptive_persistent_sampling_smc,
@@ -165,7 +165,7 @@ class BlackJAXSMCSampler(Sampler):
             mcmc_init_fn=rmh.init,
             resampling_fn=systematic,
             mcmc_parameter_update_fn=mcmc_parameter_update_fn,
-            initial_parameter_value=extend_params({"cov": cov0}),  # type: ignore[arg-type]  # blackjax fork stubs: extend_params accepts dict
+            initial_parameter_value=extend_params({"cov": cov0}),  # type: ignore[arg-type]  # blackjax stubs: extend_params accepts dict
             num_mcmc_steps=n_mcmc_steps,
             target_ess=target_ess,
             batch_size=config.batch_size,
@@ -201,7 +201,7 @@ class BlackJAXSMCSampler(Sampler):
                         ckpt_path,
                     )
                 else:
-                    state = smc_alg.init(initial_particles)  # type: ignore[call-arg]  # blackjax fork API
+                    state = smc_alg.init(initial_particles)  # type: ignore[call-arg]  # blackjax API
                     self._prev_elapsed = 0.0
             except (
                 OSError,
@@ -215,29 +215,29 @@ class BlackJAXSMCSampler(Sampler):
                     ckpt_path,
                     _e,
                 )
-                state = smc_alg.init(initial_particles)  # type: ignore[call-arg]  # blackjax fork API
+                state = smc_alg.init(initial_particles)  # type: ignore[call-arg]  # blackjax API
                 self._prev_elapsed = 0.0
         else:
-            state = smc_alg.init(initial_particles)  # type: ignore[call-arg]  # blackjax fork API
+            state = smc_alg.init(initial_particles)  # type: ignore[call-arg]  # blackjax API
 
         step_fn = jax.jit(smc_alg.step)
         _last_ckpt_t = time.perf_counter()
 
-        while state.sampler_state.tempering_param < 1.0:  # type: ignore[attr-defined]  # blackjax fork stubs
+        while state.sampler_state.tempering_param < 1.0:  # type: ignore[attr-defined]  # blackjax stubs
             rng_key, subkey = jax.random.split(rng_key)
             state, info = step_fn(subkey, state)
 
-            ps = state.sampler_state  # type: ignore[attr-defined]  # blackjax fork stubs
-            acceptance_rate = float(info.update_info.acceptance_rate.mean())  # type: ignore[attr-defined]  # blackjax fork stubs
+            ps = state.sampler_state  # type: ignore[attr-defined]  # blackjax stubs
+            acceptance_rate = float(info.update_info.acceptance_rate.mean())  # type: ignore[attr-defined]  # blackjax stubs
             new_scale = cov_scale * float(
                 jnp.exp(
                     config.scale_adaptation_gain
                     * (acceptance_rate - config.target_acceptance_rate)
                 )
             )
-            current_cov = state.parameter_override["cov"]  # type: ignore[attr-defined]  # blackjax fork stubs
-            new_params = extend_params({"cov": current_cov[0] * new_scale})  # type: ignore[arg-type]  # blackjax fork stubs
-            state = StateWithParameterOverride(ps, new_params)  # type: ignore[arg-type]  # blackjax fork stubs
+            current_cov = state.parameter_override["cov"]  # type: ignore[attr-defined]  # blackjax stubs
+            new_params = extend_params({"cov": current_cov[0] * new_scale})  # type: ignore[arg-type]  # blackjax stubs
+            state = StateWithParameterOverride(ps, new_params)  # type: ignore[arg-type]  # blackjax stubs
 
             accept_list.append(acceptance_rate)
             cov_scale_list.append(new_scale)
@@ -300,7 +300,7 @@ class BlackJAXSMCSampler(Sampler):
             n_schedule=n_schedule,
             mcmc_step_fn=mcmc_step,
             mcmc_init_fn=rmh.init,
-            mcmc_parameters=extend_params({"cov": cov0}),  # type: ignore[arg-type]  # blackjax fork stubs: extend_params accepts dict
+            mcmc_parameters=extend_params({"cov": cov0}),  # type: ignore[arg-type]  # blackjax stubs: extend_params accepts dict
             resampling_fn=systematic,
             num_mcmc_steps=n_mcmc_steps,
             batch_size=config.batch_size,
@@ -329,7 +329,7 @@ class BlackJAXSMCSampler(Sampler):
                             n_iter,
                             n_schedule,
                         )
-                        state = smc_alg.init(initial_particles)  # type: ignore[call-arg]  # blackjax fork API
+                        state = smc_alg.init(initial_particles)  # type: ignore[call-arg]  # blackjax API
                         n_iter = 0
                         accept_list = []
                         self._prev_elapsed = 0.0
@@ -341,7 +341,7 @@ class BlackJAXSMCSampler(Sampler):
                             ckpt_path,
                         )
                 else:
-                    state = smc_alg.init(initial_particles)  # type: ignore[call-arg]  # blackjax fork API
+                    state = smc_alg.init(initial_particles)  # type: ignore[call-arg]  # blackjax API
                     self._prev_elapsed = 0.0
             except (
                 OSError,
@@ -355,17 +355,17 @@ class BlackJAXSMCSampler(Sampler):
                     ckpt_path,
                     _e,
                 )
-                state = smc_alg.init(initial_particles)  # type: ignore[call-arg]  # blackjax fork API
+                state = smc_alg.init(initial_particles)  # type: ignore[call-arg]  # blackjax API
                 self._prev_elapsed = 0.0
         else:
-            state = smc_alg.init(initial_particles)  # type: ignore[call-arg]  # blackjax fork API
+            state = smc_alg.init(initial_particles)  # type: ignore[call-arg]  # blackjax API
 
         step_fn = jax.jit(smc_alg.step)
         _last_ckpt_t = time.perf_counter()
 
         for lmbda in ladder_values[n_iter:]:
             rng_key, subkey = jax.random.split(rng_key)
-            state, info = step_fn(subkey, state, lmbda)  # type: ignore[call-arg]  # blackjax fork API: step accepts extra arg
+            state, info = step_fn(subkey, state, lmbda)  # type: ignore[call-arg]  # blackjax API: step accepts extra arg
             accept_list.append(float(info.update_info.acceptance_rate.mean()))
             n_iter += 1
             if (
@@ -413,7 +413,7 @@ class BlackJAXSMCSampler(Sampler):
         cov0 = jnp.atleast_2d(jnp.cov(initial_particles.T)) * config.initial_cov_scale
 
         def mcmc_parameter_update_fn(_key, state, _info):
-            return extend_params({"cov": jnp.atleast_2d(jnp.cov(state.particles.T))})  # type: ignore[arg-type]  # blackjax fork stubs: extend_params accepts dict
+            return extend_params({"cov": jnp.atleast_2d(jnp.cov(state.particles.T))})  # type: ignore[arg-type]  # blackjax stubs: extend_params accepts dict
 
         smc_alg = inner_kernel_tuning(
             smc_algorithm=adaptive_tempered_smc,
@@ -423,7 +423,7 @@ class BlackJAXSMCSampler(Sampler):
             mcmc_init_fn=rmh.init,
             resampling_fn=systematic,
             mcmc_parameter_update_fn=mcmc_parameter_update_fn,
-            initial_parameter_value=extend_params({"cov": cov0}),  # type: ignore[arg-type]  # blackjax fork stubs: extend_params accepts dict
+            initial_parameter_value=extend_params({"cov": cov0}),  # type: ignore[arg-type]  # blackjax stubs: extend_params accepts dict
             num_mcmc_steps=n_mcmc_steps,
             target_ess=target_ess,
             batch_size=config.batch_size,
@@ -457,7 +457,7 @@ class BlackJAXSMCSampler(Sampler):
                         ckpt_path,
                     )
                 else:
-                    state = smc_alg.init(initial_particles)  # type: ignore[call-arg]  # blackjax fork API
+                    state = smc_alg.init(initial_particles)  # type: ignore[call-arg]  # blackjax API
                     self._prev_elapsed = 0.0
             except (
                 OSError,
@@ -471,20 +471,20 @@ class BlackJAXSMCSampler(Sampler):
                     ckpt_path,
                     _e,
                 )
-                state = smc_alg.init(initial_particles)  # type: ignore[call-arg]  # blackjax fork API
+                state = smc_alg.init(initial_particles)  # type: ignore[call-arg]  # blackjax API
                 self._prev_elapsed = 0.0
         else:
-            state = smc_alg.init(initial_particles)  # type: ignore[call-arg]  # blackjax fork API
+            state = smc_alg.init(initial_particles)  # type: ignore[call-arg]  # blackjax API
 
         step_fn = jax.jit(smc_alg.step)
         _last_ckpt_t = time.perf_counter()
 
-        while state.sampler_state.tempering_param < 1.0:  # type: ignore[attr-defined]  # blackjax fork stubs
+        while state.sampler_state.tempering_param < 1.0:  # type: ignore[attr-defined]  # blackjax stubs
             rng_key, subkey = jax.random.split(rng_key)
             state, info = step_fn(subkey, state)
 
-            accept_list.append(float(info.update_info.acceptance_rate.mean()))  # type: ignore[attr-defined]  # blackjax fork stubs
-            temp_list.append(float(state.sampler_state.tempering_param))  # type: ignore[attr-defined]  # blackjax fork stubs
+            accept_list.append(float(info.update_info.acceptance_rate.mean()))  # type: ignore[attr-defined]  # blackjax stubs
+            temp_list.append(float(state.sampler_state.tempering_param))  # type: ignore[attr-defined]  # blackjax stubs
             is_weights_list.append(np.asarray(state.sampler_state.weights))  # type: ignore[attr-defined]
             n_iter += 1
 
@@ -548,7 +548,7 @@ class BlackJAXSMCSampler(Sampler):
             loglikelihood_fn=self._log_likelihood_fn,
             mcmc_step_fn=mcmc_step,
             mcmc_init_fn=rmh.init,
-            mcmc_parameters=extend_params({"cov": cov0}),  # type: ignore[arg-type]  # blackjax fork stubs: extend_params accepts dict
+            mcmc_parameters=extend_params({"cov": cov0}),  # type: ignore[arg-type]  # blackjax stubs: extend_params accepts dict
             resampling_fn=systematic,
             num_mcmc_steps=n_mcmc_steps,
             batch_size=config.batch_size,
@@ -579,7 +579,7 @@ class BlackJAXSMCSampler(Sampler):
                             n_iter,
                             n_schedule,
                         )
-                        state = smc_alg.init(initial_particles)  # type: ignore[call-arg]  # blackjax fork API
+                        state = smc_alg.init(initial_particles)  # type: ignore[call-arg]  # blackjax API
                         n_iter = 0
                         accept_list = []
                         is_weights_list = []
@@ -592,7 +592,7 @@ class BlackJAXSMCSampler(Sampler):
                             ckpt_path,
                         )
                 else:
-                    state = smc_alg.init(initial_particles)  # type: ignore[call-arg]  # blackjax fork API
+                    state = smc_alg.init(initial_particles)  # type: ignore[call-arg]  # blackjax API
                     self._prev_elapsed = 0.0
             except (
                 OSError,
@@ -606,17 +606,17 @@ class BlackJAXSMCSampler(Sampler):
                     ckpt_path,
                     _e,
                 )
-                state = smc_alg.init(initial_particles)  # type: ignore[call-arg]  # blackjax fork API
+                state = smc_alg.init(initial_particles)  # type: ignore[call-arg]  # blackjax API
                 self._prev_elapsed = 0.0
         else:
-            state = smc_alg.init(initial_particles)  # type: ignore[call-arg]  # blackjax fork API
+            state = smc_alg.init(initial_particles)  # type: ignore[call-arg]  # blackjax API
 
         step_fn = jax.jit(smc_alg.step)
         _last_ckpt_t = time.perf_counter()
 
         for lmbda in ladder_values[n_iter:]:
             rng_key, subkey = jax.random.split(rng_key)
-            state, info = step_fn(subkey, state, lmbda)  # type: ignore[call-arg]  # blackjax fork API: step accepts extra arg
+            state, info = step_fn(subkey, state, lmbda)  # type: ignore[call-arg]  # blackjax API: step accepts extra arg
             accept_list.append(float(info.update_info.acceptance_rate.mean()))
             is_weights_list.append(np.asarray(state.weights))
             n_iter += 1

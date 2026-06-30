@@ -83,11 +83,11 @@ Changelog = "https://github.com/GW-JAX-Team/Jim/releases"
 
 [tool.uv.sources]
 jimgw = { workspace = true }
-# Pinned to a maintained fork on a dedicated `jim` branch that carries:
+# Pinned to upstream main until a PyPI release ships with the NS submodules:
 #   - blackjax.ns.{base,adaptive,utils}                                     (NS-AW, NSS)
 #   - blackjax.nss                                                          (NSS)
-# When the NS module land upstream, drop this pin and the nested-sampling group.
-blackjax = { git = "https://github.com/GW-JAX-Team/blackjax.git", branch = "jim" }
+# When a release is cut, drop this pin and bump blackjax>=<version>.
+blackjax = { git = "https://github.com/blackjax-devs/blackjax.git" }
 
 [build-system]
 requires = ["hatchling", "hatch-vcs"]

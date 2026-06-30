@@ -211,7 +211,7 @@ def _update_bilby_walks(
     max_mcmc: int,
     n_delete: int,
 ) -> DEKernelParams:
-    prev_params = ns_state.inner_kernel_params["params"]  # type: ignore[attr-defined]  # blackjax fork stubs
+    prev_params = ns_state.inner_kernel_params["params"]  # type: ignore[attr-defined]  # blackjax stubs
     is_uninitialized = prev_params.n_accept_total < 0
 
     default_walks_float = jnp.array(100.0, dtype=jnp.float32)
@@ -346,7 +346,7 @@ def bilby_adaptive_de_sampler(
 
         return jax.vmap(single)(sub_keys, start_states)
 
-    base_kernel_step = build_adaptive_kernel(delete_fn, inner_kernel, update_fn)  # type: ignore[arg-type]  # blackjax fork stubs
+    base_kernel_step = build_adaptive_kernel(delete_fn, inner_kernel, update_fn)  # type: ignore[arg-type]  # blackjax stubs
 
     def init_fn(particles):
         # Use lax.map instead of vmap to bound peak memory during init.
@@ -388,4 +388,4 @@ def bilby_adaptive_de_sampler(
     def step_fn(rng_key, state: AdaptiveNSState):
         return base_kernel_step(rng_key, state)
 
-    return SamplingAlgorithm(init_fn, step_fn)  # type: ignore[arg-type]  # blackjax fork stubs
+    return SamplingAlgorithm(init_fn, step_fn)  # type: ignore[arg-type]  # blackjax stubs

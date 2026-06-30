@@ -95,7 +95,7 @@ Key parameters:
 ## BlackJAX nested samplers
 
 The two BlackJAX nested-sampling backends require additional dependencies.
-They need a maintained fork of BlackJAX; install it with:
+The required modules are merged into upstream BlackJAX but not yet released on PyPI; install from main with:
 
 ```bash
 uv sync --group nested-sampling
@@ -103,7 +103,7 @@ uv sync --group nested-sampling
 
 This pulls in:
 
-- **blackjax** — pinned to the `GW-JAX-Team/blackjax@jim` branch, which carries the BlackJAX nested-sampling module.
+- **blackjax** — pinned to `blackjax-devs/blackjax` until a PyPI release ships the nested-sampling modules.
 
 ---
 
@@ -177,7 +177,7 @@ Key parameters:
 - `n_delete_frac` — fraction of live points replaced per iteration.
 - `num_inner_steps_per_dim` — slice-sampler steps per dimension per dead point; increase for strongly correlated posteriors.
 
-**Repository:** [handley-lab/blackjax](https://github.com/handley-lab/blackjax)
+**Repository:** [blackjax-devs/blackjax](https://github.com/blackjax-devs/blackjax)
 
 **References:** Yallup, D., Prathaban, M., Alvey, J., Handley, W., *"Parallel Nested Slice Sampling for Gravitational Wave Parameter Estimation"*, [arXiv:2509.24949](https://arxiv.org/abs/2509.24949) (Sep 2025). Yallup, D., Kroupa, N., Handley, W., *"Nested Slice Sampling"*, [OpenReview](https://openreview.net/forum?id=ekbkMSuPo4) (2025).
 

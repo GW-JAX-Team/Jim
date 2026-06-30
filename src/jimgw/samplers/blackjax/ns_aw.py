@@ -198,12 +198,12 @@ class BlackJAXNSAWSampler(Sampler):
                 )
                 state = nested_sampler.init(
                     _validated_initial_particles(initial_position)
-                )  # type: ignore[call-arg]  # blackjax fork API
+                )  # type: ignore[call-arg]  # blackjax API
                 dead = []
                 n_iter = 0
                 self._prev_elapsed = 0.0
         else:
-            state = nested_sampler.init(_validated_initial_particles(initial_position))  # type: ignore[call-arg]  # blackjax fork API
+            state = nested_sampler.init(_validated_initial_particles(initial_position))  # type: ignore[call-arg]  # blackjax API
             dead = []
             n_iter = 0
 

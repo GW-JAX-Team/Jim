@@ -28,7 +28,7 @@ We recommend using [uv](https://docs.astral.sh/uv/) to manage your Python enviro
 ## BlackJAX nested samplers
 
 Jim's BlackJAX nested-sampling backends depend on modules not yet released on PyPI.
-They are distributed via a maintained fork and must be installed separately.
+The features are merged into the upstream [blackjax-devs/blackjax](https://github.com/blackjax-devs/blackjax) main branch but await a versioned release.
 
 ### With uv (recommended)
 
@@ -40,12 +40,12 @@ cd Jim
 uv sync --group nested-sampling
 ```
 
-This installs the `blackjax` fork declared in `[tool.uv.sources]`. The fork is resolved automatically.
+This installs BlackJAX from `blackjax-devs/blackjax` as declared in `[tool.uv.sources]`.
 
 ### From source (pip)
 
 ```bash
-pip install "git+https://github.com/GW-JAX-Team/blackjax.git@jim"
+pip install "git+https://github.com/blackjax-devs/blackjax.git"
 ```
 
 > **Note:** `pip install jimgw[nested-sampling]` will not work until the required features land in a PyPI release. Use one of the commands above instead.

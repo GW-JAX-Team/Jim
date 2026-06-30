@@ -2457,12 +2457,12 @@ You select one by passing a typed config object to <code>Jim</code>.</p>
 <hr />
 <h2 id="blackjax-nested-samplers">BlackJAX nested samplers<a class="headerlink" href="#blackjax-nested-samplers" title="Permanent link">¤</a></h2>
 <p>The two BlackJAX nested-sampling backends require additional dependencies.
-They need a maintained fork of BlackJAX; install it with:</p>
+The required modules are merged into upstream BlackJAX but not yet released on PyPI; install from main with:</p>
 <div class="highlight"><pre><span></span><code>uv<span class="w"> </span>sync<span class="w"> </span>--group<span class="w"> </span>nested-sampling
 </code></pre></div>
 <p>This pulls in:</p>
 <ul>
-<li><strong>blackjax</strong> — pinned to the <code>GW-JAX-Team/blackjax@jim</code> branch, which carries the BlackJAX nested-sampling module.</li>
+<li><strong>blackjax</strong> — pinned to <code>blackjax-devs/blackjax</code> until a PyPI release ships the nested-sampling modules.</li>
 </ul>
 <hr />
 <h3 id="blackjax-ns-aw">BlackJAX NS-AW<a class="headerlink" href="#blackjax-ns-aw" title="Permanent link">¤</a></h3>
@@ -2527,7 +2527,7 @@ Unlike NS-AW, it does not require a unit-cube prior and works in any bounded sam
 <li><code>n_delete_frac</code> — fraction of live points replaced per iteration.</li>
 <li><code>num_inner_steps_per_dim</code> — slice-sampler steps per dimension per dead point; increase for strongly correlated posteriors.</li>
 </ul>
-<p><strong>Repository:</strong> <a href="https://github.com/handley-lab/blackjax">handley-lab/blackjax</a></p>
+<p><strong>Repository:</strong> <a href="https://github.com/blackjax-devs/blackjax">blackjax-devs/blackjax</a></p>
 <p><strong>References:</strong> Yallup, D., Prathaban, M., Alvey, J., Handley, W., <em>"Parallel Nested Slice Sampling for Gravitational Wave Parameter Estimation"</em>, <a href="https://arxiv.org/abs/2509.24949">arXiv:2509.24949</a> (Sep 2025). Yallup, D., Kroupa, N., Handley, W., <em>"Nested Slice Sampling"</em>, <a href="https://openreview.net/forum?id=ekbkMSuPo4">OpenReview</a> (2025).</p>
 <hr />
 <h2 id="checkpointing-and-resuming">Checkpointing and resuming<a class="headerlink" href="#checkpointing-and-resuming" title="Permanent link">¤</a></h2>

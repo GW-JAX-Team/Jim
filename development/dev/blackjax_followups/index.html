@@ -2028,15 +2028,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-to-undo-when-the-features-land" class="md-nav__link">
+  <a href="#what-to-undo-when-a-pypi-release-ships" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        What to undo when the features land
+        What to undo when a PyPI release ships
       </span>
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="What to undo when the features land">
+    <nav class="md-nav" aria-label="What to undo when a PyPI release ships">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -2119,21 +2119,20 @@
 
 <h1 id="blackjax-pypi-follow-ups">BlackJAX PyPI follow-ups<a class="headerlink" href="#blackjax-pypi-follow-ups" title="Permanent link">¤</a></h1>
 <h2 id="what-were-waiting-on">What we're waiting on<a class="headerlink" href="#what-were-waiting-on" title="Permanent link">¤</a></h2>
+<p>A new PyPI release of <a href="https://github.com/blackjax-devs/blackjax">blackjax-devs/blackjax</a> that includes:</p>
 <ul>
 <li>Nested slice sampler (<code>blackjax.nss</code>, <code>blackjax.ns.{base,adaptive,utils}</code>).</li>
 <li><code>blackjax.ns.utils.finalise</code> (used by both NS-AW and NSS at run time).</li>
 </ul>
-<p>The feature-carrying forks are:</p>
-<ul>
-<li><a href="https://github.com/handley-lab/blackjax">https://github.com/handley-lab/blackjax</a></li>
-</ul>
-<p>Track upstream parity at: <a href="https://github.com/blackjax-devs/blackjax">https://github.com/blackjax-devs/blackjax</a></p>
-<h2 id="what-to-undo-when-the-features-land">What to undo when the features land<a class="headerlink" href="#what-to-undo-when-the-features-land" title="Permanent link">¤</a></h2>
+<p>These modules are already merged into <code>blackjax-devs/blackjax</code> main.
+Jim's <code>[tool.uv.sources]</code> currently pins to that branch directly.</p>
+<h2 id="what-to-undo-when-a-pypi-release-ships">What to undo when a PyPI release ships<a class="headerlink" href="#what-to-undo-when-a-pypi-release-ships" title="Permanent link">¤</a></h2>
 <h3 id="packaging">Packaging<a class="headerlink" href="#packaging" title="Permanent link">¤</a></h3>
 <ul>
-<li>Remove the <code>[tool.uv.sources]</code> block in <code>pyproject.toml</code> pointing <code>blackjax = { git = "https://github.com/GW-JAX-Team/blackjax.git", branch = "jim" }</code>.</li>
+<li>Remove the <code>[tool.uv.sources]</code> block in <code>pyproject.toml</code> pointing <code>blackjax = { git = "https://github.com/blackjax-devs/blackjax.git" }</code>.</li>
 <li>Drop the <code>[dependency-groups] nested-sampling</code> PEP 735 group entirely.</li>
-<li>Bump the <code>blackjax&gt;=1.4</code> pin to whatever release first contains all NS features.</li>
+<li>Bump the <code>blackjax&gt;=1.6</code> pin to whatever release first contains all NS features.</li>
+<li>Remove the BlackJAX fork owned by GW JAX Team.</li>
 </ul>
 <h3 id="inline-imports-module-top">Inline imports → module top<a class="headerlink" href="#inline-imports-module-top" title="Permanent link">¤</a></h3>
 <p><strong><code>src/jimgw/samplers/blackjax/ns_aw.py</code></strong></p>

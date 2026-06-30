@@ -2183,16 +2183,16 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
 <p>We recommend using <a href="https://docs.astral.sh/uv/">uv</a> to manage your Python environment. After cloning the repository, run <code>uv sync</code> to create a virtual environment with all dependencies installed.</p>
 <h2 id="blackjax-nested-samplers">BlackJAX nested samplers<a class="headerlink" href="#blackjax-nested-samplers" title="Permanent link">¤</a></h2>
 <p>Jim's BlackJAX nested-sampling backends depend on modules not yet released on PyPI.
-They are distributed via a maintained fork and must be installed separately.</p>
+The features are merged into the upstream <a href="https://github.com/blackjax-devs/blackjax">blackjax-devs/blackjax</a> main branch but await a versioned release.</p>
 <h3 id="with-uv-recommended">With uv (recommended)<a class="headerlink" href="#with-uv-recommended" title="Permanent link">¤</a></h3>
 <p>Clone the repository if you haven't already, then sync the nested-sampling group:</p>
 <div class="highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/GW-JAX-Team/Jim.git
 <span class="nb">cd</span><span class="w"> </span>Jim
 uv<span class="w"> </span>sync<span class="w"> </span>--group<span class="w"> </span>nested-sampling
 </code></pre></div>
-<p>This installs the <code>blackjax</code> fork declared in <code>[tool.uv.sources]</code>. The fork is resolved automatically.</p>
+<p>This installs BlackJAX from <code>blackjax-devs/blackjax</code> as declared in <code>[tool.uv.sources]</code>.</p>
 <h3 id="from-source-pip">From source (pip)<a class="headerlink" href="#from-source-pip" title="Permanent link">¤</a></h3>
-<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;git+https://github.com/GW-JAX-Team/blackjax.git@jim&quot;</span>
+<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;git+https://github.com/blackjax-devs/blackjax.git&quot;</span>
 </code></pre></div>
 <blockquote>
 <p><strong>Note:</strong> <code>pip install jimgw[nested-sampling]</code> will not work until the required features land in a PyPI release. Use one of the commands above instead.</p>

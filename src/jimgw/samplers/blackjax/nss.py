@@ -16,7 +16,7 @@ from jaxtyping import Array, Float, Key
 import blackjax
 from blackjax.ns.adaptive import AdaptiveNSState, init as _ns_adaptive_init
 from blackjax.ns.base import NSInfo, init_state_strategy as _init_state_strategy
-from blackjax.ns.nss import update_inner_kernel_params as _update_inner_kernel_params
+from blackjax.ns.nss import live_covariance, sample_direction_from_covariance
 from blackjax.ns.utils import finalise
 from jimgw.samplers.base import Sampler
 from jimgw.samplers.blackjax._imports import (
@@ -24,7 +24,7 @@ from jimgw.samplers.blackjax._imports import (
     require_nss,
 )
 from jimgw.samplers.config import BlackJAXNSSConfig
-from jimgw.samplers.periodic import to_prior_space_stepper
+from jimgw.samplers.periodic import to_prior_space_proposal
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +55,7 @@ class BlackJAXNSSSampler(Sampler):
     """
 
     _config: BlackJAXNSSConfig
-    _stepper_fn: Callable
+    _proposal: Callable
     _final_state: NSInfo
     _nested_samples: NestedSamples
     _n_iterations: int
@@ -79,7 +79,9 @@ class BlackJAXNSSSampler(Sampler):
             log_posterior_fn=log_posterior_fn,
             config=config,
         )
-        self._stepper_fn = to_prior_space_stepper(periodic, n_dims)
+        self._proposal = to_prior_space_proposal(
+            periodic, n_dims, sample_direction_from_covariance
+        )
 
     def _sample(
         self,
@@ -129,7 +131,7 @@ class BlackJAXNSSSampler(Sampler):
             loglikelihood_fn=self._log_likelihood_fn,
             num_delete=n_delete,
             num_inner_steps=num_inner_steps,
-            stepper_fn=self._stepper_fn,
+            proposal=self._proposal,
         )
 
         # Bypass BlackJAX's jax.vmap(init_state_fn) to avoid peak-memory OOM.
@@ -150,7 +152,7 @@ class BlackJAXNSSSampler(Sampler):
             return _ns_adaptive_init(
                 positions,
                 init_state_fn=_batched_fn,
-                update_inner_kernel_params_fn=_update_inner_kernel_params,
+                update_inner_kernel_params_fn=live_covariance,
             )
 
         # Resume from checkpoint if one exists.
@@ -281,7 +283,7 @@ class BlackJAXNSSSampler(Sampler):
         ui: Any = (
             self._final_state.update_info
         )  # SliceInfo — blackjax stubs type this as base NamedTuple
-        total_steps = int(jnp.sum(ui.num_steps))
+        total_steps = int(jnp.sum(ui.num_expansions))
         total_shrink = int(jnp.sum(ui.num_shrink))
 
         log_Z = np.asarray(self._nested_samples.logZ()).item()
@@ -290,7 +292,7 @@ class BlackJAXNSSSampler(Sampler):
         return {
             "n_likelihood_evaluations": total_steps + total_shrink,
             "n_iterations": self._n_iterations,
-            "n_stepping_out_history": np.asarray(ui.num_steps),
+            "n_stepping_out_history": np.asarray(ui.num_expansions),
             "n_shrinking_history": np.asarray(ui.num_shrink),
             "n_likelihood_evaluations_stepping_out": total_steps,
             "n_likelihood_evaluations_shrinking": total_shrink,

@@ -806,7 +806,7 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
 
         See Eq.(7) in arXiv:2302.05333.
         """
-        gamma = jnp.arange(-5, 6) / 3.0
+        gamma = jnp.array([-5.0 / 3, -2.0 / 3, 1.0, 5.0 / 3, 7.0 / 3])
         freq_2D = jax.lax.broadcast_in_dim(freqs, (freqs.size, gamma.size), [0])
         f_star = jnp.where(gamma >= 0, f_high, f_low)
         summand = (freq_2D / f_star) ** gamma * jnp.sign(gamma)

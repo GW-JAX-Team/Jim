@@ -2002,10 +2002,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#jimgw.samplers.periodic.to_prior_space_stepper" class="md-nav__link">
+  <a href="#jimgw.samplers.periodic.to_prior_space_proposal" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        to_prior_space_stepper
+        to_prior_space_proposal
       </span>
     </span>
   </a>
@@ -2141,10 +2141,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#jimgw.samplers.periodic.to_prior_space_stepper" class="md-nav__link">
+  <a href="#jimgw.samplers.periodic.to_prior_space_proposal" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        to_prior_space_stepper
+        to_prior_space_proposal
       </span>
     </span>
   </a>
@@ -2195,8 +2195,9 @@ sampler backend expects.</p>
 </code></pre>
 <p>Each backend wants a different shape: flowMC already accepts an index-keyed dict
 directly; BlackJAX NS-AW needs a stepper function on flat arrays; BlackJAX NSS
-needs a stepper returning a <code>(position, accepted)</code> tuple; BlackJAX SMC needs a
-displacement wrapper.  The adapters below handle those conversions.</p>
+needs a <code>proposal</code> factory with the same interface as
+<code>blackjax.ns.nss.covariance_proposal</code>; BlackJAX SMC needs a displacement
+wrapper.  The adapters below handle those conversions.</p>
 <p>All adapters operate on flat JAX arrays of shape <code>(n_dims,)</code>.</p>
 
 
@@ -2225,10 +2226,10 @@ displacement wrapper.  The adapters below handle those conversions.</p>
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;to_prior_space_stepper&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;periodic_index&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Optional&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;dict&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;tuple&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]]],&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;n_dims&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Callable&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.samplers.periodic.to_prior_space_stepper">to_prior_space_stepper</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;to_prior_space_proposal&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;periodic_index&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Optional&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;dict&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;tuple&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]]],&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;n_dims&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;sample_direction_from_covariance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Callable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Callable&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.samplers.periodic.to_prior_space_proposal">to_prior_space_proposal</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Stepper function for BlackJAX NSS (prior space).</p>
+                  <p>Return a BlackJAX NSS proposal factory that wraps periodic prior-space dims.</p>
                 </div>
               </td>
             </tr>
@@ -2286,20 +2287,17 @@ within <code>[lower, upper)</code>:</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="jimgw.samplers.periodic.to_prior_space_stepper" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">to_prior_space_stepper</span><span class="p">(</span><span class="n">periodic_index</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]],</span> <span class="n">n_dims</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span></code>
+<h3 id="jimgw.samplers.periodic.to_prior_space_proposal" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">to_prior_space_proposal</span><span class="p">(</span><span class="n">periodic_index</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]],</span> <span class="n">n_dims</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">sample_direction_from_covariance</span><span class="p">:</span> <span class="n">Callable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span></code>
 
-<a href="#jimgw.samplers.periodic.to_prior_space_stepper" class="headerlink" title="Permanent link">¤</a></h3>
+<a href="#jimgw.samplers.periodic.to_prior_space_proposal" class="headerlink" title="Permanent link">¤</a></h3>
 
 
     <div class="doc doc-contents ">
 
-        <p>Stepper function for BlackJAX NSS (prior space).</p>
-<p>Signature: <code>stepper_fn(position, direction, step_size) -&gt; (new_position, accepted)</code></p>
-<p>Position and direction are flat JAX arrays of shape <code>(n_dims,)</code>.
-NSS requires the stepper to return a <code>(position, bool)</code> tuple.
-Periodic parameters are wrapped with
-<code>lower + mod(pos + step_size * dir - lower, period)</code>.</p>
+        <p>Return a BlackJAX NSS proposal factory that wraps periodic prior-space dims.</p>
+<p>Has the same interface as <code>blackjax.ns.nss.covariance_proposal</code>:
+<code>proposal(init_state_fn, loglikelihood_0, cov) -&gt; proposal_generator</code>.</p>
 
 
     </div>

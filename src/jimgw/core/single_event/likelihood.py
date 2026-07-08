@@ -9,7 +9,7 @@ from scipy.interpolate import interp1d
 from evosax.algorithms import CMA_ES
 from ripplegw.interfaces import Waveform
 
-from jimgw.core.utils import log_i0
+from jimgw.core.utils import log_i0, round_up_to_power_of_two
 from jimgw.core.prior import Prior
 from jimgw.core.base import LikelihoodBase
 from jimgw.core.transforms import NtoMTransform
@@ -1436,12 +1436,6 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
             f"intervals: {', '.join(['1/' + str(d) + ' Hz' for d in durations_list])}"
         )
 
-    def _round_up_to_power_of_two(self, n: int) -> int:
-        """Round up to the nearest power of two."""
-        if n <= 0:
-            return 1
-        return 1 << (n - 1).bit_length()
-
     def _setup_integers(self) -> None:
         """Set up integer indices for each band.
 
@@ -1464,7 +1458,7 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
             fnext = fb_dfb[b + 1][0]
 
             Nb = max(
-                self._round_up_to_power_of_two(
+                round_up_to_power_of_two(
                     int(2.0 * fnext * original_duration + 1)
                 ),
                 2**b,

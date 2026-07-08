@@ -228,35 +228,30 @@ class TransientLikelihoodFD(SingleEventLikelihood):
         self.gmst = compute_gmst(self.trigger_time)
 
         # --- coerce marginalization inputs ---
-        if time_marginalization:
-            config = {}
-            if isinstance(time_marginalization, dict):
-                config.update(time_marginalization)
-            time_marginalization = TimeMargConfig(**config)
-        else:
+        if isinstance(time_marginalization, dict):
+            time_marginalization = TimeMargConfig(**time_marginalization)
+        elif time_marginalization is True:
+            time_marginalization = TimeMargConfig()
+        elif not time_marginalization:
             time_marginalization = None
 
-        if phase_marginalization:
-            config = {}
-            if isinstance(phase_marginalization, dict):
-                config.update(phase_marginalization)
-            phase_marginalization = PhaseMargConfig(**config)
-        else:
+        if isinstance(phase_marginalization, dict):
+            phase_marginalization = PhaseMargConfig(**phase_marginalization)
+        elif phase_marginalization is True:
+            phase_marginalization = PhaseMargConfig()
+        elif not phase_marginalization:
             phase_marginalization = None
 
-        if distance_marginalization:
-            config = {}
-            if isinstance(distance_marginalization, dict):
-                config.update(distance_marginalization)
-            elif isinstance(distance_marginalization, bool):
-                raise ValueError(
-                    "distance_marginalization=True is not supported because "
-                    "`distance_prior` has no default.  Pass a dict with `distance_prior` "
-                    "or a DistanceMargConfig instance instead."
-                )
-            distance_marginalization = DistanceMargConfig(**config)
-        else:
+        if isinstance(distance_marginalization, dict):
+            distance_marginalization = DistanceMargConfig(**distance_marginalization)
+        elif not distance_marginalization:
             distance_marginalization = None
+        elif distance_marginalization is True:
+            raise ValueError(
+                "distance_marginalization=True is not supported because "
+                "`distance_prior` has no default.  Pass a dict with `distance_prior` "
+                "or a DistanceMargConfig instance instead."
+            )
 
         # --- marginalization flags ---
         self.time_marginalization = time_marginalization is not None
@@ -585,14 +580,13 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         super().__init__(detectors, waveform, fixed_parameters)
 
         # --- coerce phase marginalization input ---
-        if phase_marginalization:
-            config = {}
-            if isinstance(phase_marginalization, dict):
-                config.update(phase_marginalization)
-            phase_marginalization = PhaseMargConfig(**config)
-            self.phase_marginalization = True
-        else:
-            self.phase_marginalization = False
+        if isinstance(phase_marginalization, dict):
+            phase_marginalization = PhaseMargConfig(**phase_marginalization)
+        elif phase_marginalization is True:
+            phase_marginalization = PhaseMargConfig()
+        elif not phase_marginalization:
+            phase_marginalization = None
+        self.phase_marginalization = phase_marginalization is not None
 
         # --- frequency setup (same as TransientLikelihoodFD) ---
         _frequencies = []

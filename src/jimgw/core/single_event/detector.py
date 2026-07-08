@@ -2,10 +2,13 @@ from abc import ABC, abstractmethod
 from typing import Optional
 import logging
 import time
+import tempfile
+import os
 
 import jax
 import jax.numpy as jnp
 from jaxtyping import Array, Float, Complex, Key, jaxtyped, Bool
+from jimgw.typing import FloatLike, FloatScalar
 import requests
 from beartype import beartype as typechecker
 
@@ -56,7 +59,7 @@ class Detector(ABC):
     _sliced_psd: Float[Array, " n_sample"] = jnp.array([])
 
     @property
-    def start_time(self) -> Float:
+    def start_time(self) -> float:
         """GPS start time of the data segment."""
         return self.data.start_time
 
@@ -69,7 +72,7 @@ class Detector(ABC):
         return self.data.frequencies
 
     @property
-    def duration(self) -> Float:
+    def duration(self) -> FloatLike:
         return self.data.duration
 
     @property
@@ -160,6 +163,8 @@ class Detector(ABC):
         self._sliced_frequencies = jnp.array([])
         self._sliced_fd_data = jnp.array([])
         self._sliced_psd = jnp.array([])
+        self.optimal_snr = None
+        self.match_filtered_snr = None
 
     @property
     def sliced_frequencies(self) -> Float[Array, " n_freq"]:
@@ -227,15 +232,15 @@ class GroundBased2G(Detector):
     data: Data
     psd: PowerSpectrum
 
-    latitude: Float = 0
-    longitude: Float = 0
-    xarm_azimuth: Float = 0
-    yarm_azimuth: Float = 0
-    xarm_tilt: Float = 0
-    yarm_tilt: Float = 0
-    elevation: Float = 0
+    latitude: float = 0
+    longitude: float = 0
+    xarm_azimuth: float = 0
+    yarm_azimuth: float = 0
+    xarm_tilt: float = 0
+    yarm_tilt: float = 0
+    elevation: float = 0
 
-    optimal_snr: Optional[Float] = None
+    optimal_snr: Optional[FloatScalar] = None
     match_filtered_snr: Optional[Complex] = None
 
     def __repr__(self) -> str:
@@ -284,7 +289,7 @@ class GroundBased2G(Detector):
 
     @staticmethod
     def _get_arm(
-        lat: Float, lon: Float, tilt: Float, azimuth: Float
+        lat: float, lon: float, tilt: float, azimuth: float
     ) -> Float[Array, "3"]:
         """Construct detector-arm vectors in geocentric Cartesian coordinates.
 
@@ -435,7 +440,9 @@ class GroundBased2G(Detector):
         """
         raise NotImplementedError
 
-    def delay_from_geocenter(self, ra: Float, dec: Float, gmst: Float) -> Float:
+    def delay_from_geocenter(
+        self, ra: FloatScalar, dec: FloatScalar, gmst: FloatScalar
+    ) -> FloatScalar:
         """Calculate time delay between two detectors in geocentric coordinates.
 
         Based on XLALArrivaTimeDiff in TimeDelay.c
@@ -463,7 +470,11 @@ class GroundBased2G(Detector):
         return jnp.einsum("i...,i->...", omega, delta_d) / C_SI
 
     def antenna_pattern(
-        self, ra: Float, dec: Float, psi: Float, gmst: Float
+        self,
+        ra: FloatScalar,
+        dec: FloatScalar,
+        psi: FloatScalar,
+        gmst: FloatScalar,
     ) -> dict[str, Complex]:
         """Compute antenna patterns for polarizations at specified sky location.
 
@@ -515,10 +526,17 @@ class GroundBased2G(Detector):
         else:
             logger.info("Grabbing GWTC-2 PSD for " + self.name)
             url = asd_file_dict[self.name]
-            data = requests.get(url)
-            tmp_file_name = f"fetched_default_asd_{self.name}.txt"
-            open(tmp_file_name, "wb").write(data.content)
-            _loaded_psd = PowerSpectrum.from_file(tmp_file_name, is_asd=True)
+            response = requests.get(url, timeout=30)
+            response.raise_for_status()
+            fd, tmp_file_name = tempfile.mkstemp(
+                suffix=".txt", prefix=f"jim_asd_{self.name}_"
+            )
+            try:
+                with os.fdopen(fd, "wb") as _fh:
+                    _fh.write(response.content)
+                _loaded_psd = PowerSpectrum.from_file(tmp_file_name, is_asd=True)
+            finally:
+                os.unlink(tmp_file_name)
         _loaded_psd.name = f"{self.name}_psd"
         self.set_psd(_loaded_psd)
         return self.psd
@@ -631,7 +649,7 @@ class GroundBased2G(Detector):
 
         # Stamp trigger_time and gmst — mirrors TransientLikelihoodFD.evaluate()
         params["trigger_time"] = float(trigger_time)
-        params["gmst"] = compute_gmst(trigger_time)
+        params["gmst"] = float(compute_gmst(trigger_time))
 
         # 1. Set empty data to initialize the detector
         n_times = int(jnp.round(duration * sampling_frequency))

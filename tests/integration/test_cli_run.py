@@ -54,26 +54,26 @@ def test_full_run_output_files(full_run_result, tmp_output):
 
 
 def test_full_run_samples_shape(full_run_result, tmp_output):
-    data = np.load(tmp_output / "samples.npz")
-    expected_params = {
-        "M_c",
-        "q",
-        "s1_z",
-        "s2_z",
-        "iota",
-        "d_L",
-        "t_c",
-        "phase_c",
-        "psi",
-        "ra",
-        "dec",
-        "log_likelihood",
-    }
-    assert set(data.files) == expected_params
-    n = data["M_c"].shape[0]
-    assert n > 0
-    for key in expected_params:
-        assert data[key].shape == (n,)
+    with np.load(tmp_output / "samples.npz") as data:
+        expected_params = {
+            "M_c",
+            "q",
+            "s1_z",
+            "s2_z",
+            "iota",
+            "d_L",
+            "t_c",
+            "phase_c",
+            "psi",
+            "ra",
+            "dec",
+            "log_likelihood",
+        }
+        assert set(data.files) == expected_params
+        n = data["M_c"].shape[0]
+        assert n > 0
+        for key in expected_params:
+            assert data[key].shape == (n,)
 
 
 def test_init_creates_template(tmp_path):

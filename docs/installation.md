@@ -18,8 +18,8 @@ pip install "JimGW[cuda]"
 If you want to install the latest version of Jim, you can clone this repo and install it locally:
 
 ```bash
-git clone https://github.com/GW-JAX-Team/jim.git
-cd jim
+git clone https://github.com/GW-JAX-Team/Jim.git
+cd Jim
 pip install -e .
 ```
 
@@ -28,20 +28,24 @@ We recommend using [uv](https://docs.astral.sh/uv/) to manage your Python enviro
 ## BlackJAX nested samplers
 
 Jim's BlackJAX nested-sampling backends depend on modules not yet released on PyPI.
-They are distributed via a maintained fork and must be installed separately.
+The features are merged into the upstream [blackjax-devs/blackjax](https://github.com/blackjax-devs/blackjax) main branch but await a versioned release.
 
 ### With uv (recommended)
 
+Clone the repository if you haven't already, then sync the nested-sampling group:
+
 ```bash
+git clone https://github.com/GW-JAX-Team/Jim.git
+cd Jim
 uv sync --group nested-sampling
 ```
 
-This installs the `blackjax` fork declared in `[tool.uv.sources]`. The fork is resolved automatically — no manual git clone needed.
+This installs BlackJAX from `blackjax-devs/blackjax` as declared in `[tool.uv.sources]`.
 
 ### From source (pip)
 
 ```bash
-pip install "git+https://github.com/GW-JAX-Team/blackjax.git@jim"
+pip install "git+https://github.com/blackjax-devs/blackjax.git"
 ```
 
 > **Note:** `pip install jimgw[nested-sampling]` will not work until the required features land in a PyPI release. Use one of the commands above instead.

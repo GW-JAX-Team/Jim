@@ -3,7 +3,6 @@
 import time
 from pathlib import Path
 
-# Plotting requires the visualize extra: pip install jimgw[visualize]
 import corner
 import numpy as np
 import jax
@@ -129,8 +128,8 @@ jim = Jim(
         n_production_loops=10,
         n_NFproposal_batch_size=100,
         global_thinning=100,
-        verbose=True,
     ),
+    verbose=True,
 )
 
 start_time = time.time()

@@ -55,12 +55,7 @@ class _DataBase(BaseModel):
                 f"Supported: {sorted(_SUPPORTED_DETECTORS)}"
             )
         if len(v) != len(set(v)):
-            seen: set[str] = set()
-            duplicates: list[str] = []
-            for d in v:
-                if d in seen:
-                    duplicates.append(d)
-                seen.add(d)
+            duplicates = [d for d in set(v) if v.count(d) > 1]
             raise ValueError(f"Duplicate detector name(s): {duplicates}")
         return v
 
@@ -130,6 +125,7 @@ Approximant = Literal[
     "TaylorF2",
     "IMRPhenomD",
     "IMRPhenomD_NRTidalv2",
+    "IMRPhenomHM",
     "IMRPhenomPv2",
     "IMRPhenomXAS",
     "IMRPhenomXAS_NRTidalv3",
@@ -453,7 +449,7 @@ class OutputConfig(BaseModel):
     dir: Path
     save_corner: bool = False
     n_samples: int = Field(
-        default=0, description="Number of posterior samples to save. 0 = all."
+        default=10000, description="Number of posterior samples to save. 0 = all."
     )
     overwrite: bool = False
     corner_parameters: Optional[list[str]] = None

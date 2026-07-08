@@ -6,6 +6,7 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 from jaxtyping import Array, Float, Key
+from jimgw.typing import FloatScalar
 from ripplegw.interfaces import Waveform
 
 from jimgw.core.base import LikelihoodBase
@@ -13,6 +14,8 @@ from jimgw.core.prior import Prior
 from jimgw.core.transforms import BijectiveTransform, NtoMTransform
 from jimgw.core.single_event.likelihood import SingleEventLikelihood
 from jimgw.samplers import Sampler, SamplerConfig, build_sampler
+from jimgw.samplers.config import FlowMCConfig
+from jimgw._logging import ensure_logger_handler
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +55,7 @@ class Jim:
         likelihood_transforms: Sequence[NtoMTransform] = (),
         periodic: Optional[list[str] | dict[str, tuple[float, float]]] = None,
         seed: int = 0,
+        verbose: bool = False,
     ) -> None:
         """Initialise Jim and build the internal sampler.
 
@@ -73,7 +77,18 @@ class Jim:
                 from this seed at construction time, so `sample` is
                 reproducible regardless of any intermediate operations (sanity
                 checks, initial-position draws, etc.).
+            verbose: Enable DEBUG-level logging for all ``jimgw`` components.
+                At ``False`` (default) INFO-level messages are always shown.
+                Pass ``True`` to also see per-step diagnostics and
+                backend-specific progress output (e.g. flowMC training loss).
         """
+        if isinstance(sampler_config, FlowMCConfig):
+            ensure_logger_handler("flowMC", logging.INFO)
+        if verbose:
+            logging.getLogger("jimgw").setLevel(logging.DEBUG)
+            if isinstance(sampler_config, FlowMCConfig):
+                logging.getLogger("flowMC").setLevel(logging.DEBUG)
+
         self._validate_problem(
             likelihood, prior, sample_transforms, likelihood_transforms
         )
@@ -279,15 +294,15 @@ class Jim:
         # (n_dims,) and are injected into the sampler.
         names = self.parameter_names
 
-        def _log_prior_fn(arr: Float[Array, " n_dims"]) -> Float:
+        def _log_prior_fn(arr: Float[Array, " n_dims"]) -> FloatScalar:
             named = dict(zip(names, arr, strict=True))
-            jac: Float = 0.0
+            jac: FloatScalar = jnp.zeros(())
             for transform in reversed(sample_transforms):
                 named, j = transform.inverse(named)
                 jac += j
             return prior.log_prob(named) + jac
 
-        def _log_likelihood_fn(arr: Float[Array, " n_dims"]) -> Float:
+        def _log_likelihood_fn(arr: Float[Array, " n_dims"]) -> FloatScalar:
             named = dict(zip(names, arr, strict=True))
             for transform in reversed(sample_transforms):
                 named, _ = transform.inverse(named)
@@ -295,9 +310,9 @@ class Jim:
                 named = transform.forward(named)
             return likelihood.evaluate(named)
 
-        def _log_posterior_fn(arr: Float[Array, " n_dims"]) -> Float:
+        def _log_posterior_fn(arr: Float[Array, " n_dims"]) -> FloatScalar:
             named = dict(zip(names, arr, strict=True))
-            jac: Float = 0.0
+            jac: FloatScalar = jnp.zeros(())
             for transform in reversed(sample_transforms):
                 named, j = transform.inverse(named)
                 jac = jac + j

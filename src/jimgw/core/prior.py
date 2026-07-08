@@ -6,6 +6,7 @@ import jax.numpy as jnp
 from jax.scipy.special import logit
 from beartype import beartype as typechecker
 from jaxtyping import Array, Float, Key, jaxtyped
+from jimgw.typing import FloatScalar
 from abc import abstractmethod
 import equinox as eqx
 
@@ -65,12 +66,12 @@ class Prior(eqx.Module):
         """
         return dict(zip(self.parameter_names, x, strict=True))
 
-    def __call__(self, x: dict[str, Float]) -> Float:
+    def __call__(self, x: dict[str, Float]) -> FloatScalar:
         """Alias for `log_prob`."""
         return self.log_prob(x)
 
     @abstractmethod
-    def log_prob(self, z: dict[str, Float]) -> Float:
+    def log_prob(self, z: dict[str, Float]) -> FloatScalar:
         """Evaluate the log-probability of a sample.
 
         Args:
@@ -177,7 +178,7 @@ class LogisticDistribution(Prior):
         samples = logit(samples)
         return self.add_name(samples[None])
 
-    def log_prob(self, z: dict[str, Float]) -> Float:
+    def log_prob(self, z: dict[str, Float]) -> FloatScalar:
         variable = z[self.parameter_names[0]]
         return -variable - 2 * jnp.log(1 + jnp.exp(-variable))
 
@@ -214,7 +215,7 @@ class StandardNormalDistribution(Prior):
         samples = jax.random.normal(rng_key, (n_samples,))
         return self.add_name(samples[None])
 
-    def log_prob(self, z: dict[str, Float]) -> Float:
+    def log_prob(self, z: dict[str, Float]) -> FloatScalar:
         variable = z[self.parameter_names[0]]
         return -0.5 * (variable**2 + jnp.log(2 * jnp.pi))
 
@@ -252,7 +253,7 @@ class UniformDistribution(Prior):
         samples = jax.random.uniform(rng_key, (n_samples,), minval=0.0, maxval=1.0)
         return self.add_name(samples[None])
 
-    def log_prob(self, z: dict[str, Float]) -> Float:
+    def log_prob(self, z: dict[str, Float]) -> FloatScalar:
         variable = z[self.parameter_names[0]]
         return jnp.where(
             jnp.logical_and(variable >= 0.0, variable <= 1.0), 0.0, -jnp.inf
@@ -312,7 +313,7 @@ class SequentialTransformPrior(CompositePrior):
         output = self.base_prior[0].sample(rng_key, n_samples)
         return jax.vmap(self.transform)(output)
 
-    def log_prob(self, z: dict[str, Float]) -> Float:
+    def log_prob(self, z: dict[str, Float]) -> FloatScalar:
         """Evaluate the log-probability of a transformed sample z.
 
         Applies the inverse transforms in reverse order, accumulating
@@ -370,7 +371,7 @@ class BoundedMixin:
     def is_normalized(self) -> bool:
         return False
 
-    def log_prob(self, z: dict[str, Float]) -> Float:
+    def log_prob(self, z: dict[str, Float]) -> FloatScalar:
         x = z[self.parameter_names[0]]  # type: ignore[attr-defined]
         base_log_prob = super().log_prob(z)  # type: ignore[misc]
         return jnp.where(
@@ -430,7 +431,7 @@ class CombinePrior(CompositePrior):
             output.update(prior.sample(subkey, n_samples))
         return output
 
-    def log_prob(self, z: dict[str, Float]) -> Float:
+    def log_prob(self, z: dict[str, Float]) -> FloatScalar:
         """Evaluate the joint log-probability as the sum of component log-probabilities.
 
         Args:
@@ -439,7 +440,7 @@ class CombinePrior(CompositePrior):
         Returns:
             Sum of log-probabilities from all component priors.
         """
-        output = 0.0
+        output: FloatScalar = jnp.zeros(())
         for prior in self.base_prior:
             output += prior.log_prob(z)
         return output

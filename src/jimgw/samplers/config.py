@@ -5,13 +5,18 @@ Each sampler has its own ``*Config`` class discriminated by a ``type`` literal;
 ``Jim(..., sampler_config=...)``.
 """
 
-from __future__ import annotations
-
+import logging
+import pickle
+import time
 import warnings
-from typing import Annotated, Literal, Optional, Union
+from pathlib import Path
+from typing import Annotated, Any, Literal, Optional, Self, Union
 
+import jax
 import numpy as np
 from pydantic import BaseModel, Discriminator, Field, field_validator, model_validator
+
+logger = logging.getLogger(__name__)
 
 
 class BaseSamplerConfig(BaseModel):
@@ -19,7 +24,96 @@ class BaseSamplerConfig(BaseModel):
 
     model_config = {"extra": "forbid", "arbitrary_types_allowed": True}
 
-    verbose: bool = False
+
+# ---------------------------------------------------------------------------
+# Checkpoint mixin — included by the three BlackJAX configs that support it
+# ---------------------------------------------------------------------------
+
+
+class _CheckpointMixin(BaseModel):
+    """Checkpoint/resume fields for samplers that support them.
+
+    Args:
+        checkpoint_dir: Directory where ``checkpoint.pkl`` is written.
+            ``None`` (default) disables checkpointing.  The directory is
+            created automatically if it does not exist.  The checkpoint
+            filename is always ``checkpoint.pkl``.
+        checkpoint_interval: Minimum wall-clock seconds between checkpoint
+            writes.  Default ``0`` (checkpointing disabled).  Set to a
+            positive value to enable; ``checkpoint_dir`` must also be set.
+    """
+
+    # model_config is inherited from BaseSamplerConfig; not redeclared here.
+
+    checkpoint_dir: Optional[Path] = None
+    checkpoint_interval: float = 0.0
+
+    @field_validator("checkpoint_dir", mode="before")
+    @classmethod
+    def _coerce_checkpoint_dir(cls, v: object) -> Optional[Path]:
+        if v is None:
+            return None
+        return Path(str(v))
+
+    @field_validator("checkpoint_interval")
+    @classmethod
+    def _check_checkpoint_interval(cls, v: float) -> float:
+        if v < 0.0:
+            raise ValueError("checkpoint_interval must be >= 0.0")
+        return v
+
+    @model_validator(mode="after")
+    def _check_checkpoint_consistency(self) -> Self:
+        if self.checkpoint_interval > 0 and self.checkpoint_dir is None:
+            raise ValueError(
+                "checkpoint_dir must be set when checkpoint_interval > 0. "
+                "Provide a directory path or set checkpoint_interval=0 to disable checkpointing."
+            )
+        return self
+
+    def write_checkpoint(self, data: dict, tag: str) -> float:
+        """Atomically write *data* to ``checkpoint_dir/checkpoint.pkl``.
+
+        The write is done via a temporary ``.pkl.tmp`` file that is renamed
+        into place so a crash mid-write never leaves a corrupt checkpoint.
+
+        Args:
+            data: Serialisable dict to pickle.
+            tag: Short prefix for the debug log message (e.g. ``"SMC-AP"``).
+
+        Returns:
+            Wall-clock time of the write (``time.perf_counter()``), suitable
+            for resetting the caller's ``_last_ckpt_t`` timer.
+        """
+        assert self.checkpoint_dir is not None
+        ckpt_path = self.checkpoint_dir / "checkpoint.pkl"
+        ckpt_path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = ckpt_path.with_suffix(".pkl.tmp")
+        with open(tmp, "wb") as _f:
+            pickle.dump(data, _f)
+        tmp.replace(ckpt_path)
+        t = time.perf_counter()
+        logger.debug("%s: checkpoint saved at n_iter=%s", tag, data.get("n_iter", "?"))
+        return t
+
+    def configure_jax_cache(self) -> None:
+        """Enable JAX's persistent XLA compilation cache under ``checkpoint_dir/jax_cache``.
+
+        Sets ``jax_compilation_cache_dir`` to ``{checkpoint_dir}/jax_cache`` so
+        that compiled functions are stored to disk and reused across processes
+        (e.g., after a crash-and-resume).  Also sets
+        ``jax_persistent_cache_min_compile_time_secs`` to ``0.0`` so that all
+        compilations are cached regardless of their duration.
+
+        No-op if ``checkpoint_dir`` is ``None``.  Safe to call multiple times.
+        """
+        if self.checkpoint_dir is None:
+            return
+
+        cache_dir = self.checkpoint_dir / "jax_cache"
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        jax.config.update("jax_compilation_cache_dir", str(cache_dir))
+        jax.config.update("jax_persistent_cache_min_compile_time_secs", 0.0)
 
 
 # ---------------------------------------------------------------------------
@@ -83,7 +177,7 @@ class GRWConfig(BaseModel):
     step_size: float | np.ndarray = 2e-3
 
 
-class FlowMCConfig(BaseSamplerConfig):
+class FlowMCConfig(BaseSamplerConfig, _CheckpointMixin):
     """Configuration for [`FlowMCSampler`][jimgw.samplers.flowmc.FlowMCSampler].
 
     The ``local_kernel`` field selects the MCMC kernel used for local proposals:
@@ -118,9 +212,10 @@ class FlowMCConfig(BaseSamplerConfig):
 
     local_kernel: Literal["MALA", "HMC", "GRW"] = "MALA"
     parallel_tempering: Optional[ParallelTemperingConfig] = None
-    mala: MALAConfig = Field(default_factory=MALAConfig)
-    hmc: HMCConfig = Field(default_factory=HMCConfig)
-    grw: GRWConfig = Field(default_factory=GRWConfig)
+    # dict[str, Any] accepted here; Pydantic coerces it to the typed config via field_validator.
+    mala: MALAConfig | dict[str, Any] = Field(default_factory=MALAConfig)
+    hmc: HMCConfig | dict[str, Any] = Field(default_factory=HMCConfig)
+    grw: GRWConfig | dict[str, Any] = Field(default_factory=GRWConfig)
 
     rq_spline_hidden_units: list[int] = Field(default_factory=lambda: [128, 128])
     rq_spline_n_bins: int = 10
@@ -134,7 +229,7 @@ class FlowMCConfig(BaseSamplerConfig):
 
     chain_batch_size: int = 0
     local_thinning: int = 1
-    global_thinning: int = 1
+    global_thinning: int = 100
 
     early_stopping: bool = True
     early_stopping_tolerance: float = 0.1
@@ -158,7 +253,7 @@ class FlowMCConfig(BaseSamplerConfig):
         )
 
     @model_validator(mode="after")
-    def _warn_if_irrelevant_kernel_set(self) -> FlowMCConfig:
+    def _warn_if_irrelevant_kernel_set(self) -> Self:
         active = self.local_kernel
         for name in ("MALA", "HMC", "GRW"):
             if name == active:
@@ -175,7 +270,7 @@ class FlowMCConfig(BaseSamplerConfig):
         return self
 
 
-class BlackJAXNSAWConfig(BaseSamplerConfig):
+class BlackJAXNSAWConfig(BaseSamplerConfig, _CheckpointMixin):
     """Configuration for the BlackJAX acceptance-walk nested sampler.
 
     !!! note
@@ -207,7 +302,7 @@ class BlackJAXNSAWConfig(BaseSamplerConfig):
         return v
 
     @model_validator(mode="after")
-    def _n_live_n_delete_consistency(self) -> "BlackJAXNSAWConfig":
+    def _n_live_n_delete_consistency(self) -> Self:
         if self.n_live < 2:
             raise ValueError(f"n_live must be >= 2 (got {self.n_live}).")
         n_delete = int(self.n_live * self.n_delete_frac)
@@ -220,7 +315,7 @@ class BlackJAXNSAWConfig(BaseSamplerConfig):
         return self
 
 
-class BlackJAXNSSConfig(BaseSamplerConfig):
+class BlackJAXNSSConfig(BaseSamplerConfig, _CheckpointMixin):
     """Configuration for the BlackJAX nested slice sampler.
 
     !!! note
@@ -243,7 +338,7 @@ class BlackJAXNSSConfig(BaseSamplerConfig):
         return v
 
     @model_validator(mode="after")
-    def _n_live_n_delete_consistency(self) -> "BlackJAXNSSConfig":
+    def _n_live_n_delete_consistency(self) -> Self:
         if self.n_live < 2:
             raise ValueError(f"n_live must be >= 2 (got {self.n_live}).")
         n_delete = int(self.n_live * self.n_delete_frac)
@@ -256,8 +351,17 @@ class BlackJAXNSSConfig(BaseSamplerConfig):
         return self
 
 
-class BlackJAXSMCConfig(BaseSamplerConfig):
+class BlackJAXSMCConfig(BaseSamplerConfig, _CheckpointMixin):
     """Configuration for the BlackJAX SMC sampler.
+
+    Parameters
+    ----------
+    batch_size : int, optional
+        Number of particles to process per sequential batch during the MCMC
+        update step. When ``batch_size > 0``, the sampler uses ``jax.lax.map``
+        instead of ``jax.vmap``, which reduces peak GPU memory at the cost
+        of sequential execution. ``0`` (default) uses the original full
+        ``jax.vmap`` behaviour.
 
     !!! note
         Periodic parameters are **not** configured here.  Pass a ``periodic``
@@ -270,6 +374,7 @@ class BlackJAXSMCConfig(BaseSamplerConfig):
     n_mcmc_steps_per_dim: int = 100
     target_ess: Optional[int] = None
     target_ess_fraction: Optional[float] = None
+    batch_size: int = 0  # 0 = full vmap; >0 = lax.map batch size to reduce peak memory
     initial_cov_scale: float = 0.5
     target_acceptance_rate: float = 0.234
     scale_adaptation_gain: float = 3.0
@@ -296,7 +401,7 @@ class BlackJAXSMCConfig(BaseSamplerConfig):
         return v
 
     @model_validator(mode="after")
-    def _validate_ess_args(self) -> BlackJAXSMCConfig:
+    def _validate_ess_args(self) -> Self:
         both_set = self.target_ess is not None and self.target_ess_fraction is not None
         if both_set:
             raise ValueError(

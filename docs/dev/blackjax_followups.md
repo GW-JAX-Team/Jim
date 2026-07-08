@@ -2,22 +2,22 @@
 
 ## What we're waiting on
 
+A new PyPI release of [blackjax-devs/blackjax](https://github.com/blackjax-devs/blackjax) that includes:
+
 - Nested slice sampler (`blackjax.nss`, `blackjax.ns.{base,adaptive,utils}`).
 - `blackjax.ns.utils.finalise` (used by both NS-AW and NSS at run time).
 
-The feature-carrying forks are:
+These modules are already merged into `blackjax-devs/blackjax` main.
+Jim's `[tool.uv.sources]` currently pins to that branch directly.
 
-- <https://github.com/handley-lab/blackjax>
-
-Track upstream parity at: <https://github.com/blackjax-devs/blackjax>
-
-## What to undo when the features land
+## What to undo when a PyPI release ships
 
 ### Packaging
 
-- Remove the `[tool.uv.sources]` block in `pyproject.toml` pointing `blackjax = { git = "https://github.com/GW-JAX-Team/blackjax.git", branch = "jim" }`.
+- Remove the `[tool.uv.sources]` block in `pyproject.toml` pointing `blackjax = { git = "https://github.com/blackjax-devs/blackjax.git" }`.
 - Drop the `[dependency-groups] nested-sampling` PEP 735 group entirely.
-- Bump the `blackjax>=1.4` pin to whatever release first contains all NS features.
+- Bump the `blackjax>=1.6` pin to whatever release first contains all NS features.
+- Remove the BlackJAX fork owned by GW JAX Team.
 
 ### Inline imports → module top
 

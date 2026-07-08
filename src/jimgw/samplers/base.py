@@ -11,8 +11,6 @@ the sampling-space arrays returned by `Sampler.get_samples` back to a
 named prior-space dict via [`Jim.get_samples`][jimgw.core.jim.Jim.get_samples].
 """
 
-from __future__ import annotations
-
 import time
 from abc import ABC, abstractmethod
 from collections.abc import Callable
@@ -20,6 +18,7 @@ from typing import Any
 
 import numpy as np
 from jaxtyping import Array, Float, Key
+from jimgw.typing import FloatScalar
 
 from jimgw.samplers.config import BaseSamplerConfig
 
@@ -41,14 +40,15 @@ class Sampler(ABC):
     n_dims: int
     _sampled: bool
     _sampling_time: float
+    _prev_elapsed: float
 
     def __init__(
         self,
         *,
         n_dims: int,
-        log_prior_fn: Callable[[Float[Array, " n_dims"]], Float],
-        log_likelihood_fn: Callable[[Float[Array, " n_dims"]], Float],
-        log_posterior_fn: Callable[[Float[Array, " n_dims"]], Float],
+        log_prior_fn: Callable[[Float[Array, " n_dims"]], FloatScalar],
+        log_likelihood_fn: Callable[[Float[Array, " n_dims"]], FloatScalar],
+        log_posterior_fn: Callable[[Float[Array, " n_dims"]], FloatScalar],
         config: BaseSamplerConfig,
     ) -> None:
         self.n_dims = n_dims
@@ -58,6 +58,7 @@ class Sampler(ABC):
         self._config = config
         self._sampled = False
         self._sampling_time = 0.0
+        self._prev_elapsed = 0.0
 
     def sample(
         self,
@@ -75,7 +76,7 @@ class Sampler(ABC):
         """
         t0 = time.perf_counter()
         self._sample(rng_key, initial_position)
-        self._sampling_time = time.perf_counter() - t0
+        self._sampling_time = self._prev_elapsed + (time.perf_counter() - t0)
         self._sampled = True
 
     @abstractmethod

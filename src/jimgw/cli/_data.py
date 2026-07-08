@@ -9,7 +9,11 @@ from jimgw.cli._config import (
 )
 from jimgw.cli._transforms import to_likelihood_space
 from jimgw.core.single_event.data import Data, PowerSpectrum
-from jimgw.core.single_event.detector import GroundBased2G, get_detector_preset
+from jimgw.core.single_event.detector import (
+    GroundBased2G,
+    asd_file_dict,
+    get_detector_preset,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +77,7 @@ def _load_gwosc(ifos: list[GroundBased2G], cfg: GWOSCDataConfig) -> None:
 
         logger.info("Fetching %s PSD data [%.1f, %.1f]", ifo.name, psd_start, psd_end)
         psd_data = Data.from_gwosc(ifo.name, psd_start, psd_end)
-        nperseg = int(strain.duration * strain.sampling_frequency)
+        nperseg = int(round(strain.duration * strain.sampling_frequency))
         ifo.set_psd(psd_data.to_psd(nperseg=nperseg))
 
 
@@ -95,6 +99,12 @@ def _load_injection(
     )
 
     for ifo in ifos:
+        if ifo.name not in asd_file_dict:
+            raise ValueError(
+                f"No default ASD for detector '{ifo.name}'. "
+                f"Provide a PSD file via the config. "
+                f"Detectors with built-in defaults: {sorted(asd_file_dict)}."
+            )
         logger.info("Loading design PSD for %s", ifo.name)
         ifo.load_and_set_psd()
 

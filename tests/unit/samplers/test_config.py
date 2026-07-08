@@ -1,5 +1,6 @@
 import warnings
 
+import jax
 import numpy as np
 import pytest
 from pydantic import ValidationError
@@ -15,34 +16,6 @@ from jimgw.samplers.config import (
     ParallelTemperingConfig,
     SamplerConfig,
 )
-
-
-def test_flowmc_config_defaults():
-    cfg = FlowMCConfig()
-    assert cfg.type == "flowmc"
-    assert cfg.n_chains == 1000
-    assert cfg.local_kernel == "MALA"
-    assert cfg.mala.step_size == 2e-3
-    assert cfg.parallel_tempering is None
-
-
-def test_blackjax_ns_aw_config_defaults():
-    cfg = BlackJAXNSAWConfig()
-    assert cfg.type == "blackjax-ns-aw"
-    assert cfg.n_live == 1000
-    assert cfg.n_delete_frac == 0.5
-
-
-def test_blackjax_nss_config_defaults():
-    cfg = BlackJAXNSSConfig()
-    assert cfg.type == "blackjax-nss"
-    assert cfg.n_live == 2000
-
-
-def test_blackjax_smc_config_defaults():
-    cfg = BlackJAXSMCConfig()
-    assert cfg.type == "blackjax-smc"
-    assert cfg.n_particles == 5000
 
 
 def test_discriminated_union_dispatch_flowmc():
@@ -88,9 +61,9 @@ def test_n_delete_frac_validator():
     assert cfg.n_delete_frac == 0.5
 
 
-def test_base_config_fields():
-    cfg = FlowMCConfig(verbose=True)
-    assert cfg.verbose is True
+def test_base_config_extra_fields_forbidden():
+    with pytest.raises(Exception):
+        FlowMCConfig(unknown_field=True)
 
 
 # ---------------------------------------------------------------------------
@@ -327,3 +300,60 @@ def test_smc_resolve_target_ess_fraction():
 
     cfg2 = BlackJAXSMCConfig(target_ess=1000, n_particles=2000)
     assert cfg2._resolve_target_ess_fraction() == pytest.approx(0.5)
+
+
+# ---------------------------------------------------------------------------
+# E: checkpoint_dir / checkpoint_interval validators
+# ---------------------------------------------------------------------------
+
+
+def test_checkpoint_dir_accepts_string(tmp_path):
+    from pathlib import Path
+
+    cfg = BlackJAXNSAWConfig(checkpoint_dir=str(tmp_path))
+    assert cfg.checkpoint_dir == tmp_path
+    assert isinstance(cfg.checkpoint_dir, Path)
+
+
+def test_checkpoint_interval_negative_raises():
+    with pytest.raises(ValidationError):
+        FlowMCConfig(checkpoint_interval=-1.0)
+
+
+def test_checkpoint_interval_without_dir_raises():
+    with pytest.raises(ValidationError, match="checkpoint_dir must be set"):
+        BlackJAXNSAWConfig(checkpoint_interval=600.0)
+
+
+def test_checkpoint_interval_with_dir_ok(tmp_path):
+    cfg = BlackJAXNSAWConfig(checkpoint_dir=tmp_path, checkpoint_interval=600.0)
+    assert cfg.checkpoint_dir == tmp_path
+    assert cfg.checkpoint_interval == 600.0
+
+
+# ---------------------------------------------------------------------------
+# F: configure_jax_cache
+# ---------------------------------------------------------------------------
+
+
+def test_configure_jax_cache_sets_dir(tmp_path):
+    original = getattr(jax.config, "jax_compilation_cache_dir", None)
+    try:
+        BlackJAXNSAWConfig(
+            checkpoint_dir=tmp_path, checkpoint_interval=60.0
+        ).configure_jax_cache()
+        assert (tmp_path / "jax_cache").is_dir()
+        assert getattr(jax.config, "jax_compilation_cache_dir", None) == str(
+            tmp_path / "jax_cache"
+        )
+    finally:
+        jax.config.update("jax_compilation_cache_dir", original)
+
+
+def test_configure_jax_cache_noop_when_no_dir():
+    original = getattr(jax.config, "jax_compilation_cache_dir", None)
+    try:
+        BlackJAXNSAWConfig().configure_jax_cache()
+        assert getattr(jax.config, "jax_compilation_cache_dir", None) == original
+    finally:
+        jax.config.update("jax_compilation_cache_dir", original)

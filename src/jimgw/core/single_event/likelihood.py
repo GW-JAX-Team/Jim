@@ -818,17 +818,15 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         individual contribution spans exactly ``chi * 2π`` rad across
         [f_low, f_high].  The returned array starts at 0 (cumulative from
         f_low).
+
+        See also Eq.(7) in arXiv:2302.05333.
         """
         gamma = jnp.array([-5 / 3, -2 / 3, 1.0, 5 / 3, 7 / 3])
-        # H(-γ)=1 for γ<0, H(γ)=1 for γ>0 (no γ=0 in our set)
-        h_neg = (gamma < 0).astype(gamma.dtype)
-        h_pos = (gamma > 0).astype(gamma.dtype)
-        d_alpha = (
-            chi * 2 * jnp.pi / jnp.abs(f_low**gamma * h_neg - f_high**gamma * h_pos)
-        )
         freq_2D = jax.lax.broadcast_in_dim(freqs, (freqs.size, gamma.size), [0])
-        d_phi = jnp.sum(jnp.sign(gamma) * d_alpha * freq_2D**gamma, axis=1)
-        return d_phi - d_phi[0]
+        f_star = jnp.where(gamma >= 0, f_high, f_low)
+        summand = (freq_2D / f_star) ** gamma * jnp.sign(gamma)
+        dphi = 2 * jnp.pi * chi * jnp.sum(summand, axis=1)
+        return dphi - dphi[0]
 
     def _make_binning_scheme(
         self,
@@ -1012,7 +1010,7 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
 
     Attributes:
         reference_chirp_mass (Float): Reference chirp mass for determining frequency bands.
-        reference_chirp_mass_in_second (Float): Same value converted to seconds.
+        reference_chirp_mass_in_second (Float): Geometrised reference chirp mass in time unit [second].
         highest_mode (int): Maximum magnetic number of GW moments (fixed to 2 for 22-mode).
         accuracy_factor (Float): Parameter L controlling approximation accuracy.
         time_offset (Float): Time offset for band construction.
@@ -1117,8 +1115,8 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
         _f_mins = []
         _f_maxs = []
         for detector in detectors:
-            f_min_ifo = f_min if not isinstance(f_min, dict) else f_min[detector.name]
-            f_max_ifo = f_max if not isinstance(f_max, dict) else f_max[detector.name]
+            f_min_ifo = f_min[detector.name] if isinstance(f_min, dict) else f_min
+            f_max_ifo = f_max[detector.name] if isinstance(f_max, dict) else f_max
             detector.set_frequency_bounds(f_min_ifo, f_max_ifo)
             sliced = detector.sliced_frequencies
             _f_mins.append(float(sliced[0]))
@@ -1220,16 +1218,16 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
                     float(d.data.start_time) + float(d.data.duration) - trigger_time
                     for d in detectors
                 )
-                s = EARTH_RADIUS_LIGHT_S
+                RE_S = EARTH_RADIUS_LIGHT_S
                 tc_max = float(tc_prior.xmax)
-                denom = t_end - tc_max - s
+                denom = t_end - tc_max - RE_S
                 if denom <= 0:
                     raise ValueError(
                         f"Cannot infer delta_f_end from t_c prior: "
-                        f"t_end - xmax - s = {t_end:.4f} - {tc_max:.4f} - {s:.6f} = {denom:.6f} <= 0. "
+                        f"t_end - xmax - s = {t_end:.4f} - {tc_max:.4f} - {RE_S:.6f} = {denom:.6f} <= 0. "
                         "Check that the t_c prior upper bound is well within the data segment."
                     )
-                inferred_to = t_end - float(tc_prior.xmin) + s
+                inferred_to = t_end - float(tc_prior.xmin) + RE_S
                 inferred_dfe = 100.0 / denom
 
         if time_offset is None:
@@ -1293,8 +1291,8 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
         """Number of frequency bands."""
         return len(self.durations)
 
-    def _tau(self, f: Float) -> Float:
-        """Compute time-to-merger using 0PN formula.
+    def _compute_tau_dtaudf(self, f: Float) -> tuple[Float, Float]:
+        """Compute time-to-merger and its derivative using 0PN formula.
 
         Parameters
         ----------
@@ -1303,38 +1301,15 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
 
         Returns
         -------
-        Float
-            Time-to-merger in seconds.
+        tuple[Float, Float]
+            (tau, dtaudf) where tau is time-to-merger in seconds and dtaudf is its derivative (negative, in seconds/Hz).
         """
         f_22 = 2 * f / self.highest_mode
-        return (
-            5
-            / 256
-            * self.reference_chirp_mass_in_second
-            * (jnp.pi * self.reference_chirp_mass_in_second * f_22) ** (-8 / 3)
-        )
-
-    def _dtaudf(self, f: Float) -> Float:
-        """Compute derivative of time-to-merger using 0PN formula.
-
-        Parameters
-        ----------
-        f : Float
-            Input frequency in Hz.
-
-        Returns
-        -------
-        Float
-            Derivative of time-to-merger (negative, in seconds/Hz).
-        """
-        f_22 = 2 * f / self.highest_mode
-        return (
-            -5
-            / 96
-            * self.reference_chirp_mass_in_second
-            * (jnp.pi * self.reference_chirp_mass_in_second * f_22) ** (-8 / 3)
-            / f
-        )
+        piMf = self.reference_chirp_mass_in_second * \
+                (jnp.pi * self.reference_chirp_mass_in_second * f_22) ** (-8 / 3)
+        tau = 5 / 256 * piMf
+        dtaudf = -5 / 96 * piMf / f
+        return tau, dtaudf
 
     def _find_starting_frequency(
         self, duration: Float, f_now: Float
@@ -1359,13 +1334,14 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
         """
 
         def _is_above_fnext(f):
+            tau, dtaudf = self._compute_tau_dtaudf(f)
             cond1 = (
                 duration
                 - self.time_offset
-                - self._tau(f)
-                - self.accuracy_factor * jnp.sqrt(-self._dtaudf(f))
+                - tau
+                - self.accuracy_factor * jnp.sqrt(-dtaudf)
             ) > 0
-            cond2 = f - 1.0 / jnp.sqrt(-self._dtaudf(f)) - f_now > 0
+            cond2 = f - 1.0 / jnp.sqrt(-dtaudf) - f_now > 0
             return cond1 and cond2
 
         fmin, fmax = f_now, self.max_banding_frequency
@@ -1382,7 +1358,8 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
             else:
                 fmin = f
 
-        return f, 1.0 / jnp.sqrt(-self._dtaudf(f))
+        _, dtaudf = self._compute_tau_dtaudf(f)
+        return f, 1.0 / jnp.sqrt(-dtaudf)
 
     def _setup_frequency_bands(self) -> None:
         """Set up frequency bands with geometrically decreasing durations.

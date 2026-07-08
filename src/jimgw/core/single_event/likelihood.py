@@ -201,43 +201,6 @@ class TransientLikelihoodFD(SingleEventLikelihood):
     ) -> None:
         super().__init__(detectors, waveform, fixed_parameters)
 
-        # --- coerce marginalization inputs ---
-        if isinstance(time_marginalization, (bool, dict)):
-            if time_marginalization is False:
-                time_marginalization = None
-            else:
-                time_marginalization = TimeMargConfig(
-                    **(
-                        time_marginalization
-                        if isinstance(time_marginalization, dict)
-                        else {}
-                    )
-                )
-        if isinstance(phase_marginalization, (bool, dict)):
-            if phase_marginalization is False:
-                phase_marginalization = None
-            else:
-                phase_marginalization = PhaseMargConfig(
-                    **(
-                        phase_marginalization
-                        if isinstance(phase_marginalization, dict)
-                        else {}
-                    )
-                )
-        if isinstance(distance_marginalization, (bool, dict)):
-            if distance_marginalization is True:
-                raise ValueError(
-                    "distance_marginalization=True is not supported because "
-                    "`distance_prior` has no default.  Pass a dict with `distance_prior` "
-                    "or a DistanceMargConfig instance instead."
-                )
-            elif isinstance(distance_marginalization, dict):
-                distance_marginalization = DistanceMargConfig(
-                    **distance_marginalization
-                )
-            else:  # False
-                distance_marginalization = None
-
         # --- frequency setup (from former BaseTransientLikelihoodFD) ---
         _frequencies = []
         for detector in detectors:
@@ -264,6 +227,37 @@ class TransientLikelihoodFD(SingleEventLikelihood):
         self.trigger_time = trigger_time
         self.gmst = compute_gmst(self.trigger_time)
 
+        # --- coerce marginalization inputs ---
+        if time_marginalization:
+            config = {}
+            if isinstance(time_marginalization, dict):
+                config.update(time_marginalization)
+            time_marginalization = TimeMargConfig(**config)
+        else:
+            time_marginalization = None
+
+        if phase_marginalization:
+            config = {}
+            if isinstance(phase_marginalization, dict):
+                config.update(phase_marginalization)
+            phase_marginalization = PhaseMargConfig(**config)
+        else:
+            phase_marginalization = None
+
+        if distance_marginalization:
+            config = {}
+            if isinstance(distance_marginalization, dict):
+                config.update(distance_marginalization)
+            elif isinstance(distance_marginalization, bool):
+                raise ValueError(
+                    "distance_marginalization=True is not supported because "
+                    "`distance_prior` has no default.  Pass a dict with `distance_prior` "
+                    "or a DistanceMargConfig instance instead."
+                )
+            distance_marginalization = DistanceMargConfig(**config)
+        else:
+            distance_marginalization = None
+
         # --- marginalization flags ---
         self.time_marginalization = time_marginalization is not None
         self.phase_marginalization = phase_marginalization is not None
@@ -275,14 +269,12 @@ class TransientLikelihoodFD(SingleEventLikelihood):
             )
 
         if time_marginalization is not None:
-            self._init_time_marginalization(time_marginalization.tc_range)
+            self._init_time_marginalization(time_marginalization)
         if self.phase_marginalization:
             self._init_phase_marginalization()
         if distance_marginalization is not None:
             self._init_distance_marginalization(
-                distance_marginalization.distance_prior,
-                distance_marginalization.n_dist_points,
-                distance_marginalization.ref_dist,
+                distance_marginalization
             )
 
     def evaluate(self, params: dict[str, Float]) -> Float:
@@ -386,10 +378,10 @@ class TransientLikelihoodFD(SingleEventLikelihood):
 
     # --- time marginalization helpers ---
 
-    def _init_time_marginalization(self, tc_range: tuple[Float, Float]) -> None:
+    def _init_time_marginalization(self, config: TimeMargConfig) -> None:
         if "t_c" in self.fixed_parameters:
             raise ValueError("Cannot have t_c fixed while marginalizing over t_c")
-        self.tc_range = tc_range
+        self.tc_range = config.tc_range
         fs = self.detectors[0].data.sampling_frequency
         duration = self.detectors[0].data.duration
         self.tc_array = jnp.fft.fftfreq(int(duration * fs / 2), 1.0 / duration)
@@ -426,12 +418,11 @@ class TransientLikelihoodFD(SingleEventLikelihood):
 
     # --- distance marginalization helpers ---
 
-    def _init_distance_marginalization(
-        self,
-        distance_prior: Prior,
-        n_dist_points: int,
-        ref_dist: Optional[float],
-    ) -> None:
+    def _init_distance_marginalization(self, config: DistanceMargConfig) -> None:
+        distance_prior = config.distance_prior
+        n_dist_points = config.n_dist_points
+        ref_dist = config.ref_dist
+
         if "d_L" in self.fixed_parameters:
             raise ValueError("Cannot have d_L fixed while marginalising over d_L")
 
@@ -515,8 +506,6 @@ class TransientLikelihoodFD(SingleEventLikelihood):
 # ---------------------------------------------------------------------------
 # Heterodyned (relative-binning) likelihood
 # ---------------------------------------------------------------------------
-
-
 class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
     """Frequency-domain likelihood using the relative-binning (heterodyne) scheme.
 
@@ -597,11 +586,14 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         super().__init__(detectors, waveform, fixed_parameters)
 
         # --- coerce phase marginalization input ---
-        if isinstance(phase_marginalization, bool):
-            phase_marginalization = PhaseMargConfig() if phase_marginalization else None
-        elif isinstance(phase_marginalization, dict):
-            phase_marginalization = PhaseMargConfig(**phase_marginalization)
-        self.phase_marginalization = phase_marginalization is not None
+        if phase_marginalization:
+            config = {}
+            if isinstance(phase_marginalization, dict):
+                config.update(phase_marginalization)
+            phase_marginalization = PhaseMargConfig(**config)
+            self.phase_marginalization = True
+        else:
+            self.phase_marginalization = False
 
         # --- frequency setup (same as TransientLikelihoodFD) ---
         _frequencies = []

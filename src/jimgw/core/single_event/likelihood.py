@@ -274,9 +274,7 @@ class TransientLikelihoodFD(SingleEventLikelihood):
         if self.phase_marginalization:
             self._init_phase_marginalization()
         if distance_marginalization is not None:
-            self._init_distance_marginalization(
-                distance_marginalization
-            )
+            self._init_distance_marginalization(distance_marginalization)
 
     def evaluate(self, params: dict[str, Float]) -> FloatScalar:
         params = params.copy()
@@ -691,7 +689,9 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
             raise ValueError(f"'n_bins' must be a positive integer, got {n_bins!r}.")
         elif epsilon is not None:
             if epsilon <= 0:
-                raise ValueError(f"'epsilon' must be a positive number, got {epsilon!r}.")
+                raise ValueError(
+                    f"'epsilon' must be a positive number, got {epsilon!r}."
+                )
             else:
                 freqs_arr = jnp.array(frequency_original)
                 phase = HeterodynedTransientLikelihoodFD._max_phase_diff(
@@ -715,8 +715,7 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         f_waveform_min = jnp.min(f_valid)
 
         mask_heterodyne_center = jnp.where(
-            (freq_grid_center <= f_waveform_max)
-            & (freq_grid_center >= f_waveform_min)
+            (freq_grid_center <= f_waveform_max) & (freq_grid_center >= f_waveform_min)
         )[0]
         freq_grid_center = freq_grid_center[mask_heterodyne_center]
         self.freq_grid_low = self.freq_grid_low[mask_heterodyne_center]
@@ -748,7 +747,7 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
                 detector.sliced_psd,
                 detector.sliced_frequencies,
                 freq_grid,
-                freq_grid_center
+                freq_grid_center,
             )
             self.A0_array[detector.name] = A0[mask_heterodyne_center]
             self.A1_array[detector.name] = A1[mask_heterodyne_center]
@@ -1318,8 +1317,9 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
             (tau, dtaudf) where tau is time-to-merger in seconds and dtaudf is its derivative (negative, in seconds/Hz).
         """
         f_22 = 2 * f / self.highest_mode
-        piMf = self.reference_chirp_mass_in_second * \
-                (jnp.pi * self.reference_chirp_mass_in_second * f_22) ** (-8 / 3)
+        piMf = self.reference_chirp_mass_in_second * (
+            jnp.pi * self.reference_chirp_mass_in_second * f_22
+        ) ** (-8 / 3)
         tau = 5 / 256 * piMf
         dtaudf = -5 / 96 * piMf / f
         return tau, dtaudf
@@ -1438,9 +1438,7 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
             fnext = fb_dfb[b + 1][0]
 
             Nb = max(
-                round_up_to_power_of_two(
-                    int(2.0 * fnext * original_duration + 1)
-                ),
+                round_up_to_power_of_two(int(2.0 * fnext * original_duration + 1)),
                 2**b,
             )
             Nbs_list.append(Nb)

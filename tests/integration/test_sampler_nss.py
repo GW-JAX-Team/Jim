@@ -30,6 +30,7 @@ def test_nss_get_samples_shape(nss_jim):
     n = samples["x"].shape[0]
     assert n > 0
     assert samples["y"].shape == (n,)
+    assert samples["log_likelihood"].shape == (n,)
 
 
 def test_nss_posterior_mean_near_half(nss_jim):

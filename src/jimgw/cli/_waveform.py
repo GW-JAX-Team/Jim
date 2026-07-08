@@ -4,6 +4,7 @@ from jimgw.cli._config import WaveformConfig
 from jimgw.core.single_event.waveform import (
     RippleIMRPhenomD,
     RippleIMRPhenomD_NRTidalv2,
+    RippleIMRPhenomHM,
     RippleIMRPhenomPv2,
     RippleIMRPhenomXAS,
     RippleIMRPhenomXAS_NRTidalv3,
@@ -20,6 +21,7 @@ _REGISTRY = {
     "TaylorF2": RippleTaylorF2,
     "IMRPhenomD": RippleIMRPhenomD,
     "IMRPhenomD_NRTidalv2": RippleIMRPhenomD_NRTidalv2,
+    "IMRPhenomHM": RippleIMRPhenomHM,
     "IMRPhenomPv2": RippleIMRPhenomPv2,
     "IMRPhenomXAS": RippleIMRPhenomXAS,
     "IMRPhenomXAS_NRTidalv3": RippleIMRPhenomXAS_NRTidalv3,

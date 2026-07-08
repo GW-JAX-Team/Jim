@@ -90,14 +90,17 @@ def adapt_prior_for_ns_time(
     # Case 2: t_det in prior + geocentric sampling → adapt to t_c prior.
     if has_t_det and sampling_cfg.time_frame == "geocentric":
         t_det_spec = prior_cfg.root["t_det"]
+        assert isinstance(t_det_spec, UniformSpec), (
+            "NS-AW validation should ensure t_det is UniformSpec"
+        )
         logger.warning(
             "NS-AW sampler: replacing t_det ~ Uniform(%.4f, %.4f) in [prior] with "
             "t_c ~ Uniform(%.4f, %.4f) (same relative-offset bounds). "
             "To sample t_det directly instead, remove [sampling] time_frame = 'geocentric'.",
-            t_det_spec.min,  # type: ignore[attr-defined]
-            t_det_spec.max,  # type: ignore[attr-defined]
-            t_det_spec.min,  # type: ignore[attr-defined]
-            t_det_spec.max,  # type: ignore[attr-defined]
+            t_det_spec.min,
+            t_det_spec.max,
+            t_det_spec.min,
+            t_det_spec.max,
         )
         new_root = {
             ("t_c" if k == "t_det" else k): v for k, v in prior_cfg.root.items()
@@ -110,15 +113,17 @@ def adapt_prior_for_ns_time(
 
     # Case 1: t_c in prior + detector time_frame → adapt to t_det prior.
     t_c_spec = prior_cfg.root["t_c"]
-
+    assert isinstance(t_c_spec, UniformSpec), (
+        "NS-AW validation should ensure t_c is UniformSpec"
+    )
     logger.warning(
         "NS-AW sampler: replacing t_c ~ Uniform(%.4f, %.4f) in [prior] with "
         "t_det ~ Uniform(%.4f, %.4f) (same relative-offset bounds). "
         "To sample t_c directly instead, set [sampling] time_frame = 'geocentric'.",
-        t_c_spec.min,  # type: ignore[attr-defined]
-        t_c_spec.max,  # type: ignore[attr-defined]
-        t_c_spec.min,  # type: ignore[attr-defined]
-        t_c_spec.max,  # type: ignore[attr-defined]
+        t_c_spec.min,
+        t_c_spec.max,
+        t_c_spec.min,
+        t_c_spec.max,
     )
 
     # Rebuild the prior dict, preserving insertion order, substituting t_c → t_det.

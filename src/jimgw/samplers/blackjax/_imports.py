@@ -1,12 +1,10 @@
 """Lazy import of BlackJAX with feature validation.
 
-NS-AW and NSS rely on nested-sampling submodules not yet in upstream PyPI.
-Install them via the ``nested-sampling`` dependency group:
+NS-AW and NSS rely on nested-sampling submodules merged into upstream BlackJAX
+but not yet released on PyPI.  Install them via the ``nested-sampling`` group:
 
     uv sync --group nested-sampling
 """
-
-from __future__ import annotations
 
 _INSTALL_MSG = (
     "The BlackJAX nested-sampling submodules are required for this sampler "

@@ -52,7 +52,7 @@ def test_smc_posterior_mean_near_half(smc_jim):
 
 
 def test_smc_output_has_log_likelihood(smc_jim):
-    result = smc_jim.sampler.get_samples()
+    result = smc_jim.get_samples()
     assert "log_likelihood" in result
     ll = result["log_likelihood"]
     assert isinstance(ll, np.ndarray), "log_likelihood must be a numpy ndarray"

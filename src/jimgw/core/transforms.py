@@ -6,6 +6,7 @@ import jax.numpy as jnp
 from jax.scipy.special import logit
 from beartype import beartype as typechecker
 from jaxtyping import Float, Array, jaxtyped
+from jimgw.typing import FloatScalar
 
 
 class Transform(ABC):
@@ -101,7 +102,7 @@ class NtoNTransform(NtoMTransform):
         """Number of parameters consumed/produced by this transform."""
         return len(self.name_mapping[0])
 
-    def transform(self, x: dict[str, Float]) -> tuple[dict[str, Float], Float]:
+    def transform(self, x: dict[str, Float]) -> tuple[dict[str, Float], FloatScalar]:
         """Transform to the output coordinate and return the log-Jacobian determinant.
 
         Args:
@@ -145,7 +146,7 @@ class BijectiveTransform(NtoNTransform):
     def __repr__(self):
         return f"BijectiveTransform(name_mapping={self.name_mapping})"
 
-    def inverse(self, y: dict[str, Float]) -> tuple[dict[str, Float], Float]:
+    def inverse(self, y: dict[str, Float]) -> tuple[dict[str, Float], FloatScalar]:
         """Inverse transform from the output coordinate back to the input coordinate.
 
         Args:
@@ -227,7 +228,7 @@ class ConditionalBijectiveTransform(BijectiveTransform):
         super().__init__(name_mapping)
         self.conditional_names = conditional_names
 
-    def transform(self, x: dict[str, Float]) -> tuple[dict[str, Float], Float]:
+    def transform(self, x: dict[str, Float]) -> tuple[dict[str, Float], FloatScalar]:
         """Apply the conditional forward transform and compute the log-Jacobian.
 
         Args:
@@ -262,7 +263,7 @@ class ConditionalBijectiveTransform(BijectiveTransform):
         )
         return x_copy, jacobian
 
-    def inverse(self, y: dict[str, Float]) -> tuple[dict[str, Float], Float]:
+    def inverse(self, y: dict[str, Float]) -> tuple[dict[str, Float], FloatScalar]:
         """Apply the conditional inverse transform and compute the log-Jacobian.
 
         Args:
@@ -307,7 +308,7 @@ class ScaleTransform(BijectiveTransform):
         scale: Multiplicative scale factor.
     """
 
-    scale: Float
+    scale: float
 
     def __repr__(self):
         return f"ScaleTransform(name_mapping={self.name_mapping}, scale={self.scale})"
@@ -315,7 +316,7 @@ class ScaleTransform(BijectiveTransform):
     def __init__(
         self,
         name_mapping: tuple[list[str], list[str]],
-        scale: Float,
+        scale: float,
     ) -> None:
         """
         Args:
@@ -342,7 +343,7 @@ class OffsetTransform(BijectiveTransform):
         offset: Additive offset applied in the forward direction.
     """
 
-    offset: Float
+    offset: float
 
     def __repr__(self):
         return (
@@ -352,7 +353,7 @@ class OffsetTransform(BijectiveTransform):
     def __init__(
         self,
         name_mapping: tuple[list[str], list[str]],
-        offset: Float,
+        offset: float,
     ) -> None:
         """
         Args:
@@ -474,10 +475,10 @@ class BoundToBound(BijectiveTransform):
     def __init__(
         self,
         name_mapping: tuple[list[str], list[str]],
-        original_lower_bound: Float | Float[Array, " n_dim"],
-        original_upper_bound: Float | Float[Array, " n_dim"],
-        target_lower_bound: Float | Float[Array, " n_dim"],
-        target_upper_bound: Float | Float[Array, " n_dim"],
+        original_lower_bound: float | Float[Array, " n_dim"],
+        original_upper_bound: float | Float[Array, " n_dim"],
+        target_lower_bound: float | Float[Array, " n_dim"],
+        target_upper_bound: float | Float[Array, " n_dim"],
     ):
         """
         Args:
@@ -537,8 +538,8 @@ class BoundToUnbound(BijectiveTransform):
     def __init__(
         self,
         name_mapping: tuple[list[str], list[str]],
-        original_lower_bound: Float | Float[Array, " n_dim"],
-        original_upper_bound: Float | Float[Array, " n_dim"],
+        original_lower_bound: float | Float[Array, " n_dim"],
+        original_upper_bound: float | Float[Array, " n_dim"],
     ):
         """
         Args:
@@ -583,7 +584,7 @@ class SingleSidedUnboundTransform(BijectiveTransform):
     def __init__(
         self,
         name_mapping: tuple[list[str], list[str]],
-        original_lower_bound: Float | Float[Array, " n_dim"],
+        original_lower_bound: float | Float[Array, " n_dim"],
     ):
         """
         Args:
@@ -619,9 +620,9 @@ class PowerLawTransform(BijectiveTransform):
         alpha: Power-law exponent.
     """
 
-    xmin: Float
-    xmax: Float
-    alpha: Float
+    xmin: float
+    xmax: float
+    alpha: float
 
     def __repr__(self):
         return f"PowerLawTransform(name_mapping={self.name_mapping}, xmin={self.xmin}, xmax={self.xmax}, alpha={self.alpha})"
@@ -629,9 +630,9 @@ class PowerLawTransform(BijectiveTransform):
     def __init__(
         self,
         name_mapping: tuple[list[str], list[str]],
-        xmin: Float,
-        xmax: Float,
-        alpha: Float,
+        xmin: float,
+        xmax: float,
+        alpha: float,
     ):
         """
         Args:
@@ -735,8 +736,8 @@ class PeriodicTransform(BijectiveTransform):
     def __init__(
         self,
         name_mapping: tuple[list[str], list[str]],
-        xmin: Float,
-        xmax: Float,
+        xmin: float,
+        xmax: float,
     ):
         """
         Args:
@@ -782,7 +783,7 @@ class RayleighTransform(BijectiveTransform):
     def __init__(
         self,
         name_mapping: tuple[list[str], list[str]],
-        sigma: Float,
+        sigma: float,
     ):
         """
         Args:
@@ -813,8 +814,8 @@ class GaussianTransform(BijectiveTransform):
         sigma: Standard deviation of the Gaussian distribution.
     """
 
-    mu: Float
-    sigma: Float
+    mu: float
+    sigma: float
 
     def __repr__(self):
         return f"GaussianTransform(name_mapping={self.name_mapping}, mu={self.mu}, sigma={self.sigma})"
@@ -822,8 +823,8 @@ class GaussianTransform(BijectiveTransform):
     def __init__(
         self,
         name_mapping: tuple[list[str], list[str]],
-        mu: Float,
-        sigma: Float,
+        mu: float,
+        sigma: float,
     ):
         """
         Args:

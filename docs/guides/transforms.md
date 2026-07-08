@@ -173,7 +173,7 @@ This maps `d_L_unit ∈ [0, 1]` (where the sampler works) back to `d_L ∈ [d_L_
 
 ### Rayleigh priors
 
-For parameters with a Rayleigh prior, use the reversed `RayleighTransform` (the inverse CDF maps `x → exp(-(x/σ)²/2) ∈ [0, 1]`):
+For parameters with a Rayleigh prior, use the reversed `RayleighTransform`:
 
 ```python
 from jimgw.core.transforms import RayleighTransform, reverse_bijective_transform

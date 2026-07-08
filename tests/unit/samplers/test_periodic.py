@@ -5,7 +5,7 @@ import pytest
 
 from jimgw.samplers.periodic import (
     to_displacement_wrapper,
-    to_prior_space_stepper,
+    to_prior_space_proposal,
     to_unit_cube_stepper,
 )
 
@@ -66,40 +66,43 @@ def test_unit_cube_stepper_empty_periodic():
 
 
 # ---------------------------------------------------------------------------
-# to_prior_space_stepper — flat arrays
+# to_prior_space_proposal — flat arrays
 # ---------------------------------------------------------------------------
 
 
-def test_prior_space_stepper_none_periodic():
-    stepper = to_prior_space_stepper(None, 3)
-    pos = _pos()
-    direction = _dir()
-    result, accepted = stepper(pos, direction, 1.0)
-    assert accepted is True
-    assert jnp.allclose(result, pos + direction)
+class _MockState:
+    """Minimal stand-in for blackjax StateWithLogLikelihood."""
+
+    def __init__(self, position):
+        self.position = position
+        self.loglikelihood = 0.5
 
 
-def test_prior_space_stepper_wraps_phase_c():
+def _mock_init_fn(x, loglikelihood_birth=None):
+    return _MockState(position=x)
+
+
+def test_prior_space_proposal_wraps_phase_c():
+    """Periodic dims are wrapped after a nonzero proposal move."""
     two_pi = 2 * math.pi
-    stepper = to_prior_space_stepper({1: (0.0, two_pi)}, 3)  # index 1 = phase_c
-    pos = jnp.array([0.0, 6.0, 0.0])
     direction = jnp.array([0.0, 1.0, 0.0])
-    result, accepted = stepper(pos, direction, 1.0)
-    # 6.0 + 1.0 = 7.0 → mod 2π ≈ 0.717
+    proposal_factory = to_prior_space_proposal(
+        {1: (0.0, two_pi)},
+        3,
+        lambda _rng_key, _position, _cov: direction,
+    )
+    pos = jnp.array([0.0, 6.0, 0.0])
+    gen = proposal_factory(_mock_init_fn, 0.0, jnp.eye(3))
+    slice_fn = gen(None, pos, None)
+    new_state, accepted = slice_fn(1.0)
     expected = float(jnp.mod(7.0, two_pi))
-    assert float(result[1]) == pytest.approx(expected, abs=1e-6)
-    assert accepted is True
+    assert bool(accepted) is True
+    assert float(new_state.position[1]) == pytest.approx(expected, abs=1e-6)
 
 
-def test_prior_space_stepper_returns_accepted_bool():
-    stepper = to_prior_space_stepper({1: (0.0, 2 * math.pi)}, 3)
-    _, accepted = stepper(_pos(), _dir(), 0.1)
-    assert accepted is True
-
-
-def test_prior_space_stepper_invalid_bounds_raises():
+def test_prior_space_proposal_invalid_bounds_raises():
     with pytest.raises(ValueError, match="hi > lo"):
-        to_prior_space_stepper({1: (1.0, 0.0)}, 3)
+        to_prior_space_proposal({1: (1.0, 0.0)}, 3, lambda *_args: _dir())
 
 
 # ---------------------------------------------------------------------------

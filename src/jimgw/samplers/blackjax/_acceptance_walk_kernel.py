@@ -10,16 +10,15 @@ Prathaban, M., Yallup, D., Alvey, J., Yang, M., Templeton, W., Handley, W.,
 kernel within blackjax-ns", arXiv:2509.04336 (Sep 2025).
 """
 
-from __future__ import annotations
-
 from functools import partial
-from typing import Any, NamedTuple, cast
+from typing import NamedTuple, cast
 
 import jax
 import jax.flatten_util
 import jax.numpy as jnp
 
 from blackjax.base import SamplingAlgorithm
+from blackjax.types import ArrayLikeTree
 from blackjax.ns.base import (
     NSState,
     StateWithLogLikelihood,
@@ -34,27 +33,27 @@ from blackjax.ns.adaptive import (
 
 
 class DEInfo(NamedTuple):
-    is_accepted: Any
-    evals: Any
-    likelihood_evals: Any
+    is_accepted: jax.Array
+    evals: jax.Array
+    likelihood_evals: jax.Array
 
 
 class DEWalkInfo(NamedTuple):
-    n_accept: Any
-    walks_completed: Any
-    n_likelihood_evals: Any
-    total_proposals: Any
+    n_accept: jax.Array
+    walks_completed: jax.Array
+    n_likelihood_evals: jax.Array
+    total_proposals: jax.Array
 
 
 class DEKernelParams(NamedTuple):
-    live_points: Any
-    loglikelihoods: Any
-    mix: Any
-    scale: Any
-    num_walks: Any
-    walks_float: Any
-    n_accept_total: Any
-    n_likelihood_evals_total: Any
+    live_points: ArrayLikeTree
+    loglikelihoods: jax.Array
+    mix: float
+    scale: jax.Array
+    num_walks: jax.Array
+    walks_float: jax.Array
+    n_accept_total: jax.Array
+    n_likelihood_evals_total: jax.Array
 
 
 def _de_one_step(
@@ -212,7 +211,7 @@ def _update_bilby_walks(
     max_mcmc: int,
     n_delete: int,
 ) -> DEKernelParams:
-    prev_params = ns_state.inner_kernel_params["params"]  # type: ignore[attr-defined]  # blackjax fork stubs
+    prev_params = ns_state.inner_kernel_params["params"]  # type: ignore[attr-defined]  # blackjax stubs
     is_uninitialized = prev_params.n_accept_total < 0
 
     default_walks_float = jnp.array(100.0, dtype=jnp.float32)
@@ -347,14 +346,21 @@ def bilby_adaptive_de_sampler(
 
         return jax.vmap(single)(sub_keys, start_states)
 
-    base_kernel_step = build_adaptive_kernel(delete_fn, inner_kernel, update_fn)  # type: ignore[arg-type]  # blackjax fork stubs
+    base_kernel_step = build_adaptive_kernel(delete_fn, inner_kernel, update_fn)  # type: ignore[arg-type]  # blackjax stubs
 
     def init_fn(particles):
-        _init_state_fn = partial(
+        # Use lax.map instead of vmap to bound peak memory during init.
+        # A full vmap over all live particles materialises O(n_live) concurrent
+        # intermediate buffers, which can exhaust GPU memory for expensive likelihoods.
+        # Batching by num_delete caps peak to num_delete/nlive of the full-vmap cost.
+        _single_init_fn = partial(
             init_state_strategy,
-            logprior_fn=jax.vmap(logprior_fn),
-            loglikelihood_fn=jax.vmap(loglikelihood_fn),
+            logprior_fn=logprior_fn,
+            loglikelihood_fn=loglikelihood_fn,
         )
+
+        def _init_state_fn(positions):
+            return jax.lax.map(_single_init_fn, positions, batch_size=num_delete)
 
         def init_params_fn(rng_key, ns_state, info, current_params):
             example_particle = jax.tree_util.tree_map(
@@ -382,4 +388,4 @@ def bilby_adaptive_de_sampler(
     def step_fn(rng_key, state: AdaptiveNSState):
         return base_kernel_step(rng_key, state)
 
-    return SamplingAlgorithm(init_fn, step_fn)  # type: ignore[arg-type]  # blackjax fork stubs
+    return SamplingAlgorithm(init_fn, step_fn)  # type: ignore[arg-type]  # blackjax stubs

@@ -16,6 +16,7 @@ Three sections, each self-contained:
 
 import jax.numpy as jnp
 from jaxtyping import Array, Float
+from jimgw.typing import FloatLike, FloatScalar
 
 from jimgw.core.constants import MTSUN
 from jimgw.core.utils import safe_arctan2, carte_to_spherical_angles
@@ -26,7 +27,7 @@ from jimgw.core.utils import safe_arctan2, carte_to_spherical_angles
 # =============================================================================
 
 
-def m1_m2_to_M_q(m1: Float, m2: Float) -> tuple[Float, Float]:
+def m1_m2_to_M_q(m1: FloatScalar, m2: FloatScalar) -> tuple[FloatScalar, FloatScalar]:
     """
     Transforms the primary mass m1 and secondary mass m2 to the total mass M
     and mass ratio q.
@@ -43,7 +44,7 @@ def m1_m2_to_M_q(m1: Float, m2: Float) -> tuple[Float, Float]:
     return M_tot, q
 
 
-def M_q_to_m1_m2(M_tot: Float, q: Float) -> tuple[Float, Float]:
+def M_q_to_m1_m2(M_tot: FloatScalar, q: FloatScalar) -> tuple[FloatScalar, FloatScalar]:
     """
     Transforms the total mass M and mass ratio q to the primary mass m1 and
     secondary mass m2.
@@ -60,7 +61,7 @@ def M_q_to_m1_m2(M_tot: Float, q: Float) -> tuple[Float, Float]:
     return m1, m2
 
 
-def m1_m2_to_Mc_q(m1: Float, m2: Float) -> tuple[Float, Float]:
+def m1_m2_to_Mc_q(m1: FloatScalar, m2: FloatScalar) -> tuple[FloatScalar, FloatScalar]:
     """
     Transforms the primary mass m1 and secondary mass m2 to the chirp mass M_c
     and mass ratio q.
@@ -79,7 +80,7 @@ def m1_m2_to_Mc_q(m1: Float, m2: Float) -> tuple[Float, Float]:
     return M_c, q
 
 
-def Mc_q_to_m1_m2(M_c: Float, q: Float) -> tuple[Float, Float]:
+def Mc_q_to_m1_m2(M_c: FloatScalar, q: FloatScalar) -> tuple[FloatScalar, FloatScalar]:
     """
     Transforms the chirp mass M_c and mass ratio q to the primary mass m1 and
     secondary mass m2.
@@ -98,7 +99,7 @@ def Mc_q_to_m1_m2(M_c: Float, q: Float) -> tuple[Float, Float]:
     return m1, m2
 
 
-def m1_m2_to_M_eta(m1: Float, m2: Float) -> tuple[Float, Float]:
+def m1_m2_to_M_eta(m1: FloatScalar, m2: FloatScalar) -> tuple[FloatScalar, FloatScalar]:
     """
     Transforms the primary mass m1 and secondary mass m2 to the total mass M
     and symmetric mass ratio eta.
@@ -115,7 +116,9 @@ def m1_m2_to_M_eta(m1: Float, m2: Float) -> tuple[Float, Float]:
     return M_tot, eta
 
 
-def M_eta_to_m1_m2(M_tot: Float, eta: Float) -> tuple[Float, Float]:
+def M_eta_to_m1_m2(
+    M_tot: FloatScalar, eta: FloatScalar
+) -> tuple[FloatScalar, FloatScalar]:
     """
     Transforms the total mass M and symmetric mass ratio eta to the primary mass m1
     and secondary mass m2.
@@ -132,7 +135,9 @@ def M_eta_to_m1_m2(M_tot: Float, eta: Float) -> tuple[Float, Float]:
     return m1, m2
 
 
-def m1_m2_to_Mc_eta(m1: Float, m2: Float) -> tuple[Float, Float]:
+def m1_m2_to_Mc_eta(
+    m1: FloatScalar, m2: FloatScalar
+) -> tuple[FloatScalar, FloatScalar]:
     """
     Transforms the primary mass m1 and secondary mass m2 to the chirp mass M_c
     and symmetric mass ratio eta.
@@ -150,7 +155,9 @@ def m1_m2_to_Mc_eta(m1: Float, m2: Float) -> tuple[Float, Float]:
     return M_c, eta
 
 
-def Mc_eta_to_m1_m2(M_c: Float, eta: Float) -> tuple[Float, Float]:
+def Mc_eta_to_m1_m2(
+    M_c: FloatScalar, eta: FloatScalar
+) -> tuple[FloatScalar, FloatScalar]:
     """
     Transforming the chirp mass M_c and symmetric mass ratio eta to the primary mass m1
     and secondary mass m2.
@@ -168,7 +175,7 @@ def Mc_eta_to_m1_m2(M_c: Float, eta: Float) -> tuple[Float, Float]:
     return m1, m2
 
 
-def q_to_eta(q: Float) -> Float:
+def q_to_eta(q: FloatScalar) -> FloatScalar:
     """
     Transforming the chirp mass M_c and mass ratio q to the symmetric mass ratio eta.
 
@@ -182,7 +189,7 @@ def q_to_eta(q: Float) -> Float:
     return eta
 
 
-def eta_to_q(eta: Float) -> Float:
+def eta_to_q(eta: FloatScalar) -> FloatScalar:
     """
     Transforming the symmetric mass ratio eta to the mass ratio q.
 
@@ -203,7 +210,7 @@ def eta_to_q(eta: Float) -> Float:
 # =============================================================================
 
 
-def _Lmag_2PN(m1: Float, m2: Float, v0: Float) -> Float:
+def _Lmag_2PN(m1: FloatScalar, m2: FloatScalar, v0: FloatScalar) -> FloatScalar:
     """
     Compute the magnitude of the orbital angular momentum
     to 2 post-Newtonian orders.
@@ -223,18 +230,26 @@ def _Lmag_2PN(m1: Float, m2: Float, v0: Float) -> Float:
 
 
 def spin_angles_to_cartesian_spin(
-    theta_jn: Float,
-    phi_jl: Float,
-    tilt_1: Float,
-    tilt_2: Float,
-    phi_12: Float,
-    chi_1: Float,
-    chi_2: Float,
-    M_c: Float,
-    q: Float,
-    fRef: Float,
-    phiRef: Float,
-) -> tuple[Float, Float, Float, Float, Float, Float, Float]:
+    theta_jn: FloatScalar,
+    phi_jl: FloatScalar,
+    tilt_1: FloatScalar,
+    tilt_2: FloatScalar,
+    phi_12: FloatScalar,
+    chi_1: FloatScalar,
+    chi_2: FloatScalar,
+    M_c: FloatScalar,
+    q: FloatScalar,
+    fRef: FloatLike,
+    phiRef: FloatLike,
+) -> tuple[
+    FloatScalar,
+    FloatScalar,
+    FloatScalar,
+    FloatScalar,
+    FloatScalar,
+    FloatScalar,
+    FloatScalar,
+]:
     """
     Transforming the spin parameters.
 
@@ -330,18 +345,26 @@ def spin_angles_to_cartesian_spin(
 
 
 def cartesian_spin_to_spin_angles(
-    iota: Float,
-    S1x: Float,
-    S1y: Float,
-    S1z: Float,
-    S2x: Float,
-    S2y: Float,
-    S2z: Float,
-    M_c: Float,
-    q: Float,
-    fRef: Float,
-    phiRef: Float,
-) -> tuple[Float, Float, Float, Float, Float, Float, Float]:
+    iota: FloatScalar,
+    S1x: FloatScalar,
+    S1y: FloatScalar,
+    S1z: FloatScalar,
+    S2x: FloatScalar,
+    S2y: FloatScalar,
+    S2z: FloatScalar,
+    M_c: FloatScalar,
+    q: FloatScalar,
+    fRef: FloatLike,
+    phiRef: FloatLike,
+) -> tuple[
+    FloatScalar,
+    FloatScalar,
+    FloatScalar,
+    FloatScalar,
+    FloatScalar,
+    FloatScalar,
+    FloatScalar,
+]:
     """
     Transforming the cartesian spin parameters to the spin angles.
 
@@ -437,7 +460,7 @@ def cartesian_spin_to_spin_angles(
 # =============================================================================
 
 
-def _rotate_y(angle: Float) -> Float[Array, "3 3"]:
+def _rotate_y(angle: FloatScalar) -> Float[Array, "3 3"]:
     """Return the 3x3 rotation matrix for a rotation about the y-axis.
 
     Args:
@@ -451,7 +474,7 @@ def _rotate_y(angle: Float) -> Float[Array, "3 3"]:
     return jnp.array([[cos_angle, 0, sin_angle], [0, 1, 0], [-sin_angle, 0, cos_angle]])
 
 
-def _rotate_z(angle: Float) -> Float[Array, "3 3"]:
+def _rotate_z(angle: FloatScalar) -> Float[Array, "3 3"]:
     """Return the 3x3 rotation matrix for a rotation about the z-axis.
 
     Args:
@@ -508,8 +531,8 @@ def euler_rotation(delta_x: Float[Array, "3"]) -> Float[Array, "3 3"]:
 
 
 def angle_rotation(
-    zenith: Float, azimuth: Float, rotation: Float[Array, "3 3"]
-) -> tuple[Float, Float]:
+    zenith: FloatScalar, azimuth: FloatScalar, rotation: Float[Array, "3 3"]
+) -> tuple[FloatScalar, FloatScalar]:
     """
     Transforming the azimuthal angle and zenith angle in Earth frame
     to the polar angle and azimuthal angle in sky frame.
@@ -541,7 +564,9 @@ def angle_rotation(
     return theta, phi
 
 
-def _theta_phi_to_ra_dec(theta: Float, phi: Float, gmst: Float) -> tuple[Float, Float]:
+def _theta_phi_to_ra_dec(
+    theta: FloatScalar, phi: FloatScalar, gmst: FloatScalar
+) -> tuple[FloatScalar, FloatScalar]:
     """
     Transforming the polar angle and azimuthal angle to right ascension and declination.
 
@@ -560,8 +585,11 @@ def _theta_phi_to_ra_dec(theta: Float, phi: Float, gmst: Float) -> tuple[Float, 
 
 
 def zenith_azimuth_to_ra_dec(
-    zenith: Float, azimuth: Float, gmst: Float, rotation: Float[Array, "3 3"]
-) -> tuple[Float, Float]:
+    zenith: FloatScalar,
+    azimuth: FloatScalar,
+    gmst: FloatScalar,
+    rotation: Float[Array, "3 3"],
+) -> tuple[FloatScalar, FloatScalar]:
     """
     Transforming the azimuthal angle and zenith angle in Earth frame to right ascension and declination.
 
@@ -581,7 +609,9 @@ def zenith_azimuth_to_ra_dec(
     return ra, dec
 
 
-def _ra_dec_to_theta_phi(ra: Float, dec: Float, gmst: Float) -> tuple[Float, Float]:
+def _ra_dec_to_theta_phi(
+    ra: FloatScalar, dec: FloatScalar, gmst: FloatScalar
+) -> tuple[FloatScalar, FloatScalar]:
     """
     Transforming the right ascension ra and declination dec to the polar angle
     theta and azimuthal angle phi.
@@ -601,8 +631,11 @@ def _ra_dec_to_theta_phi(ra: Float, dec: Float, gmst: Float) -> tuple[Float, Flo
 
 
 def ra_dec_to_zenith_azimuth(
-    ra: Float, dec: Float, gmst: Float, rotation: Float[Array, "3 3"]
-) -> tuple[Float, Float]:
+    ra: FloatScalar,
+    dec: FloatScalar,
+    gmst: FloatScalar,
+    rotation: Float[Array, "3 3"],
+) -> tuple[FloatScalar, FloatScalar]:
     """
     Transforming the right ascension and declination to the zenith angle and azimuthal angle.
 

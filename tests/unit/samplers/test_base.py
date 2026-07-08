@@ -68,6 +68,7 @@ def test_trivial_sampler_works():
         log_posterior_fn=lpost,
         config=BaseSamplerConfig(),
     )
+    assert s._prev_elapsed == 0.0
     s.sample(jax.random.key(0), jnp.zeros((3, 2)))
     result = s.get_samples()
     assert result["samples"].shape == (3, 2)
@@ -116,6 +117,18 @@ def test_sampling_time_is_non_negative():
     s.sample(jax.random.key(0), jnp.zeros((3, 2)))
     diag = s.get_diagnostics()
     assert diag["sampling_time"] >= 0.0
+
+    # _prev_elapsed is accumulated into sampling_time on resume.
+    s2 = _TrivialSampler(
+        n_dims=2,
+        log_prior_fn=lp,
+        log_likelihood_fn=ll,
+        log_posterior_fn=lpost,
+        config=BaseSamplerConfig(),
+    )
+    s2._prev_elapsed = 5.0
+    s2.sample(jax.random.key(0), jnp.zeros((3, 2)))
+    assert s2.get_diagnostics()["sampling_time"] >= 5.0
 
 
 # --- Callable injection ---

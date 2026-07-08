@@ -51,7 +51,6 @@ n_training_loops = 50
 n_production_loops = 10
 n_NFproposal_batch_size = 100
 global_thinning = 100
-verbose = true
 
 [output]
 dir = "output/injection_flowmc"

@@ -52,9 +52,20 @@ Most computation goes into the training phase. The production phase with a train
 
 ### I am running out of GPU memory
 
-This section applies to the flowMC backend.
+The right knob depends on which sampler backend you use. In every case the goal is the same: shrink how much work runs simultaneously.
 
-The most targeted fix is to set `chain_batch_size` inside `FlowMCConfig`. By default, (`chain_batch_size=0`) all chains are evaluated simultaneously; setting it to a smaller integer processes chains in batches, directly reducing peak memory at the cost of slightly slower throughput:
+#### flowMC (`FlowMCConfig`)
+
+flowMC has two independent memory bottlenecks:
+
+1. **The NF proposal step — usually the bottleneck.**
+During each global step, normalizing-flow proposals are generated for all chains at once.
+Reduce `n_NFproposal_batch_size` (default `1000`); flowMC then evaluates the proposals in smaller `jax.lax.map` chunks instead of one big batch.
+**Try this first.**
+
+2. **The local step — when the likelihood is very expensive.**
+Sometimes the problem is not the NF proposals, but that even a *single* likelihood evaluation per chain across all `n_chains` chains will not fit.
+In that case also set `chain_batch_size` to a small positive integer (default `0` means all chains at once; smaller values use less memory) so chains are processed in sub-batches.
 
 ```python
 from jimgw.samplers.config import FlowMCConfig
@@ -64,14 +75,21 @@ jim = Jim(
     prior,
     sampler_config=FlowMCConfig(
         n_chains=1000,
-        chain_batch_size=100,  # process 100 chains at a time instead of all at once
+        n_NFproposal_batch_size=100,  # smaller NF-proposal batches (try this first)
+        chain_batch_size=100,         # also batch chains if the likelihood alone is too big
         # ... other parameters
     ),
     ...
 )
 ```
 
-If memory is still tight, reducing `n_chains` inside `FlowMCConfig` will also help.
+#### BlackJAX nested sampling (`BlackJAXNSAWConfig`, `BlackJAXNSSConfig`)
+
+Each iteration deletes and replaces `n_live × n_delete_frac` live points in parallel. Reduce `n_delete_frac` (default `0.5`) to evaluate fewer replacements at a time.
+
+#### BlackJAX SMC (`BlackJAXSMCConfig`)
+
+Set `batch_size` to a small positive integer (default `0` = full `jax.vmap` over all particles; smaller values use less memory). The MCMC update then runs over particles in `jax.lax.map` batches instead of vmapping all `n_particles` at once.
 
 ## Quality Assessment
 

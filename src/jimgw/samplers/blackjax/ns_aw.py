@@ -1,7 +1,9 @@
 """BlackJAX nested sampling with bilby/dynesty-style adaptive DE acceptance-walk kernel."""
 
-from __future__ import annotations
-
+import logging
+import pickle
+import shutil
+import time
 from typing import Any, Callable, Optional
 
 import jax
@@ -10,12 +12,17 @@ import numpy as np
 from jaxtyping import Array, Float, Key
 from anesthetic.samples import NestedSamples
 import blackjax
+from blackjax.ns.adaptive import AdaptiveNSState
+from blackjax.ns.base import NSInfo
+from blackjax.ns.utils import finalise
 
 from jimgw.samplers.base import Sampler
 from jimgw.samplers.blackjax._acceptance_walk_kernel import bilby_adaptive_de_sampler
 from jimgw.samplers.blackjax._imports import require_nested_sampling
 from jimgw.samplers.config import BlackJAXNSAWConfig
 from jimgw.samplers.periodic import to_unit_cube_stepper
+
+logger = logging.getLogger(__name__)
 
 require_nested_sampling(blackjax)
 
@@ -54,7 +61,7 @@ class BlackJAXNSAWSampler(Sampler):
 
     _config: BlackJAXNSAWConfig
     _stepper_fn: Callable
-    _final_state: Any
+    _final_state: NSInfo
     _nested_samples: NestedSamples
     _n_iterations: int
 
@@ -112,10 +119,16 @@ class BlackJAXNSAWSampler(Sampler):
     ) -> None:
         """Run the BlackJAX NS-AW sampler.
 
+        If ``config.checkpoint_dir`` is set, a ``checkpoint.pkl`` is written
+        atomically after each nested-sampling iteration (subject to
+        ``config.checkpoint_interval``) and the sampler resumes from the
+        checkpoint if one already exists at that path.
+
         Args:
             rng_key: JAX PRNG key.
             initial_position: Starting live points in the unit-cube sampling
                 space, shape ``(n_live, n_dims)``.  Must match ``config.n_live``.
+                Ignored when resuming from a checkpoint.
 
         Raises:
             ValueError: If ``initial_position`` shape does not match
@@ -124,14 +137,22 @@ class BlackJAXNSAWSampler(Sampler):
         config = self._config
         n_live = config.n_live
         n_delete = int(n_live * config.n_delete_frac)
+        ckpt_path = (
+            config.checkpoint_dir / "checkpoint.pkl"
+            if config.checkpoint_dir is not None
+            else None
+        )
+        config.configure_jax_cache()
+        _method_t0 = time.perf_counter()
 
-        arr = jnp.asarray(initial_position)
-        if arr.ndim != 2 or arr.shape != (n_live, self.n_dims):
-            raise ValueError(
-                f"initial_position must have shape ({n_live}, {self.n_dims}), "
-                f"got {arr.shape}."
-            )
-        initial_particles = arr
+        def _validated_initial_particles(pos):
+            arr = jnp.asarray(pos)
+            if arr.ndim != 2 or arr.shape != (n_live, self.n_dims):
+                raise ValueError(
+                    f"initial_position must have shape ({n_live}, {self.n_dims}), "
+                    f"got {arr.shape}."
+                )
+            return arr
 
         nested_sampler = bilby_adaptive_de_sampler(
             logprior_fn=self._log_prior_fn,
@@ -144,23 +165,76 @@ class BlackJAXNSAWSampler(Sampler):
             max_proposals=config.max_proposals,
         )
 
-        state = nested_sampler.init(initial_particles)  # type: ignore[call-arg]  # blackjax fork API
+        # Resume from checkpoint if one exists.
+        if (
+            ckpt_path is not None
+            and config.checkpoint_interval > 0
+            and ckpt_path.exists()
+        ):
+            try:
+                with open(ckpt_path, "rb") as _f:
+                    _ckpt = pickle.load(_f)
+                state = _ckpt["state"]
+                dead = _ckpt["dead"]
+                rng_key = _ckpt["rng_key"]
+                n_iter = _ckpt["n_iter"]
+                self._prev_elapsed = float(_ckpt["elapsed_time"])
+                logger.info(
+                    "NS-AW: resumed from checkpoint at n_iter=%d (%s)",
+                    n_iter,
+                    ckpt_path,
+                )
+            except (
+                OSError,
+                EOFError,
+                KeyError,
+                ValueError,
+                pickle.UnpicklingError,
+            ) as _e:
+                logger.warning(
+                    "NS-AW: corrupt checkpoint at %s (%s) — starting fresh.",
+                    ckpt_path,
+                    _e,
+                )
+                state = nested_sampler.init(
+                    _validated_initial_particles(initial_position)
+                )  # type: ignore[call-arg]  # blackjax API
+                dead = []
+                n_iter = 0
+                self._prev_elapsed = 0.0
+        else:
+            state = nested_sampler.init(_validated_initial_particles(initial_position))  # type: ignore[call-arg]  # blackjax API
+            dead = []
+            n_iter = 0
 
-        def _terminate(state: Any) -> bool:
+        def _terminate(state: AdaptiveNSState) -> bool:
             dlogz = jnp.logaddexp(0, state.integrator.logZ_live - state.integrator.logZ)
             return bool(jnp.isfinite(dlogz) and dlogz < config.termination_dlogz)
 
         step_fn = jax.jit(nested_sampler.step)
+        _last_ckpt_t = time.perf_counter()
 
-        dead = []
-        n_iter = 0
         while not _terminate(state):
             rng_key, subkey = jax.random.split(rng_key)
             state, dead_info = step_fn(subkey, state)
             dead.append(dead_info)
             n_iter += 1
-
-        from blackjax.ns.utils import finalise
+            if (
+                ckpt_path is not None
+                and config.checkpoint_interval > 0
+                and time.perf_counter() - _last_ckpt_t >= config.checkpoint_interval
+            ):
+                _last_ckpt_t = config.write_checkpoint(
+                    {
+                        "state": state,
+                        "dead": dead,
+                        "rng_key": rng_key,
+                        "n_iter": n_iter,
+                        "elapsed_time": self._prev_elapsed
+                        + (time.perf_counter() - _method_t0),
+                    },
+                    "NS-AW",
+                )
 
         self._final_state = finalise(state, dead)
         self._n_iterations = n_iter
@@ -177,6 +251,11 @@ class BlackJAXNSAWSampler(Sampler):
             logzero=np.nan,
             dtype=np.float64,
         )
+        if ckpt_path is not None:
+            ckpt_path.unlink(missing_ok=True)
+        if config.checkpoint_dir is not None:
+            shutil.rmtree(config.checkpoint_dir / "jax_cache", ignore_errors=True)
+            jax.config.update("jax_compilation_cache_dir", None)
 
     def get_samples(self) -> dict[str, np.ndarray]:
         """Return equally-weighted posterior samples.
@@ -211,7 +290,9 @@ class BlackJAXNSAWSampler(Sampler):
         """
         if not self._sampled:
             raise RuntimeError("get_diagnostics() called before sample()")
-        ui = self._final_state.update_info  # DEWalkInfo concatenated across all steps
+        ui: Any = (
+            self._final_state.update_info
+        )  # DEWalkInfo — blackjax stubs type this as base NamedTuple
         n_evals = int(jnp.sum(ui.n_likelihood_evals))
 
         log_Z = np.asarray(self._nested_samples.logZ()).item()

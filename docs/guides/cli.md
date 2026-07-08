@@ -317,8 +317,9 @@ The `type` field selects the backend. Each backend has its own set of tuning par
 | `global_thinning` | `1` | Keep every Nth global step in the production chain |
 | `local_thinning` | `1` | Keep every Nth local step |
 | `early_stopping` | `true` | Stop training when the loss plateaus |
-| `verbose` | `false` | Print sampler-level progress |
 | `parallel_tempering` | disabled | Set to `true` to enable with defaults, or provide a dict for custom settings |
+| `checkpoint_dir` | `{output.dir}/` | Directory for `checkpoint.pkl`; set by the CLI automatically |
+| `checkpoint_interval` | `600.0` | Seconds between checkpoint writes; `0` disables checkpointing |
 
 Parallel-tempering sub-table:
 
@@ -341,6 +342,8 @@ n_tempered_steps = 5
 | `target_acceptance_rate` | `0.234` | Target MCMC acceptance rate |
 | `persistent_sampling` | `true` | Reuse particles across temperatures |
 | `temperature_ladder` | — | Optional — fixed list of temperatures from 0.0 to 1.0; omit to use adaptive tempering |
+| `checkpoint_dir` | `{output.dir}/` | Directory for `checkpoint.pkl`; set by the CLI automatically |
+| `checkpoint_interval` | `600.0` | Seconds between checkpoint writes; `0` disables checkpointing |
 
 ### `type = "blackjax-nss"`
 
@@ -350,6 +353,8 @@ n_tempered_steps = 5
 | `n_delete_frac` | `0.5` | Fraction of live points replaced per iteration |
 | `num_inner_steps_per_dim` | `10` | Slice steps per dimension for the nested kernel |
 | `termination_dlogz` | `0.1` | Stop when the remaining log-evidence contribution falls below this |
+| `checkpoint_dir` | `{output.dir}/` | Directory for `checkpoint.pkl`; set by the CLI automatically |
+| `checkpoint_interval` | `600.0` | Seconds between checkpoint writes; `0` disables checkpointing |
 
 ### `type = "blackjax-ns-aw"`
 
@@ -363,6 +368,8 @@ Requires all sampling-space parameters to lie in $[0, 1]$. The CLI enforces this
 | `max_mcmc` | `5000` | Maximum MCMC steps per replacement attempt |
 | `max_proposals` | `1000` | Maximum proposals per MCMC step |
 | `termination_dlogz` | `0.1` | Termination criterion on remaining log-evidence |
+| `checkpoint_dir` | `{output.dir}/` | Directory for `checkpoint.pkl`; set by the CLI automatically |
+| `checkpoint_interval` | `600.0` | Seconds between checkpoint writes; `0` disables checkpointing |
 
 ---
 

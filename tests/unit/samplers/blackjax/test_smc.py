@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import jax
 import numpy as np
+import pickle
 import pytest
+from pathlib import Path
 
 blackjax = pytest.importorskip("blackjax")
 
@@ -150,6 +152,11 @@ def test_smc_ap_diagnostics():
     assert np.all(diag["ess_history"] > 0)
     assert np.all(np.isfinite(diag["ess_history"]))
 
+    # log_Z_error: delta-method IS weight variance estimate
+    assert "log_Z_error" in diag
+    assert np.isfinite(diag["log_Z_error"])
+    assert diag["log_Z_error"] >= 0.0
+
 
 def test_smc_n_evals_formula():
     """n_likelihood_evaluations == n_mcmc * n_iter * n_particles."""
@@ -215,6 +222,10 @@ def test_smc_at_diagnostics():
     assert np.all(diag["ess_history"] <= n_particles)
     assert np.all(np.isfinite(diag["ess_history"]))
 
+    assert "log_Z_error" in diag
+    assert np.isfinite(diag["log_Z_error"])
+    assert diag["log_Z_error"] >= 0.0
+
 
 def test_smc_fp_diagnostics():
     """FP mode: persistent ESS history returned for a fixed temperature ladder."""
@@ -259,3 +270,233 @@ def test_smc_fp_diagnostics():
     assert len(diag["ess_history"]) == len(ladder) - 1
     assert np.all(diag["ess_history"] > 0)
     assert np.all(np.isfinite(diag["ess_history"]))
+
+    assert "log_Z_error" in diag
+    assert np.isfinite(diag["log_Z_error"])
+    assert diag["log_Z_error"] >= 0.0
+
+
+def test_smc_checkpoint_file_created(tmp_path, monkeypatch):
+    """Checkpoint .pkl is written during sampling and cleaned up on success."""
+    prior = CombinePrior(
+        [
+            UniformPrior(0.0, 1.0, parameter_names=["x"]),
+            UniformPrior(0.0, 1.0, parameter_names=["y"]),
+        ]
+    )
+    likelihood = _GaussianLikelihood()
+    parameter_names = prior.parameter_names
+    config = BlackJAXSMCConfig(
+        n_particles=200,
+        n_mcmc_steps_per_dim=5,
+        target_ess=50,
+        checkpoint_dir=tmp_path,
+        checkpoint_interval=1e-9,
+    )
+
+    def log_prior_fn(arr):
+        return prior.log_prob(dict(zip(parameter_names, arr, strict=True)))
+
+    def log_likelihood_fn(arr):
+        return likelihood.evaluate(dict(zip(parameter_names, arr, strict=True)))
+
+    def log_posterior_fn(arr):
+        return log_prior_fn(arr) + log_likelihood_fn(arr)
+
+    sampler = BlackJAXSMCSampler(
+        n_dims=len(parameter_names),
+        log_prior_fn=log_prior_fn,
+        log_likelihood_fn=log_likelihood_fn,
+        log_posterior_fn=log_posterior_fn,
+        config=config,
+    )
+    # Suppress deletion of only the checkpoint file so we can inspect it after sampling.
+    ckpt_path = tmp_path / "checkpoint.pkl"
+    _orig_unlink = Path.unlink
+    monkeypatch.setattr(
+        Path,
+        "unlink",
+        lambda self, missing_ok=False: (
+            None if self == ckpt_path else _orig_unlink(self, missing_ok=missing_ok)
+        ),
+    )
+    sampler.sample(jax.random.key(42), _init_pos(200))
+    monkeypatch.setattr(Path, "unlink", _orig_unlink)
+    assert ckpt_path.exists(), "Checkpoint was never written"
+    with open(ckpt_path, "rb") as f:
+        ckpt = pickle.load(f)
+    assert "elapsed_time" in ckpt
+    assert ckpt["elapsed_time"] >= 0.0
+
+    # Now let a clean run delete it.
+    ckpt_path.unlink()
+    assert not ckpt_path.exists()
+
+
+def test_smc_resume_gives_same_result(tmp_path, monkeypatch):
+    """A run resumed from a crashed checkpoint gives the same log_Z as an uninterrupted run."""
+    prior = CombinePrior(
+        [
+            UniformPrior(0.0, 1.0, parameter_names=["x"]),
+            UniformPrior(0.0, 1.0, parameter_names=["y"]),
+        ]
+    )
+    likelihood = _GaussianLikelihood()
+    parameter_names = prior.parameter_names
+
+    def _make(checkpoint_dir=None):
+        config = BlackJAXSMCConfig(
+            n_particles=200,
+            n_mcmc_steps_per_dim=5,
+            target_ess=50,
+            initial_cov_scale=0.5,
+            target_acceptance_rate=0.234,
+            scale_adaptation_gain=3.0,
+            checkpoint_dir=checkpoint_dir,
+            checkpoint_interval=1e-9 if checkpoint_dir is not None else 0.0,
+        )
+
+        def log_prior_fn(arr):
+            return prior.log_prob(dict(zip(parameter_names, arr, strict=True)))
+
+        def log_likelihood_fn(arr):
+            return likelihood.evaluate(dict(zip(parameter_names, arr, strict=True)))
+
+        def log_posterior_fn(arr):
+            return log_prior_fn(arr) + log_likelihood_fn(arr)
+
+        return BlackJAXSMCSampler(
+            n_dims=len(parameter_names),
+            log_prior_fn=log_prior_fn,
+            log_likelihood_fn=log_likelihood_fn,
+            log_posterior_fn=log_posterior_fn,
+            config=config,
+        )
+
+    s_a = _make(checkpoint_dir=None)
+    s_a.sample(jax.random.key(0), _init_pos(200))
+    log_z_a = s_a.get_diagnostics()["log_Z"]
+
+    # Run B: suppress deletion of the checkpoint file only (simulates a crash leaving it behind).
+    ckpt_path = tmp_path / "checkpoint.pkl"
+    _orig_unlink = Path.unlink
+    monkeypatch.setattr(
+        Path,
+        "unlink",
+        lambda self, missing_ok=False: (
+            None if self == ckpt_path else _orig_unlink(self, missing_ok=missing_ok)
+        ),
+    )
+    s_b = _make(checkpoint_dir=tmp_path)
+    s_b.sample(jax.random.key(0), _init_pos(200))
+    monkeypatch.setattr(Path, "unlink", _orig_unlink)
+    assert ckpt_path.exists(), "Checkpoint was never written"
+
+    # Run C: resumes from B's checkpoint → same RNG sequence → same log_Z.
+    # On clean completion C deletes the checkpoint.
+    s_c = _make(checkpoint_dir=tmp_path)
+    s_c.sample(jax.random.key(0), _init_pos(200))
+
+    assert s_c.get_diagnostics()["log_Z"] == pytest.approx(log_z_a, rel=1e-6)
+    assert not (tmp_path / "checkpoint.pkl").exists(), "Checkpoint was not cleaned up"
+
+
+def _make_sampler_batched(
+    n_particles: int = 200, batch_size: int = 20
+) -> BlackJAXSMCSampler:
+    """AP mode sampler with particle_batch_size > 0."""
+    prior = CombinePrior(
+        [
+            UniformPrior(0.0, 1.0, parameter_names=["x"]),
+            UniformPrior(0.0, 1.0, parameter_names=["y"]),
+        ]
+    )
+    likelihood = _GaussianLikelihood()
+    config = BlackJAXSMCConfig(
+        n_particles=n_particles,
+        n_mcmc_steps_per_dim=5,
+        target_ess=50,
+        initial_cov_scale=0.5,
+        target_acceptance_rate=0.234,
+        scale_adaptation_gain=3.0,
+        batch_size=batch_size,
+    )
+    parameter_names = prior.parameter_names
+
+    def log_prior_fn(arr):
+        named = dict(zip(parameter_names, arr, strict=True))
+        return prior.log_prob(named)
+
+    def log_likelihood_fn(arr):
+        named = dict(zip(parameter_names, arr, strict=True))
+        return likelihood.evaluate(named)
+
+    def log_posterior_fn(arr):
+        return log_prior_fn(arr) + log_likelihood_fn(arr)
+
+    return BlackJAXSMCSampler(
+        n_dims=len(parameter_names),
+        log_prior_fn=log_prior_fn,
+        log_likelihood_fn=log_likelihood_fn,
+        log_posterior_fn=log_posterior_fn,
+        config=config,
+    )
+
+
+def test_smc_particle_batch_size_runs():
+    """particle_batch_size > 0 (AP mode) should run and produce valid samples."""
+    sampler = _make_sampler_batched(n_particles=200, batch_size=20)
+    sampler.sample(jax.random.key(10), _init_pos(200))
+    result = sampler.get_samples()
+
+    assert isinstance(result, dict)
+    assert "samples" in result
+    assert result["samples"].ndim == 2
+    assert result["samples"].shape[1] == 2
+    assert result["samples"].shape[0] > 0
+    # Samples must lie within the prior support [0, 1]^2
+    assert np.all(result["samples"] >= 0.0) and np.all(result["samples"] <= 1.0)
+
+
+def test_smc_particle_batch_size_at_mode():
+    """particle_batch_size > 0 in non-persistent (AT) mode should run correctly."""
+    prior = CombinePrior(
+        [
+            UniformPrior(0.0, 1.0, parameter_names=["x"]),
+            UniformPrior(0.0, 1.0, parameter_names=["y"]),
+        ]
+    )
+    likelihood = _GaussianLikelihood()
+    config = BlackJAXSMCConfig(
+        n_particles=200,
+        n_mcmc_steps_per_dim=5,
+        target_ess=50,
+        persistent_sampling=False,
+        batch_size=20,
+    )
+    parameter_names = prior.parameter_names
+
+    def log_prior_fn(arr):
+        named = dict(zip(parameter_names, arr, strict=True))
+        return prior.log_prob(named)
+
+    def log_likelihood_fn(arr):
+        named = dict(zip(parameter_names, arr, strict=True))
+        return likelihood.evaluate(named)
+
+    def log_posterior_fn(arr):
+        return log_prior_fn(arr) + log_likelihood_fn(arr)
+
+    sampler = BlackJAXSMCSampler(
+        n_dims=len(parameter_names),
+        log_prior_fn=log_prior_fn,
+        log_likelihood_fn=log_likelihood_fn,
+        log_posterior_fn=log_posterior_fn,
+        config=config,
+    )
+    sampler.sample(jax.random.key(11), _init_pos(200))
+    result = sampler.get_samples()
+
+    assert isinstance(result, dict)
+    assert "samples" in result
+    assert result["samples"].shape[0] > 0

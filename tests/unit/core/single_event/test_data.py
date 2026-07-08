@@ -478,9 +478,13 @@ class TestDataToFile:
     def test_gwf_channel_name_with_colon(self, tmp_path: Path):
         """If name contains ':', it is used as-is for the channel."""
         path = str(tmp_path / "s.gwf")
-        d = Data(jnp.array(np.zeros(self._N)), self._DT, self._T0, "H1:GDS-CALIB_STRAIN")
+        d = Data(
+            jnp.array(np.zeros(self._N)), self._DT, self._T0, "H1:GDS-CALIB_STRAIN"
+        )
         mock_ts = MagicMock()
-        with patch("jimgw.core.single_event.data.TimeSeries", return_value=mock_ts) as mock_cls:
+        with patch(
+            "jimgw.core.single_event.data.TimeSeries", return_value=mock_ts
+        ) as mock_cls:
             d.to_file(path)
         _, kwargs = mock_cls.call_args
         assert kwargs["channel"] == "H1:GDS-CALIB_STRAIN"
@@ -490,7 +494,9 @@ class TestDataToFile:
         path = str(tmp_path / "s.gwf")
         d = self._make_data()
         mock_ts = MagicMock()
-        with patch("jimgw.core.single_event.data.TimeSeries", return_value=mock_ts) as mock_cls:
+        with patch(
+            "jimgw.core.single_event.data.TimeSeries", return_value=mock_ts
+        ) as mock_cls:
             d.to_file(path)
         _, kwargs = mock_cls.call_args
         assert kwargs["channel"] == "H1:STRAIN"

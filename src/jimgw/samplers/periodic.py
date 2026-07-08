@@ -5,17 +5,21 @@ sampler backend expects.
 
 Each backend wants a different shape: flowMC already accepts an index-keyed dict
 directly; BlackJAX NS-AW needs a stepper function on flat arrays; BlackJAX NSS
-needs a stepper returning a ``(position, accepted)`` tuple; BlackJAX SMC needs a
-displacement wrapper.  The adapters below handle those conversions.
+needs a ``proposal`` factory with the same interface as
+``blackjax.ns.nss.covariance_proposal``; BlackJAX SMC needs a displacement
+wrapper.  The adapters below handle those conversions.
 
 All adapters operate on flat JAX arrays of shape ``(n_dims,)``.
 """
 
-from __future__ import annotations
-
 from typing import Callable, Optional
 
 import jax.numpy as jnp
+
+
+# ---------------------------------------------------------------------------
+# Shared helpers
+# ---------------------------------------------------------------------------
 
 
 def _build_masks_arrays(
@@ -57,6 +61,11 @@ def _build_masks_arrays(
     return mask, lower, period
 
 
+# ---------------------------------------------------------------------------
+# BlackJAX NS-AW
+# ---------------------------------------------------------------------------
+
+
 def to_unit_cube_stepper(
     periodic_index: Optional[list[int]],
     n_dims: int,
@@ -90,29 +99,44 @@ def to_unit_cube_stepper(
     return stepper
 
 
-def to_prior_space_stepper(
+# ---------------------------------------------------------------------------
+# BlackJAX NSS
+# ---------------------------------------------------------------------------
+
+
+def to_prior_space_proposal(
     periodic_index: Optional[dict[int, tuple[float, float]]],
     n_dims: int,
+    sample_direction_from_covariance: Callable,
 ) -> Callable:
-    """Stepper function for BlackJAX NSS (prior space).
+    """Return a BlackJAX NSS proposal factory that wraps periodic prior-space dims.
 
-    Signature: ``stepper_fn(position, direction, step_size) -> (new_position, accepted)``
-
-    Position and direction are flat JAX arrays of shape ``(n_dims,)``.
-    NSS requires the stepper to return a ``(position, bool)`` tuple.
-    Periodic parameters are wrapped with
-    ``lower + mod(pos + step_size * dir - lower, period)``.
+    Has the same interface as ``blackjax.ns.nss.covariance_proposal``:
+    ``proposal(init_state_fn, loglikelihood_0, cov) -> proposal_generator``.
     """
     mask, lower, period = _build_masks_arrays(periodic_index, n_dims)
 
-    def stepper(
-        position: jnp.ndarray, direction: jnp.ndarray, step_size: float
-    ) -> tuple:
-        proposed = position + step_size * direction
-        wrapped = jnp.where(mask, lower + jnp.mod(proposed - lower, period), proposed)
-        return wrapped, True
+    def proposal(init_state_fn, loglikelihood_0, cov):
+        def proposal_generator(rng_key, position, logdensity_fn):
+            del logdensity_fn  # NS gates on the recorded loglikelihood.
+            direction = sample_direction_from_covariance(rng_key, position, cov)
 
-    return stepper
+            def slice_fn(t):
+                proposed = position + t * direction
+                x = jnp.where(mask, lower + jnp.mod(proposed - lower, period), proposed)
+                new_state = init_state_fn(x, loglikelihood_birth=loglikelihood_0)
+                return new_state, new_state.loglikelihood > loglikelihood_0
+
+            return slice_fn
+
+        return proposal_generator
+
+    return proposal
+
+
+# ---------------------------------------------------------------------------
+# BlackJAX SMC
+# ---------------------------------------------------------------------------
 
 
 def to_displacement_wrapper(

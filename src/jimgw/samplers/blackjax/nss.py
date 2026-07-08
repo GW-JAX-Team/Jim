@@ -1,7 +1,10 @@
 """BlackJAX Nested Slice Sampling (NSS)."""
 
-from __future__ import annotations
-
+import logging
+import pickle
+import shutil
+import time
+from functools import partial
 from typing import Any, Callable, Optional
 
 import jax
@@ -11,6 +14,9 @@ from anesthetic.samples import NestedSamples
 from jaxtyping import Array, Float, Key
 
 import blackjax
+from blackjax.ns.adaptive import AdaptiveNSState, init as _ns_adaptive_init
+from blackjax.ns.base import NSInfo, init_state_strategy as _init_state_strategy
+from blackjax.ns.nss import live_covariance, sample_direction_from_covariance
 from blackjax.ns.utils import finalise
 from jimgw.samplers.base import Sampler
 from jimgw.samplers.blackjax._imports import (
@@ -18,7 +24,9 @@ from jimgw.samplers.blackjax._imports import (
     require_nss,
 )
 from jimgw.samplers.config import BlackJAXNSSConfig
-from jimgw.samplers.periodic import to_prior_space_stepper
+from jimgw.samplers.periodic import to_prior_space_proposal
+
+logger = logging.getLogger(__name__)
 
 require_nested_sampling(blackjax)
 require_nss(blackjax)
@@ -47,8 +55,8 @@ class BlackJAXNSSSampler(Sampler):
     """
 
     _config: BlackJAXNSSConfig
-    _stepper_fn: Callable
-    _final_state: Any
+    _proposal: Callable
+    _final_state: NSInfo
     _nested_samples: NestedSamples
     _n_iterations: int
 
@@ -71,7 +79,9 @@ class BlackJAXNSSSampler(Sampler):
             log_posterior_fn=log_posterior_fn,
             config=config,
         )
-        self._stepper_fn = to_prior_space_stepper(periodic, n_dims)
+        self._proposal = to_prior_space_proposal(
+            periodic, n_dims, sample_direction_from_covariance
+        )
 
     def _sample(
         self,
@@ -80,10 +90,16 @@ class BlackJAXNSSSampler(Sampler):
     ) -> None:
         """Run the BlackJAX NSS sampler.
 
+        If ``config.checkpoint_dir`` is set, a ``checkpoint.pkl`` is written
+        atomically after each nested-sampling iteration (subject to
+        ``config.checkpoint_interval``) and the sampler resumes from the
+        checkpoint if one already exists at that path.
+
         Args:
             rng_key: JAX PRNG key.
             initial_position: Starting live points in the sampling space,
                 shape ``(n_live, n_dims)``.  Must match ``config.n_live``.
+                Ignored when resuming from a checkpoint.
 
         Raises:
             ValueError: If ``initial_position`` shape does not match
@@ -93,40 +109,122 @@ class BlackJAXNSSSampler(Sampler):
         n_live = config.n_live
         n_delete = int(n_live * config.n_delete_frac)
         num_inner_steps = config.num_inner_steps_per_dim * self.n_dims
+        ckpt_path = (
+            config.checkpoint_dir / "checkpoint.pkl"
+            if config.checkpoint_dir is not None
+            else None
+        )
+        config.configure_jax_cache()
+        _method_t0 = time.perf_counter()
 
-        arr = jnp.asarray(initial_position)
-        if arr.ndim != 2 or arr.shape != (n_live, self.n_dims):
-            raise ValueError(
-                f"initial_position must have shape ({n_live}, {self.n_dims}), "
-                f"got {arr.shape}."
-            )
-        initial_particles = arr
+        def _validated_initial_particles(pos):
+            arr = jnp.asarray(pos)
+            if arr.ndim != 2 or arr.shape != (n_live, self.n_dims):
+                raise ValueError(
+                    f"initial_position must have shape ({n_live}, {self.n_dims}), "
+                    f"got {arr.shape}."
+                )
+            return arr
 
         nested_sampler = blackjax.nss(
             logprior_fn=self._log_prior_fn,
             loglikelihood_fn=self._log_likelihood_fn,
             num_delete=n_delete,
             num_inner_steps=num_inner_steps,
-            stepper_fn=self._stepper_fn,
+            proposal=self._proposal,
         )
 
-        state = nested_sampler.init(initial_particles)  # type: ignore[call-arg]  # blackjax fork API
+        # Bypass BlackJAX's jax.vmap(init_state_fn) to avoid peak-memory OOM.
+        # A full vmap over all live particles materialises O(n_live) concurrent
+        # intermediate buffers, which can exceed available GPU memory for expensive
+        # likelihoods. lax.map with n_delete particles per batch bounds peak memory
+        # to n_delete/n_live of the full-vmap cost at no extra computation.
+        _single_init_fn = partial(
+            _init_state_strategy,
+            logprior_fn=self._log_prior_fn,
+            loglikelihood_fn=self._log_likelihood_fn,
+        )
 
-        def _terminate(state: Any) -> bool:
+        def _batched_nss_init(positions):
+            def _batched_fn(pos):
+                return jax.lax.map(_single_init_fn, pos, batch_size=n_delete)
+
+            return _ns_adaptive_init(
+                positions,
+                init_state_fn=_batched_fn,
+                update_inner_kernel_params_fn=live_covariance,
+            )
+
+        # Resume from checkpoint if one exists.
+        if (
+            ckpt_path is not None
+            and config.checkpoint_interval > 0
+            and ckpt_path.exists()
+        ):
+            try:
+                with open(ckpt_path, "rb") as _f:
+                    _ckpt = pickle.load(_f)
+                state = _ckpt["state"]
+                dead = _ckpt["dead"]
+                rng_key = _ckpt["rng_key"]
+                n_iter = _ckpt["n_iter"]
+                self._prev_elapsed = float(_ckpt["elapsed_time"])
+                logger.info(
+                    "NSS: resumed from checkpoint at n_iter=%d (%s)", n_iter, ckpt_path
+                )
+            except (
+                OSError,
+                EOFError,
+                KeyError,
+                ValueError,
+                pickle.UnpicklingError,
+            ) as _e:
+                logger.warning(
+                    "NSS: corrupt checkpoint at %s (%s) — starting fresh.",
+                    ckpt_path,
+                    _e,
+                )
+                state = _batched_nss_init(
+                    _validated_initial_particles(initial_position)
+                )
+                dead = []
+                n_iter = 0
+                self._prev_elapsed = 0.0
+        else:
+            state = _batched_nss_init(_validated_initial_particles(initial_position))
+            dead = []
+            n_iter = 0
+
+        def _terminate(state: AdaptiveNSState) -> bool:
             dlogz = jnp.logaddexp(0, state.integrator.logZ_live - state.integrator.logZ)
             return bool(jnp.isfinite(dlogz) and dlogz < config.termination_dlogz)
 
         step_fn = jax.jit(nested_sampler.step)
+        _last_ckpt_t = time.perf_counter()
 
-        dead = []
-        n_iter = 0
         while not _terminate(state):
             rng_key, subkey = jax.random.split(rng_key)
             state, dead_info = step_fn(subkey, state)
             dead.append(dead_info)
             n_iter += 1
+            if (
+                ckpt_path is not None
+                and config.checkpoint_interval > 0
+                and time.perf_counter() - _last_ckpt_t >= config.checkpoint_interval
+            ):
+                _last_ckpt_t = config.write_checkpoint(
+                    {
+                        "state": state,
+                        "dead": dead,
+                        "rng_key": rng_key,
+                        "n_iter": n_iter,
+                        "elapsed_time": self._prev_elapsed
+                        + (time.perf_counter() - _method_t0),
+                    },
+                    "NSS",
+                )
 
-        self._final_state = finalise(state, dead)
+        self._final_state = finalise(state, dead)  # type: ignore[arg-type]  # AdaptiveNSState structurally satisfies NSState (.particles field)
         self._n_iterations = n_iter
 
         # Build anesthetic NestedSamples for use in get_samples() and get_diagnostics().
@@ -141,6 +239,11 @@ class BlackJAXNSSSampler(Sampler):
             logzero=np.nan,
             dtype=np.float64,
         )
+        if ckpt_path is not None:
+            ckpt_path.unlink(missing_ok=True)
+        if config.checkpoint_dir is not None:
+            shutil.rmtree(config.checkpoint_dir / "jax_cache", ignore_errors=True)
+            jax.config.update("jax_compilation_cache_dir", None)
 
     def get_samples(self) -> dict[str, np.ndarray]:
         """Return equally-weighted posterior samples via anesthetic's ``posterior_points``.
@@ -177,8 +280,10 @@ class BlackJAXNSSSampler(Sampler):
         """
         if not self._sampled:
             raise RuntimeError("get_diagnostics() called before sample()")
-        ui = self._final_state.update_info  # SliceInfo concatenated across all steps
-        total_steps = int(jnp.sum(ui.num_steps))
+        ui: Any = (
+            self._final_state.update_info
+        )  # SliceInfo — blackjax stubs type this as base NamedTuple
+        total_steps = int(jnp.sum(ui.num_expansions))
         total_shrink = int(jnp.sum(ui.num_shrink))
 
         log_Z = np.asarray(self._nested_samples.logZ()).item()
@@ -187,7 +292,7 @@ class BlackJAXNSSSampler(Sampler):
         return {
             "n_likelihood_evaluations": total_steps + total_shrink,
             "n_iterations": self._n_iterations,
-            "n_stepping_out_history": np.asarray(ui.num_steps),
+            "n_stepping_out_history": np.asarray(ui.num_expansions),
             "n_shrinking_history": np.asarray(ui.num_shrink),
             "n_likelihood_evaluations_stepping_out": total_steps,
             "n_likelihood_evaluations_shrinking": total_shrink,

@@ -551,7 +551,6 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
     reference_parameters: dict
     freq_grid_low: Array
     freq_grid_high: Array
-    freq_grid_center: Array
     bin_widths: Array
     waveform_low_ref: dict[str, Float[Array, " n_bin"]]
     waveform_high_ref: dict[str, Float[Array, " n_bin"]]
@@ -630,8 +629,6 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         # --- heterodyne setup ---
         logger.info("Initializing heterodyned likelihood..")
 
-        if reference_parameters is None:
-            reference_parameters = {}
         if likelihood_transforms is None:
             likelihood_transforms = []
 
@@ -642,7 +639,7 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
             self.reference_parameters = reference_parameters.copy()
             apply_fixed_parameters(self.reference_parameters, self.fixed_parameters)
             logger.info(
-                f"Reference parameters provided, which are {self.reference_parameters}"
+                f"Found reference parameters, they are {self.reference_parameters}"
             )
         elif prior:
             logger.info("No reference parameters are provided, finding it...")
@@ -677,20 +674,21 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
             raise ValueError(
                 "'n_bins' and 'epsilon' are mutually exclusive; specify at most one."
             )
-        if epsilon is not None and epsilon <= 0:
-            raise ValueError(f"'epsilon' must be a positive number, got {epsilon!r}.")
-        if n_bins is not None and n_bins <= 0:
-            raise ValueError(f"'n_bins' must be a positive integer, got {n_bins!r}.")
-        if epsilon is None and n_bins is None:
+        elif epsilon is None and n_bins is None:
             epsilon = 0.5
-        if epsilon is not None:
-            freqs_arr = jnp.array(frequency_original)
-            phase = HeterodynedTransientLikelihoodFD._max_phase_diff(
-                freqs_arr, freqs_arr[0], freqs_arr[-1]
-            )
-            n_bins = max(1, int(float(phase[-1]) / epsilon))
+        elif n_bins is not None and n_bins <= 0:
+            raise ValueError(f"'n_bins' must be a positive integer, got {n_bins!r}.")
+        elif epsilon is not None:
+            if epsilon <= 0:
+                raise ValueError(f"'epsilon' must be a positive number, got {epsilon!r}.")
+            else:
+                freqs_arr = jnp.array(frequency_original)
+                phase = HeterodynedTransientLikelihoodFD._max_phase_diff(
+                    freqs_arr, freqs_arr[0], freqs_arr[-1]
+                )
+                n_bins = max(1, int(float(phase[-1]) / epsilon))
         assert isinstance(n_bins, int)
-        freq_grid, self.freq_grid_center = self._make_binning_scheme(
+        freq_grid, freq_grid_center = self._make_binning_scheme(
             jnp.array(frequency_original), n_bins=n_bins
         )
         self.freq_grid_low = freq_grid[:-1]
@@ -706,14 +704,14 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         f_waveform_min = jnp.min(f_valid)
 
         mask_heterodyne_center = jnp.where(
-            (self.freq_grid_high <= f_waveform_max)
-            & (self.freq_grid_center >= f_waveform_min)
+            (freq_grid_center <= f_waveform_max)
+            & (freq_grid_center >= f_waveform_min)
         )[0]
-        self.freq_grid_center = self.freq_grid_center[mask_heterodyne_center]
+        freq_grid_center = freq_grid_center[mask_heterodyne_center]
         self.freq_grid_low = self.freq_grid_low[mask_heterodyne_center]
         self.freq_grid_high = self.freq_grid_high[mask_heterodyne_center]
+        self.n_bins = len(freq_grid_center)
         self.bin_widths = self.freq_grid_high - self.freq_grid_low
-        self.n_bins = len(self.freq_grid_center)
 
         start_idx = mask_heterodyne_center[0]
         end_idx = mask_heterodyne_center[-1] + 2
@@ -739,7 +737,7 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
                 detector.sliced_psd,
                 detector.sliced_frequencies,
                 freq_grid,
-                self.freq_grid_center,
+                freq_grid_center
             )
             self.A0_array[detector.name] = A0[mask_heterodyne_center]
             self.A1_array[detector.name] = A1[mask_heterodyne_center]

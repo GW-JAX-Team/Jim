@@ -1322,7 +1322,7 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
 
     def _find_starting_frequency(
         self, duration: float, f_now: float
-    ) -> tuple[Optional[float], Optional[float]]:
+    ) -> tuple[Float, Float]:
         """Find starting frequency of next band via bisection search.
 
         Finds frequency satisfying conditions (10) and (51) of arXiv:2104.07813:
@@ -1338,7 +1338,7 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
 
         Returns
         -------
-        tuple[Optional[Float], Optional[Float]]
+        tuple[Float, Float]
             (fnext, dfnext) or (None, None) if no valid frequency exists.
         """
 

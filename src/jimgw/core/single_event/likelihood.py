@@ -709,8 +709,8 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         f_waveform_min = jnp.min(f_valid)
 
         mask_heterodyne_center = jnp.where(
-            (self.freq_grid_high <= f_waveform_max) & 
-            (self.freq_grid_low >= f_waveform_min)
+            (self.freq_grid_high <= f_waveform_max)
+            & (self.freq_grid_low >= f_waveform_min)
         )[0]
         freq_grid_center = freq_grid_center[mask_heterodyne_center]
         self.freq_grid_low = self.freq_grid_low[mask_heterodyne_center]
@@ -820,8 +820,8 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         Uses 5 physically-motivated PN/IMR terms from arXiv:1806.08792:
         gamma ∈ {-5/3, -2/3, 1, 5/3, 7/3}, covering the dominant Newtonian
         chirp (0PN), spin-orbit (1.5PN), coalescence time, and phenomenological
-        IMR contributions.  Each term is normalised by so that its individual 
-        contribution spans exactly ``chi * 2π`` rad across [f_low, f_high].  
+        IMR contributions.  Each term is normalised by so that its individual
+        contribution spans exactly ``chi * 2π`` rad across [f_low, f_high].
         The returned array starts at 0 (cumulative from f_low).
 
         See also Eq.(7) in arXiv:2302.05333.

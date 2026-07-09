@@ -1145,6 +1145,53 @@ class TestHeterodynedTransientLikelihoodFD:
         assert jnp.isclose(float(base.evaluate(result)), ll_injected)
         common_keys_allclose(result, true_params)
 
+    def test_coefficients_are_not_reindexed_after_frequency_trimming(
+        self, detectors_and_waveform, monkeypatch
+    ):
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+
+        def fake_compute_coefficients(
+            likelihood, data, h_ref, psd, freqs, f_bins, f_bins_center
+        ):
+            assert len(freqs) > len(f_bins)
+            assert len(f_bins) == len(f_bins_center) + 1
+            assert likelihood.n_bins == len(f_bins_center)
+            coeffs = jnp.arange(likelihood.n_bins, dtype=jnp.float64)
+            return coeffs, coeffs + 100, coeffs + 200, coeffs + 300
+
+        monkeypatch.setattr(
+            HeterodynedTransientLikelihoodFD,
+            "_compute_coefficients",
+            fake_compute_coefficients,
+        )
+
+        def reference_waveform(frequencies, params):
+            waveform_sky = waveform(frequencies, params)
+            mask = frequencies >= 80.0
+            return {
+                polarization: jnp.where(mask, strain, jnp.zeros_like(strain))
+                for polarization, strain in waveform_sky.items()
+            }
+
+        likelihood = HeterodynedTransientLikelihoodFD(
+            detectors=ifos,
+            waveform=waveform,
+            reference_waveform=reference_waveform,
+            f_min=fmin,
+            f_max=fmax,
+            trigger_time=gps,
+            n_bins=32,
+            reference_parameters=example_params(),
+        )
+        assert likelihood.freq_grid_low[0] > fmin
+
+        expected = jnp.arange(likelihood.n_bins, dtype=jnp.float64)
+        for detector in ifos:
+            assert jnp.array_equal(likelihood.A0_array[detector.name], expected)
+            assert jnp.array_equal(likelihood.A1_array[detector.name], expected + 100)
+            assert jnp.array_equal(likelihood.B0_array[detector.name], expected + 200)
+            assert jnp.array_equal(likelihood.B1_array[detector.name], expected + 300)
+
     # ── Phase marginalization ──────────────────────────────────────────────────
 
     def test_phase_marg_fixed_phase_c_raises(self, detectors_and_waveform):

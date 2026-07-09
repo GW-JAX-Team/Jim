@@ -1036,8 +1036,8 @@ class TestHeterodynedTransientLikelihoodFD:
             reference_parameters=example_params(),
         )
         assert hasattr(likelihood, "freq_grid_low")
-        assert hasattr(likelihood, "freq_grid_center")
         assert hasattr(likelihood, "freq_grid_high")
+        assert hasattr(likelihood, "bin_widths")
         for det in ifos:
             assert det.name in likelihood.A0_array
             assert det.name in likelihood.A1_array

@@ -671,15 +671,17 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         self.B1_array = {}
 
         frequency_original = self.frequencies
-        if n_bins is not None and epsilon is not None:
-            raise ValueError(
-                "'n_bins' and 'epsilon' are mutually exclusive; specify at most one."
-            )
-        elif epsilon is None and n_bins is None:
+        if n_bins is not None:
+            if epsilon is not None:
+                raise ValueError(
+                    "'n_bins' and 'epsilon' are mutually exclusive; specify at most one."
+                )
+            elif n_bins <= 0:
+                raise ValueError(f"'n_bins' must be a positive integer, got {n_bins!r}.")
+        elif epsilon is None:
             epsilon = 0.5
-        elif n_bins is not None and n_bins <= 0:
-            raise ValueError(f"'n_bins' must be a positive integer, got {n_bins!r}.")
-        elif epsilon is not None:
+        
+        if epsilon is not None:
             if epsilon <= 0:
                 raise ValueError(
                     f"'epsilon' must be a positive number, got {epsilon!r}."
@@ -690,7 +692,6 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
                     freqs_arr, freqs_arr[0], freqs_arr[-1]
                 )
                 n_bins = max(1, int(float(phase[-1]) / epsilon))
-        print(n_bins, type(n_bins))
         assert isinstance(n_bins, int)
         freq_grid, freq_grid_center = self._make_binning_scheme(
             jnp.array(frequency_original), n_bins=n_bins

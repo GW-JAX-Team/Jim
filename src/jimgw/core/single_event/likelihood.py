@@ -677,10 +677,12 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
                     "'n_bins' and 'epsilon' are mutually exclusive; specify at most one."
                 )
             elif n_bins <= 0:
-                raise ValueError(f"'n_bins' must be a positive integer, got {n_bins!r}.")
+                raise ValueError(
+                    f"'n_bins' must be a positive integer, got {n_bins!r}."
+                )
         elif epsilon is None:
             epsilon = 0.5
-        
+
         if epsilon is not None:
             if epsilon <= 0:
                 raise ValueError(

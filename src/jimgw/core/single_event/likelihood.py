@@ -829,25 +829,21 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         data_prod = jnp.array(data * h_ref.conj()) / psd
         self_prod = jnp.array(h_ref * h_ref.conj()) / psd
 
-        freq_bins_left = f_bins[:-1]  # Shape: (n_bins)
-        freq_bins_right = f_bins[1:]  # Shape: (n_bins)
-        freq_bins_center = (freq_bins_left + freq_bins_right) / 2  # Shape: (n_bins)
-
         # Broadcasting for 2D frequencies
         freqs_broadcast = freqs[None, :]  # Shape: (1, n_freq)
-        left_bounds = freq_bins_left[:, None]  # Shpae: (n_bins, 1)
-        right_bounds = freq_bins_right[:, None]  # Shape: (n_bins, 1)
-        freq_bins_center_broadcast = freq_bins_center[:, None]  # Shape: (n_bins, 1)
+        freq_bins_left = f_bins[:-1][:, None]  # Shpae: (n_bins, 1)
+        freq_bins_right = f_bins[1:][:, None]  # Shape: (n_bins, 1)
+        freq_bins_center = (freq_bins_left + freq_bins_right) / 2
 
         # Shape: (n_bins, n_freq)
-        mask = (freqs_broadcast >= left_bounds) & (freqs_broadcast < right_bounds)
+        mask = (freqs_broadcast >= freq_bins_left) & (freqs_broadcast < freq_bins_right)
         # The half-open interval [left, right) excludes any frequency that lands
         # exactly on the upper edge of the last bin (f_bins[-1]).  This happens
         # whenever the interpolated bin edge coincides with the last discrete
         # frequency sample (common when the waveform reaches f_max).  Extend the
         # last row to a closed interval by OR-ing in the equality condition.
-        mask = mask.at[-1].set(mask[-1] | (freqs == freq_bins_right[-1]))
-        freq_shift_matrix = (freqs_broadcast - freq_bins_center_broadcast) * mask
+        mask = mask.at[-1].set(mask[-1] | (freqs == f_bins[-1]))
+        freq_shift_matrix = (freqs_broadcast - freq_bins_center) * mask
 
         # The resultant arrays have shape (n_bins), the dimension with "n_freq" is summed over.
         summary_data = jnp.array(

@@ -714,11 +714,7 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
                 self.freq_grid_high, h_sky_high, self.reference_parameters
             )
             self.summary_data[detector.name] = self._compute_coefficients(
-                detector.sliced_fd_data,
-                waveform_ref,
-                detector.sliced_psd,
-                detector.sliced_frequencies,
-                freq_grid,
+                detector, waveform_ref, freq_grid,
             )
 
     def evaluate(self, params: dict[str, Float]) -> FloatScalar:
@@ -819,13 +815,14 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
 
     @staticmethod
     def _compute_coefficients(
-        data: Complex[Array, " n_freq"],
+        detector: Detector,
         h_ref: Complex[Array, " n_freq"],
-        psd: Complex[Array, " n_freq"],
-        freqs: Float[Array, " n_freq"],
         f_bins: Float[Array, " n_bins+1"],
     ) -> Complex[Array, "4 n_bins"]:
-        df = freqs[1] - freqs[0]
+        data = detector.sliced_fd_data
+        psd = detector.sliced_psd
+        freqs = detector.sliced_frequencies
+
         data_prod = jnp.array(data * h_ref.conj()) / psd
         self_prod = jnp.array(h_ref * h_ref.conj()) / psd
 
@@ -855,7 +852,7 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
             ]
         )
 
-        return 4 * df * summary_data
+        return 4 / detector.duration * summary_data
 
     def maximize_likelihood(
         self,

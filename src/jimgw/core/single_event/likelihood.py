@@ -552,8 +552,8 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
     n_bins: int
     epsilon: float
     reference_parameters: dict
-    freq_grid_low: Complex[Array, " n_bin"]
-    freq_grid_high: Complex[Array, " n_bin"]
+    freq_grid_low: Float[Array, " n_bin"]
+    freq_grid_high: Float[Array, " n_bin"]
     bin_widths: Float[Array, " n_bin"]
     waveform_low_ref: dict[str, Complex[Array, " n_bin"]]
     waveform_high_ref: dict[str, Complex[Array, " n_bin"]]

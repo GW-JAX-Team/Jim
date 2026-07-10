@@ -779,15 +779,13 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
             if self.phase_marginalization:
                 complex_d_inner_h += jnp.sum(A0 * r0.conj() + A1 * r1.conj())
                 optimal_SNR = jnp.sum(
-                    B0 * jnp.abs(r0) ** 2
-                    + 2 * B1 * (r0 * r1.conj()).real
+                    B0 * jnp.abs(r0) ** 2 + 2 * B1 * (r0 * r1.conj()).real
                 )
                 log_likelihood += -optimal_SNR.real / 2
             else:
                 match_filter_SNR = jnp.sum(A0 * r0.conj() + A1 * r1.conj())
                 optimal_SNR = jnp.sum(
-                    B0 * jnp.abs(r0) ** 2
-                    + 2 * B1 * (r0 * r1.conj()).real
+                    B0 * jnp.abs(r0) ** 2 + 2 * B1 * (r0 * r1.conj()).real
                 )
                 log_likelihood += (match_filter_SNR - optimal_SNR / 2).real
 
@@ -842,12 +840,13 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
 
     @staticmethod
     def _compute_coefficients(
-        data: Complex[Array, " n_freq"], 
-        h_ref: Complex[Array, " n_freq"], 
-        psd: Complex[Array, " n_freq"], 
-        freqs: Float[Array, " n_freq"], 
-        f_bins: Float[Array, " n_bin+1"], 
-        f_bins_center: Float[Array, " n_bin"]) -> Complex[Array, "4 n_bin"]:
+        data: Complex[Array, " n_freq"],
+        h_ref: Complex[Array, " n_freq"],
+        psd: Complex[Array, " n_freq"],
+        freqs: Float[Array, " n_freq"],
+        f_bins: Float[Array, " n_bin+1"],
+        f_bins_center: Float[Array, " n_bin"],
+    ) -> Complex[Array, "4 n_bin"]:
         df = freqs[1] - freqs[0]
         data_prod = jnp.array(data * h_ref.conj()) / psd
         self_prod = jnp.array(h_ref * h_ref.conj()) / psd
@@ -855,8 +854,8 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         freq_bins_left = f_bins[:-1]  # Shape: (n_bin)
         freq_bins_right = f_bins[1:]  # Shape: (n_bin)
 
-        freqs_broadcast = freqs[None, :]         # Shape: (1, n_freq)
-        left_bounds = freq_bins_left[:, None]    # Shpae: (n_bin, 1)
+        freqs_broadcast = freqs[None, :]  # Shape: (1, n_freq)
+        left_bounds = freq_bins_left[:, None]  # Shpae: (n_bin, 1)
         right_bounds = freq_bins_right[:, None]  # Shape: (n_bin, 1)
 
         mask = (freqs_broadcast >= left_bounds) & (freqs_broadcast < right_bounds)
@@ -872,12 +871,18 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         freq_shift_matrix = (freqs_broadcast - f_bins_center_broadcast) * mask
 
         # The resultant arrays have shape (n_bin), the dimension with "n_freq" is summed over.
-        summary_data = 4 * df * jnp.array([
-            jnp.sum(data_prod[None, :] * mask, axis=1),               # A0
-            jnp.sum(data_prod[None, :] * freq_shift_matrix, axis=1),  # A1
-            jnp.sum(self_prod[None, :] * mask, axis=1),               # B0
-            jnp.sum(self_prod[None, :] * freq_shift_matrix, axis=1)   # B1
-        ])
+        summary_data = (
+            4
+            * df
+            * jnp.array(
+                [
+                    jnp.sum(data_prod[None, :] * mask, axis=1),  # A0
+                    jnp.sum(data_prod[None, :] * freq_shift_matrix, axis=1),  # A1
+                    jnp.sum(self_prod[None, :] * mask, axis=1),  # B0
+                    jnp.sum(self_prod[None, :] * freq_shift_matrix, axis=1),  # B1
+                ]
+            )
+        )
 
         return summary_data
 

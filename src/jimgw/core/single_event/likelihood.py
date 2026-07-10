@@ -4,7 +4,7 @@ from abc import abstractmethod
 import jax
 import jax.numpy as jnp
 from jax.scipy.special import logsumexp
-from jaxtyping import Array, Float
+from jaxtyping import Array, Float, Complex
 from jimgw.typing import ComplexScalar, FloatLike, FloatScalar
 from scipy.interpolate import interp1d
 from evosax.algorithms import CMA_ES
@@ -550,16 +550,14 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
     """
 
     n_bins: int
+    epsilon: float
     reference_parameters: dict
-    freq_grid_low: Array
-    freq_grid_high: Array
-    bin_widths: Array
-    waveform_low_ref: dict[str, Float[Array, " n_bin"]]
-    waveform_high_ref: dict[str, Float[Array, " n_bin"]]
-    A0_array: dict[str, Float[Array, " n_bin"]]
-    A1_array: dict[str, Float[Array, " n_bin"]]
-    B0_array: dict[str, Float[Array, " n_bin"]]
-    B1_array: dict[str, Float[Array, " n_bin"]]
+    freq_grid_low: Complex[Array, " n_bin"]
+    freq_grid_high: Complex[Array, " n_bin"]
+    bin_widths: Float[Array, " n_bin"]
+    waveform_low_ref: dict[str, Complex[Array, " n_bin"]]
+    waveform_high_ref: dict[str, Complex[Array, " n_bin"]]
+    summary_data: dict[str, Complex[Array, "4 n_bin"]]
 
     def __init__(
         self,
@@ -665,10 +663,7 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
 
         self.waveform_low_ref = {}
         self.waveform_high_ref = {}
-        self.A0_array = {}
-        self.A1_array = {}
-        self.B0_array = {}
-        self.B1_array = {}
+        self.summary_data = {}
 
         frequency_original = self.frequencies
         if n_bins is not None:
@@ -707,21 +702,20 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
             jnp.array([jnp.abs(h_sky[pol]) for pol in h_sky.keys()]), axis=0
         )
         f_valid = frequency_original[jnp.where(h_amp > 0)[0]]
-        f_waveform_max = jnp.max(f_valid)
-        f_waveform_min = jnp.min(f_valid)
 
-        mask_heterodyne_center = jnp.where(
-            (self.freq_grid_high <= f_waveform_max)
-            & (self.freq_grid_low >= f_waveform_min)
+        valid_waveform_mask = jnp.where(
+            (self.freq_grid_high <= jnp.max(f_valid))
+            & (self.freq_grid_low >= jnp.min(f_valid))
         )[0]
-        freq_grid_center = freq_grid_center[mask_heterodyne_center]
-        self.freq_grid_low = self.freq_grid_low[mask_heterodyne_center]
-        self.freq_grid_high = self.freq_grid_high[mask_heterodyne_center]
+        freq_grid_center = freq_grid_center[valid_waveform_mask]
+        self.freq_grid_low = self.freq_grid_low[valid_waveform_mask]
+        self.freq_grid_high = self.freq_grid_high[valid_waveform_mask]
         self.n_bins = len(freq_grid_center)
         self.bin_widths = self.freq_grid_high - self.freq_grid_low
 
-        start_idx = mask_heterodyne_center[0]
-        end_idx = mask_heterodyne_center[-1] + 2
+        # freq_grid is one cell longer than freq_grid_center/low/high
+        start_idx = valid_waveform_mask[0]
+        end_idx = valid_waveform_mask[-1] + 2
         freq_grid = freq_grid[start_idx:end_idx]
 
         h_sky_low = reference_waveform(self.freq_grid_low, self.reference_parameters)
@@ -738,7 +732,7 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
             self.waveform_high_ref[detector.name] = detector.fd_response(
                 self.freq_grid_high, h_sky_high, self.reference_parameters
             )
-            A0, A1, B0, B1 = self._compute_coefficients(
+            self.summary_data[detector.name] = self._compute_coefficients(
                 detector.sliced_fd_data,
                 waveform_ref,
                 detector.sliced_psd,
@@ -746,10 +740,6 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
                 freq_grid,
                 freq_grid_center,
             )
-            self.A0_array[detector.name] = A0[mask_heterodyne_center]
-            self.A1_array[detector.name] = A1[mask_heterodyne_center]
-            self.B0_array[detector.name] = B0[mask_heterodyne_center]
-            self.B1_array[detector.name] = B1[mask_heterodyne_center]
 
     def evaluate(self, params: dict[str, Float]) -> FloatScalar:
         params = params.copy()
@@ -783,24 +773,21 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
             r0 = (r_low + r_high) / 2
             r1 = (r_high - r_low) / self.bin_widths
 
+            _data = self.summary_data[detector.name]
+            A0, A1, B0, B1 = _data[0], _data[1], _data[2], _data[3]
+
             if self.phase_marginalization:
-                complex_d_inner_h += jnp.sum(
-                    self.A0_array[detector.name] * r0.conj()
-                    + self.A1_array[detector.name] * r1.conj()
-                )
+                complex_d_inner_h += jnp.sum(A0 * r0.conj() + A1 * r1.conj())
                 optimal_SNR = jnp.sum(
-                    self.B0_array[detector.name] * jnp.abs(r0) ** 2
-                    + 2 * self.B1_array[detector.name] * (r0 * r1.conj()).real
+                    B0 * jnp.abs(r0) ** 2
+                    + 2 * B1 * (r0 * r1.conj()).real
                 )
                 log_likelihood += -optimal_SNR.real / 2
             else:
-                match_filter_SNR = jnp.sum(
-                    self.A0_array[detector.name] * r0.conj()
-                    + self.A1_array[detector.name] * r1.conj()
-                )
+                match_filter_SNR = jnp.sum(A0 * r0.conj() + A1 * r1.conj())
                 optimal_SNR = jnp.sum(
-                    self.B0_array[detector.name] * jnp.abs(r0) ** 2
-                    + 2 * self.B1_array[detector.name] * (r0 * r1.conj()).real
+                    B0 * jnp.abs(r0) ** 2
+                    + 2 * B1 * (r0 * r1.conj()).real
                 )
                 log_likelihood += (match_filter_SNR - optimal_SNR / 2).real
 
@@ -854,17 +841,23 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         return jnp.array(f_bins), jnp.array(f_bins_center)
 
     @staticmethod
-    def _compute_coefficients(data, h_ref, psd, freqs, f_bins, f_bins_center):
+    def _compute_coefficients(
+        data: Complex[Array, " n_freq"], 
+        h_ref: Complex[Array, " n_freq"], 
+        psd: Complex[Array, " n_freq"], 
+        freqs: Float[Array, " n_freq"], 
+        f_bins: Float[Array, " n_bin+1"], 
+        f_bins_center: Float[Array, " n_bin"]) -> Complex[Array, "4 n_bin"]:
         df = freqs[1] - freqs[0]
         data_prod = jnp.array(data * h_ref.conj()) / psd
         self_prod = jnp.array(h_ref * h_ref.conj()) / psd
 
-        freq_bins_left = f_bins[:-1]
-        freq_bins_right = f_bins[1:]
+        freq_bins_left = f_bins[:-1]  # Shape: (n_bin)
+        freq_bins_right = f_bins[1:]  # Shape: (n_bin)
 
-        freqs_broadcast = freqs[None, :]
-        left_bounds = freq_bins_left[:, None]
-        right_bounds = freq_bins_right[:, None]
+        freqs_broadcast = freqs[None, :]         # Shape: (1, n_freq)
+        left_bounds = freq_bins_left[:, None]    # Shpae: (n_bin, 1)
+        right_bounds = freq_bins_right[:, None]  # Shape: (n_bin, 1)
 
         mask = (freqs_broadcast >= left_bounds) & (freqs_broadcast < right_bounds)
         # The half-open interval [left, right) excludes any frequency that lands
@@ -873,16 +866,20 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         # frequency sample (common when the waveform reaches f_max).  Extend the
         # last row to a closed interval by OR-ing in the equality condition.
         mask = mask.at[-1].set(mask[-1] | (freqs == freq_bins_right[-1]))
+        # Shape: (n_bin, n_freq)
 
-        f_bins_center_broadcast = f_bins_center[:, None]
+        f_bins_center_broadcast = f_bins_center[:, None]  # Shape: (n_bin, 1)
         freq_shift_matrix = (freqs_broadcast - f_bins_center_broadcast) * mask
 
-        A0_array = 4 * jnp.sum(data_prod[None, :] * mask, axis=1) * df
-        A1_array = 4 * jnp.sum(data_prod[None, :] * freq_shift_matrix, axis=1) * df
-        B0_array = 4 * jnp.sum(self_prod[None, :] * mask, axis=1) * df
-        B1_array = 4 * jnp.sum(self_prod[None, :] * freq_shift_matrix, axis=1) * df
+        # The resultant arrays have shape (n_bin), the dimension with "n_freq" is summed over.
+        summary_data = 4 * df * jnp.array([
+            jnp.sum(data_prod[None, :] * mask, axis=1),               # A0
+            jnp.sum(data_prod[None, :] * freq_shift_matrix, axis=1),  # A1
+            jnp.sum(self_prod[None, :] * mask, axis=1),               # B0
+            jnp.sum(self_prod[None, :] * freq_shift_matrix, axis=1)   # B1
+        ])
 
-        return A0_array, A1_array, B0_array, B1_array
+        return summary_data
 
     def maximize_likelihood(
         self,

@@ -718,7 +718,7 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
                 waveform_ref,
                 detector.sliced_psd,
                 detector.sliced_frequencies,
-                freq_grid
+                freq_grid,
             )
 
     def evaluate(self, params: dict[str, Float]) -> FloatScalar:
@@ -793,7 +793,7 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
 
         See also Eq.(7) in arXiv:2302.05333.
         """
-        gamma = jnp.array([-5., -2., 3., 5., 7.]) / 3
+        gamma = jnp.array([-5.0, -2.0, 3.0, 5.0, 7.0]) / 3
         freq_2D = jax.lax.broadcast_in_dim(freqs, (freqs.size, gamma.size), [0])
         f_star = jnp.where(gamma >= 0, f_high, f_low)
         summand = (freq_2D / f_star) ** gamma * jnp.sign(gamma)
@@ -823,7 +823,7 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         h_ref: Complex[Array, " n_freq"],
         psd: Complex[Array, " n_freq"],
         freqs: Float[Array, " n_freq"],
-        f_bins: Float[Array, " n_bins+1"]
+        f_bins: Float[Array, " n_bins+1"],
     ) -> Complex[Array, "4 n_bins"]:
         df = freqs[1] - freqs[0]
         data_prod = jnp.array(data * h_ref.conj()) / psd

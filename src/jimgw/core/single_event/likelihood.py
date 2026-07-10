@@ -714,7 +714,9 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
                 self.freq_grid_high, h_sky_high, self.reference_parameters
             )
             self.summary_data[detector.name] = self._compute_coefficients(
-                detector, waveform_ref, freq_grid,
+                detector,
+                waveform_ref,
+                freq_grid,
             )
 
     def evaluate(self, params: dict[str, Float]) -> FloatScalar:

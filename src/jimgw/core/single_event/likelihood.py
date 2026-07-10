@@ -871,20 +871,14 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         freq_shift_matrix = (freqs_broadcast - f_bins_center_broadcast) * mask
 
         # The resultant arrays have shape (n_bin), the dimension with "n_freq" is summed over.
-        summary_data = (
-            4
-            * df
-            * jnp.array(
-                [
-                    jnp.sum(data_prod[None, :] * mask, axis=1),  # A0
-                    jnp.sum(data_prod[None, :] * freq_shift_matrix, axis=1),  # A1
-                    jnp.sum(self_prod[None, :] * mask, axis=1),  # B0
-                    jnp.sum(self_prod[None, :] * freq_shift_matrix, axis=1),  # B1
-                ]
-            )
-        )
+        summary_data = jnp.array([
+            jnp.sum(data_prod[None, :] * mask, axis=1),  # A0
+            jnp.sum(data_prod[None, :] * freq_shift_matrix, axis=1),  # A1
+            jnp.sum(self_prod[None, :] * mask, axis=1),  # B0
+            jnp.sum(self_prod[None, :] * freq_shift_matrix, axis=1),  # B1
+        ])
 
-        return summary_data
+        return 4 * df * summary_data
 
     def maximize_likelihood(
         self,

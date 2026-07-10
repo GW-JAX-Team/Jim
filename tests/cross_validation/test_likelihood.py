@@ -676,9 +676,8 @@ class TestHeterodynedTransientLikelihoodFD:
         jim_ref_params = setup["jim_params"].copy()
         bilby_ref_params = setup["bilby_params"].copy()
 
-        # Initialize bilby first with its default epsilon so we can read back
-        # the number of bins it chose, then initialize Jim with the same count
-        # for an apples-to-apples comparison.
+        # Pin epsilon=0.5 in both implementations so the bin count is
+        # identical and the comparison is not sensitive to default changes.
         bilby_likelihood = (
             bilby.gw.likelihood.RelativeBinningGravitationalWaveTransient(
                 interferometers=setup["bilby_ifos"],
@@ -686,9 +685,9 @@ class TestHeterodynedTransientLikelihoodFD:
                     setup["duration"], setup["sampling_frequency"]
                 ),
                 fiducial_parameters=bilby_ref_params,
+                epsilon=0.5,
             )
         )
-        n_bins = bilby_likelihood.number_of_bins
 
         jim_likelihood = HeterodynedTransientLikelihoodFD(
             detectors=setup["jim_ifos"],
@@ -696,7 +695,7 @@ class TestHeterodynedTransientLikelihoodFD:
             f_min=F_MIN,
             f_max=F_MAX,
             trigger_time=GPS,
-            n_bins=n_bins,
+            epsilon=0.5,
             reference_parameters=jim_ref_params,
         )
 
@@ -736,9 +735,8 @@ class TestHeterodynedTransientLikelihoodFD:
             minimum=0.0, maximum=2 * np.pi, boundary="periodic", name="phase"
         )
 
-        # Initialize bilby first with its default epsilon so we can read back
-        # the number of bins it chose, then initialize Jim with the same count
-        # for an apples-to-apples comparison.
+        # Pin epsilon=0.5 in both implementations so the bin count is
+        # identical and the comparison is not sensitive to default changes.
         bilby_likelihood = (
             bilby.gw.likelihood.RelativeBinningGravitationalWaveTransient(
                 interferometers=setup["bilby_ifos"],
@@ -748,9 +746,9 @@ class TestHeterodynedTransientLikelihoodFD:
                 fiducial_parameters=bilby_ref_params,
                 phase_marginalization=True,
                 priors=priors,
+                epsilon=0.5,
             )
         )
-        n_bins = bilby_likelihood.number_of_bins
 
         jim_likelihood = HeterodynedTransientLikelihoodFD(
             detectors=setup["jim_ifos"],
@@ -758,7 +756,7 @@ class TestHeterodynedTransientLikelihoodFD:
             f_min=F_MIN,
             f_max=F_MAX,
             trigger_time=GPS,
-            n_bins=n_bins,
+            epsilon=0.5,
             reference_parameters=jim_ref_params,
             phase_marginalization=True,
         )

@@ -265,7 +265,9 @@ Enables `HeterodynedTransientLikelihoodFD` (relative binning).
 
 ```toml
 [likelihood.heterodyne]
-n_bins = 1000
+# Binning: specify at most one of the two options below.
+# epsilon = 0.5  # max phase change per bin in rad (default when neither is set)
+# n_bins = 60    # fixed bin count (mutually exclusive with epsilon)
 
 [likelihood.heterodyne.reference_parameters]
 type = "optimizer"   # "optimizer" | "provided" | "injection"

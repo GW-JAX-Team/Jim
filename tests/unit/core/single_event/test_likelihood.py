@@ -18,6 +18,7 @@ from jimgw.core.single_event.transforms import (
 from jimgw.core.single_event.time_utils import (
     greenwich_mean_sidereal_time as compute_gmst,
 )
+from jimgw.core.constants import EARTH_RADIUS_LIGHT_S
 from jimgw.core.prior import CombinePrior, PowerLawPrior, UniformPrior
 from tests.utils import assert_all_finite, common_keys_allclose
 
@@ -1036,14 +1037,12 @@ class TestHeterodynedTransientLikelihoodFD:
             reference_parameters=example_params(),
         )
         assert hasattr(likelihood, "freq_grid_low")
-        assert hasattr(likelihood, "freq_grid_center")
+        assert hasattr(likelihood, "freq_grid_high")
+        assert hasattr(likelihood, "bin_widths")
         for det in ifos:
-            assert det.name in likelihood.A0_array
-            assert det.name in likelihood.A1_array
-            assert det.name in likelihood.B0_array
-            assert det.name in likelihood.B1_array
+            assert det.name in likelihood.summary_data
             assert det.name in likelihood.waveform_low_ref
-            assert det.name in likelihood.waveform_center_ref
+            assert det.name in likelihood.waveform_high_ref
 
     def test_no_reference_params_and_no_prior_raises(self, detectors_and_waveform):
         ifos, waveform, fmin, fmax, gps = detectors_and_waveform
@@ -1081,7 +1080,34 @@ class TestHeterodynedTransientLikelihoodFD:
             trigger_time=gps,
             reference_parameters=example_params(),
         )
+        # Per-detector frequency bounds do not change the reference waveform
+        # support, so the relative-binning grid still starts at the global f_min.
+        assert jnp.isclose(likelihood.freq_grid_low[0], fmin)
         assert jnp.isfinite(likelihood.evaluate(example_params()))
+
+    @pytest.mark.parametrize(
+        ("n_bins", "epsilon", "match"),
+        [
+            (32, 0.5, "mutually exclusive"),
+            (0, None, "positive integer"),
+            (None, 0.0, "positive number"),
+        ],
+    )
+    def test_invalid_binning_parameters_raise(
+        self, detectors_and_waveform, n_bins, epsilon, match
+    ):
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        with pytest.raises(ValueError, match=match):
+            HeterodynedTransientLikelihoodFD(
+                detectors=ifos,
+                waveform=waveform,
+                f_min=fmin,
+                f_max=fmax,
+                trigger_time=gps,
+                n_bins=n_bins,
+                epsilon=epsilon,
+                reference_parameters=example_params(),
+            )
 
     def test_maximize_likelihood(self, detectors_and_waveform):
         ifos, waveform, fmin, fmax, gps = detectors_and_waveform
@@ -1143,6 +1169,68 @@ class TestHeterodynedTransientLikelihoodFD:
         assert jnp.isfinite(likelihood.evaluate(result))
         assert jnp.isclose(float(base.evaluate(result)), ll_injected)
         common_keys_allclose(result, true_params)
+
+    def test_low_frequency_reference_cutoff_does_not_reindex_summary_data(
+        self, detectors_and_waveform, monkeypatch
+    ):
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        reference_fmin = 80.0
+        requested_n_bins = 32
+
+        def fake_compute_coefficients(
+            likelihood, data, h_ref, psd, freqs, f_bins, f_bins_center
+        ):
+            freqs_broadcast = freqs[None, :]
+            left_bounds = f_bins[:-1][:, None]
+            right_bounds = f_bins[1:][:, None]
+
+            mask = (freqs_broadcast >= left_bounds) & (freqs_broadcast < right_bounds)
+
+            n_freqs = len(freqs)
+            n_bins = len(f_bins_center)
+            assert n_freqs > len(f_bins), f"{n_freqs = }, {len(f_bins) = }"
+            assert len(f_bins) == n_bins + 1, f"{len(f_bins) = }, {n_bins = }"
+            assert likelihood.n_bins == n_bins, f"{likelihood.n_bins = }, {n_bins = }"
+            assert n_bins < requested_n_bins
+            assert freqs[0] == fmin
+            assert f_bins[0] >= reference_fmin
+            assert mask.shape == (n_bins, n_freqs), (
+                f"{mask.shape = }, expected: ({n_bins}, {n_freqs})"
+            )
+            coeffs = jnp.arange(n_bins, dtype=jnp.float64)
+            return jnp.array([coeffs + nn * 100 for nn in range(4)])
+
+        monkeypatch.setattr(
+            HeterodynedTransientLikelihoodFD,
+            "_compute_coefficients",
+            fake_compute_coefficients,
+        )
+
+        def reference_waveform(frequencies, params):
+            waveform_sky = waveform(frequencies, params)
+            mask = frequencies >= reference_fmin
+            return {
+                polarization: jnp.where(mask, strain, jnp.zeros_like(strain))
+                for polarization, strain in waveform_sky.items()
+            }
+
+        likelihood = HeterodynedTransientLikelihoodFD(
+            detectors=ifos,
+            waveform=waveform,
+            reference_waveform=reference_waveform,
+            f_min=fmin,
+            f_max=fmax,
+            trigger_time=gps,
+            n_bins=requested_n_bins,
+            reference_parameters=example_params(),
+        )
+        assert likelihood.n_bins < requested_n_bins
+        assert likelihood.freq_grid_low[0] >= reference_fmin
+
+        expected = jnp.arange(likelihood.n_bins, dtype=jnp.float64)
+        expected_arr = jnp.array([expected + nn * 100 for nn in range(4)])
+        for detector in ifos:
+            assert jnp.array_equal(likelihood.summary_data[detector.name], expected_arr)
 
     # ── Phase marginalization ──────────────────────────────────────────────────
 
@@ -1261,6 +1349,109 @@ class TestHeterodynedTransientLikelihoodFD:
 
 class TestMultibandedTransientLikelihoodFD:
     # ── Initialization ────────────────────────────────────────────────────────
+
+    def test_infers_banding_parameters_from_prior(self, detectors_and_waveform):
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        mc_prior = UniformPrior(15.0, 30.0, parameter_names=["M_c"])
+        tc_prior = UniformPrior(-0.1, 0.1, parameter_names=["t_c"])
+        prior = CombinePrior([mc_prior, tc_prior])
+
+        likelihood = MultibandedTransientLikelihoodFD(
+            detectors=ifos,
+            waveform=waveform,
+            f_min=fmin,
+            f_max=fmax,
+            trigger_time=gps,
+            prior=prior,
+        )
+
+        t_end = min(
+            float(ifo.data.start_time) + float(ifo.data.duration) - gps for ifo in ifos
+        )
+        expected_time_offset = t_end - tc_prior.xmin + EARTH_RADIUS_LIGHT_S
+        expected_delta_f_end = 100.0 / (t_end - tc_prior.xmax - EARTH_RADIUS_LIGHT_S)
+
+        assert likelihood.reference_chirp_mass == mc_prior.xmin
+        assert jnp.isclose(likelihood.time_offset, expected_time_offset)
+        assert jnp.isclose(likelihood.delta_f_end, expected_delta_f_end)
+
+    @pytest.mark.parametrize(
+        ("prior", "match"),
+        [
+            (None, "Either reference_chirp_mass or a prior"),
+            (
+                CombinePrior([UniformPrior(-0.1, 0.1, parameter_names=["t_c"])]),
+                "no M_c prior found",
+            ),
+        ],
+    )
+    def test_missing_reference_chirp_mass_raises(
+        self, detectors_and_waveform, prior, match
+    ):
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        with pytest.raises(ValueError, match=match):
+            MultibandedTransientLikelihoodFD(
+                detectors=ifos,
+                waveform=waveform,
+                f_min=fmin,
+                f_max=fmax,
+                trigger_time=gps,
+                prior=prior,
+            )
+
+    @pytest.mark.parametrize(
+        ("kwargs", "match"),
+        [
+            ({"reference_chirp_mass": 0.0}, "reference_chirp_mass"),
+            ({"highest_mode": 0}, "highest_mode"),
+            ({"accuracy_factor": 0.0}, "accuracy_factor"),
+            ({"time_offset": -1.0}, "time_offset"),
+            ({"delta_f_end": 0.0}, "delta_f_end"),
+            ({"min_banding_duration": -1.0}, "min_banding_duration"),
+            ({"max_banding_frequency": 0.0}, "max_banding_frequency"),
+        ],
+    )
+    def test_invalid_banding_parameters_raise(
+        self, detectors_and_waveform, kwargs, match
+    ):
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        params = {"reference_chirp_mass": 20.0, **kwargs}
+        with pytest.raises(ValueError, match=match):
+            MultibandedTransientLikelihoodFD(
+                detectors=ifos,
+                waveform=waveform,
+                f_min=fmin,
+                f_max=fmax,
+                trigger_time=gps,
+                **params,
+            )
+
+    def test_frequency_band_helpers_create_multiple_bands(self, detectors_and_waveform):
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        likelihood = MultibandedTransientLikelihoodFD(
+            detectors=ifos,
+            waveform=waveform,
+            f_min=fmin,
+            f_max=fmax,
+            trigger_time=gps,
+            reference_chirp_mass=20.0,
+            time_offset=0.0,
+        )
+
+        tau, dtaudf = likelihood._compute_tau_dtaudf(100.0)
+        fnext, dfnext = likelihood._find_starting_frequency(4.0, fmin)
+        no_fnext, no_dfnext = likelihood._find_starting_frequency(
+            4.0, likelihood.max_banding_frequency
+        )
+
+        assert tau > 0
+        assert dtaudf < 0
+        assert fnext is not None
+        assert dfnext is not None
+        assert fmin < fnext < likelihood.max_banding_frequency
+        assert dfnext > 0
+        assert (no_fnext, no_dfnext) == (None, None)
+        assert likelihood.n_bands > 1
 
     def test_initialization(self, detectors_and_waveform):
         ifos, waveform, fmin, fmax, gps = detectors_and_waveform

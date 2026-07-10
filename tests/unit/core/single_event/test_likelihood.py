@@ -1178,8 +1178,9 @@ class TestHeterodynedTransientLikelihoodFD:
         requested_n_bins = 32
 
         def fake_compute_coefficients(
-            likelihood, data, h_ref, psd, freqs, f_bins, f_bins_center
+            likelihood, detector, h_ref, f_bins
         ):
+            freqs = detector.sliced_frequencies
             freqs_broadcast = freqs[None, :]
             left_bounds = f_bins[:-1][:, None]
             right_bounds = f_bins[1:][:, None]
@@ -1187,9 +1188,8 @@ class TestHeterodynedTransientLikelihoodFD:
             mask = (freqs_broadcast >= left_bounds) & (freqs_broadcast < right_bounds)
 
             n_freqs = len(freqs)
-            n_bins = len(f_bins_center)
+            n_bins = len(f_bins) - 1
             assert n_freqs > len(f_bins), f"{n_freqs = }, {len(f_bins) = }"
-            assert len(f_bins) == n_bins + 1, f"{len(f_bins) = }, {n_bins = }"
             assert likelihood.n_bins == n_bins, f"{likelihood.n_bins = }, {n_bins = }"
             assert n_bins < requested_n_bins
             assert freqs[0] == fmin

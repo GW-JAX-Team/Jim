@@ -813,7 +813,7 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         masked_frequencies = frequencies[valid_mask]
         self.freq_grid_low = masked_frequencies[:-1]
         self.freq_grid_high = masked_frequencies[1:]
-        self.nbins = len(masked_frequencies) - 1
+        self.n_bins = len(masked_frequencies) - 1
         self.bin_widths = self.freq_grid_high - self.freq_grid_low
 
         return masked_frequencies

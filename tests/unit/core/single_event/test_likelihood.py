@@ -1171,67 +1171,67 @@ class TestHeterodynedTransientLikelihoodFD:
         assert jnp.isclose(float(base.evaluate(result)), ll_injected)
         common_keys_allclose(result, true_params)
 
-    # def test_low_frequency_reference_cutoff_does_not_reindex_summary_data(
-    #     self, detectors_and_waveform, monkeypatch
-    # ):
-    #     ifos, waveform, fmin, fmax, gps = detectors_and_waveform
-    #     reference_fmin = 80.0
-    #     requested_n_bins = 32
+    def test_low_frequency_reference_cutoff_does_not_reindex_summary_data(
+        self, detectors_and_waveform, monkeypatch
+    ):
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        reference_fmin = 80.0
+        requested_n_bins = 32
 
-    #     def fake_compute_coefficients(
-    #         likelihood, detector, h_ref, f_bins
-    #     ):
-    #         freqs = detector.sliced_frequencies
-    #         freqs_broadcast = freqs[None, :]
-    #         left_bounds = f_bins[:-1][:, None]
-    #         right_bounds = f_bins[1:][:, None]
+        def fake_compute_coefficients(
+            likelihood, detector, h_ref, f_bins
+        ):
+            freqs = detector.sliced_frequencies
+            freqs_broadcast = freqs[None, :]
+            left_bounds = f_bins[:-1][:, None]
+            right_bounds = f_bins[1:][:, None]
 
-    #         mask = (freqs_broadcast >= left_bounds) & (freqs_broadcast < right_bounds)
+            mask = (freqs_broadcast >= left_bounds) & (freqs_broadcast < right_bounds)
 
-    #         n_freqs = len(freqs)
-    #         n_bins = len(f_bins) - 1
-    #         assert n_freqs > len(f_bins), f"{n_freqs = }, {len(f_bins) = }"
-    #         assert likelihood.n_bins == n_bins, f"{likelihood.n_bins = }, {n_bins = }"
-    #         assert n_bins <= requested_n_bins
-    #         assert freqs[0] == fmin
-    #         assert f_bins[0] >= reference_fmin
-    #         assert mask.shape == (n_bins, n_freqs), (
-    #             f"{mask.shape = }, expected: ({n_bins}, {n_freqs})"
-    #         )
-    #         coeffs = jnp.arange(n_bins, dtype=jnp.float64)
-    #         return jnp.array([coeffs + nn * 100 for nn in range(4)])
+            n_freqs = len(freqs)
+            n_bins = len(f_bins) - 1
+            assert n_freqs > len(f_bins), f"{n_freqs = }, {len(f_bins) = }"
+            assert likelihood.n_bins == n_bins, f"{likelihood.n_bins = }, {n_bins = }"
+            assert n_bins <= requested_n_bins
+            assert freqs[0] == fmin
+            assert f_bins[0] >= reference_fmin
+            assert mask.shape == (n_bins, n_freqs), (
+                f"{mask.shape = }, expected: ({n_bins}, {n_freqs})"
+            )
+            coeffs = jnp.arange(n_bins, dtype=jnp.float64)
+            return jnp.array([coeffs + nn * 100 for nn in range(4)])
 
-    #     monkeypatch.setattr(
-    #         HeterodynedTransientLikelihoodFD,
-    #         "_compute_coefficients",
-    #         fake_compute_coefficients,
-    #     )
+        monkeypatch.setattr(
+            HeterodynedTransientLikelihoodFD,
+            "_compute_coefficients",
+            fake_compute_coefficients,
+        )
 
-    #     def reference_waveform(frequencies, params):
-    #         waveform_sky = waveform(frequencies, params)
-    #         mask = frequencies >= reference_fmin
-    #         return {
-    #             polarization: jnp.where(mask, strain, jnp.zeros_like(strain))
-    #             for polarization, strain in waveform_sky.items()
-    #         }
+        def reference_waveform(frequencies, params):
+            waveform_sky = waveform(frequencies, params)
+            mask = frequencies >= reference_fmin
+            return {
+                polarization: jnp.where(mask, strain, jnp.zeros_like(strain))
+                for polarization, strain in waveform_sky.items()
+            }
 
-    #     likelihood = HeterodynedTransientLikelihoodFD(
-    #         detectors=ifos,
-    #         waveform=waveform,
-    #         reference_waveform=reference_waveform,
-    #         f_min=fmin,
-    #         f_max=fmax,
-    #         trigger_time=gps,
-    #         n_bins=requested_n_bins,
-    #         reference_parameters=example_params(),
-    #     )
-    #     assert likelihood.n_bins < requested_n_bins
-    #     assert likelihood.freq_grid_low[0] >= reference_fmin
+        likelihood = HeterodynedTransientLikelihoodFD(
+            detectors=ifos,
+            waveform=waveform,
+            reference_waveform=reference_waveform,
+            f_min=fmin,
+            f_max=fmax,
+            trigger_time=gps,
+            n_bins=requested_n_bins,
+            reference_parameters=example_params(),
+        )
+        assert likelihood.n_bins < requested_n_bins
+        assert likelihood.freq_grid_low[0] >= reference_fmin
 
-    #     expected = jnp.arange(likelihood.n_bins, dtype=jnp.float64)
-    #     expected_arr = jnp.array([expected + nn * 100 for nn in range(4)])
-    #     for detector in ifos:
-    #         assert jnp.array_equal(likelihood.summary_data[detector.name], expected_arr)
+        expected = jnp.arange(likelihood.n_bins, dtype=jnp.float64)
+        expected_arr = jnp.array([expected + nn * 100 for nn in range(4)])
+        for detector in ifos:
+            assert jnp.array_equal(likelihood.summary_data[detector.name], expected_arr)
 
     # ── Phase marginalization ──────────────────────────────────────────────────
 

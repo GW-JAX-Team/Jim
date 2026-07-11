@@ -859,11 +859,11 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
 
         # Broadcasting for 2D frequencies
         freqs_broadcast = freqs[None, :]  # Shape: (1, n_freq)
-        freq_bins_left = self.freq_grid_low[:, None]  # Shpae: (n_bins, 1)
-        freq_bins_right = self.freq_grid_high[:, None]  # Shape: (n_bins, 1)
+        freq_bins_left = self.freq_grid_low[:, None]  # Shpae: (n_valid, 1)
+        freq_bins_right = self.freq_grid_high[:, None]  # Shape: (n_valid, 1)
         freq_bins_center = (freq_bins_left + freq_bins_right) / 2
 
-        # Shape: (n_bins, n_freq)
+        # Shape: (n_valid, n_freq)
         mask = (freqs_broadcast >= freq_bins_left) & (freqs_broadcast < freq_bins_right)
         # The half-open interval [left, right) excludes any frequency that lands
         # exactly on the upper edge of the last bin (f_bins[-1]).  This happens
@@ -873,7 +873,7 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         mask = mask.at[-1].set(mask[-1] | (freqs == f_bins[-1]))
         freq_shift_matrix = (freqs_broadcast - freq_bins_center) * mask
 
-        # The resultant arrays have shape (n_bins), the dimension with "n_freq" is summed over.
+        # The resultant arrays have shape (n_valid), the dimension with "n_freq" is summed over.
         summary_data = jnp.array(
             [
                 jnp.sum(data_prod[None, :] * mask, axis=1),  # A0

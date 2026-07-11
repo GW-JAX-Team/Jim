@@ -7,8 +7,7 @@ from jax.scipy.special import logsumexp
 from jaxtyping import Array, Float, Complex
 from jimgw.typing import ComplexScalar, FloatLike, FloatScalar
 from scipy.interpolate import interp1d
-
-# from evosax.algorithms import CMA_ES
+from evosax.algorithms import CMA_ES
 from ripplegw.interfaces import Waveform
 
 from jimgw.core.utils import log_i0, round_up_to_power_of_two

@@ -665,7 +665,6 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         self.waveform_high_ref = {}
         self.summary_data = {}
 
-        frequency_original = self.frequencies
         if n_bins is not None:
             if epsilon is not None:
                 raise ValueError(
@@ -691,8 +690,8 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
                 n_bins = max(1, int(float(phase[-1]) / epsilon))
         assert isinstance(n_bins, int)
         freq_grid = self._make_binning_scheme(self.frequencies, n_bins=n_bins)
-        ref_hpc = reference_waveform(self.frequencies, self.reference_parameters)
 
+        ref_hpc = reference_waveform(self.frequencies, self.reference_parameters)
         masked_freq_grid = self._mask_and_set_frequency_arrays(ref_hpc, freq_grid)
 
         hpc_low = reference_waveform(self.freq_grid_low, self.reference_parameters)
@@ -773,7 +772,7 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         freqs: Float[Array, " n_freq"],
         n_bins: int,
         chi: float = 1.0,
-    ) -> Float[Array, " n_bins + 1"]:
+    ) -> Float[Array, " n_bins+1"]:
         """Make ``n_bins`` frequency bins of equal phase change.
 
         ``n_bins`` must be a positive integer resolved by the caller

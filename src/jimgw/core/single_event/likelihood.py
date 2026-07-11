@@ -858,8 +858,8 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
 
         # Broadcasting for 2D frequencies
         freqs_broadcast = freqs[None, :]  # Shape: (1, n_freq)
-        freq_bins_left = freqs[:-1][:, None]  # Shpae: (n_valid, 1)
-        freq_bins_right = freqs[1:][:, None]  # Shape: (n_valid, 1)
+        freq_bins_left = f_bins[:-1][:, None]  # Shpae: (n_valid, 1)
+        freq_bins_right = f_bins[1:][:, None]  # Shape: (n_valid, 1)
         freq_bins_center = (freq_bins_left + freq_bins_right) / 2
 
         # Shape: (n_valid, n_freq)

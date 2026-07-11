@@ -7,6 +7,7 @@ from jax.scipy.special import logsumexp
 from jaxtyping import Array, Float, Complex
 from jimgw.typing import ComplexScalar, FloatLike, FloatScalar
 from scipy.interpolate import interp1d
+
 # from evosax.algorithms import CMA_ES
 from ripplegw.interfaces import Waveform
 
@@ -690,9 +691,7 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
                 )
                 n_bins = max(1, int(float(phase[-1]) / epsilon))
         assert isinstance(n_bins, int)
-        freq_grid = self._make_binning_scheme(
-            self.frequencies, n_bins=n_bins
-        )
+        freq_grid = self._make_binning_scheme(self.frequencies, n_bins=n_bins)
         ref_hpc = reference_waveform(self.frequencies, self.reference_parameters)
 
         masked_freq_grid = self._mask_and_set_frequency_arrays(ref_hpc, freq_grid)
@@ -788,28 +787,29 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         return jnp.array(f_bins)
 
     def _mask_and_set_frequency_arrays(
-        self, 
-        waveform: dict[str, Complex[Array, " n_freq"]], 
-        frequencies: Float[Array, " n_freq"]
+        self,
+        waveform: dict[str, Complex[Array, " n_freq"]],
+        frequencies: Float[Array, " n_freq"],
     ) -> Float[Array, " n_valid+1"]:
-        '''
+        """
         Mask out trivial waveform pieces which are usually beyond merger frequency.
 
-        This is to avoid creating NaNs from 0/0 when computing the r0 and r1, 
+        This is to avoid creating NaNs from 0/0 when computing the r0 and r1,
         where the ratios between waveforms are taken.
 
         Remark:
-            The following operations change array shapes dynamically, which is 
-            not jittable. In the future, if jax.jit is preferable, this has to 
+            The following operations change array shapes dynamically, which is
+            not jittable. In the future, if jax.jit is preferable, this has to
             be scrapped, and then when computing the likelihood (inside _likelihood),
             replace jnp.sum with jnp.nansum.
             The current implementation has the advantage of greatly reducing memory
             usage when the detector f_max is larger than merger frequency.
-        '''
+        """
         h_amp = jnp.array([jnp.abs(p) for p in waveform.values()]).sum(axis=0)
         _valid_frequencies = self.frequencies[h_amp > 0]
-        valid_mask = (frequencies >= _valid_frequencies[0]) & \
-            (frequencies <= _valid_frequencies[-1])
+        valid_mask = (frequencies >= _valid_frequencies[0]) & (
+            frequencies <= _valid_frequencies[-1]
+        )
 
         masked_frequencies = frequencies[valid_mask]
         self.freq_grid_low = masked_frequencies[:-1]

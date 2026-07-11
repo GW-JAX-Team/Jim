@@ -883,7 +883,7 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
             ]
         )
 
-        return 4 * summary_data / detector.duration
+        return 4 / detector.duration * summary_data
 
     def maximize_likelihood(
         self,

@@ -7,7 +7,7 @@ from jax.scipy.special import logsumexp
 from jaxtyping import Array, Float, Complex
 from jimgw.typing import ComplexScalar, FloatLike, FloatScalar
 from scipy.interpolate import interp1d
-from evosax.algorithms import CMA_ES
+# from evosax.algorithms import CMA_ES
 from ripplegw.interfaces import Waveform
 
 from jimgw.core.utils import log_i0, round_up_to_power_of_two
@@ -552,12 +552,12 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
     n_bins: int
     epsilon: float
     reference_parameters: dict
-    freq_grid_low: Float[Array, " n_bins"]
-    freq_grid_high: Float[Array, " n_bins"]
-    bin_widths: Float[Array, " n_bins"]
-    waveform_low_ref: dict[str, Complex[Array, " n_bins"]]
-    waveform_high_ref: dict[str, Complex[Array, " n_bins"]]
-    summary_data: dict[str, Complex[Array, "4 n_bins"]]
+    freq_grid_low: Float[Array, " n_valid"]
+    freq_grid_high: Float[Array, " n_valid"]
+    bin_widths: Float[Array, " n_valid"]
+    waveform_low_ref: dict[str, Complex[Array, " n_valid"]]
+    waveform_high_ref: dict[str, Complex[Array, " n_valid"]]
+    summary_data: dict[str, Complex[Array, "4 n_valid"]]
 
     def __init__(
         self,
@@ -684,39 +684,37 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
                     f"'epsilon' must be a positive number, got {epsilon!r}."
                 )
             else:
-                freqs_arr = jnp.array(frequency_original)
+                freqs_arr = self.frequencies
                 phase = HeterodynedTransientLikelihoodFD._max_phase_diff(
                     freqs_arr, freqs_arr[0], freqs_arr[-1]
                 )
                 n_bins = max(1, int(float(phase[-1]) / epsilon))
         assert isinstance(n_bins, int)
-        self.n_bins = n_bins
         freq_grid = self._make_binning_scheme(
-            jnp.array(frequency_original), n_bins=self.n_bins
+            self.frequencies, n_bins=n_bins
         )
-        self.freq_grid_low = freq_grid[:-1]
-        self.freq_grid_high = freq_grid[1:]
-        self.bin_widths = self.freq_grid_high - self.freq_grid_low
-        h_sky = reference_waveform(frequency_original, self.reference_parameters)
+        ref_hpc = reference_waveform(self.frequencies, self.reference_parameters)
 
-        h_sky_low = reference_waveform(self.freq_grid_low, self.reference_parameters)
-        h_sky_high = reference_waveform(self.freq_grid_high, self.reference_parameters)
+        masked_freq_grid = self._mask_and_set_frequency_arrays(ref_hpc, freq_grid)
+
+        hpc_low = reference_waveform(self.freq_grid_low, self.reference_parameters)
+        hpc_high = reference_waveform(self.freq_grid_high, self.reference_parameters)
 
         for i, detector in enumerate(self.detectors):
-            h_sky_ifo = {key: h_sky[key][self.frequency_masks[i]] for key in h_sky}
+            hpc_ifo = {key: ref_hpc[key][self.frequency_masks[i]] for key in ref_hpc}
             waveform_ref = detector.fd_response(
-                detector.sliced_frequencies, h_sky_ifo, self.reference_parameters
+                detector.sliced_frequencies, hpc_ifo, self.reference_parameters
             )
             self.waveform_low_ref[detector.name] = detector.fd_response(
-                self.freq_grid_low, h_sky_low, self.reference_parameters
+                self.freq_grid_low, hpc_low, self.reference_parameters
             )
             self.waveform_high_ref[detector.name] = detector.fd_response(
-                self.freq_grid_high, h_sky_high, self.reference_parameters
+                self.freq_grid_high, hpc_high, self.reference_parameters
             )
             self.summary_data[detector.name] = self._compute_coefficients(
                 detector,
                 waveform_ref,
-                freq_grid,
+                masked_freq_grid,
             )
 
     def evaluate(self, params: dict[str, Float]) -> FloatScalar:
@@ -772,6 +770,55 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
 
         return log_likelihood
 
+    def _make_binning_scheme(
+        self,
+        freqs: Float[Array, " n_freq"],
+        n_bins: int,
+        chi: float = 1.0,
+    ) -> Float[Array, " n_bins + 1"]:
+        """Make ``n_bins`` frequency bins of equal phase change.
+
+        ``n_bins`` must be a positive integer resolved by the caller
+        (see :meth:`__init__`).
+        """
+        phase_diff_array = self._max_phase_diff(freqs, freqs[0], freqs[-1], chi=chi)
+        total_phase = phase_diff_array[-1]
+        phase_diff = jnp.linspace(0.0, total_phase, n_bins + 1)
+        f_bins = interp1d(phase_diff_array, freqs)(phase_diff)
+        return jnp.array(f_bins)
+
+    def _mask_and_set_frequency_arrays(
+        self, 
+        waveform: dict[str, Complex[Array, " n_freq"]], 
+        frequencies: Float[Array, " n_freq"]
+    ) -> Float[Array, " n_valid+1"]:
+        '''
+        Mask out trivial waveform pieces which are usually beyond merger frequency.
+
+        This is to avoid creating NaNs from 0/0 when computing the r0 and r1, 
+        where the ratios between waveforms are taken.
+
+        Remark:
+            The following operations change array shapes dynamically, which is 
+            not jittable. In the future, if jax.jit is preferable, this has to 
+            be scrapped, and then when computing the likelihood (inside _likelihood),
+            replace jnp.sum with jnp.nansum.
+            The current implementation has the advantage of greatly reducing memory
+            usage when the detector f_max is larger than merger frequency.
+        '''
+        h_amp = jnp.array([jnp.abs(p) for p in waveform.values()]).sum(axis=0)
+        _valid_frequencies = self.frequencies[h_amp > 0]
+        valid_mask = (frequencies >= _valid_frequencies[0]) & \
+            (frequencies <= _valid_frequencies[-1])
+
+        masked_frequencies = frequencies[valid_mask]
+        self.freq_grid_low = masked_frequencies[:-1]
+        self.freq_grid_high = masked_frequencies[1:]
+        self.nbins = len(masked_frequencies) - 1
+        self.bin_widths = self.freq_grid_high - self.freq_grid_low
+
+        return masked_frequencies
+
     @staticmethod
     def _max_phase_diff(
         freqs: Float[Array, " n_freq"],
@@ -798,29 +845,12 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         dphi = 2 * jnp.pi * chi * jnp.sum(summand, axis=1)
         return dphi - dphi[0]
 
-    def _make_binning_scheme(
-        self,
-        freqs: Float[Array, " n_freq"],
-        n_bins: int,
-        chi: float = 1.0,
-    ) -> Float[Array, " n_bins + 1"]:
-        """Make ``n_bins`` frequency bins of equal phase change.
-
-        ``n_bins`` must be a positive integer resolved by the caller
-        (see :meth:`__init__`).
-        """
-        phase_diff_array = self._max_phase_diff(freqs, freqs[0], freqs[-1], chi=chi)
-        total_phase = phase_diff_array[-1]
-        phase_diff = jnp.linspace(0.0, total_phase, n_bins + 1)
-        f_bins = interp1d(phase_diff_array, freqs)(phase_diff)
-        return jnp.array(f_bins)
-
     @staticmethod
     def _compute_coefficients(
         detector: Detector,
         h_ref: Complex[Array, " n_freq"],
-        f_bins: Float[Array, " n_bins+1"],
-    ) -> Complex[Array, "4 n_bins"]:
+        f_bins: Float[Array, " n_valid+1"],
+    ) -> Complex[Array, "4 n_valid"]:
         data = detector.sliced_fd_data
         psd = detector.sliced_psd
         freqs = detector.sliced_frequencies
@@ -830,8 +860,8 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
 
         # Broadcasting for 2D frequencies
         freqs_broadcast = freqs[None, :]  # Shape: (1, n_freq)
-        freq_bins_left = f_bins[:-1][:, None]  # Shpae: (n_bins, 1)
-        freq_bins_right = f_bins[1:][:, None]  # Shape: (n_bins, 1)
+        freq_bins_left = self.freq_grid_low[:, None]  # Shpae: (n_bins, 1)
+        freq_bins_right = self.freq_grid_high[:, None]  # Shape: (n_bins, 1)
         freq_bins_center = (freq_bins_left + freq_bins_right) / 2
 
         # Shape: (n_bins, n_freq)
@@ -854,7 +884,7 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
             ]
         )
 
-        return 4 / detector.duration * summary_data
+        return 4 * summary_data / detector.duration
 
     def maximize_likelihood(
         self,

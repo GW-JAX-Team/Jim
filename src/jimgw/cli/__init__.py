@@ -207,6 +207,7 @@ def run(
         trigger_time,
         cfg.waveform.f_ref,
         prior=prior,
+        prior_config=cfg.prior,
         likelihood_transforms=likelihood_transforms,
         data_cfg=cfg.data,
         time_frame=cfg.sampling.time_frame,

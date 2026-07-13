@@ -285,7 +285,15 @@ n_steps = 1000
 
 Enables `MultibandedTransientLikelihoodFD` (geometric frequency banding).
 
-All fields are optional; when omitted, defaults are chosen adaptively based on the data and prior.
+All fields are optional. The CLI infers `reference_chirp_mass` from a bounded
+`M_c` `uniform` or `power_law` prior; set it explicitly when that is not
+available. It similarly derives `time_offset` and `delta_f_end` from bounded
+time priors, falling back to `2.12` s and `53` Hz. Explicit fields override
+only their own inferred value.
+
+> **Detector-frame time bounds:** When CLI sampling uses trigger-relative
+> `t_det`, its bounds are converted for multibanding with the same
+> bilby_pipe-style Earth-light-travel-time buffer convention.
 
 ---
 

@@ -64,9 +64,13 @@ waveform = IMRPhenomXAS_NRTidalv3(f_ref=20)
 
 # --- Prior ---
 
+# Multibanding must cover the longest waveform in the analysis, so use the
+# lower chirp-mass bound as its explicit reference mass.
+reference_chirp_mass = 1.197
+
 prior = CombinePrior(
     [
-        UniformPrior(1.197, 1.199, parameter_names=["M_c"]),
+        UniformPrior(reference_chirp_mass, 1.199, parameter_names=["M_c"]),
         UniformPrior(0.125, 1.0, parameter_names=["q"]),
         UniformPrior(-0.05, 0.05, parameter_names=["s1_z"]),
         UniformPrior(-0.05, 0.05, parameter_names=["s2_z"]),
@@ -101,7 +105,7 @@ likelihood = MultibandedTransientLikelihoodFD(
     f_min=fmin,
     f_max=fmax,
     trigger_time=gps,
-    prior=prior,
+    reference_chirp_mass=reference_chirp_mass,
 )
 
 # --- Sample ---

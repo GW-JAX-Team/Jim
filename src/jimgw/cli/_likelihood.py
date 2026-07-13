@@ -1,4 +1,5 @@
 import logging
+import math
 from typing import Optional, Union
 
 import jax.numpy as jnp
@@ -6,10 +7,14 @@ from ripplegw.interfaces import Waveform
 
 from jimgw.cli._config import (
     CLIInjectionRefParams,
+    CLIMultibandedConfig,
     CLIOptimizerRefParams,
     CLIProvidedRefParams,
     DataConfig,
     LikelihoodConfig,
+    PowerLawSpec,
+    PriorConfig,
+    UniformSpec,
 )
 from jimgw.cli._transforms import to_likelihood_space
 from jimgw.cli._prior import build_prior
@@ -30,6 +35,112 @@ from jimgw.core.transforms import NtoMTransform
 
 logger = logging.getLogger(__name__)
 
+_DEFAULT_MULTIBAND_TIME_OFFSET = 2.12
+_DEFAULT_MULTIBAND_DELTA_F_END = 53.0
+
+
+def _finite_bounds(
+    prior_config: PriorConfig, parameter_name: str
+) -> Optional[tuple[float, float]]:
+    """Return finite bounds for a CLI prior parameter when they are explicit."""
+    spec = prior_config.root.get(parameter_name)
+    if not isinstance(spec, (UniformSpec, PowerLawSpec)):
+        return None
+    if not (math.isfinite(spec.min) and math.isfinite(spec.max)):
+        return None
+    return float(spec.min), float(spec.max)
+
+
+def _resolve_multiband_settings(
+    config: CLIMultibandedConfig,
+    prior_config: PriorConfig,
+    ifos: list[GroundBased2G],
+    trigger_time: float,
+    time_frame: str,
+) -> tuple[float, float, float]:
+    """Resolve CLI multiband settings without passing the sampling prior to core."""
+    reference_chirp_mass = config.reference_chirp_mass
+    if reference_chirp_mass is None:
+        mc_bounds = _finite_bounds(prior_config, "M_c")
+        if mc_bounds is None:
+            raise ValueError(
+                "multiband.reference_chirp_mass must be set when [prior].M_c "
+                "is not a finite bounded uniform or power_law prior."
+            )
+        reference_chirp_mass = mc_bounds[0]
+        logger.info(
+            "reference_chirp_mass inferred from M_c prior minimum: %.4f M_sun",
+            reference_chirp_mass,
+        )
+
+    time_offset = config.time_offset
+    delta_f_end = config.delta_f_end
+    if time_offset is not None and delta_f_end is not None:
+        return reference_chirp_mass, time_offset, delta_f_end
+
+    time_parameter = "t_c"
+    time_bounds = _finite_bounds(prior_config, time_parameter)
+    if time_bounds is not None:
+        t_end = min(
+            float(ifo.data.start_time) + float(ifo.data.duration) - trigger_time
+            for ifo in ifos
+        )
+    else:
+        time_parameter = "t_det"
+        time_bounds = _finite_bounds(prior_config, time_parameter)
+        if time_bounds is not None:
+            # Preserve the bilby_pipe-style detector-time convention used by the
+            # CLI's NS-AW t_c -> t_det adaptation.
+            ref_ifo = (
+                ifos[0]
+                if time_frame == "detector"
+                else next(ifo for ifo in ifos if ifo.name == time_frame)
+            )
+            t_end = (
+                float(ref_ifo.data.start_time)
+                + float(ref_ifo.data.duration)
+                - trigger_time
+            )
+
+    if time_bounds is not None:
+        time_min, time_max = time_bounds
+        if time_offset is None:
+            time_offset = t_end - time_min + EARTH_RADIUS_LIGHT_S
+            logger.info(
+                "time_offset inferred from %s prior: %.4f s",
+                time_parameter,
+                time_offset,
+            )
+        if delta_f_end is None:
+            denom = t_end - time_max - EARTH_RADIUS_LIGHT_S
+            if denom <= 0:
+                raise ValueError(
+                    f"Cannot infer delta_f_end from {time_parameter} prior: "
+                    f"t_end - xmax - s = {t_end:.4f} - {time_max:.4f} - "
+                    f"{EARTH_RADIUS_LIGHT_S:.6f} = {denom:.6f} <= 0. "
+                    "Check that the time prior upper bound is well within the data segment."
+                )
+            delta_f_end = 100.0 / denom
+            logger.info(
+                "delta_f_end inferred from %s prior: %.4f Hz",
+                time_parameter,
+                delta_f_end,
+            )
+
+    if time_offset is None:
+        time_offset = _DEFAULT_MULTIBAND_TIME_OFFSET
+        logger.warning(
+            "time_offset cannot be inferred from prior; using default %.2f s",
+            time_offset,
+        )
+    if delta_f_end is None:
+        delta_f_end = _DEFAULT_MULTIBAND_DELTA_F_END
+        logger.warning(
+            "delta_f_end cannot be inferred from prior; using default %.1f Hz",
+            delta_f_end,
+        )
+    return reference_chirp_mass, time_offset, delta_f_end
+
 
 def build_likelihood(
     cfg: LikelihoodConfig,
@@ -39,6 +150,7 @@ def build_likelihood(
     waveform_f_ref: float,
     time_frame: str,
     prior: CombinePrior,
+    prior_config: PriorConfig,
     likelihood_transforms: list[NtoMTransform],
     data_cfg: DataConfig,
 ) -> Union[
@@ -49,9 +161,9 @@ def build_likelihood(
     """Build a likelihood from the validated likelihood config.
 
     Uses ``HeterodynedTransientLikelihoodFD`` when ``cfg.heterodyne`` is set,
-    otherwise falls back to ``TransientLikelihoodFD``.  ``prior`` and
-    ``likelihood_transforms`` are required for the heterodyne case (the optimizer
-    needs them to find reference parameters).
+    otherwise falls back to ``TransientLikelihoodFD``. ``prior`` and
+    ``likelihood_transforms`` are required for the heterodyne case; ``prior_config``
+    is used only to resolve automatic multiband settings.
 
     ``data_cfg`` is only used when ``cfg.heterodyne.reference_parameters.type =
     "injection"`` — it must be an ``InjectionDataConfig`` in that case.
@@ -126,68 +238,22 @@ def build_likelihood(
 
     if cfg.multiband is not None:
         mb = cfg.multiband
-
-        # MultibandedTransientLikelihoodFD._infer_time_offsets only searches for
-        # t_c. When the NS-AW sampler is used it renames t_c → t_det in the built
-        # prior (same relative-offset bounds). Detect that here and compute
-        # time_offset / delta_f_end explicitly so auto-inference works correctly.
-        mb_time_offset = mb.time_offset
-        mb_delta_f_end = mb.delta_f_end
-        if (mb_time_offset is None or mb_delta_f_end is None) and (
-            "t_c" not in prior.parameter_names and "t_det" in prior.parameter_names
-        ):
-            tdet_comp = next(
-                (
-                    p
-                    for p in prior.base_prior
-                    if "t_det" in p.parameter_names and hasattr(p, "xmin")
-                ),
-                None,
-            )
-            if tdet_comp is not None:
-                ref_ifo = (
-                    ifos[0]
-                    if time_frame == "detector"
-                    else next(ifo for ifo in ifos if ifo.name == time_frame)
-                )
-                t_end = (
-                    float(ref_ifo.data.start_time)
-                    + float(ref_ifo.data.duration)
-                    - trigger_time
-                )
-                s = EARTH_RADIUS_LIGHT_S
-                if mb_time_offset is None:
-                    mb_time_offset = t_end - float(getattr(tdet_comp, "xmin")) + s
-                    logger.info(
-                        "time_offset inferred from t_det prior: %.4f s", mb_time_offset
-                    )
-                if mb_delta_f_end is None:
-                    xmax = float(getattr(tdet_comp, "xmax"))
-                    denom = t_end - xmax - s
-                    if denom <= 0:
-                        raise ValueError(
-                            f"Cannot infer delta_f_end from t_det prior: "
-                            f"t_end - xmax - s = {t_end:.4f} - {xmax:.4f} - {s:.6f} = {denom:.6f} <= 0. "
-                            "Check that the t_det prior upper bound is well within the data segment."
-                        )
-                    mb_delta_f_end = 100.0 / denom
-                    logger.info(
-                        "delta_f_end inferred from t_det prior: %.4f Hz", mb_delta_f_end
-                    )
+        reference_chirp_mass, time_offset, delta_f_end = _resolve_multiband_settings(
+            mb, prior_config, ifos, trigger_time, time_frame
+        )
 
         likelihood = MultibandedTransientLikelihoodFD(
             detectors=ifos,
             waveform=waveform,
+            reference_chirp_mass=reference_chirp_mass,
             fixed_parameters=fixed_params,
             f_min=cfg.f_min,
             f_max=cfg.f_max,
             trigger_time=trigger_time,
             highest_mode=mb.highest_mode,
             accuracy_factor=mb.accuracy_factor,
-            prior=prior,
-            reference_chirp_mass=mb.reference_chirp_mass,
-            time_offset=mb_time_offset,
-            delta_f_end=mb_delta_f_end,
+            time_offset=time_offset,
+            delta_f_end=delta_f_end,
             max_banding_frequency=mb.max_banding_frequency,
             min_banding_duration=mb.min_banding_duration,
         )

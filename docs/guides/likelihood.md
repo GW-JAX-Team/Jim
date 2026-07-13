@@ -203,9 +203,8 @@ The optimiser runs `evosax.CMA_ES` with a JAX-native ask/tell loop, so the wavef
 
 ### MultibandedTransientLikelihoodFD
 
-`MultibandedTransientLikelihoodFD` implements the multi-banding method.
-
-Pass a `prior` to let the constructor infer `reference_chirp_mass`, `time_offset`, and `delta_f_end` automatically:
+`MultibandedTransientLikelihoodFD` implements the multi-banding method. Its
+Python API takes explicit banding settings, not a sampling prior:
 
 ```python
 from jimgw.core.single_event.likelihood import MultibandedTransientLikelihoodFD
@@ -216,21 +215,12 @@ likelihood = MultibandedTransientLikelihoodFD(
     f_min=20.0,
     f_max=1024.0,
     trigger_time=gps_time,
-    prior=prior,
+    reference_chirp_mass=1.2,  # use the lowest supported chirp mass
+    # time_offset=2.4,         # defaults to 2.12 s
+    # delta_f_end=50.0,        # defaults to 53 Hz
 )
 ```
 
-Or supply `reference_chirp_mass` explicitly when you do not have a prior object:
-
-```python
-likelihood = MultibandedTransientLikelihoodFD(
-    detectors=[H1, L1],
-    waveform=waveform,
-    f_min=20.0,
-    f_max=1024.0,
-    trigger_time=gps_time,
-    reference_chirp_mass=1.2,
-)
-```
-
-**Choosing `reference_chirp_mass`:** use the **minimum** of your chirp-mass prior. A lower chirp mass means a longer signal and finer frequency resolution; setting the reference to the prior minimum ensures the bands are correct for all systems in the prior.
+Use the minimum chirp mass your analysis permits; lower masses need finer
+frequency resolution. The caller is responsible for deriving this value from
+any sampling prior.

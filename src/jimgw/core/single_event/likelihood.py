@@ -28,7 +28,7 @@ from jimgw.core.single_event.marginalization_config import (
 from jimgw.core.single_event.time_utils import (
     greenwich_mean_sidereal_time as compute_gmst,
 )
-from jimgw.core.constants import MTSUN, EARTH_RADIUS_LIGHT_S
+from jimgw.core.constants import MTSUN
 
 logger = logging.getLogger(__name__)
 
@@ -1028,6 +1028,10 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
     Args:
         detectors (Sequence[Detector]): List of detector objects.
         waveform (Waveform): Waveform model to evaluate.
+        reference_chirp_mass (Float): Conservative reference chirp mass in solar
+            masses used to construct the frequency bands. Smaller values produce
+            more conservative bands; callers should normally use the lower bound
+            of the chirp-mass region they intend to sample.
         fixed_parameters (Optional[dict]): Fixed parameters for the likelihood.
         f_min (Float | dict[str, Float]): Minimum frequency for likelihood
             evaluation, or a dict mapping detector name to per-detector Float.
@@ -1036,17 +1040,9 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
         trigger_time (Float): GPS time of the event trigger.
         highest_mode (int): Maximum magnetic number (default 2, for 22-mode only).
         accuracy_factor (Float): Accuracy parameter L (default 5.0).
-        prior (Optional[Prior]): Combined prior object.  Needed when *reference_chirp_mass*,
-            *time_offset*, or *delta_f_end* are ``None`` so they can be inferred
-            automatically from the prior bounds.
-        reference_chirp_mass (Optional[Float]): Reference chirp mass in solar masses.
-            Use the minimum of your chirp-mass prior for maximum speedup.  When
-            ``None``, the value is inferred from the ``M_c`` component of *prior*.
-        time_offset (Optional[Float]): Time offset in seconds.  When ``None``,
-            inferred from the ``t_c`` (or ``t_{ifo}``) prior range; falls back
-            to 2.12 s with a warning when the prior is unavailable.
-        delta_f_end (Optional[Float]): End frequency taper scale in Hz.  When
-            ``None``, inferred from the ``t_c`` prior range; falls back to 53.0 Hz.
+        time_offset (Float): Time offset for band construction in seconds
+            (default 2.12).
+        delta_f_end (Float): End frequency taper scale in Hz (default 53.0).
         max_banding_frequency (Optional[Float]): Upper limit on band starting frequency.
         min_banding_duration (Float): Minimum duration for bands.
     """
@@ -1073,6 +1069,7 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
         self,
         detectors: Sequence[Detector],
         waveform: Waveform,
+        reference_chirp_mass: float,
         fixed_parameters: Optional[
             dict[str, Float | Callable[[dict[str, Float]], Float | dict[str, Float]]]
         ] = None,
@@ -1081,10 +1078,8 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
         trigger_time: float = 0,
         highest_mode: int = 2,
         accuracy_factor: float = 5.0,
-        prior: Optional[Prior] = None,
-        reference_chirp_mass: Optional[float] = None,
-        time_offset: Optional[float] = None,
-        delta_f_end: Optional[float] = None,
+        time_offset: float = 2.12,
+        delta_f_end: float = 53.0,
         max_banding_frequency: Optional[float] = None,
         min_banding_duration: float = 0.0,
     ):
@@ -1093,12 +1088,6 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
 
         logger.info("Initializing multi-banded likelihood...")
 
-        reference_chirp_mass = self._resolve_reference_chirp_mass(
-            reference_chirp_mass, prior
-        )
-        time_offset, delta_f_end = self._resolve_time_params(
-            time_offset, delta_f_end, prior, float(trigger_time), detectors
-        )
         self._validate_banding_params(
             reference_chirp_mass,
             highest_mode,
@@ -1152,111 +1141,7 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
 
         logger.info("Multi-banding setup complete with %d bands", self.n_bands)
 
-    # ── Prior-inference and validation helpers ────────────────────────────────
-
-    def _find_leaf_prior(self, prior: Prior, param_name: str) -> Optional[Prior]:
-        """Recursively search *prior* for the bounded leaf that owns *param_name*.
-
-        Returns the first component that has ``xmin``/``xmax`` attributes and
-        lists *param_name* in its ``parameter_names``, or ``None`` if not found.
-        """
-        if param_name not in prior.parameter_names:
-            return None
-        if hasattr(prior, "xmin") and hasattr(prior, "xmax"):
-            return prior
-        if hasattr(prior, "base_prior"):
-            components = getattr(prior, "base_prior")
-            if hasattr(components, "__iter__"):
-                for p in components:
-                    result = self._find_leaf_prior(p, param_name)
-                    if result is not None:
-                        return result
-        return None
-
-    def _resolve_reference_chirp_mass(
-        self,
-        reference_chirp_mass: Optional[Float],
-        prior: Optional[Prior],
-    ) -> float:
-        """Return ``reference_chirp_mass``, inferring from the M_c prior minimum when not provided."""
-        if reference_chirp_mass is not None:
-            return reference_chirp_mass
-        if prior is None:
-            raise ValueError(
-                "Either reference_chirp_mass or a prior with an M_c component must be provided."
-            )
-        mc_prior = self._find_leaf_prior(prior, "M_c")
-        if mc_prior is None:
-            raise ValueError(
-                "reference_chirp_mass=None but no M_c prior found. "
-                "Pass either reference_chirp_mass or a prior with an M_c component."
-            )
-        mc_min = float(getattr(mc_prior, "xmin"))
-        logger.info(
-            "reference_chirp_mass inferred from M_c prior minimum: %.4f M_sun", mc_min
-        )
-        return mc_min
-
-    def _resolve_time_params(
-        self,
-        time_offset: Optional[float],
-        delta_f_end: Optional[float],
-        prior: Optional[Prior],
-        trigger_time: float,
-        detectors: Sequence[Detector],
-    ) -> tuple[float, float]:
-        """Return ``(time_offset, delta_f_end)``, inferring from t_c prior bounds when not provided.
-
-        Inference uses the geocentric coalescence time ``t_c`` only.
-        Detector-frame time ``t_det`` is not supported because
-        ``t_det = t_c + sky_delay(ra, dec)`` and the delay is sky-position-dependent,
-        so ``t_c`` bounds cannot be derived from a ``t_det`` prior at setup time.
-        Falls back to defaults (2.12 s, 53.0 Hz) when inference is not possible.
-        """
-        inferred_to: Optional[float] = None
-        inferred_dfe: Optional[float] = None
-
-        if prior is not None and (time_offset is None or delta_f_end is None):
-            tc_prior = self._find_leaf_prior(prior, "t_c")
-            if tc_prior is not None:
-                t_end = min(
-                    float(d.data.start_time) + float(d.data.duration) - trigger_time
-                    for d in detectors
-                )
-                RE_S = EARTH_RADIUS_LIGHT_S
-                tc_max = float(getattr(tc_prior, "xmax"))
-                denom = t_end - tc_max - RE_S
-
-                if denom <= 0:
-                    raise ValueError(
-                        f"Cannot infer delta_f_end from t_c prior: "
-                        f"t_end - xmax - s = {t_end:.4f} - {tc_max:.4f} - {RE_S:.6f} = {denom:.6f} <= 0. "
-                        "Check that the t_c prior upper bound is well within the data segment."
-                    )
-                inferred_to = t_end - float(getattr(tc_prior, "xmin")) + RE_S
-                inferred_dfe = 100.0 / denom
-
-        if time_offset is None:
-            if inferred_to is not None:
-                time_offset = inferred_to
-                logger.info("time_offset inferred from t_c prior: %.4f s", time_offset)
-            else:
-                time_offset = 2.12
-                logger.warning(
-                    "time_offset cannot be inferred from prior; using default 2.12 s"
-                )
-
-        if delta_f_end is None:
-            if inferred_dfe is not None:
-                delta_f_end = inferred_dfe
-                logger.info("delta_f_end inferred from t_c prior: %.4f Hz", delta_f_end)
-            else:
-                delta_f_end = 53.0
-                logger.warning(
-                    "delta_f_end cannot be inferred from prior; using default 53.0 Hz"
-                )
-
-        return time_offset, delta_f_end
+    # ── Validation helpers ───────────────────────────────────────────────────
 
     def _validate_banding_params(
         self,

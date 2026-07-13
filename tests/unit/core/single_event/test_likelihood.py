@@ -18,7 +18,6 @@ from jimgw.core.single_event.transforms import (
 from jimgw.core.single_event.time_utils import (
     greenwich_mean_sidereal_time as compute_gmst,
 )
-from jimgw.core.constants import EARTH_RADIUS_LIGHT_S
 from jimgw.core.prior import CombinePrior, PowerLawPrior, UniformPrior
 from tests.utils import assert_all_finite, common_keys_allclose
 
@@ -1350,54 +1349,59 @@ class TestHeterodynedTransientLikelihoodFD:
 class TestMultibandedTransientLikelihoodFD:
     # ── Initialization ────────────────────────────────────────────────────────
 
-    def test_infers_banding_parameters_from_prior(self, detectors_and_waveform):
-        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
-        mc_prior = UniformPrior(15.0, 30.0, parameter_names=["M_c"])
-        tc_prior = UniformPrior(-0.1, 0.1, parameter_names=["t_c"])
-        prior = CombinePrior([mc_prior, tc_prior])
-
-        likelihood = MultibandedTransientLikelihoodFD(
-            detectors=ifos,
-            waveform=waveform,
-            f_min=fmin,
-            f_max=fmax,
-            trigger_time=gps,
-            prior=prior,
-        )
-
-        t_end = min(
-            float(ifo.data.start_time) + float(ifo.data.duration) - gps for ifo in ifos
-        )
-        expected_time_offset = t_end - tc_prior.xmin + EARTH_RADIUS_LIGHT_S
-        expected_delta_f_end = 100.0 / (t_end - tc_prior.xmax - EARTH_RADIUS_LIGHT_S)
-
-        assert likelihood.reference_chirp_mass == mc_prior.xmin
-        assert jnp.isclose(likelihood.time_offset, expected_time_offset)
-        assert jnp.isclose(likelihood.delta_f_end, expected_delta_f_end)
-
-    @pytest.mark.parametrize(
-        ("prior", "match"),
-        [
-            (None, "Either reference_chirp_mass or a prior"),
-            (
-                CombinePrior([UniformPrior(-0.1, 0.1, parameter_names=["t_c"])]),
-                "no M_c prior found",
-            ),
-        ],
-    )
-    def test_missing_reference_chirp_mass_raises(
-        self, detectors_and_waveform, prior, match
+    def test_requires_reference_chirp_mass_and_rejects_prior(
+        self, detectors_and_waveform
     ):
         ifos, waveform, fmin, fmax, gps = detectors_and_waveform
-        with pytest.raises(ValueError, match=match):
+        with pytest.raises(TypeError, match="reference_chirp_mass"):
             MultibandedTransientLikelihoodFD(
                 detectors=ifos,
                 waveform=waveform,
                 f_min=fmin,
                 f_max=fmax,
                 trigger_time=gps,
-                prior=prior,
             )
+        with pytest.raises(TypeError, match="prior"):
+            MultibandedTransientLikelihoodFD(
+                ifos,
+                waveform,
+                20.0,
+                f_min=fmin,
+                f_max=fmax,
+                trigger_time=gps,
+                prior=None,
+            )
+
+    def test_uses_default_time_banding_parameters(self, detectors_and_waveform):
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        likelihood = MultibandedTransientLikelihoodFD(
+            ifos,
+            waveform,
+            20.0,
+            f_min=fmin,
+            f_max=fmax,
+            trigger_time=gps,
+        )
+
+        assert likelihood.reference_chirp_mass == 20.0
+        assert likelihood.time_offset == 2.12
+        assert likelihood.delta_f_end == 53.0
+
+    def test_uses_explicit_time_banding_parameters(self, detectors_and_waveform):
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        likelihood = MultibandedTransientLikelihoodFD(
+            detectors=ifos,
+            waveform=waveform,
+            reference_chirp_mass=20.0,
+            f_min=fmin,
+            f_max=fmax,
+            trigger_time=gps,
+            time_offset=1.5,
+            delta_f_end=75.0,
+        )
+
+        assert likelihood.time_offset == 1.5
+        assert likelihood.delta_f_end == 75.0
 
     @pytest.mark.parametrize(
         ("kwargs", "match"),

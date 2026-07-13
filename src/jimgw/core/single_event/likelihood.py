@@ -200,7 +200,7 @@ class TransientLikelihoodFD(SingleEventLikelihood):
     ) -> None:
         super().__init__(detectors, waveform, fixed_parameters)
 
-        # --- frequency setup (from former BaseTransientLikelihoodFD) ---
+        # --- frequency setup ---
         _frequencies = []
         for detector in detectors:
             f_min_ifo = f_min[detector.name] if isinstance(f_min, dict) else f_min
@@ -226,7 +226,7 @@ class TransientLikelihoodFD(SingleEventLikelihood):
         self.trigger_time = trigger_time
         self.gmst = compute_gmst(self.trigger_time)
 
-        # --- coerce marginalization inputs ---
+        # --- resolve marginalization inputs ---
         if isinstance(time_marginalization, dict):
             time_marginalization = TimeMargConfig(**time_marginalization)
         elif time_marginalization is True:

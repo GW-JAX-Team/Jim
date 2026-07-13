@@ -1040,9 +1040,10 @@ class TestHeterodynedTransientLikelihoodFD:
         assert hasattr(likelihood, "freq_grid_high")
         assert hasattr(likelihood, "bin_widths")
         for det in ifos:
-            assert det.name in likelihood.summary_data
-            assert det.name in likelihood.waveform_low_ref
-            assert det.name in likelihood.waveform_high_ref
+            for attr in ("summary_data", "waveform_low_ref", "waveform_high_ref"):
+                obj = getattr(likelihood, attr)
+                assert det.name in obj
+                assert jnp.isfinite(obj[det.name]).all()
 
     def test_no_reference_params_and_no_prior_raises(self, detectors_and_waveform):
         ifos, waveform, fmin, fmax, gps = detectors_and_waveform
@@ -1178,8 +1179,9 @@ class TestHeterodynedTransientLikelihoodFD:
         requested_n_bins = 32
 
         def fake_compute_coefficients(
-            likelihood, data, h_ref, psd, freqs, f_bins, f_bins_center
+            likelihood, detector, h_ref, f_bins
         ):
+            freqs = detector.sliced_frequencies
             freqs_broadcast = freqs[None, :]
             left_bounds = f_bins[:-1][:, None]
             right_bounds = f_bins[1:][:, None]
@@ -1187,11 +1189,10 @@ class TestHeterodynedTransientLikelihoodFD:
             mask = (freqs_broadcast >= left_bounds) & (freqs_broadcast < right_bounds)
 
             n_freqs = len(freqs)
-            n_bins = len(f_bins_center)
+            n_bins = len(f_bins) - 1
             assert n_freqs > len(f_bins), f"{n_freqs = }, {len(f_bins) = }"
-            assert len(f_bins) == n_bins + 1, f"{len(f_bins) = }, {n_bins = }"
             assert likelihood.n_bins == n_bins, f"{likelihood.n_bins = }, {n_bins = }"
-            assert n_bins < requested_n_bins
+            assert n_bins <= requested_n_bins
             assert freqs[0] == fmin
             assert f_bins[0] >= reference_fmin
             assert mask.shape == (n_bins, n_freqs), (

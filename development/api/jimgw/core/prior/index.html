@@ -1766,6 +1766,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#jimgw.core.prior.find_specific_prior" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        find_specific_prior
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3064,6 +3075,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#jimgw.core.prior.find_specific_prior" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        find_specific_prior
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3097,6 +3119,27 @@
 
 
 
+
+
+<p><span class="doc-section-title">Functions:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;find_specific_prior&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;prior&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Prior&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;parameter_name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Optional&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Prior&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.core.prior.find_specific_prior">find_specific_prior</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Return the component prior that governs <code>parameter_name</code>.</p>
+                </div>
+              </td>
+            </tr>
+      </tbody>
+    </table>
 
 
 
@@ -6055,6 +6098,28 @@ Expands to <code>&lt;name&gt;_mag</code>, <code>&lt;name&gt;_theta</code>, <code
 
 </div>
 
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="jimgw.core.prior.find_specific_prior" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">find_specific_prior</span><span class="p">(</span><span class="n">prior</span><span class="p">:</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">parameter_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Prior</span><span class="p">]</span></code>
+
+<a href="#jimgw.core.prior.find_specific_prior" class="headerlink" title="Permanent link">¤</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Return the component prior that governs <code>parameter_name</code>.</p>
+<p><code>CombinePrior</code> only groups independent component priors, so the search
+descends through it. Other prior objects, including transformed analytical
+priors such as :class:<code>UniformPrior</code> and :class:<code>GaussianPrior</code>, are
+returned as the component that defines their public parameter names.</p>
+
+
+    </div>
+
+</div>
 
 
 

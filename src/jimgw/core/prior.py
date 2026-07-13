@@ -446,6 +446,25 @@ class CombinePrior(CompositePrior):
         return output
 
 
+def find_specific_prior(prior: Prior, parameter_name: str) -> Optional[Prior]:
+    """Return the component prior that governs ``parameter_name``.
+
+    ``CombinePrior`` only groups independent component priors, so the search
+    descends through it. Other prior objects, including transformed analytical
+    priors such as :class:`UniformPrior` and :class:`GaussianPrior`, are
+    returned as the component that defines their public parameter names.
+    """
+    if parameter_name not in prior.parameter_names:
+        return None
+    if isinstance(prior, CombinePrior):
+        for component in prior.base_prior:
+            result = find_specific_prior(component, parameter_name)
+            if result is not None:
+                return result
+        return None
+    return prior
+
+
 @jaxtyped(typechecker=typechecker)
 class UniformPrior(SequentialTransformPrior):
     """Uniform prior over a finite interval ``[xmin, xmax]``.

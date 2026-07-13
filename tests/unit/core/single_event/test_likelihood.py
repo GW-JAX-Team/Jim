@@ -19,7 +19,7 @@ from jimgw.core.single_event.time_utils import (
     greenwich_mean_sidereal_time as compute_gmst,
 )
 from jimgw.core.constants import EARTH_RADIUS_LIGHT_S
-from jimgw.core.prior import CombinePrior, PowerLawPrior, UniformPrior
+from jimgw.core.prior import CombinePrior, GaussianPrior, PowerLawPrior, UniformPrior
 from tests.utils import assert_all_finite, common_keys_allclose
 
 FIXTURES_DIR = Path(__file__).parent.parent.parent.parent / "fixtures"
@@ -1355,7 +1355,7 @@ class TestMultibandedTransientLikelihoodFD:
         ifos, waveform, fmin, fmax, gps = detectors_and_waveform
         mc_prior = UniformPrior(15.0, 30.0, parameter_names=["M_c"])
         tc_prior = UniformPrior(-0.1, 0.1, parameter_names=["t_c"])
-        prior = CombinePrior([mc_prior, tc_prior])
+        prior = CombinePrior([CombinePrior([mc_prior]), tc_prior])
 
         likelihood = MultibandedTransientLikelihoodFD(
             detectors=ifos,
@@ -1376,12 +1376,33 @@ class TestMultibandedTransientLikelihoodFD:
         assert jnp.isclose(likelihood.time_offset, expected_time_offset)
         assert jnp.isclose(likelihood.delta_f_end, expected_delta_f_end)
 
+    def test_unbounded_time_prior_uses_defaults(self, detectors_and_waveform):
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        prior = CombinePrior([GaussianPrior(0.0, 1.0, parameter_names=["t_c"])])
+
+        likelihood = MultibandedTransientLikelihoodFD(
+            detectors=ifos,
+            waveform=waveform,
+            f_min=fmin,
+            f_max=fmax,
+            trigger_time=gps,
+            prior=prior,
+            reference_chirp_mass=20.0,
+        )
+
+        assert likelihood.time_offset == 2.12
+        assert likelihood.delta_f_end == 53.0
+
     @pytest.mark.parametrize(
         ("prior", "match"),
         [
             (None, "Either reference_chirp_mass or a prior"),
             (
                 CombinePrior([UniformPrior(-0.1, 0.1, parameter_names=["t_c"])]),
+                "no M_c prior found",
+            ),
+            (
+                CombinePrior([GaussianPrior(20.0, 1.0, parameter_names=["M_c"])]),
                 "no M_c prior found",
             ),
         ],
@@ -1470,6 +1491,8 @@ class TestMultibandedTransientLikelihoodFD:
         assert likelihood.trigger_time == gps
         assert hasattr(likelihood, "gmst")
         assert likelihood.reference_chirp_mass == 20.0
+        assert likelihood.time_offset == 2.12
+        assert likelihood.delta_f_end == 53.0
         assert likelihood.n_bands > 0
 
     def test_band_setup(self, detectors_and_waveform):

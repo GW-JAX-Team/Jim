@@ -11,7 +11,7 @@ from evosax.algorithms import CMA_ES
 from ripplegw.interfaces import Waveform
 
 from jimgw.core.utils import log_i0, round_up_to_power_of_two
-from jimgw.core.prior import Prior
+from jimgw.core.prior import Prior, find_specific_prior
 from jimgw.core.base import LikelihoodBase
 from jimgw.core.transforms import NtoMTransform
 from jimgw.core.single_event.detector import Detector
@@ -1156,25 +1156,6 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
 
     # ── Prior-inference and validation helpers ────────────────────────────────
 
-    def _find_leaf_prior(self, prior: Prior, param_name: str) -> Optional[Prior]:
-        """Recursively search *prior* for the bounded leaf that owns *param_name*.
-
-        Returns the first component that has ``xmin``/``xmax`` attributes and
-        lists *param_name* in its ``parameter_names``, or ``None`` if not found.
-        """
-        if param_name not in prior.parameter_names:
-            return None
-        if hasattr(prior, "xmin") and hasattr(prior, "xmax"):
-            return prior
-        if hasattr(prior, "base_prior"):
-            components = getattr(prior, "base_prior")
-            if hasattr(components, "__iter__"):
-                for p in components:
-                    result = self._find_leaf_prior(p, param_name)
-                    if result is not None:
-                        return result
-        return None
-
     def _resolve_reference_chirp_mass(
         self,
         reference_chirp_mass: Optional[Float],
@@ -1187,8 +1168,10 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
             raise ValueError(
                 "Either reference_chirp_mass or a prior with an M_c component must be provided."
             )
-        mc_prior = self._find_leaf_prior(prior, "M_c")
-        if mc_prior is None:
+        mc_prior = find_specific_prior(prior, "M_c")
+        if mc_prior is None or not (
+            hasattr(mc_prior, "xmin") and hasattr(mc_prior, "xmax")
+        ):
             raise ValueError(
                 "reference_chirp_mass=None but no M_c prior found. "
                 "Pass either reference_chirp_mass or a prior with an M_c component."
@@ -1219,8 +1202,12 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
         inferred_dfe: Optional[float] = None
 
         if prior is not None and (time_offset is None or delta_f_end is None):
-            tc_prior = self._find_leaf_prior(prior, "t_c")
-            if tc_prior is not None:
+            tc_prior = find_specific_prior(prior, "t_c")
+            if (
+                tc_prior is not None
+                and hasattr(tc_prior, "xmin")
+                and hasattr(tc_prior, "xmax")
+            ):
                 t_end = min(
                     float(d.data.start_time) + float(d.data.duration) - trigger_time
                     for d in detectors

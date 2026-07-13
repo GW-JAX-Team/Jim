@@ -5,6 +5,7 @@ import scipy.stats as stats
 
 from jimgw.core.jim import Jim
 from jimgw.core.prior import (
+    CombinePrior,
     LogisticDistribution,
     Prior,
     StandardNormalDistribution,
@@ -18,9 +19,27 @@ from jimgw.core.prior import (
     RayleighPrior,
     BoundedMixin,
     SequentialTransformPrior,
+    find_specific_prior,
 )
 from jimgw.samplers.config import BlackJAXNSSConfig, BlackJAXSMCConfig
 from tests.utils import assert_all_finite, assert_all_in_range
+
+
+class TestPriorLookup:
+    def test_finds_component_prior_in_nested_combine_prior(self):
+        mc_prior = UniformPrior(10.0, 30.0, ["M_c"])
+        tc_prior = UniformPrior(-0.1, 0.1, ["t_c"])
+        prior = CombinePrior([CombinePrior([mc_prior]), tc_prior])
+
+        assert find_specific_prior(prior, "M_c") is mc_prior
+        assert find_specific_prior(prior, "t_c") is tc_prior
+
+    def test_finds_gaussian_component_and_returns_none_when_absent(self):
+        mc_prior = GaussianPrior(20.0, 1.0, ["M_c"])
+        prior = CombinePrior([mc_prior])
+
+        assert find_specific_prior(prior, "M_c") is mc_prior
+        assert find_specific_prior(prior, "t_c") is None
 
 
 class TestUnivariatePrior:

@@ -478,23 +478,6 @@
         
       
       
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Installation
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
       <a href="././" class="md-nav__link md-nav__link--active">
         
   
@@ -510,65 +493,6 @@
   
 
       </a>
-      
-        
-
-
-<nav class="md-nav md-nav--secondary" aria-label="On this page">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      On this page
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#blackjax-nested-samplers" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        BlackJAX nested samplers
-      </span>
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="BlackJAX nested samplers">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#with-uv-recommended" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        With uv (recommended)
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#from-source-pip" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        From source (pip)
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
       
     </li>
   
@@ -2085,11 +2009,6 @@
                       
                     
                     
-                      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-                      <div class="md-sidebar-button__wrapper">
-                        <label class="md-sidebar-button" for="__toc"></label>
-                      </div>
-                    
                   
                   <div class="md-sidebar__inner">
                     
@@ -2101,53 +2020,6 @@
   
     
   
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      On this page
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#blackjax-nested-samplers" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        BlackJAX nested samplers
-      </span>
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="BlackJAX nested samplers">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#with-uv-recommended" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        With uv (recommended)
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#from-source-pip" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        From source (pip)
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
   
 </nav>
                   </div>
@@ -2181,22 +2053,6 @@ If you have an NVIDIA GPU, install the CUDA-enabled version:</p>
 pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
 </code></pre></div>
 <p>We recommend using <a href="https://docs.astral.sh/uv/">uv</a> to manage your Python environment. After cloning the repository, run <code>uv sync</code> to create a virtual environment with all dependencies installed.</p>
-<h2 id="blackjax-nested-samplers">BlackJAX nested samplers<a class="headerlink" href="#blackjax-nested-samplers" title="Permanent link">¤</a></h2>
-<p>Jim's BlackJAX nested-sampling backends depend on modules not yet released on PyPI.
-The features are merged into the upstream <a href="https://github.com/blackjax-devs/blackjax">blackjax-devs/blackjax</a> main branch but await a versioned release.</p>
-<h3 id="with-uv-recommended">With uv (recommended)<a class="headerlink" href="#with-uv-recommended" title="Permanent link">¤</a></h3>
-<p>Clone the repository if you haven't already, then sync the nested-sampling group:</p>
-<div class="highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/GW-JAX-Team/Jim.git
-<span class="nb">cd</span><span class="w"> </span>Jim
-uv<span class="w"> </span>sync<span class="w"> </span>--group<span class="w"> </span>nested-sampling
-</code></pre></div>
-<p>This installs BlackJAX from <code>blackjax-devs/blackjax</code> as declared in <code>[tool.uv.sources]</code>.</p>
-<h3 id="from-source-pip">From source (pip)<a class="headerlink" href="#from-source-pip" title="Permanent link">¤</a></h3>
-<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;git+https://github.com/blackjax-devs/blackjax.git&quot;</span>
-</code></pre></div>
-<blockquote>
-<p><strong>Note:</strong> <code>pip install jimgw[nested-sampling]</code> will not work until the required features land in a PyPI release. Use one of the commands above instead.</p>
-</blockquote>
 
 
 

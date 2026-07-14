@@ -934,18 +934,7 @@
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#blackjax-nested-samplers" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        BlackJAX nested samplers
-      </span>
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="BlackJAX nested samplers">
+    <nav class="md-nav" aria-label="BlackJAX SMC">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -2232,18 +2221,7 @@
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#blackjax-nested-samplers" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        BlackJAX nested samplers
-      </span>
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="BlackJAX nested samplers">
+    <nav class="md-nav" aria-label="BlackJAX SMC">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -2359,7 +2337,6 @@ You select one by passing a typed config object to <code>Jim</code>.</p>
 <th>Sampler</th>
 <th>Algorithm</th>
 <th>Evidence</th>
-<th>Extra install</th>
 <th>Prior constraint</th>
 </tr>
 </thead>
@@ -2368,28 +2345,24 @@ You select one by passing a typed config object to <code>Jim</code>.</p>
 <td><a href="#flowmc">flowMC</a></td>
 <td>normalizing-flow-enhanced MCMC</td>
 <td>No</td>
-<td>No</td>
 <td>None</td>
 </tr>
 <tr>
 <td><a href="#blackjax-ns-aw">NS-AW</a></td>
 <td>Nested sampling (bilby/dynesty-style acceptance-walk)</td>
 <td>Yes</td>
-<td>Yes (<code>nested-sampling</code>)</td>
 <td>Uniform prior; unit-cube sampling space</td>
 </tr>
 <tr>
 <td><a href="#blackjax-nss">NSS</a></td>
 <td>Nested slice sampling</td>
 <td>Yes</td>
-<td>Yes (<code>nested-sampling</code>)</td>
 <td>Normalised prior</td>
 </tr>
 <tr>
 <td><a href="#blackjax-smc">SMC</a></td>
 <td>Sequential Monte Carlo</td>
 <td>Yes</td>
-<td>No</td>
 <td>Normalised prior</td>
 </tr>
 </tbody>
@@ -2454,16 +2427,6 @@ You select one by passing a typed config object to <code>Jim</code>.</p>
 <li><code>temperature_ladder</code> — explicit temperature schedule. If given, the sampler advances through this fixed ladder and ignores <code>target_ess_fraction</code> and <code>target_ess</code>.</li>
 </ul>
 <p><strong>Repository:</strong> <a href="https://github.com/blackjax-devs/blackjax">blackjax-devs/blackjax</a></p>
-<hr />
-<h2 id="blackjax-nested-samplers">BlackJAX nested samplers<a class="headerlink" href="#blackjax-nested-samplers" title="Permanent link">¤</a></h2>
-<p>The two BlackJAX nested-sampling backends require additional dependencies.
-The required modules are merged into upstream BlackJAX but not yet released on PyPI; install from main with:</p>
-<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>sync<span class="w"> </span>--group<span class="w"> </span>nested-sampling
-</code></pre></div>
-<p>This pulls in:</p>
-<ul>
-<li><strong>blackjax</strong> — pinned to <code>blackjax-devs/blackjax</code> until a PyPI release ships the nested-sampling modules.</li>
-</ul>
 <hr />
 <h3 id="blackjax-ns-aw">BlackJAX NS-AW<a class="headerlink" href="#blackjax-ns-aw" title="Permanent link">¤</a></h3>
 <p>Nested sampling with a bilby/dynesty-style adaptive differential-evolution acceptance-walk inner kernel.</p>

@@ -19,17 +19,10 @@ from blackjax.ns.base import NSInfo, init_state_strategy as _init_state_strategy
 from blackjax.ns.nss import live_covariance, sample_direction_from_covariance
 from blackjax.ns.utils import finalise
 from jimgw.samplers.base import Sampler
-from jimgw.samplers.blackjax._imports import (
-    require_nested_sampling,
-    require_nss,
-)
 from jimgw.samplers.config import BlackJAXNSSConfig
 from jimgw.samplers.periodic import to_prior_space_proposal
 
 logger = logging.getLogger(__name__)
-
-require_nested_sampling(blackjax)
-require_nss(blackjax)
 
 
 class BlackJAXNSSSampler(Sampler):

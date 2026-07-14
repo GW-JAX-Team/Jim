@@ -1,13 +1,10 @@
 """Tests for the sampler registry and build_sampler factory."""
 
-import sys
-
 import pytest
 
 from jimgw.core.prior import CombinePrior, UniformPrior  # type: ignore[attr-defined]
 from jimgw.samplers import build_sampler
 from jimgw.samplers.config import (
-    BlackJAXNSAWConfig,
     FlowMCConfig,
 )
 from jimgw.samplers.flowmc import FlowMCSampler  # type: ignore[import]
@@ -73,23 +70,6 @@ def test_build_sampler_unknown_type_raises():
     with pytest.raises(KeyError, match="not-a-real-type"):
         build_sampler(
             fake_config,  # type: ignore[arg-type]
-            n_dims=1,
-            log_prior_fn=lp,
-            log_likelihood_fn=ll,
-            log_posterior_fn=lpost,
-        )
-
-
-def test_build_sampler_blackjax_raises_import_error_when_missing(monkeypatch):
-    """When blackjax is not installed, requesting a BlackJAX sampler should raise ImportError."""
-    monkeypatch.setitem(sys.modules, "blackjax", None)  # type: ignore[arg-type]
-
-    prior = _make_prior()
-    lp, ll, lpost = _make_callables(prior)
-    cfg = BlackJAXNSAWConfig()
-    with pytest.raises((ImportError, KeyError)):
-        build_sampler(
-            cfg,
             n_dims=1,
             log_prior_fn=lp,
             log_likelihood_fn=ll,

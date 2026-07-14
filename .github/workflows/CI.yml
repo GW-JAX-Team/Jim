@@ -27,7 +27,7 @@ jobs:
         run: uv python install ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
-          uv sync --python ${{ matrix.python-version }} --group test --group cross-validation --group nested-sampling
+          uv sync --python ${{ matrix.python-version }} --group test --group cross-validation
           if [[ "${{ github.ref }}" == "refs/heads/jim-dev" || "${{ github.base_ref }}" == "jim-dev" ]]; then
             uv pip install git+https://github.com/GW-JAX-Team/flowMC.git@flowMC-dev
             uv pip install git+https://github.com/GW-JAX-Team/ripple.git@ripple-dev

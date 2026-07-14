@@ -197,8 +197,8 @@ wheels = [
 
 [[package]]
 name = "blackjax"
-version = "1.7.dev10+g2dcea81d9"
-source = { git = "https://github.com/blackjax-devs/blackjax.git#2dcea81d9d8cdf768b5e60627ea304f1cd450c84" }
+version = "1.6"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jax" },
     { name = "jaxlib" },
@@ -208,6 +208,10 @@ dependencies = [
     { name = "scipy", version = "1.17.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "scipy", version = "1.18.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/42/0f/9da22812a20bd4f7da5b4f67ad79f459324c701fcca434ce583d90bd32e4/blackjax-1.6.tar.gz", hash = "sha256:fc1af2565bcf129974daa5d25067616aea85ea3e22e35d57d492d14bcd74daa5", size = 5174101, upload-time = "2026-07-10T20:30:31.99Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5f/64/3d9dcc0e3fbba2de25c39adf302b6ad2ca3c119299ac087b8002161958b8/blackjax-1.6-py3-none-any.whl", hash = "sha256:d1c135f448789961a4bada1e2eb803a1da55c0622c5f77eddce80bb3f7351fd5", size = 4857402, upload-time = "2026-07-10T20:30:30.492Z" },
 ]
 
 [[package]]
@@ -1400,9 +1404,6 @@ doc = [
     { name = "pymdown-extensions" },
     { name = "zensical" },
 ]
-nested-sampling = [
-    { name = "blackjax" },
-]
 test = [
     { name = "coverage" },
     { name = "coveralls" },
@@ -1418,7 +1419,7 @@ requires-dist = [
     { name = "anesthetic", specifier = ">=2" },
     { name = "astropy", specifier = ">=7.0.1" },
     { name = "beartype", specifier = ">=0.19.0" },
-    { name = "blackjax", git = "https://github.com/blackjax-devs/blackjax.git" },
+    { name = "blackjax", specifier = ">=1.6" },
     { name = "corner", specifier = ">=2.2.3" },
     { name = "equinox", specifier = ">=0.11" },
     { name = "evosax", specifier = ">=0.2.0" },
@@ -1449,7 +1450,6 @@ doc = [
     { name = "pymdown-extensions" },
     { name = "zensical" },
 ]
-nested-sampling = [{ name = "blackjax", git = "https://github.com/blackjax-devs/blackjax.git" }]
 test = [
     { name = "coverage", specifier = ">=7.7.0" },
     { name = "coveralls", specifier = ">=4.0.1" },

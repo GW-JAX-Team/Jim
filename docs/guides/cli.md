@@ -295,12 +295,12 @@ The `type` field selects the backend. Each backend has its own set of tuning par
 
 ### Sampler comparison
 
-| `type` | Algorithm | Evidence | Extra install |
-| --- | --- | --- | --- |
-| `flowmc` | Normalizing-flow MCMC | No | No |
-| `blackjax-smc` | Sequential Monte Carlo | Yes | No |
-| `blackjax-nss` | Nested slice sampling | Yes | `uv sync --group nested-sampling` |
-| `blackjax-ns-aw` | Nested sampling (acceptance-walk) | Yes | `uv sync --group nested-sampling` |
+| `type` | Algorithm | Evidence |
+| --- | --- | --- |
+| `flowmc` | Normalizing-flow MCMC | No |
+| `blackjax-smc` | Sequential Monte Carlo | Yes |
+| `blackjax-nss` | Nested slice sampling | Yes |
+| `blackjax-ns-aw` | Nested sampling (acceptance-walk) | Yes |
 
 ### `type = "flowmc"`
 

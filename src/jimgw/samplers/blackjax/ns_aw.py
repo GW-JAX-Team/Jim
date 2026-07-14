@@ -11,20 +11,16 @@ import jax.numpy as jnp
 import numpy as np
 from jaxtyping import Array, Float, Key
 from anesthetic.samples import NestedSamples
-import blackjax
 from blackjax.ns.adaptive import AdaptiveNSState
 from blackjax.ns.base import NSInfo
 from blackjax.ns.utils import finalise
 
 from jimgw.samplers.base import Sampler
 from jimgw.samplers.blackjax._acceptance_walk_kernel import bilby_adaptive_de_sampler
-from jimgw.samplers.blackjax._imports import require_nested_sampling
 from jimgw.samplers.config import BlackJAXNSAWConfig
 from jimgw.samplers.periodic import to_unit_cube_stepper
 
 logger = logging.getLogger(__name__)
-
-require_nested_sampling(blackjax)
 
 
 class BlackJAXNSAWSampler(Sampler):

@@ -11,12 +11,12 @@ samples = jim.get_samples()  # dict[str, np.ndarray] keyed by parameter name
 
 ## Sampler overview
 
-| Sampler | Algorithm | Evidence | Extra install | Prior constraint |
-| --- | --- | --- | --- | --- |
-| [flowMC](#flowmc) | normalizing-flow-enhanced MCMC | No | No | None |
-| [NS-AW](#blackjax-ns-aw) | Nested sampling (bilby/dynesty-style acceptance-walk) | Yes | Yes (`nested-sampling`) | Uniform prior; unit-cube sampling space |
-| [NSS](#blackjax-nss) | Nested slice sampling | Yes | Yes (`nested-sampling`) | Normalised prior |
-| [SMC](#blackjax-smc) | Sequential Monte Carlo | Yes | No | Normalised prior |
+| Sampler | Algorithm | Evidence | Prior constraint |
+| --- | --- | --- | --- |
+| [flowMC](#flowmc) | normalizing-flow-enhanced MCMC | No | None |
+| [NS-AW](#blackjax-ns-aw) | Nested sampling (bilby/dynesty-style acceptance-walk) | Yes | Uniform prior; unit-cube sampling space |
+| [NSS](#blackjax-nss) | Nested slice sampling | Yes | Normalised prior |
+| [SMC](#blackjax-smc) | Sequential Monte Carlo | Yes | Normalised prior |
 
 ---
 
@@ -89,21 +89,6 @@ Key parameters:
 - `temperature_ladder` — explicit temperature schedule. If given, the sampler advances through this fixed ladder and ignores `target_ess_fraction` and `target_ess`.
 
 **Repository:** [blackjax-devs/blackjax](https://github.com/blackjax-devs/blackjax)
-
----
-
-## BlackJAX nested samplers
-
-The two BlackJAX nested-sampling backends require additional dependencies.
-The required modules are merged into upstream BlackJAX but not yet released on PyPI; install from main with:
-
-```bash
-uv sync --group nested-sampling
-```
-
-This pulls in:
-
-- **blackjax** — pinned to `blackjax-devs/blackjax` until a PyPI release ships the nested-sampling modules.
 
 ---
 

@@ -24,7 +24,7 @@ dependencies = [
     "anesthetic>=2",
     "astropy>=7.0.1",
     "beartype>=0.19.0",
-    "blackjax>=1.4",
+    "blackjax>=1.6",
     "corner>=2.2.3",
     "equinox>=0.11",
     "evosax>=0.2.0",
@@ -70,10 +70,6 @@ doc = [
     "pymdown-extensions",
     "zensical",
 ]
-nested-sampling = [
-    "blackjax",
-]
-
 [project.urls]
 Homepage = "https://github.com/GW-JAX-Team/Jim"
 Documentation = "https://gw-jax-team.github.io/Jim/"
@@ -83,11 +79,6 @@ Changelog = "https://github.com/GW-JAX-Team/Jim/releases"
 
 [tool.uv.sources]
 jimgw = { workspace = true }
-# Pinned to upstream main until a PyPI release ships with the NS submodules:
-#   - blackjax.ns.{base,adaptive,utils}                                     (NS-AW, NSS)
-#   - blackjax.nss                                                          (NSS)
-# When a release is cut, drop this pin and bump blackjax>=<version>.
-blackjax = { git = "https://github.com/blackjax-devs/blackjax.git" }
 
 [build-system]
 requires = ["hatchling", "hatch-vcs"]

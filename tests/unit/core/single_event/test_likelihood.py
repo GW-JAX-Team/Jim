@@ -1178,9 +1178,7 @@ class TestHeterodynedTransientLikelihoodFD:
         reference_fmin = 80.0
         requested_n_bins = 32
 
-        def fake_compute_coefficients(
-            likelihood, detector, h_ref, f_bins
-        ):
+        def fake_compute_coefficients(likelihood, detector, h_ref, f_bins):
             freqs = detector.sliced_frequencies
             freqs_broadcast = freqs[None, :]
             left_bounds = f_bins[:-1][:, None]

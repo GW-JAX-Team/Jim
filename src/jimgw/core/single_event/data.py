@@ -189,8 +189,7 @@ class Data(ABC):
                 omitted, it is calculated from ``roll_off``.
             roll_off: Duration in seconds of the taper on each side. Defaults
                 to 0.4 seconds, which preserves Jim's previous Tukey window for
-                a four-second segment. Following bilby's convention, the
-                corresponding shape parameter is
+                a four-second segment. The corresponding shape parameter is
                 ``2 * roll_off / duration``.
         """
         if alpha is not None and roll_off is not None:

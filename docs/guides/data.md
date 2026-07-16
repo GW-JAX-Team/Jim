@@ -107,7 +107,7 @@ H1.set_data(data)
 ### Time-domain windowing
 
 Time-domain data use a Tukey window before the Fourier transform. By default,
-Jim follows Bilby's fixed roll-off-time convention:
+Jim uses a fixed roll-off time:
 
 \[
 \alpha = \frac{2\,t_{\mathrm{rolloff}}}{T},

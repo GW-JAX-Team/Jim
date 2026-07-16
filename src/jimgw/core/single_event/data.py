@@ -206,6 +206,7 @@ class Data(ABC):
 
         logger.debug(f"Setting Tukey window on {self.name or '(unnamed)'}")
         self.window = jnp.array(tukey(self.n_time, resolved_alpha))
+        self.fd = jnp.zeros(self.n_freq, dtype="complex128")
 
     def fft(
         self, window: Optional[Float[Array, "n_time"]] = None

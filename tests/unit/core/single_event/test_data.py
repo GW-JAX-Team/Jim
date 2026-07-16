@@ -77,6 +77,15 @@ class TestData:
         with pytest.raises(ValueError, match="non-negative"):
             self.data.set_tukey_window(roll_off=-0.1)
 
+    def test_set_tukey_window_invalidates_cached_fft(self):
+        """Changing the window recomputes the cached frequency-domain data."""
+        self.data.fft()
+        self.data.set_tukey_window(alpha=0.4)
+
+        expected = jnp.fft.rfft(self.data.td * self.data.window) * self.data.delta_t
+        assert not self.data.has_fd
+        assert jnp.allclose(self.data.fft(), expected)
+
     def test_bool_nonempty(self):
         """bool(data) is True when data are present."""
         assert bool(self.data)

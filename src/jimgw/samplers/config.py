@@ -117,6 +117,19 @@ class _CheckpointMixin(BaseModel):
         jax.config.update("jax_persistent_cache_min_compile_time_secs", 0.0)
 
 
+class _ShardingMixin(BaseModel):
+    """Single-host device sharding shared by BlackJAX nested samplers."""
+
+    n_devices: int = 1
+
+    @field_validator("n_devices")
+    @classmethod
+    def _positive_n_devices(cls, value: int) -> int:
+        if value < 1:
+            raise ValueError("n_devices must be >= 1")
+        return value
+
+
 # ---------------------------------------------------------------------------
 # flowMC sub-configs
 # ---------------------------------------------------------------------------
@@ -316,7 +329,7 @@ class BlackJAXNSAWConfig(BaseSamplerConfig, _CheckpointMixin):
         return self
 
 
-class BlackJAXNSSConfig(BaseSamplerConfig, _CheckpointMixin):
+class BlackJAXNSSConfig(BaseSamplerConfig, _CheckpointMixin, _ShardingMixin):
     """Configuration for the BlackJAX nested slice sampler.
 
     !!! note
@@ -349,10 +362,14 @@ class BlackJAXNSSConfig(BaseSamplerConfig, _CheckpointMixin):
                 f"yields n_delete = {n_delete}; require n_delete >= 1. "
                 "Increase n_live or n_delete_frac."
             )
+        if self.n_devices > 1 and self.n_live % self.n_devices:
+            raise ValueError("n_live must be divisible by n_devices when sharding")
+        if self.n_devices > 1 and n_delete % self.n_devices:
+            raise ValueError("n_delete must be divisible by n_devices when sharding")
         return self
 
 
-class BlackJAXSwiGConfig(BaseSamplerConfig, _CheckpointMixin):
+class BlackJAXSwiGConfig(BaseSamplerConfig, _CheckpointMixin, _ShardingMixin):
     """Configuration for Nested Slice within Gibbs (SwiG) sampling.
 
     ``blocks`` are expressed in Jim's sampling-space parameter names. Jim
@@ -414,6 +431,10 @@ class BlackJAXSwiGConfig(BaseSamplerConfig, _CheckpointMixin):
                 f"n_live * n_delete_frac = {self.n_live * self.n_delete_frac} "
                 f"yields n_delete = {n_delete}; require n_delete >= 1."
             )
+        if self.n_devices > 1 and self.n_live % self.n_devices:
+            raise ValueError("n_live must be divisible by n_devices when sharding")
+        if self.n_devices > 1 and n_delete % self.n_devices:
+            raise ValueError("n_delete must be divisible by n_devices when sharding")
         return self
 
 

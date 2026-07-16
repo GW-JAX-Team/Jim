@@ -16,9 +16,22 @@ from jaxtyping import Array, Float, Key
 import blackjax
 from blackjax.ns.adaptive import AdaptiveNSState, init as _ns_adaptive_init
 from blackjax.ns.base import NSInfo, init_state_strategy as _init_state_strategy
-from blackjax.ns.nss import live_covariance, sample_direction_from_covariance
+from blackjax.ns.nss import (
+    live_covariance,
+    sample_direction_from_covariance,
+    slice_constrained_step,
+)
 from blackjax.ns.utils import finalise
+from blackjax.mcmc.slice import build_kernel as build_slice_kernel
+from blackjax.mcmc.slice import stepping_out
+from jax.sharding import Mesh, NamedSharding, PartitionSpec as P
 from jimgw.samplers.base import Sampler
+from jimgw.samplers.blackjax.sharding import (
+    build_sharded_from_mcmc_kernel,
+    make_live_mesh,
+    place_key,
+    place_state,
+)
 from jimgw.samplers.config import BlackJAXNSSConfig
 from jimgw.samplers.periodic import to_prior_space_proposal
 
@@ -84,9 +97,33 @@ class BlackJAXNSSSampler(Sampler):
     def _update_inner_kernel_params_fn(self) -> Callable:
         return live_covariance
 
-    def _build_nested_sampler(self, n_delete: int):
+    def _build_nested_sampler(self, n_delete: int, mesh: Mesh | None = None):
         config = self._config
         num_inner_steps = config.num_inner_steps_per_dim * self.n_dims
+        if mesh is not None:
+            init_state_fn = partial(
+                _init_state_strategy,
+                logprior_fn=self._log_prior_fn,
+                loglikelihood_fn=self._log_likelihood_fn,
+            )
+            slice_kernel = build_slice_kernel(
+                interval=stepping_out,
+                max_expansions=10,
+                max_shrinkage=100,
+            )
+            constrained_step = slice_constrained_step(
+                init_state_fn, slice_kernel, self._proposal
+            )
+            kernel = build_sharded_from_mcmc_kernel(
+                constrained_step,
+                n_inner_steps=num_inner_steps,
+                update_inner_kernel_params_fn=self._update_inner_kernel_params_fn,
+                n_delete=n_delete,
+                mesh=mesh,
+            )
+            return blackjax.SamplingAlgorithm(
+                lambda position, rng_key=None: position, kernel
+            )
         return blackjax.nss(
             logprior_fn=self._log_prior_fn,
             loglikelihood_fn=self._log_likelihood_fn,
@@ -120,6 +157,7 @@ class BlackJAXNSSSampler(Sampler):
         config = self._config
         n_live = config.n_live
         n_delete = int(n_live * config.n_delete_frac)
+        mesh = make_live_mesh(config.n_devices, n_live, n_delete)
         ckpt_path = (
             config.checkpoint_dir / "checkpoint.pkl"
             if config.checkpoint_dir is not None
@@ -137,7 +175,7 @@ class BlackJAXNSSSampler(Sampler):
                 )
             return arr
 
-        nested_sampler = self._build_nested_sampler(n_delete)
+        nested_sampler = self._build_nested_sampler(n_delete, mesh)
 
         # Bypass BlackJAX's jax.vmap(init_state_fn) to avoid peak-memory OOM.
         # A full vmap over all live particles materialises O(n_live) concurrent
@@ -151,14 +189,18 @@ class BlackJAXNSSSampler(Sampler):
         )
 
         def _batched_nss_init(positions):
+            if mesh is not None:
+                positions = jax.device_put(positions, NamedSharding(mesh, P("live")))
+
             def _batched_fn(pos):
                 return jax.lax.map(_single_init_fn, pos, batch_size=n_delete)
 
-            return _ns_adaptive_init(
+            state = _ns_adaptive_init(
                 positions,
                 init_state_fn=_batched_fn,
                 update_inner_kernel_params_fn=self._update_inner_kernel_params_fn,
             )
+            return place_state(state, mesh) if mesh is not None else state
 
         # Resume from checkpoint if one exists.
         if (
@@ -172,6 +214,9 @@ class BlackJAXNSSSampler(Sampler):
                 state = _ckpt["state"]
                 dead = _ckpt["dead"]
                 rng_key = _ckpt["rng_key"]
+                if mesh is not None:
+                    state = place_state(state, mesh)
+                    rng_key = place_key(rng_key, mesh)
                 n_iter = _ckpt["n_iter"]
                 self._prev_elapsed = float(_ckpt["elapsed_time"])
                 logger.info(
@@ -204,6 +249,9 @@ class BlackJAXNSSSampler(Sampler):
             dead = []
             n_iter = 0
 
+        if mesh is not None:
+            rng_key = place_key(rng_key, mesh)
+
         def _terminate(state: AdaptiveNSState) -> bool:
             dlogz = jnp.logaddexp(0, state.integrator.logZ_live - state.integrator.logZ)
             return bool(jnp.isfinite(dlogz) and dlogz < config.termination_dlogz)
@@ -223,9 +271,9 @@ class BlackJAXNSSSampler(Sampler):
             ):
                 _last_ckpt_t = config.write_checkpoint(
                     {
-                        "state": state,
-                        "dead": dead,
-                        "rng_key": rng_key,
+                        "state": jax.device_get(state),
+                        "dead": jax.device_get(dead),
+                        "rng_key": jax.device_get(rng_key),
                         "n_iter": n_iter,
                         "elapsed_time": self._prev_elapsed
                         + (time.perf_counter() - _method_t0),
@@ -233,7 +281,8 @@ class BlackJAXNSSSampler(Sampler):
                     self._checkpoint_tag,
                 )
 
-        self._final_state = finalise(state, dead)  # type: ignore[arg-type]  # AdaptiveNSState structurally satisfies NSState (.particles field)
+        final_state = finalise(state, dead)  # type: ignore[arg-type]  # AdaptiveNSState structurally satisfies NSState (.particles field)
+        self._final_state = jax.device_get(final_state)
         self._n_iterations = n_iter
 
         # Build anesthetic NestedSamples for use in get_samples() and get_diagnostics().

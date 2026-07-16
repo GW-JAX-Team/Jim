@@ -15,6 +15,7 @@ from blackjax.ns.nss import sample_direction_from_covariance
 from blackjax.smc.tuning.from_particles import particles_covariance_matrix
 
 from jimgw.samplers.blackjax.nss import BlackJAXNSSSampler
+from jimgw.samplers.blackjax.sharding import build_sharded_from_mcmc_kernel
 from jimgw.samplers.config import BlackJAXSwiGConfig
 from jimgw.samplers.periodic import _build_masks_arrays
 
@@ -214,7 +215,7 @@ class BlackJAXSwiGSampler(BlackJAXNSSSampler):
     def _update_inner_kernel_params_fn(self) -> Callable:
         return self._block_covariance_update
 
-    def _build_nested_sampler(self, n_delete: int) -> SamplingAlgorithm:
+    def _build_nested_sampler(self, n_delete: int, mesh=None) -> SamplingAlgorithm:
         constrained_step = _build_swig_constrained_step(
             log_prior_fn=self._log_prior_fn,
             build_cache_fn=self._build_cache_fn,
@@ -228,10 +229,19 @@ class BlackJAXSwiGSampler(BlackJAXNSSSampler):
             periodic=self._periodic,
             n_dims=self.n_dims,
         )
-        kernel = build_from_mcmc_kernel(
-            constrained_step,
-            num_inner_steps=1,
-            update_inner_kernel_params_fn=self._block_covariance_update,
-            num_delete=n_delete,
-        )
+        if mesh is None:
+            kernel = build_from_mcmc_kernel(
+                constrained_step,
+                num_inner_steps=1,
+                update_inner_kernel_params_fn=self._block_covariance_update,
+                num_delete=n_delete,
+            )
+        else:
+            kernel = build_sharded_from_mcmc_kernel(
+                constrained_step,
+                n_inner_steps=1,
+                update_inner_kernel_params_fn=self._block_covariance_update,
+                n_delete=n_delete,
+                mesh=mesh,
+            )
         return SamplingAlgorithm(lambda position, rng_key=None: position, kernel)

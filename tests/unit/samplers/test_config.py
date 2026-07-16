@@ -48,9 +48,7 @@ def test_sampler_config_union_from_dict():
     cfg4 = ta.validate_python({"type": "blackjax-smc"})
     assert isinstance(cfg4, BlackJAXSMCConfig)
 
-    cfg5 = ta.validate_python(
-        {"type": "blackjax-swig", "blocks": [["x"], ["y"]]}
-    )
+    cfg5 = ta.validate_python({"type": "blackjax-swig", "blocks": [["x"], ["y"]]})
     assert isinstance(cfg5, BlackJAXSwiGConfig)
 
 
@@ -67,6 +65,23 @@ def test_swig_sampling_defaults():
     config = BlackJAXSwiGConfig(blocks=[["x"]])
     assert config.num_gibbs_sweeps == 2
     assert config.termination_dlogz == pytest.approx(math.exp(-3.0))
+    assert config.n_devices == 1
+
+
+@pytest.mark.parametrize("config_cls", [BlackJAXNSSConfig, BlackJAXSwiGConfig])
+def test_nested_sampler_sharding_requires_divisible_particle_counts(config_cls):
+    kwargs = {"blocks": [["x"]]} if config_cls is BlackJAXSwiGConfig else {}
+    with pytest.raises(ValueError, match="n_live must be divisible by n_devices"):
+        config_cls(n_live=10, n_delete_frac=0.4, n_devices=4, **kwargs)
+    with pytest.raises(ValueError, match="n_delete must be divisible by n_devices"):
+        config_cls(n_live=12, n_delete_frac=0.25, n_devices=2, **kwargs)
+
+
+@pytest.mark.parametrize("config_cls", [BlackJAXNSSConfig, BlackJAXSwiGConfig])
+def test_nested_sampler_sharding_requires_positive_device_count(config_cls):
+    kwargs = {"blocks": [["x"]]} if config_cls is BlackJAXSwiGConfig else {}
+    with pytest.raises(ValueError, match="n_devices must be >= 1"):
+        config_cls(n_devices=0, **kwargs)
 
 
 def test_extra_fields_forbidden():

@@ -14,6 +14,8 @@ from scipy.interpolate import interp1d
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_TUKEY_ROLL_OFF = 0.4
+
 # TODO: Need to expand this list. Currently it is only O3.
 asd_file_dict = {
     "H1": "https://dcc.ligo.org/public/0169/P2000251/001/O3-H1-C01_CLEAN_SUB60HZ-1251752040.0_sensitivity_strain_asd.txt",
@@ -174,16 +176,37 @@ class Data(ABC):
         """Check if the data is empty."""
         return len(self.td) > 0
 
-    def set_tukey_window(self, alpha: float = 0.2) -> None:
+    def set_tukey_window(
+        self,
+        alpha: Optional[float] = None,
+        roll_off: Optional[float] = None,
+    ) -> None:
         """Create a Tukey window on the data; the window is stored in the
         window attribute and only applied when FFTing the data.
 
         Args:
-            alpha: Shape parameter of the Tukey window (default: 0.2); this is
-                the fraction of the segment that is tapered on each side.
+            alpha: Shape parameter passed directly to the Tukey window. If
+                omitted, it is calculated from ``roll_off``.
+            roll_off: Duration in seconds of the taper on each side. Defaults
+                to 0.4 seconds, which preserves Jim's previous Tukey window for
+                a four-second segment. Following bilby's convention, the
+                corresponding shape parameter is
+                ``2 * roll_off / duration``.
         """
+        if alpha is not None and roll_off is not None:
+            raise ValueError("Specify either alpha or roll_off, not both")
+
+        if alpha is None:
+            roll_off = DEFAULT_TUKEY_ROLL_OFF if roll_off is None else roll_off
+            if roll_off < 0:
+                raise ValueError("roll_off must be non-negative")
+            duration = float(self.duration)
+            resolved_alpha = 0.0 if duration == 0 else 2 * roll_off / duration
+        else:
+            resolved_alpha = alpha
+
         logger.debug(f"Setting Tukey window on {self.name or '(unnamed)'}")
-        self.window = jnp.array(tukey(self.n_time, alpha))
+        self.window = jnp.array(tukey(self.n_time, resolved_alpha))
 
     def fft(
         self, window: Optional[Float[Array, "n_time"]] = None

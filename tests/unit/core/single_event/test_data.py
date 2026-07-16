@@ -7,6 +7,7 @@ from copy import deepcopy
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 from scipy.signal import welch
+from scipy.signal.windows import tukey
 from jimgw.core.single_event.data import Data, PowerSpectrum
 
 
@@ -36,8 +37,45 @@ class TestData:
         assert len(self.data.td) == int(self.f_samp * self.duration)
 
     def test_default_window(self):
-        """A Tukey window matching the data length is created by default."""
-        assert len(self.data.window) == len(self.data.td)
+        """The default preserves alpha=0.2 for a four-second segment."""
+        alpha = 2 * 0.4 / self.duration
+        expected = tukey(len(self.data.td), alpha=alpha)
+        assert jnp.allclose(self.data.window, expected)
+
+    def test_default_window_scales_alpha_for_long_segments(self):
+        """Long segments keep the same roll-off time rather than taper fraction."""
+        duration = 128
+        sampling_frequency = 16
+        data = Data(
+            td=jnp.ones(duration * sampling_frequency),
+            delta_t=1 / sampling_frequency,
+        )
+
+        expected_alpha = 2 * 0.4 / duration
+        expected = tukey(len(data.td), alpha=expected_alpha)
+        assert jnp.allclose(data.window, expected)
+
+    def test_set_tukey_window_accepts_explicit_alpha(self):
+        """Callers can retain direct control of the Tukey shape parameter."""
+        self.data.set_tukey_window(alpha=0.4)
+        assert jnp.allclose(self.data.window, tukey(len(self.data.td), alpha=0.4))
+
+    def test_set_tukey_window_accepts_custom_roll_off(self):
+        """A custom roll-off is converted to alpha using the data duration."""
+        self.data.set_tukey_window(roll_off=0.4)
+        expected_alpha = 2 * 0.4 / self.duration
+        assert jnp.allclose(
+            self.data.window, tukey(len(self.data.td), alpha=expected_alpha)
+        )
+
+    def test_set_tukey_window_rejects_alpha_and_roll_off(self):
+        """Alpha and roll-off are alternative parameterizations."""
+        with pytest.raises(ValueError, match="either alpha or roll_off"):
+            self.data.set_tukey_window(alpha=0.2, roll_off=0.2)
+
+    def test_set_tukey_window_rejects_negative_roll_off(self):
+        with pytest.raises(ValueError, match="non-negative"):
+            self.data.set_tukey_window(roll_off=-0.1)
 
     def test_bool_nonempty(self):
         """bool(data) is True when data are present."""

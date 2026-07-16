@@ -1,4 +1,5 @@
 import warnings
+import math
 
 import jax
 import numpy as np
@@ -9,6 +10,7 @@ from jimgw.samplers.config import (
     BlackJAXNSAWConfig,
     BlackJAXNSSConfig,
     BlackJAXSMCConfig,
+    BlackJAXSwiGConfig,
     FlowMCConfig,
     GRWConfig,
     HMCConfig,
@@ -45,6 +47,26 @@ def test_sampler_config_union_from_dict():
 
     cfg4 = ta.validate_python({"type": "blackjax-smc"})
     assert isinstance(cfg4, BlackJAXSMCConfig)
+
+    cfg5 = ta.validate_python(
+        {"type": "blackjax-swig", "blocks": [["x"], ["y"]]}
+    )
+    assert isinstance(cfg5, BlackJAXSwiGConfig)
+
+
+def test_swig_blocks_must_be_nonempty_and_unique():
+    with pytest.raises(ValidationError, match="at least one"):
+        BlackJAXSwiGConfig(blocks=[])
+    with pytest.raises(ValidationError, match="empty"):
+        BlackJAXSwiGConfig(blocks=[["x"], []])
+    with pytest.raises(ValidationError, match="multiple blocks"):
+        BlackJAXSwiGConfig(blocks=[["x"], ["x"]])
+
+
+def test_swig_sampling_defaults():
+    config = BlackJAXSwiGConfig(blocks=[["x"]])
+    assert config.num_gibbs_sweeps == 2
+    assert config.termination_dlogz == pytest.approx(math.exp(-3.0))
 
 
 def test_extra_fields_forbidden():

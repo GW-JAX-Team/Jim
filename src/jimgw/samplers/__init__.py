@@ -16,6 +16,7 @@ from typing import Optional
 from jimgw.samplers.base import Sampler
 from jimgw.samplers.config import (
     BaseSamplerConfig,
+    BlackJAXSwiGConfig,
     BlackJAXNSAWConfig,
     BlackJAXNSSConfig,
     BlackJAXSMCConfig,
@@ -28,6 +29,7 @@ __all__ = [
     "SamplerConfig",
     "BaseSamplerConfig",
     "FlowMCConfig",
+    "BlackJAXSwiGConfig",
     "BlackJAXNSAWConfig",
     "BlackJAXNSSConfig",
     "BlackJAXSMCConfig",
@@ -63,6 +65,10 @@ def build_sampler(
     log_likelihood_fn: Callable,
     log_posterior_fn: Callable,
     periodic: Optional[list[int] | dict[int, tuple[float, float]]] = None,
+    block_indices: Optional[tuple[tuple[int, ...], ...]] = None,
+    refresh_cache: Optional[tuple[bool, ...]] = None,
+    build_cache_fn: Optional[Callable] = None,
+    log_likelihood_from_cache_fn: Optional[Callable] = None,
 ) -> Sampler:
     """Instantiate the concrete [`Sampler`][jimgw.samplers.base.Sampler] identified by ``config.type``.
 
@@ -86,7 +92,7 @@ def build_sampler(
             f"Registered types: {sorted(_REGISTRY)}"
         )
     builder = _REGISTRY[type_str]()
-    return builder(
+    kwargs = dict(
         n_dims=n_dims,
         log_prior_fn=log_prior_fn,
         log_likelihood_fn=log_likelihood_fn,
@@ -94,6 +100,14 @@ def build_sampler(
         config=config,
         periodic=periodic,
     )
+    if config.type == "blackjax-swig":
+        kwargs.update(
+            block_indices=block_indices,
+            refresh_cache=refresh_cache,
+            build_cache_fn=build_cache_fn,
+            log_likelihood_from_cache_fn=log_likelihood_from_cache_fn,
+        )
+    return builder(**kwargs)
 
 
 from jimgw.samplers.flowmc import FlowMCSampler  # noqa: E402
@@ -111,3 +125,9 @@ register_sampler("blackjax-ns-aw", lambda: BlackJAXNSAWSampler)
 from jimgw.samplers.blackjax.nss import BlackJAXNSSSampler  # noqa: E402
 
 register_sampler("blackjax-nss", lambda: BlackJAXNSSSampler)
+
+from jimgw.samplers.blackjax.swig import (  # noqa: E402
+    BlackJAXSwiGSampler,
+)
+
+register_sampler("blackjax-swig", lambda: BlackJAXSwiGSampler)

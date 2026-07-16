@@ -12,9 +12,13 @@ from ripplegw.interfaces import Waveform
 from jimgw.core.base import LikelihoodBase
 from jimgw.core.prior import Prior
 from jimgw.core.transforms import BijectiveTransform, NtoMTransform
-from jimgw.core.single_event.likelihood import SingleEventLikelihood
+from jimgw.core.single_event.likelihood import (
+    HeterodynedTransientLikelihoodFD,
+    SingleEventLikelihood,
+    TransientLikelihoodFD,
+)
 from jimgw.samplers import Sampler, SamplerConfig, build_sampler
-from jimgw.samplers.config import FlowMCConfig
+from jimgw.samplers.config import BlackJAXSwiGConfig, FlowMCConfig
 from jimgw._logging import ensure_logger_handler
 
 logger = logging.getLogger(__name__)
@@ -128,6 +132,24 @@ class Jim:
         else:
             periodic_resolved = None
 
+        block_indices = None
+        refresh_cache = None
+        build_cache_fn = None
+        log_likelihood_from_cache_fn = None
+        if isinstance(sampler_config, BlackJAXSwiGConfig):
+            block_indices, refresh_cache = self._resolve_swig_blocks(sampler_config)
+            if not isinstance(
+                likelihood,
+                (TransientLikelihoodFD, HeterodynedTransientLikelihoodFD),
+            ):
+                raise TypeError(
+                    "BlackJAXSwiGConfig requires TransientLikelihoodFD or "
+                    "HeterodynedTransientLikelihoodFD because its cache is the "
+                    "generated waveform polarizations."
+                )
+            build_cache_fn = self._build_cache_fn
+            log_likelihood_from_cache_fn = self._log_likelihood_from_cache_fn
+
         self.sampler = build_sampler(
             sampler_config,
             n_dims=len(self.parameter_names),
@@ -135,6 +157,10 @@ class Jim:
             log_likelihood_fn=self._log_likelihood_fn,
             log_posterior_fn=self._log_posterior_fn,
             periodic=periodic_resolved,
+            block_indices=block_indices,
+            refresh_cache=refresh_cache,
+            build_cache_fn=build_cache_fn,
+            log_likelihood_from_cache_fn=log_likelihood_from_cache_fn,
         )
         self._verify_posterior()
 
@@ -294,6 +320,16 @@ class Jim:
         # (n_dims,) and are injected into the sampler.
         names = self.parameter_names
 
+        def _to_likelihood_parameters(
+            arr: Float[Array, " n_dims"],
+        ) -> dict[str, Float]:
+            named = dict(zip(names, arr, strict=True))
+            for transform in reversed(sample_transforms):
+                named, _ = transform.inverse(named)
+            for transform in likelihood_transforms:
+                named = transform.forward(named)
+            return named
+
         def _log_prior_fn(arr: Float[Array, " n_dims"]) -> FloatScalar:
             named = dict(zip(names, arr, strict=True))
             jac: FloatScalar = jnp.zeros(())
@@ -303,12 +339,28 @@ class Jim:
             return prior.log_prob(named) + jac
 
         def _log_likelihood_fn(arr: Float[Array, " n_dims"]) -> FloatScalar:
-            named = dict(zip(names, arr, strict=True))
-            for transform in reversed(sample_transforms):
-                named, _ = transform.inverse(named)
-            for transform in likelihood_transforms:
-                named = transform.forward(named)
+            named = _to_likelihood_parameters(arr)
             return likelihood.evaluate(named)
+
+        def _build_cache_fn(arr: Float[Array, " n_dims"]):
+            if not isinstance(
+                likelihood,
+                (TransientLikelihoodFD, HeterodynedTransientLikelihoodFD),
+            ):
+                raise TypeError("waveform caching requires a transient likelihood")
+            return likelihood.generate_waveform(_to_likelihood_parameters(arr))
+
+        def _log_likelihood_from_cache_fn(
+            arr: Float[Array, " n_dims"], cache
+        ) -> FloatScalar:
+            if not isinstance(
+                likelihood,
+                (TransientLikelihoodFD, HeterodynedTransientLikelihoodFD),
+            ):
+                raise TypeError("waveform caching requires a transient likelihood")
+            return likelihood.evaluate_from_waveform(
+                _to_likelihood_parameters(arr), cache
+            )
 
         def _log_posterior_fn(arr: Float[Array, " n_dims"]) -> FloatScalar:
             named = dict(zip(names, arr, strict=True))
@@ -324,6 +376,99 @@ class Jim:
         self._log_prior_fn = _log_prior_fn
         self._log_likelihood_fn = _log_likelihood_fn
         self._log_posterior_fn = _log_posterior_fn
+        self._build_cache_fn = _build_cache_fn
+        self._log_likelihood_from_cache_fn = _log_likelihood_from_cache_fn
+
+    def _resolve_swig_blocks(
+        self, config: BlackJAXSwiGConfig
+    ) -> tuple[tuple[tuple[int, ...], ...], tuple[bool, ...]]:
+        """Validate named SwiG blocks and infer waveform-cache invalidation."""
+        names = self.parameter_names
+        flattened = [name for block in config.blocks for name in block]
+        marginalized = set()
+        likelihood = self.likelihood
+        if isinstance(likelihood, SingleEventLikelihood):
+            if getattr(likelihood, "time_marginalization", False):
+                marginalized.add("t_c")
+            if getattr(likelihood, "phase_marginalization", False):
+                marginalized.add("phase_c")
+            if getattr(likelihood, "distance_marginalization", False):
+                marginalized.add("d_L")
+
+        blocked_marginalized = sorted(marginalized.intersection(flattened))
+        if blocked_marginalized:
+            raise ValueError(
+                "SwiG blocks contain analytically marginalized parameter(s) "
+                f"{blocked_marginalized}; marginalized parameters are not sampled."
+            )
+
+        unknown = sorted(set(flattened) - set(names))
+        missing = sorted(set(names) - set(flattened))
+        if unknown:
+            raise ValueError(
+                f"SwiG block parameter(s) {unknown} are not sampling parameters {names}."
+            )
+        if missing:
+            raise ValueError(
+                f"SwiG blocks do not cover sampling parameter(s) {missing}."
+            )
+
+        waveform_dependencies = self._waveform_sampling_dependencies(marginalized)
+        block_indices = tuple(
+            tuple(names.index(name) for name in block) for block in config.blocks
+        )
+        refresh_cache = tuple(
+            bool(set(block).intersection(waveform_dependencies))
+            for block in config.blocks
+        )
+        return block_indices, refresh_cache
+
+    def _waveform_sampling_dependencies(self, marginalized: set[str]) -> set[str]:
+        """Conservatively map waveform inputs back to sampling-space names."""
+        all_sampling = set(self.parameter_names)
+        dependencies: dict[str, set[str]] = {
+            name: {name} for name in self.parameter_names
+        }
+
+        def apply_mapping(transform, reverse: bool) -> None:
+            from_names, to_names = transform.name_mapping
+            consumed = to_names if reverse else from_names
+            produced = from_names if reverse else to_names
+            conditional = getattr(transform, "conditional_names", [])
+            inputs = list(consumed) + list(conditional)
+            combined: set[str] = set()
+            for name in inputs:
+                combined.update(dependencies.get(name, all_sampling))
+            for name in consumed:
+                dependencies.pop(name, None)
+            for name in produced:
+                dependencies[name] = combined.copy()
+
+        for transform in reversed(self.sample_transforms):
+            apply_mapping(transform, reverse=True)
+        for transform in self.likelihood_transforms:
+            apply_mapping(transform, reverse=False)
+
+        likelihood = self.likelihood
+        if not isinstance(
+            likelihood,
+            (TransientLikelihoodFD, HeterodynedTransientLikelihoodFD),
+        ):
+            return all_sampling
+
+        waveform_dependencies: set[str] = set()
+        for parameter in likelihood.waveform.parameter_names:
+            if parameter == "d_L":
+                # Cached polarizations factor out inverse-distance amplitude.
+                continue
+            if parameter in marginalized:
+                continue
+            if parameter in likelihood.fixed_parameters:
+                if callable(likelihood.fixed_parameters[parameter]):
+                    waveform_dependencies.update(all_sampling)
+                continue
+            waveform_dependencies.update(dependencies.get(parameter, all_sampling))
+        return waveform_dependencies
 
     def _verify_posterior(self) -> None:
         """Draw test points from the prior and verify the posterior is not mostly NaN.
@@ -365,10 +510,17 @@ class Jim:
                 [`BlackJAXSMCConfig`][jimgw.samplers.config.BlackJAXSMCConfig] and
                 ``prior.is_normalized`` is ``False``.
         """
-        from jimgw.samplers.config import BlackJAXNSSConfig, BlackJAXSMCConfig
+        from jimgw.samplers.config import (
+            BlackJAXNSSConfig,
+            BlackJAXSMCConfig,
+            BlackJAXSwiGConfig,
+        )
 
         if (
-            isinstance(sampler_config, (BlackJAXNSSConfig, BlackJAXSMCConfig))
+            isinstance(
+                sampler_config,
+                (BlackJAXNSSConfig, BlackJAXSwiGConfig, BlackJAXSMCConfig),
+            )
             and not prior.is_normalized
         ):
             raise ValueError(

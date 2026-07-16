@@ -92,6 +92,20 @@ class SingleEventLikelihood(LikelihoodBase):
         self.waveform = waveform
         self.fixed_parameters = fixed_parameters if fixed_parameters is not None else {}
 
+    def _generate_cached_polarizations(self, frequencies, params):
+        """Generate polarizations with analytic distance scaling factored out."""
+        cache_params = params.copy()
+        if "d_L" in getattr(self.waveform, "parameter_names", ()):
+            cache_params["d_L"] = 1.0
+        return self.waveform(frequencies, cache_params)
+
+    def _restore_cached_distance(self, waveform_sky, params):
+        """Apply inverse-distance amplitude scaling to cached polarizations."""
+        if "d_L" not in getattr(self.waveform, "parameter_names", ()):
+            return waveform_sky
+        scale = 1.0 / params["d_L"]
+        return {polarization: strain * scale for polarization, strain in waveform_sky.items()}
+
     def evaluate(self, params: dict[str, Float]) -> FloatScalar:
         """Apply ``fixed_parameters`` overrides and evaluate the likelihood.
 
@@ -270,6 +284,11 @@ class TransientLikelihoodFD(SingleEventLikelihood):
             self._init_distance_marginalization(distance_marginalization)
 
     def evaluate(self, params: dict[str, Float]) -> FloatScalar:
+        params = self._prepare_parameters(params)
+        return self._likelihood(params)
+
+    def _prepare_parameters(self, params: dict[str, Float]) -> dict[str, Float]:
+        """Return the effective likelihood parameters after internal overrides."""
         params = params.copy()
         params["trigger_time"] = self.trigger_time
         params["gmst"] = self.gmst
@@ -280,10 +299,41 @@ class TransientLikelihoodFD(SingleEventLikelihood):
         if self.distance_marginalization:
             params["d_L"] = self.ref_dist
         apply_fixed_parameters(params, self.fixed_parameters)
-        return self._likelihood(params)
+        return params
+
+    def generate_waveform(
+        self, params: dict[str, Float]
+    ) -> dict[str, Complex[Array, " n_freq"]]:
+        """Generate reusable sky-frame waveform polarizations.
+
+        Distance amplitude is factored out, so the returned PyTree is a valid
+        cache when ``d_L`` changes. Other effective waveform inputs must remain
+        unchanged.
+        """
+        prepared = self._prepare_parameters(params)
+        return self._generate_cached_polarizations(self.frequencies, prepared)
+
+    def evaluate_from_waveform(
+        self,
+        params: dict[str, Float],
+        waveform_sky: dict[str, Complex[Array, " n_freq"]],
+    ) -> FloatScalar:
+        """Evaluate detector projection and marginalisations from a waveform cache."""
+        prepared = self._prepare_parameters(params)
+        return self._likelihood_from_waveform(prepared, waveform_sky)
 
     def _likelihood(self, params: dict[str, Float]) -> FloatScalar:
-        waveform_sky = self.waveform(self.frequencies, params)
+        waveform_sky = self._generate_cached_polarizations(self.frequencies, params)
+        return self._likelihood_from_waveform(params, waveform_sky)
+
+    def _likelihood_from_waveform(
+        self,
+        params: dict[str, Float],
+        waveform_sky: dict[str, Complex[Array, " n_freq"]],
+    ) -> FloatScalar:
+        """Core likelihood reduction for pre-generated waveform polarizations."""
+
+        waveform_sky = self._restore_cached_distance(waveform_sky, params)
 
         # --- choose accumulation type based on flags ---
         if self.time_marginalization:
@@ -715,21 +765,59 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
             )
 
     def evaluate(self, params: dict[str, Float]) -> FloatScalar:
+        params = self._prepare_parameters(params)
+        return self._likelihood(params)
+
+    def _prepare_parameters(self, params: dict[str, Float]) -> dict[str, Float]:
         params = params.copy()
         params["trigger_time"] = self.trigger_time
         params["gmst"] = self.gmst
         if self.phase_marginalization:
             params["phase_c"] = 0.0
         apply_fixed_parameters(params, self.fixed_parameters)
-        return self._likelihood(params)
+        return params
+
+    def generate_waveform(
+        self, params: dict[str, Float]
+    ) -> dict[str, dict[str, Complex[Array, " n_bins"]]]:
+        """Generate distance-normalized bin-edge polarizations for cache reuse."""
+        prepared = self._prepare_parameters(params)
+        return {
+            "low": self._generate_cached_polarizations(self.freq_grid_low, prepared),
+            "high": self._generate_cached_polarizations(
+                self.freq_grid_high, prepared
+            ),
+        }
+
+    def evaluate_from_waveform(
+        self,
+        params: dict[str, Float],
+        waveform_cache: dict[str, dict[str, Complex[Array, " n_bins"]]],
+    ) -> FloatScalar:
+        """Evaluate the heterodyned likelihood from cached bin-edge waveforms."""
+        prepared = self._prepare_parameters(params)
+        return self._likelihood_from_waveform(prepared, waveform_cache)
 
     def _likelihood(self, params: dict[str, Float]) -> FloatScalar:
+        waveform_cache = {
+            "low": self._generate_cached_polarizations(self.freq_grid_low, params),
+            "high": self._generate_cached_polarizations(self.freq_grid_high, params),
+        }
+        return self._likelihood_from_waveform(params, waveform_cache)
+
+    def _likelihood_from_waveform(
+        self,
+        params: dict[str, Float],
+        waveform_cache: dict[str, dict[str, Complex[Array, " n_bins"]]],
+    ) -> FloatScalar:
         frequencies_low = self.freq_grid_low
         frequencies_high = self.freq_grid_high
         log_likelihood: FloatScalar = jnp.zeros(())
 
-        waveform_sky_low = self.waveform(frequencies_low, params)
-        waveform_sky_high = self.waveform(frequencies_high, params)
+        waveform_sky_low = self._restore_cached_distance(waveform_cache["low"], params)
+        waveform_sky_high = self._restore_cached_distance(
+            waveform_cache["high"], params
+        )
 
         complex_d_inner_h: ComplexScalar = jnp.zeros((), dtype=jnp.complex128)
 

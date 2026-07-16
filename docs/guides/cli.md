@@ -300,6 +300,7 @@ The `type` field selects the backend. Each backend has its own set of tuning par
 | `flowmc` | Normalizing-flow MCMC | No |
 | `blackjax-smc` | Sequential Monte Carlo | Yes |
 | `blackjax-nss` | Nested slice sampling | Yes |
+| `blackjax-swig` | Nested Slice within Gibbs with waveform caching | Yes |
 | `blackjax-ns-aw` | Nested sampling (acceptance-walk) | Yes |
 
 ### `type = "flowmc"`
@@ -353,6 +354,21 @@ n_tempered_steps = 5
 | `n_delete_frac` | `0.5` | Fraction of live points replaced per iteration |
 | `num_inner_steps_per_dim` | `10` | Slice steps per dimension for the nested kernel |
 | `termination_dlogz` | `0.1` | Stop when the remaining log-evidence contribution falls below this |
+| `checkpoint_dir` | `{output.dir}/` | Directory for `checkpoint.pkl`; set by the CLI automatically |
+| `checkpoint_interval` | `600.0` | Seconds between checkpoint writes; `0` disables checkpointing |
+
+### `type = "blackjax-swig"`
+
+| Field | Default | Description |
+| --- | --- | --- |
+| `blocks` | required | Ordered lists of sampling-space parameter names |
+| `n_live` | `512` | Number of live points |
+| `n_delete_frac` | `0.125` | Fraction of live points replaced per iteration |
+| `num_inner_steps_per_dim` | `1` | Slice steps per dimension within each block |
+| `num_gibbs_sweeps` | `2` | Complete block sweeps per replacement |
+| `max_steps` | `10` | Maximum stepping-out expansions per slice |
+| `max_shrinkage` | `100` | Maximum shrinkage evaluations per slice |
+| `termination_dlogz` | `exp(-3)` (~`0.0498`) | Stop when the remaining evidence contribution falls below this |
 | `checkpoint_dir` | `{output.dir}/` | Directory for `checkpoint.pkl`; set by the CLI automatically |
 | `checkpoint_interval` | `600.0` | Seconds between checkpoint writes; `0` disables checkpointing |
 

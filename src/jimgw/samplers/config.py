@@ -6,6 +6,7 @@ Each sampler has its own ``*Config`` class discriminated by a ``type`` literal;
 """
 
 import logging
+import math
 import pickle
 import time
 import warnings
@@ -351,6 +352,71 @@ class BlackJAXNSSConfig(BaseSamplerConfig, _CheckpointMixin):
         return self
 
 
+class BlackJAXSwiGConfig(BaseSamplerConfig, _CheckpointMixin):
+    """Configuration for Nested Slice within Gibbs (SwiG) sampling.
+
+    ``blocks`` are expressed in Jim's sampling-space parameter names. Jim
+    validates that they form an exact partition and determines which blocks
+    invalidate the waveform cache after accounting for transforms, fixed
+    parameters, and analytic marginalisation.
+    """
+
+    type: Literal["blackjax-swig"] = "blackjax-swig"
+
+    blocks: list[list[str]]
+    n_live: int = 512
+    n_delete_frac: float = 0.125
+    num_gibbs_sweeps: int = 2
+    num_inner_steps_per_dim: int = 1
+    max_steps: int = 10
+    max_shrinkage: int = 100
+    termination_dlogz: float = math.exp(-3.0)
+
+    @field_validator("blocks")
+    @classmethod
+    def _validate_blocks(cls, blocks: list[list[str]]) -> list[list[str]]:
+        if not blocks:
+            raise ValueError("blocks must contain at least one parameter block")
+        if any(not block for block in blocks):
+            raise ValueError("blocks cannot contain empty parameter blocks")
+        flat = [name for block in blocks for name in block]
+        duplicates = sorted({name for name in flat if flat.count(name) > 1})
+        if duplicates:
+            raise ValueError(f"parameters appear in multiple blocks: {duplicates}")
+        return blocks
+
+    @field_validator(
+        "num_gibbs_sweeps",
+        "num_inner_steps_per_dim",
+        "max_steps",
+        "max_shrinkage",
+    )
+    @classmethod
+    def _positive_integer(cls, value: int) -> int:
+        if value < 1:
+            raise ValueError("must be >= 1")
+        return value
+
+    @field_validator("n_delete_frac")
+    @classmethod
+    def _n_delete_frac_range(cls, value: float) -> float:
+        if not (0.0 < value < 1.0):
+            raise ValueError("n_delete_frac must be strictly between 0 and 1")
+        return value
+
+    @model_validator(mode="after")
+    def _n_live_n_delete_consistency(self) -> Self:
+        if self.n_live < 2:
+            raise ValueError(f"n_live must be >= 2 (got {self.n_live}).")
+        n_delete = int(self.n_live * self.n_delete_frac)
+        if n_delete < 1:
+            raise ValueError(
+                f"n_live * n_delete_frac = {self.n_live * self.n_delete_frac} "
+                f"yields n_delete = {n_delete}; require n_delete >= 1."
+            )
+        return self
+
+
 class BlackJAXSMCConfig(BaseSamplerConfig, _CheckpointMixin):
     """Configuration for the BlackJAX SMC sampler.
 
@@ -460,7 +526,13 @@ class BlackJAXSMCConfig(BaseSamplerConfig, _CheckpointMixin):
 
 
 SamplerConfig = Annotated[
-    Union[FlowMCConfig, BlackJAXNSAWConfig, BlackJAXNSSConfig, BlackJAXSMCConfig],
+    Union[
+        FlowMCConfig,
+        BlackJAXNSAWConfig,
+        BlackJAXNSSConfig,
+        BlackJAXSwiGConfig,
+        BlackJAXSMCConfig,
+    ],
     Discriminator("type"),
 ]
 """Discriminated union of every concrete sampler config."""

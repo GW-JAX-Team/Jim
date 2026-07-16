@@ -16,6 +16,7 @@ samples = jim.get_samples()  # dict[str, np.ndarray] keyed by parameter name
 | [flowMC](#flowmc) | normalizing-flow-enhanced MCMC | No | None |
 | [NS-AW](#blackjax-ns-aw) | Nested sampling (bilby/dynesty-style acceptance-walk) | Yes | Uniform prior; unit-cube sampling space |
 | [NSS](#blackjax-nss) | Nested slice sampling | Yes | Normalised prior |
+| [SwiG](#blackjax-swig) | Nested Slice within Gibbs with waveform caching | Yes | Normalised prior |
 | [SMC](#blackjax-smc) | Sequential Monte Carlo | Yes | Normalised prior |
 
 ---
@@ -168,6 +169,58 @@ Key parameters:
 
 ---
 
+### BlackJAX SwiG
+
+Nested Slice within Gibbs (SwiG) applies covariance-shaped slice updates to
+named parameter blocks. With `TransientLikelihoodFD` or
+`HeterodynedTransientLikelihoodFD`, Jim caches the generated waveform
+polarizations: blocks that affect waveform inputs regenerate the cache, while
+detector-projection-only blocks reuse it. Luminosity distance is also factored
+out analytically, so a `d_L` block reuses the cache. Jim determines the other
+dependencies after sample transforms, likelihood transforms, fixed parameters,
+and analytic marginalisation have been applied.
+
+```python
+import math
+
+from jimgw.samplers.config import BlackJAXSwiGConfig
+
+jim = Jim(
+    likelihood,
+    prior,
+    sampler_config=BlackJAXSwiGConfig(
+        blocks=[
+            ["M_c", "q", "lambda_1", "lambda_2"],
+            ["s1_z", "s2_z"],
+            ["iota"],
+            ["ra", "dec"],
+            ["psi"],
+            ["t_c"],
+        ],
+        n_live=512,
+        n_delete_frac=0.125,
+        num_inner_steps_per_dim=1,
+        num_gibbs_sweeps=2,
+        termination_dlogz=math.exp(-3.0),
+    ),
+    likelihood_transforms=likelihood_transforms,
+)
+```
+
+Blocks must form an exact partition of the sampling parameters. A block that
+contains any waveform dependency is treated as cache-refreshing; mixed blocks
+are therefore safe but may be less efficient. Parameters that are analytically
+marginalised must not appear in the blocks.
+
+Key parameters:
+
+- `blocks` — ordered sampling-space parameter blocks for each Gibbs sweep.
+- `n_live` / `n_delete_frac` — live-set size and replacement fraction, matching NSS.
+- `num_inner_steps_per_dim` — random-direction slice steps per block dimension.
+- `num_gibbs_sweeps` — complete block sweeps per particle replacement.
+
+---
+
 ## Checkpointing and resuming
 
 All samplers support checkpoint/resume so long-running jobs can survive interruptions.
@@ -205,7 +258,8 @@ jim = Jim(
 jim.sample()  # resumes from ./my_run/checkpoint.pkl
 ```
 
-The same fields work identically for `FlowMCConfig`, `BlackJAXNSAWConfig`, and `BlackJAXNSSConfig`.
+The same fields work identically for `FlowMCConfig`, `BlackJAXNSAWConfig`,
+`BlackJAXNSSConfig`, and `BlackJAXSwiGConfig`.
 
 | Field | Default | Notes |
 | --- | --- | --- |

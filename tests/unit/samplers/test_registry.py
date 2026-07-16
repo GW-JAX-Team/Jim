@@ -77,10 +77,11 @@ def test_build_sampler_unknown_type_raises():
         )
 
 
-def test_registry_has_all_four_types():
+def test_registry_has_all_sampler_types():
     from jimgw.samplers import _REGISTRY
 
     assert "flowmc" in _REGISTRY
     assert "blackjax-ns-aw" in _REGISTRY
     assert "blackjax-nss" in _REGISTRY
+    assert "blackjax-swig" in _REGISTRY
     assert "blackjax-smc" in _REGISTRY

@@ -104,7 +104,10 @@ class SingleEventLikelihood(LikelihoodBase):
         if "d_L" not in getattr(self.waveform, "parameter_names", ()):
             return waveform_sky
         scale = 1.0 / params["d_L"]
-        return {polarization: strain * scale for polarization, strain in waveform_sky.items()}
+        return {
+            polarization: strain * scale
+            for polarization, strain in waveform_sky.items()
+        }
 
     def evaluate(self, params: dict[str, Float]) -> FloatScalar:
         """Apply ``fixed_parameters`` overrides and evaluate the likelihood.
@@ -784,9 +787,7 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         prepared = self._prepare_parameters(params)
         return {
             "low": self._generate_cached_polarizations(self.freq_grid_low, prepared),
-            "high": self._generate_cached_polarizations(
-                self.freq_grid_high, prepared
-            ),
+            "high": self._generate_cached_polarizations(self.freq_grid_high, prepared),
         }
 
     def evaluate_from_waveform(

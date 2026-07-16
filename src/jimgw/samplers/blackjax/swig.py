@@ -76,9 +76,7 @@ def _build_swig_constrained_step(
             position,
         )
 
-    def constrained_step(
-        rng_key, state, loglikelihood_0, block_covariances
-    ):
+    def constrained_step(rng_key, state, loglikelihood_0, block_covariances):
         cache = build_cache_fn(state.position)
         cached_state = CachedSliceState(
             position=state.position,
@@ -107,8 +105,10 @@ def _build_swig_constrained_step(
                         block_direction = sample_direction_from_covariance(
                             direction_key, block_position, covariance
                         )
-                        direction = jnp.zeros_like(position).at[block_array].set(
-                            block_direction
+                        direction = (
+                            jnp.zeros_like(position)
+                            .at[block_array]
+                            .set(block_direction)
                         )
 
                         def slice_fn(t):
@@ -144,12 +144,10 @@ def _build_swig_constrained_step(
 
                 keys = jax.random.split(rng_key, n_steps + 1)
                 rng_key = keys[0]
-                (cached_state, accepted, num_expansions, num_shrink), _ = (
-                    jax.lax.scan(
-                        one_slice,
-                        (cached_state, accepted, num_expansions, num_shrink),
-                        keys[1:],
-                    )
+                (cached_state, accepted, num_expansions, num_shrink), _ = jax.lax.scan(
+                    one_slice,
+                    (cached_state, accepted, num_expansions, num_shrink),
+                    keys[1:],
                 )
 
         final_state = state._replace(

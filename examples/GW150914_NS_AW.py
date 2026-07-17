@@ -1,4 +1,4 @@
-"""GW150914 analysis with the BlackJAX NS-AW nested sampler."""
+"""GW150914 analysis with the BlackJAX NS AW nested sampler."""
 
 import time
 from pathlib import Path

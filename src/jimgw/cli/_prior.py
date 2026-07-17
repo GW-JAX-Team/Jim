@@ -60,7 +60,7 @@ def adapt_prior_for_ns_time(
     prior_cfg: PriorConfig,
     sampling_cfg: SamplingConfig,
 ) -> Optional[PriorConfig]:
-    """For NS-AW: replace the time parameter so the unit-cube bounds are exact.
+    """For NS AW: replace the time parameter so the unit-cube bounds are exact.
 
     Both ``t_c`` and ``t_det`` are treated as offsets from ``trigger_time``
     (e.g. ``min = -0.1``, ``max = 0.1``).  Because the ``t_c → t_det``
@@ -68,7 +68,7 @@ def adapt_prior_for_ns_time(
     for the *output* parameter cannot be exact — the same bounds are used for
     both.
 
-    NS-AW requires every sampling-space parameter to lie in [0, 1].
+    NS AW requires every sampling-space parameter to lie in [0, 1].
     Two cases require adaptation:
 
     1. **t_c in prior, time_frame != "geocentric"**: replace ``t_c`` with
@@ -91,10 +91,10 @@ def adapt_prior_for_ns_time(
     if has_t_det and sampling_cfg.time_frame == "geocentric":
         t_det_spec = prior_cfg.root["t_det"]
         assert isinstance(t_det_spec, UniformSpec), (
-            "NS-AW validation should ensure t_det is UniformSpec"
+            "NS AW validation should ensure t_det is UniformSpec"
         )
         logger.warning(
-            "NS-AW sampler: replacing t_det ~ Uniform(%.4f, %.4f) in [prior] with "
+            "NS AW sampler: replacing t_det ~ Uniform(%.4f, %.4f) in [prior] with "
             "t_c ~ Uniform(%.4f, %.4f) (same relative-offset bounds). "
             "To sample t_det directly instead, remove [sampling] time_frame = 'geocentric'.",
             t_det_spec.min,
@@ -114,10 +114,10 @@ def adapt_prior_for_ns_time(
     # Case 1: t_c in prior + detector time_frame → adapt to t_det prior.
     t_c_spec = prior_cfg.root["t_c"]
     assert isinstance(t_c_spec, UniformSpec), (
-        "NS-AW validation should ensure t_c is UniformSpec"
+        "NS AW validation should ensure t_c is UniformSpec"
     )
     logger.warning(
-        "NS-AW sampler: replacing t_c ~ Uniform(%.4f, %.4f) in [prior] with "
+        "NS AW sampler: replacing t_c ~ Uniform(%.4f, %.4f) in [prior] with "
         "t_det ~ Uniform(%.4f, %.4f) (same relative-offset bounds). "
         "To sample t_c directly instead, set [sampling] time_frame = 'geocentric'.",
         t_c_spec.min,

@@ -281,7 +281,7 @@ class BlackJAXNSAWConfig(BaseSamplerConfig, _CheckpointMixin):
     !!! note
         Periodic parameters are **not** configured here.  Pass a
         ``periodic`` argument to [`Jim`][jimgw.core.jim.Jim] instead.
-        For NS-AW, bounds are implicit as ``[0, 1]``; just list the
+        For NS AW, bounds are implicit as ``[0, 1]``; just list the
         parameter names.
     """
 

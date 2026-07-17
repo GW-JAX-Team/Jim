@@ -80,7 +80,7 @@ def infer_sample_transforms(
         sampling_cfg: [sampling] section config.
         unit_cube: When ``True``, append BoundToBound/auxiliary transforms
             that map every sampling-space parameter to [0, 1] (required by the
-            NS-AW sampler).  ``prior_cfg`` must be supplied in this case.
+            NS AW sampler).  ``prior_cfg`` must be supplied in this case.
         prior_cfg: Prior config (required when ``unit_cube=True``).
 
     Returns:
@@ -121,7 +121,7 @@ def infer_sample_transforms(
         )
         logger.debug("Added SkyFrameToDetectorFrameSkyPositionTransform")
 
-    # --- Unit-cube transforms (NS-AW) -------------------------------------
+    # --- Unit-cube transforms (NS AW) -------------------------------------
     if unit_cube:
         sample_transforms.extend(
             _build_unit_cube_transforms(prior_params, prior_cfg, sampling_cfg)
@@ -229,7 +229,7 @@ def infer_likelihood_transforms(
 
 
 # ---------------------------------------------------------------------------
-# Unit-cube transforms (for NS-AW sampler)
+# Unit-cube transforms (for NS AW sampler)
 # ---------------------------------------------------------------------------
 
 
@@ -258,7 +258,7 @@ def _build_unit_cube_transforms(
     consumed = _EQUATORIAL_SKY_PARAMS if sky_transform_applied else set()
 
     # All other prior parameters (including J-frame spin angles and spherical spin
-    # components) stay in sampling space for NS-AW; their physics transforms live in
+    # components) stay in sampling space for NS AW; their physics transforms live in
     # likelihood_transforms. Just apply the prior-spec-based unit-cube transform for each.
     for name, spec in prior_cfg.root.items():
         if name in consumed:

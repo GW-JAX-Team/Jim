@@ -14,7 +14,7 @@ samples = jim.get_samples()  # dict[str, np.ndarray] keyed by parameter name
 | Sampler | Algorithm | Evidence | Prior constraint |
 | --- | --- | --- | --- |
 | [flowMC](#flowmc) | normalizing-flow-enhanced MCMC | No | None |
-| [NS-AW](#blackjax-ns-aw) | Nested sampling (bilby/dynesty-style acceptance-walk) | Yes | Uniform prior; unit-cube sampling space |
+| [NS AW](#blackjax-ns-aw) | Nested sampling (bilby/dynesty-style acceptance-walk) | Yes | Uniform prior; unit-cube sampling space |
 | [NSS](#blackjax-nss) | Nested slice sampling | Yes | Normalised prior |
 | [SMC](#blackjax-smc) | Sequential Monte Carlo | Yes | Normalised prior |
 
@@ -92,7 +92,7 @@ Key parameters:
 
 ---
 
-### BlackJAX NS-AW
+### BlackJAX NS AW
 
 Nested sampling with a bilby/dynesty-style adaptive differential-evolution acceptance-walk inner kernel.
 
@@ -133,7 +133,7 @@ Key parameters:
 ### BlackJAX NSS
 
 Nested sampling with a slice-sampling inner kernel.
-Unlike NS-AW, it does not require a unit-cube prior and works in any bounded sampling space.
+Unlike NS AW, it does not require a unit-cube prior and works in any bounded sampling space.
 
 > **Normalised-prior requirement** — NSS computes a Bayesian evidence estimate and therefore requires a normalised prior. All built-in Jim priors are normalised. If you add custom constraints, check whether the resulting distribution is still normalised; if so, override `is_normalized` to return `True`. Jim raises a `ValueError` at construction if this condition is not met.
 
@@ -231,7 +231,7 @@ config = FlowMCConfig(
 )
 ```
 
-BlackJAX NS-AW operates in `[0, 1]` per dimension, so its `periodic` field takes a plain list of parameter names:
+BlackJAX NS AW operates in `[0, 1]` per dimension, so its `periodic` field takes a plain list of parameter names:
 
 ```python
 config = BlackJAXNSAWConfig(
@@ -255,7 +255,7 @@ samples["log_likelihood"]  # np.ndarray — per-sample log-likelihood
 
 Each backend's `get_samples()` returns equally-weighted posterior samples:
 
-- **NS-AW / NSS**: uses anesthetic's `posterior_points()` to resample the dead-point collection to equal-weight samples.
+- **NS AW / NSS**: uses anesthetic's `posterior_points()` to resample the dead-point collection to equal-weight samples.
 - **SMC (persistent)**: resamples all-temperature particles weighted by the persistent-sampling weights.
 - **SMC (non-persistent)**: returns all final-temperature particles.
 - **flowMC**: returns all production samples across all chains.
@@ -290,7 +290,7 @@ diag["acceptance_training_global"]      # np.ndarray — global acceptance rate 
 diag["acceptance_production_local"]     # np.ndarray — local acceptance rate per production loop
 diag["acceptance_production_global"]    # np.ndarray — global acceptance rate per production loop
 
-# NS-AW and NSS — also include evidence estimate
+# NS AW and NSS — also include evidence estimate
 diag["n_iterations"]              # int   — number of nested-sampling steps
 diag["log_Z"]                     # float — log Bayesian evidence
 diag["log_Z_error"]               # float — standard deviation from 100 bootstrap samples

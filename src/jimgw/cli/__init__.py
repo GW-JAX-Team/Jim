@@ -168,7 +168,7 @@ def run(
         time_frame=cfg.sampling.time_frame,
     )
 
-    # NS-AW requires all sampling-space parameters in [0, 1].
+    # NS AW requires all sampling-space parameters in [0, 1].
     # Must run before build_prior so the built prior and
     # prior_params already reflect the substitution.
     if cfg.sampler.type == "blackjax-ns-aw":

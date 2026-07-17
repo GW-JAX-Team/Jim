@@ -621,7 +621,7 @@ class PipelineConfig(BaseModel):
             self.prior.root["t_det"], UniformSpec
         ):
             raise ValueError(
-                "NS-AW sampler: the 't_det' prior must be 'uniform' for automatic "
+                "NS AW sampler: the 't_det' prior must be 'uniform' for automatic "
                 "conversion to 't_c'. Either use a uniform t_det prior or replace "
                 "'t_det' with 't_c' in [prior]."
             )
@@ -632,7 +632,7 @@ class PipelineConfig(BaseModel):
             and not isinstance(self.prior.root["t_c"], UniformSpec)
         ):
             raise ValueError(
-                "NS-AW sampler: the 't_c' prior must be 'uniform' for automatic "
+                "NS AW sampler: the 't_c' prior must be 'uniform' for automatic "
                 "conversion to 't_det'. Either use a uniform t_c prior, set "
                 "[sampling] time_frame = 'geocentric' to sample t_c directly, or "
                 "replace 't_c' with 't_det' in [prior]."

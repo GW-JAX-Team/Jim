@@ -3,7 +3,7 @@
 Jim priors are built by composing individual prior components with `CombinePrior`, which joins them into a joint prior. Each component can cover one or more parameters.
 
 !!! note "Sampler prior requirements"
-    Some samplers impose extra constraints on the prior. BlackJAX NS-AW requires a uniform prior on the unit hypercube; BlackJAX NSS and SMC require a normalised prior. See the [Samplers guide](samplers.md) before choosing a backend.
+    Some samplers impose extra constraints on the prior. BlackJAX NS AW requires a uniform prior on the unit hypercube; BlackJAX NSS and SMC require a normalised prior. See the [Samplers guide](samplers.md) before choosing a backend.
 
 ## CombinePrior
 
@@ -102,7 +102,7 @@ RayleighPrior(sigma, ["parameter_name"])
 ## Constraints
 
 !!! warning
-    When custom constraints are applied, the resulting prior is generally **not normalised**. flowMC tolerates this because it never needs the normalisation constant. However, BlackJAX NS-AW, NSS, and SMC compute Bayesian evidence and therefore require a normalised prior. If you know your constrained prior is normalised, override `is_normalized` to return `True`. Jim enforces this at construction time and will raise a `ValueError` if `is_normalized` is `False` for those backends.
+    When custom constraints are applied, the resulting prior is generally **not normalised**. flowMC tolerates this because it never needs the normalisation constant. However, BlackJAX NS AW, NSS, and SMC compute Bayesian evidence and therefore require a normalised prior. If you know your constrained prior is normalised, override `is_normalized` to return `True`. Jim enforces this at construction time and will raise a `ValueError` if `is_normalized` is `False` for those backends.
 
 ### Single-parameter bounds with BoundedMixin
 

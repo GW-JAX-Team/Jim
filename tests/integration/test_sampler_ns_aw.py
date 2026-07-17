@@ -1,4 +1,4 @@
-"""Integration test: BlackJAX NS-AW sampler end-to-end with a 2-D Gaussian."""
+"""Integration test: BlackJAX NS AW sampler end-to-end with a 2-D Gaussian."""
 
 from __future__ import annotations
 

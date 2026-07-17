@@ -113,7 +113,7 @@ class BlackJAXNSAWSampler(Sampler):
         rng_key: Key,
         initial_position: Float[Array, "n_live n_dims"],
     ) -> None:
-        """Run the BlackJAX NS-AW sampler.
+        """Run the BlackJAX NS AW sampler.
 
         If ``config.checkpoint_dir`` is set, a ``checkpoint.pkl`` is written
         atomically after each nested-sampling iteration (subject to
@@ -176,7 +176,7 @@ class BlackJAXNSAWSampler(Sampler):
                 n_iter = _ckpt["n_iter"]
                 self._prev_elapsed = float(_ckpt["elapsed_time"])
                 logger.info(
-                    "NS-AW: resumed from checkpoint at n_iter=%d (%s)",
+                    "NS AW: resumed from checkpoint at n_iter=%d (%s)",
                     n_iter,
                     ckpt_path,
                 )
@@ -188,7 +188,7 @@ class BlackJAXNSAWSampler(Sampler):
                 pickle.UnpicklingError,
             ) as _e:
                 logger.warning(
-                    "NS-AW: corrupt checkpoint at %s (%s) — starting fresh.",
+                    "NS AW: corrupt checkpoint at %s (%s) — starting fresh.",
                     ckpt_path,
                     _e,
                 )
@@ -229,7 +229,7 @@ class BlackJAXNSAWSampler(Sampler):
                         "elapsed_time": self._prev_elapsed
                         + (time.perf_counter() - _method_t0),
                     },
-                    "NS-AW",
+                    "NS AW",
                 )
 
         self._final_state = finalise(state, dead)
@@ -272,7 +272,7 @@ class BlackJAXNSAWSampler(Sampler):
         return {"samples": samples, "log_likelihood": log_L}
 
     def _get_diagnostics(self) -> dict[str, Any]:
-        """Return NS-AW run diagnostics.
+        """Return NS AW run diagnostics.
 
         Returns a dict with the following keys:
 

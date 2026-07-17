@@ -102,9 +102,9 @@ likelihood_transforms = [MassRatioToSymmetricMassRatioTransform()]  # TypeError
 | `GeocentricArrivalPhaseToDetectorArrivalPhaseTransform(trigger_time, ifo)` | `phase_c → phase_det` | Conditional on ra, dec, psi, iota. Assumes dominant quadrupolar mode only ([arXiv:2207.03508](https://arxiv.org/abs/2207.03508)); **not valid** for waveforms with higher harmonics or precession. |
 | `DistanceToSNRWeightedDistanceTransform` | `d_L → d_hat` | SNR-weighted distance parameterisation ([arXiv:2207.03508](https://arxiv.org/abs/2207.03508)). Assumes dominant quadrupolar mode only; **not valid** for waveforms with higher harmonics or precession. |
 
-## Mapping a prior to the unit cube (for NS-AW)
+## Mapping a prior to the unit cube (for NS AW)
 
-The [BlackJAX NS-AW sampler](samplers.md#blackjax-ns-aw) requires the **sampling space** to be the unit hypercube `[0, 1]^n_dims`.
+The [BlackJAX NS AW sampler](samplers.md#blackjax-ns-aw) requires the **sampling space** to be the unit hypercube `[0, 1]^n_dims`.
 The `sample_transforms` must map every parameter from its physical support into `[0, 1]`.
 
 The key tool is `BoundToBound`, which linearly maps `[a, b] → [c, d]`:

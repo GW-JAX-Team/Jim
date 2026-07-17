@@ -2599,7 +2599,7 @@ parameter space from the prior parameter space.</p>
                 <p>Periodic sampling-space parameters.  For most samplers,
 pass a <code>dict</code> mapping parameter name to <code>(lo, hi)</code> bounds
 (e.g. <code>{"phase_c": (0.0, 6.2832)}</code>).  For the BlackJAX
-NS-AW sampler (unit-cube space), pass a <code>list</code> of parameter
+NS AW sampler (unit-cube space), pass a <code>list</code> of parameter
 names (bounds are implicit as <code>[0, 1]</code>).</p>
               </div>
             </td>
@@ -2880,7 +2880,7 @@ expected shape depends on the backend:</p>
 <ul>
 <li>flowMC: <code>(n_chains, n_dims)</code> or <code>(n_dims,)</code> (broadcast
   to all chains).</li>
-<li>BlackJAX NS-AW / NSS: exactly <code>(n_live, n_dims)</code>.</li>
+<li>BlackJAX NS AW / NSS: exactly <code>(n_live, n_dims)</code>.</li>
 <li>BlackJAX SMC: exactly <code>(n_particles, n_dims)</code>.</li>
 </ul>
 <p>The concrete sampler validates the shape and raises

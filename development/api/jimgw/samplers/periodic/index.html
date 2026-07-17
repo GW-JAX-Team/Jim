@@ -2194,7 +2194,7 @@ sampler backend expects.</p>
 <pre><code>periodic_index = {1: (0.0, 2 * math.pi), ...}   # key = dimension index
 </code></pre>
 <p>Each backend wants a different shape: flowMC already accepts an index-keyed dict
-directly; BlackJAX NS-AW needs a stepper function on flat arrays; BlackJAX NSS
+directly; BlackJAX NS AW needs a stepper function on flat arrays; BlackJAX NSS
 needs a <code>proposal</code> factory with the same interface as
 <code>blackjax.ns.nss.covariance_proposal</code>; BlackJAX SMC needs a displacement
 wrapper.  The adapters below handle those conversions.</p>
@@ -2237,7 +2237,7 @@ wrapper.  The adapters below handle those conversions.</p>
               <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;to_unit_cube_stepper&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;periodic_index&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Optional&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]],&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;n_dims&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Callable&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.samplers.periodic.to_unit_cube_stepper">to_unit_cube_stepper</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Stepper function for BlackJAX NS-AW (unit-cube space).</p>
+                  <p>Stepper function for BlackJAX NS AW (unit-cube space).</p>
                 </div>
               </td>
             </tr>
@@ -2315,10 +2315,10 @@ within <code>[lower, upper)</code>:</p>
 
     <div class="doc doc-contents ">
 
-        <p>Stepper function for BlackJAX NS-AW (unit-cube space).</p>
+        <p>Stepper function for BlackJAX NS AW (unit-cube space).</p>
 <p>Signature: <code>stepper_fn(position, direction, step_size) -&gt; new_position</code></p>
 <p><code>periodic_index</code> is a list of dimension indices to wrap; bounds are implicit
-because NS-AW always operates in <code>[0, 1]^n_dims</code>, so wrapping is always
+because NS AW always operates in <code>[0, 1]^n_dims</code>, so wrapping is always
 <code>mod(pos + step_size * dir, 1.0)</code>.</p>
 
 

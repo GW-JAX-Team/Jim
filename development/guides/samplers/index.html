@@ -941,7 +941,7 @@
   <a href="#blackjax-ns-aw" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        BlackJAX NS-AW
+        BlackJAX NS AW
       </span>
     </span>
   </a>
@@ -2228,7 +2228,7 @@
   <a href="#blackjax-ns-aw" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        BlackJAX NS-AW
+        BlackJAX NS AW
       </span>
     </span>
   </a>
@@ -2348,7 +2348,7 @@ You select one by passing a typed config object to <code>Jim</code>.</p>
 <td>None</td>
 </tr>
 <tr>
-<td><a href="#blackjax-ns-aw">NS-AW</a></td>
+<td><a href="#blackjax-ns-aw">NS AW</a></td>
 <td>Nested sampling (bilby/dynesty-style acceptance-walk)</td>
 <td>Yes</td>
 <td>Uniform prior; unit-cube sampling space</td>
@@ -2428,7 +2428,7 @@ You select one by passing a typed config object to <code>Jim</code>.</p>
 </ul>
 <p><strong>Repository:</strong> <a href="https://github.com/blackjax-devs/blackjax">blackjax-devs/blackjax</a></p>
 <hr />
-<h3 id="blackjax-ns-aw">BlackJAX NS-AW<a class="headerlink" href="#blackjax-ns-aw" title="Permanent link">¤</a></h3>
+<h3 id="blackjax-ns-aw">BlackJAX NS AW<a class="headerlink" href="#blackjax-ns-aw" title="Permanent link">¤</a></h3>
 <p>Nested sampling with a bilby/dynesty-style adaptive differential-evolution acceptance-walk inner kernel.</p>
 <blockquote>
 <p><strong>Unit-cube requirement</strong> — this sampler works in the unit hypercube <code>[0, 1]^n_dims</code>.  All parameters must be mapped into <code>[0, 1]</code> via sample transforms, which the CLI constructs automatically.</p>
@@ -2463,7 +2463,7 @@ You select one by passing a typed config object to <code>Jim</code>.</p>
 <hr />
 <h3 id="blackjax-nss">BlackJAX NSS<a class="headerlink" href="#blackjax-nss" title="Permanent link">¤</a></h3>
 <p>Nested sampling with a slice-sampling inner kernel.
-Unlike NS-AW, it does not require a unit-cube prior and works in any bounded sampling space.</p>
+Unlike NS AW, it does not require a unit-cube prior and works in any bounded sampling space.</p>
 <blockquote>
 <p><strong>Normalised-prior requirement</strong> — NSS computes a Bayesian evidence estimate and therefore requires a normalised prior. All built-in Jim priors are normalised. If you add custom constraints, check whether the resulting distribution is still normalised; if so, override <code>is_normalized</code> to return <code>True</code>. Jim raises a <code>ValueError</code> at construction if this condition is not met.</p>
 </blockquote>
@@ -2559,7 +2559,7 @@ Pass a dict of <code>parameter_name: (lower, upper)</code> bounds:</p>
     <span class="n">periodic</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;phase_c&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">6.283185</span><span class="p">),</span> <span class="s2">&quot;psi&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">3.141593</span><span class="p">)},</span>
 <span class="p">)</span>
 </code></pre></div>
-<p>BlackJAX NS-AW operates in <code>[0, 1]</code> per dimension, so its <code>periodic</code> field takes a plain list of parameter names:</p>
+<p>BlackJAX NS AW operates in <code>[0, 1]</code> per dimension, so its <code>periodic</code> field takes a plain list of parameter names:</p>
 <div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">BlackJAXNSAWConfig</span><span class="p">(</span>
     <span class="o">...</span><span class="p">,</span>
     <span class="n">periodic</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;phase_c&quot;</span><span class="p">,</span> <span class="s2">&quot;psi&quot;</span><span class="p">],</span>
@@ -2575,7 +2575,7 @@ Pass a dict of <code>parameter_name: (lower, upper)</code> bounds:</p>
 </code></pre></div>
 <p>Each backend's <code>get_samples()</code> returns equally-weighted posterior samples:</p>
 <ul>
-<li><strong>NS-AW / NSS</strong>: uses anesthetic's <code>posterior_points()</code> to resample the dead-point collection to equal-weight samples.</li>
+<li><strong>NS AW / NSS</strong>: uses anesthetic's <code>posterior_points()</code> to resample the dead-point collection to equal-weight samples.</li>
 <li><strong>SMC (persistent)</strong>: resamples all-temperature particles weighted by the persistent-sampling weights.</li>
 <li><strong>SMC (non-persistent)</strong>: returns all final-temperature particles.</li>
 <li><strong>flowMC</strong>: returns all production samples across all chains.</li>
@@ -2600,7 +2600,7 @@ Pass a dict of <code>parameter_name: (lower, upper)</code> bounds:</p>
 <span class="n">diag</span><span class="p">[</span><span class="s2">&quot;acceptance_production_local&quot;</span><span class="p">]</span>     <span class="c1"># np.ndarray — local acceptance rate per production loop</span>
 <span class="n">diag</span><span class="p">[</span><span class="s2">&quot;acceptance_production_global&quot;</span><span class="p">]</span>    <span class="c1"># np.ndarray — global acceptance rate per production loop</span>
 
-<span class="c1"># NS-AW and NSS — also include evidence estimate</span>
+<span class="c1"># NS AW and NSS — also include evidence estimate</span>
 <span class="n">diag</span><span class="p">[</span><span class="s2">&quot;n_iterations&quot;</span><span class="p">]</span>              <span class="c1"># int   — number of nested-sampling steps</span>
 <span class="n">diag</span><span class="p">[</span><span class="s2">&quot;log_Z&quot;</span><span class="p">]</span>                     <span class="c1"># float — log Bayesian evidence</span>
 <span class="n">diag</span><span class="p">[</span><span class="s2">&quot;log_Z_error&quot;</span><span class="p">]</span>               <span class="c1"># float — standard deviation from 100 bootstrap samples</span>

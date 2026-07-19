@@ -206,6 +206,7 @@ class Data(ABC):
 
         logger.debug(f"Setting Tukey window on {self.name or '(unnamed)'}")
         self.window = jnp.array(tukey(self.n_time, resolved_alpha))
+        # Unset FD data after a window update
         self.fd = jnp.zeros(self.n_freq, dtype="complex128")
 
     def fft(
@@ -220,7 +221,7 @@ class Data(ABC):
         if self.n_time > 0:
             assert self.delta_t > 0, "Delta t must be positive"
         if self.has_fd and (window is None or window == self.window):
-            # Perhaps one needs to also check self.td and self.delta_t are the same.
+            # Perhaps check also self.td and self.delta_t are the same.
             logger.debug(f"{self.name} has FD data, skipping FFT.")
             return self.fd
         if window is None:

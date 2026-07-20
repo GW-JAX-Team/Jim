@@ -141,11 +141,11 @@ class Data(ABC):
 
     def __init__(
         self,
-        td: Float[Array, " n_time"] = jnp.array([]),
+        td: Float[Array, "n_time"] = jnp.array([]),
         delta_t: FloatLike = 0.0,
         start_time: float = 0.0,
         name: str = "",
-        window: Optional[Float[Array, " n_time"]] = None,
+        window: Optional[Float[Array, "n_time"]] = None,
     ) -> None:
         """Initialize the data class.
 

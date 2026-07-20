@@ -77,6 +77,11 @@ class TestData:
         with pytest.raises(ValueError, match="non-negative"):
             self.data.set_tukey_window(roll_off=-0.1)
 
+    @pytest.mark.parametrize("alpha", [-0.1, 1.1])
+    def test_set_tukey_window_rejects_invalid_alpha(self, alpha):
+        with pytest.raises(ValueError, match="between 0 and 1"):
+            self.data.set_tukey_window(alpha=alpha)
+
     def test_set_tukey_window_invalidates_cached_fft(self):
         """Changing the window recomputes the cached frequency-domain data."""
         self.data.fft()

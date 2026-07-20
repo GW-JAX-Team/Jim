@@ -184,17 +184,15 @@ class Data(ABC):
         """Create a Tukey window on the data; the window is stored in the
         window attribute and only applied when FFTing the data.
 
+        Only one of ``alpha`` and ``roll_off`` may be provided.
+
         Args:
             alpha: Shape parameter passed directly to the Tukey window. If
                 omitted, it is calculated from ``roll_off``.
             roll_off: Duration in seconds of the taper on each side. Defaults
-                to 0.4 seconds, which preserves Jim's previous Tukey window for
-                a four-second segment. The corresponding shape parameter is
+                to 0.4 seconds. The corresponding shape parameter is
                 ``2 * roll_off / duration``.
         """
-        if alpha is not None and roll_off is not None:
-            raise ValueError("Specify either alpha or roll_off, not both")
-
         if alpha is None:
             roll_off = DEFAULT_TUKEY_ROLL_OFF if roll_off is None else roll_off
             if roll_off < 0:
@@ -202,6 +200,10 @@ class Data(ABC):
             duration = float(self.duration)
             resolved_alpha = 0.0 if duration == 0 else 2 * roll_off / duration
         else:
+            if roll_off is not None:
+                raise ValueError("Specify either alpha or roll_off, not both")
+            if not 0 <= alpha <= 1:
+                raise ValueError("alpha must be between 0 and 1")
             resolved_alpha = alpha
 
         logger.debug(f"Setting Tukey window on {self.name or '(unnamed)'}")

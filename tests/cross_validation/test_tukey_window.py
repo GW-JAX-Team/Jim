@@ -21,7 +21,7 @@ pytestmark = pytest.mark.skipif(
 
 
 @pytest.mark.parametrize("duration", [4, 128])
-def test_default_tukey_window_matches_bilby(duration):
+def test_default_tukey_window_matches_bilby(duration: int) -> None:
     """Jim and bilby calculate alpha identically for any duration."""
     sampling_frequency = 16
     strain = np.ones(duration * sampling_frequency)

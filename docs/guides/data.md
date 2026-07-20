@@ -104,21 +104,17 @@ H1.set_data(data)
 !!! warning
     The frequency array **must** come from `jnp.fft.rfftfreq`. Internally, `from_fd` reconstructs the full rfft grid and asserts it matches yours exactly. `jnp.linspace` produces floating-point values via a different arithmetic path, so the equality check will fail even for a nominally identical grid.
 
-### Time-domain windowing
+## Time-domain windowing
 
-Time-domain data use a Tukey window before the Fourier transform. By default,
-Jim uses a fixed roll-off time:
+Time-domain data is multiplied by a Tukey window before its Fourier transform.
+The default taper has a 0.4-second roll-off on each side.
+For a segment of duration \(T\), the Tukey shape parameter is:
 
 \[
 \alpha = \frac{2\,t_{\mathrm{rolloff}}}{T},
 \]
 
-with a roll-off of 0.4 seconds on each side. This preserves Jim's previous
-`alpha=0.2` window for a four-second segment while avoiding excessive tapering
-for long signals: a 128-second BNS segment uses `alpha=0.00625`.
-
-You can choose a different roll-off time or set the Tukey shape parameter
-directly:
+Set a different roll-off time or provide the Tukey shape parameter directly:
 
 ```python
 data.set_tukey_window(roll_off=0.2)  # seconds on each side

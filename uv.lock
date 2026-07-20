@@ -95,11 +95,11 @@ wheels = [
 
 [[package]]
 name = "astropy-iers-data"
-version = "0.2026.7.13.0.54.2"
+version = "0.2026.7.20.15.31.18"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/b7/f2/8e52b70264edc5664c069939224405c6e9085fa3388403b8313303a62b82/astropy_iers_data-0.2026.7.13.0.54.2.tar.gz", hash = "sha256:d86e32e95e98a86f83b5b073627442924a0f45cf61a7828da4f565a17d726c2f", size = 1941259, upload-time = "2026-07-13T00:54:51.205Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a2/3d/45c4be5818976eb1c5850348df8b1592f2b1ce148303a6498513f3dd318e/astropy_iers_data-0.2026.7.20.15.31.18.tar.gz", hash = "sha256:4f5f3e324c664fa5face8f5f54216ee0bd2a1fefcabed39972a6408ab352c2cc", size = 1942135, upload-time = "2026-07-20T15:32:10.478Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7b/54/121240c06fff63d358f2a96187e927d05628fdf933a84246151954e95c7a/astropy_iers_data-0.2026.7.13.0.54.2-py3-none-any.whl", hash = "sha256:0f0b22f43d0917d78382f35ef13acd72600752d65289a3f91e39ea67653264cd", size = 1996278, upload-time = "2026-07-13T00:54:49.386Z" },
+    { url = "https://files.pythonhosted.org/packages/a3/eb/87cede1d1a2a8e6f326c4f8dd1e21682ffc3dd4eee41afd0f84a67de7da2/astropy_iers_data-0.2026.7.20.15.31.18-py3-none-any.whl", hash = "sha256:9e4b70b435242a613ad9626e46342ed8a991e058bb273cd6bb256e3bc8caee2f", size = 1997501, upload-time = "2026-07-20T15:32:09.196Z" },
 ]
 
 [[package]]
@@ -902,7 +902,7 @@ wheels = [
 
 [[package]]
 name = "flax"
-version = "0.12.7"
+version = "0.12.8"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jax", version = "0.10.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
@@ -918,9 +918,9 @@ dependencies = [
     { name = "treescope" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/93/19/4a8e128e2296eede00dc7a8586d374ef0b2770146a5cda1f50aa86f001ee/flax-0.12.7.tar.gz", hash = "sha256:abfd6acb17d6b93d1d7d7dfae7d3856222b92b35d35ab2487b77639c31dc673a", size = 5476434, upload-time = "2026-04-22T06:07:12.017Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d3/b3/d2effc3a26f61135a90c7b282473b8c7963d124856ce860743a12c99a0da/flax-0.12.8.tar.gz", hash = "sha256:1bb438775b967a3f1f42b9c3d4ddf1d2883cd6406589f9cecdc244634036bdc4", size = 15710344, upload-time = "2026-07-20T18:29:40.647Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8e/65/4bd2abfd4cb6e917b2626de5cbfc034dfc94b74dd95b8272d93f2ad66bed/flax-0.12.7-py3-none-any.whl", hash = "sha256:79d590793fa3a282ac36b4464f2ea9d1e69fe1d026c4618451b01731e8086e32", size = 525130, upload-time = "2026-04-22T06:07:10.254Z" },
+    { url = "https://files.pythonhosted.org/packages/ac/da/2bda90cbe3bab93a5ce37263d6a461ee12e851d8d32b1a86bc3e682d651a/flax-0.12.8-py3-none-any.whl", hash = "sha256:807931d369cbc716fc447801ab39cd6c3c2614d573387a2319a028675dd34fe5", size = 531332, upload-time = "2026-07-20T18:29:38.971Z" },
 ]
 
 [[package]]
@@ -2555,14 +2555,14 @@ wheels = [
 
 [[package]]
 name = "nvidia-cudnn-cu12"
-version = "9.24.0.43"
+version = "9.25.0.15"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "nvidia-cublas-cu12" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9c/f1/cd42563325fa827f54ff30da05686c747652bdbd4cb5654cea54d7d0ad4f/nvidia_cudnn_cu12-9.24.0.43-py3-none-manylinux_2_27_aarch64.whl", hash = "sha256:a42996943f0cd78ddfd61c8bf59361672a19b63e0491aa22a53d6fe63a3f854a", size = 856490582, upload-time = "2026-07-02T16:21:30.924Z" },
-    { url = "https://files.pythonhosted.org/packages/10/13/b8887c869cf2471339a24b60d3c28e761facbb534935f572b61423371abb/nvidia_cudnn_cu12-9.24.0.43-py3-none-manylinux_2_27_x86_64.whl", hash = "sha256:f424192dd85e7d29f44be18df2dae4c80d32c67a29c0d42f5c283c40cfdf871c", size = 799083985, upload-time = "2026-07-02T16:25:37.467Z" },
+    { url = "https://files.pythonhosted.org/packages/f5/3a/b9f0ad96295f23847a29773b3364ab6c52a0044322dbbabfef38444ff349/nvidia_cudnn_cu12-9.25.0.15-py3-none-manylinux_2_27_aarch64.whl", hash = "sha256:2e0565abac50f80f23c303ce4bf6e4c97b6ed99efc3708ffb693b2db3859d00f", size = 807639682, upload-time = "2026-07-20T19:54:51.286Z" },
+    { url = "https://files.pythonhosted.org/packages/83/94/1e9882d2d4307560197881069dee9e4050cea8384ae77b330e1f8f722fdf/nvidia_cudnn_cu12-9.25.0.15-py3-none-manylinux_2_27_x86_64.whl", hash = "sha256:4ea1ba443fa28ac6cf04b7a44a107dfd54cf355c2324938102ddb21778ab10ce", size = 751250833, upload-time = "2026-07-20T19:56:36.678Z" },
 ]
 
 [[package]]

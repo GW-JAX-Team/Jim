@@ -73,23 +73,68 @@ class TestData:
         with pytest.raises(ValueError, match="either alpha or roll_off"):
             self.data.set_tukey_window(alpha=0.2, roll_off=0.2)
 
-    def test_set_tukey_window_rejects_negative_roll_off(self):
-        with pytest.raises(ValueError, match="non-negative"):
-            self.data.set_tukey_window(roll_off=-0.1)
+    @pytest.mark.parametrize("roll_off", [-0.1, np.nan, np.inf, -np.inf])
+    def test_set_tukey_window_rejects_invalid_roll_off(self, roll_off):
+        with pytest.raises(ValueError, match="finite and between"):
+            self.data.set_tukey_window(roll_off=roll_off)
 
-    @pytest.mark.parametrize("alpha", [-0.1, 1.1])
+    def test_set_tukey_window_rejects_roll_off_longer_than_half_duration(self):
+        with pytest.raises(ValueError, match="finite and between"):
+            self.data.set_tukey_window(roll_off=self.duration / 2 + 0.1)
+
+    @pytest.mark.parametrize("alpha", [-0.1, 1.1, np.nan, np.inf, -np.inf])
     def test_set_tukey_window_rejects_invalid_alpha(self, alpha):
-        with pytest.raises(ValueError, match="between 0 and 1"):
+        with pytest.raises(ValueError, match="finite and between 0 and 1"):
             self.data.set_tukey_window(alpha=alpha)
 
-    def test_set_tukey_window_invalidates_cached_fft(self):
-        """Changing the window recomputes the cached frequency-domain data."""
+    def test_set_tukey_window_rejects_changes_after_fft(self):
+        """Changing a window cannot invalidate fixed frequency-domain data."""
         self.data.fft()
-        self.data.set_tukey_window(alpha=0.4)
+        with pytest.raises(RuntimeError, match="frequency-domain data have been fixed"):
+            self.data.set_tukey_window(alpha=0.4)
 
-        expected = jnp.fft.rfft(self.data.td * self.data.window) * self.data.delta_t
-        assert not self.data.has_fd
-        assert jnp.allclose(self.data.fft(), expected)
+    def test_fft_rejects_a_custom_window_after_fft(self):
+        """A custom FFT window cannot bypass the fixed-data check."""
+        self.data.fft()
+        with pytest.raises(RuntimeError, match="frequency-domain data have been fixed"):
+            self.data.fft(window=jnp.ones_like(self.data.td))
+
+    def test_frequency_slice_locks_tukey_window(self):
+        """Frequency slices materialize FD data before detectors cache them."""
+        self.data.frequency_slice(20, 512)
+        with pytest.raises(RuntimeError, match="frequency-domain data have been fixed"):
+            self.data.set_tukey_window(alpha=0.4)
+
+    def test_zero_fft_is_fixed(self):
+        """An all-zero FFT is still a materialized FD representation."""
+        data = Data(td=jnp.zeros_like(self.data.td), delta_t=self.data.delta_t)
+        data.fft()
+        assert data.has_fd
+        with pytest.raises(RuntimeError, match="frequency-domain data have been fixed"):
+            data.set_tukey_window(alpha=0.4)
+
+    def test_empty_data_cannot_set_a_tukey_window(self):
+        """Empty Data instances remain usable as detector placeholders."""
+        data = Data()
+        assert data.is_empty
+        assert data.window.size == 0
+        with pytest.raises(ValueError, match="empty data"):
+            data.set_tukey_window()
+
+    def test_default_window_rejects_too_short_data(self):
+        """A roll-off cannot exceed half of a non-empty data segment."""
+        with pytest.raises(ValueError, match="finite and between"):
+            Data(td=jnp.ones(3), delta_t=0.25)
+
+    @pytest.mark.parametrize("delta_t", [0.0, -0.25, np.nan, np.inf, -np.inf])
+    def test_nonempty_data_rejects_invalid_delta_t_with_custom_window(self, delta_t):
+        """An explicit window cannot bypass time-step validation."""
+        with pytest.raises(ValueError, match="delta_t must be finite and positive"):
+            Data(
+                td=jnp.ones(4),
+                delta_t=delta_t,
+                window=jnp.ones(4),
+            )
 
     def test_bool_nonempty(self):
         """bool(data) is True when data are present."""
@@ -102,6 +147,19 @@ class TestData:
         fftfreq = jnp.fft.rfftfreq(len(self.data.td), self.data.delta_t)
         assert len(self.data.fd) == len(fftfreq)
         assert self.data.n_freq == len(fftfreq)
+
+    def test_from_fd_fixes_an_all_zero_frequency_domain_input(self):
+        """Imported FD data cannot be re-windowed, even when all values are zero."""
+        n_time = 8
+        delta_t = 0.25
+        frequencies = jnp.fft.rfftfreq(n_time, delta_t)
+        data = Data.from_fd(
+            jnp.zeros(len(frequencies), dtype=jnp.complex128), frequencies
+        )
+
+        assert data.has_fd
+        with pytest.raises(RuntimeError, match="frequency-domain data have been fixed"):
+            data.set_tukey_window(alpha=0.4)
 
     def test_frequency_slice_triggers_fft(self):
         """Calling frequency_slice computes and caches the FFT."""
@@ -174,6 +232,12 @@ class TestPowerSpectrum:
         freq_manual, psd_manual = welch(self.data.td, fs=self.f_samp, nperseg=nperseg)
         assert jnp.allclose(psd_auto.frequencies, freq_manual)
         assert jnp.allclose(psd_auto.values, psd_manual)
+
+    def test_welch_psd_does_not_fix_the_tukey_window(self):
+        """Welch estimation operates directly on time-domain data."""
+        self.data.to_psd(nperseg=self.data.n_time // 2)
+        assert not self.data.has_fd
+        self.data.set_tukey_window(alpha=0.4)
 
     def test_interpolate_returns_power_spectrum(self):
         """Interpolating the PSD to a new frequency grid returns a PowerSpectrum."""

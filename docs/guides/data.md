@@ -107,18 +107,28 @@ H1.set_data(data)
 ## Time-domain windowing
 
 Time-domain data is multiplied by a Tukey window before its Fourier transform.
+This applies only to time-domain inputs: configure the window immediately after creating or loading the data, before starting frequency-domain analysis.
+Once frequency-domain data have been materialized, `set_tukey_window()` raises an error.
+`Data.from_fd()` is already frequency-domain data and cannot be re-windowed.
+
 The default taper has a 0.4-second roll-off on each side.
+For a segment of duration \(T\), `roll_off` must be between 0 and \(T / 2\); equivalently, `alpha` must be between 0 and 1.
+The two parameterizations cannot be provided together.
+Consequently, the default requires a segment at least 0.8 seconds long.
+
 For a segment of duration \(T\), the Tukey shape parameter is:
 
 \[
 \alpha = \frac{2\,t_{\mathrm{rolloff}}}{T},
 \]
 
-Set a different roll-off time or provide the Tukey shape parameter directly:
+For a time-domain `Data` object, set a different roll-off time or provide the Tukey shape parameter directly:
 
 ```python
-data.set_tukey_window(roll_off=0.2)  # seconds on each side
-data.set_tukey_window(alpha=0.1)     # direct scipy Tukey parameter
+time_data = Data.from_file("path/to/data.npz")
+# Choose one parameterization:
+time_data.set_tukey_window(roll_off=0.2)  # seconds on each side
+# time_data.set_tukey_window(alpha=0.1)   # direct scipy Tukey parameter
 ```
 
 ## PSD

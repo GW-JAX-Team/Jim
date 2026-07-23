@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="zensical-0.0.50">
+      <meta name="generator" content="zensical-0.0.51">
     
     
       
@@ -919,6 +919,17 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#time-domain-windowing" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Time-domain windowing
+      </span>
+    </span>
+  </a>
   
 </li>
       
@@ -2364,6 +2375,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#time-domain-windowing" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Time-domain windowing
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#psd" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -2541,6 +2563,25 @@
 <p class="admonition-title">Warning</p>
 <p>The frequency array <strong>must</strong> come from <code>jnp.fft.rfftfreq</code>. Internally, <code>from_fd</code> reconstructs the full rfft grid and asserts it matches yours exactly. <code>jnp.linspace</code> produces floating-point values via a different arithmetic path, so the equality check will fail even for a nominally identical grid.</p>
 </div>
+<h2 id="time-domain-windowing">Time-domain windowing<a class="headerlink" href="#time-domain-windowing" title="Permanent link">¤</a></h2>
+<p>Time-domain data is multiplied by a Tukey window before its Fourier transform.
+This applies only to time-domain inputs: configure the window immediately after creating or loading the data, before starting frequency-domain analysis.
+Once frequency-domain data have been materialized, <code>set_tukey_window()</code> raises an error.
+<code>Data.from_fd()</code> is already frequency-domain data and cannot be re-windowed.</p>
+<p>The default taper has a 0.4-second roll-off on each side.
+For a segment of duration <span class="arithmatex">\(T\)</span>, <code>roll_off</code> must be between 0 and <span class="arithmatex">\(T / 2\)</span>; equivalently, <code>alpha</code> must be between 0 and 1.
+The two parameterizations cannot be provided together.
+Consequently, the default requires a segment at least 0.8 seconds long.</p>
+<p>For a segment of duration <span class="arithmatex">\(T\)</span>, the Tukey shape parameter is:</p>
+<div class="arithmatex">\[
+\alpha = \frac{2\,t_{\mathrm{rolloff}}}{T},
+\]</div>
+<p>For a time-domain <code>Data</code> object, set a different roll-off time or provide the Tukey shape parameter directly:</p>
+<div class="highlight"><pre><span></span><code><span class="n">time_data</span> <span class="o">=</span> <span class="n">Data</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;path/to/data.npz&quot;</span><span class="p">)</span>
+<span class="c1"># Choose one parameterization:</span>
+<span class="n">time_data</span><span class="o">.</span><span class="n">set_tukey_window</span><span class="p">(</span><span class="n">roll_off</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>  <span class="c1"># seconds on each side</span>
+<span class="c1"># time_data.set_tukey_window(alpha=0.1)   # direct scipy Tukey parameter</span>
+</code></pre></div>
 <h2 id="psd">PSD<a class="headerlink" href="#psd" title="Permanent link">¤</a></h2>
 <p>Before you can evaluate a likelihood, each detector also needs a power spectral density (PSD).</p>
 <h3 id="default-gwtc-2-asd">Default GWTC-2 ASD<a class="headerlink" href="#default-gwtc-2-asd" title="Permanent link">¤</a></h3>

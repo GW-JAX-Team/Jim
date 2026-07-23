@@ -14,6 +14,8 @@ from scipy.interpolate import interp1d
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_TUKEY_ROLL_OFF = 0.4
+
 # TODO: Need to expand this list. Currently it is only O3.
 asd_file_dict = {
     "H1": "https://dcc.ligo.org/public/0169/P2000251/001/O3-H1-C01_CLEAN_SUB60HZ-1251752040.0_sensitivity_strain_asd.txt",
@@ -48,6 +50,8 @@ class Data(ABC):
     delta_t: FloatLike
 
     window: Float[Array, "n_time"]
+
+    _fd_is_fixed: bool
 
     def __len__(self) -> int:
         """Returns the length of the time-domain data.
@@ -130,12 +134,12 @@ class Data(ABC):
 
     @property
     def has_fd(self) -> bool:
-        """Checks if Fourier domain data exists.
+        """Checks whether Fourier-domain data have been materialized or supplied.
 
         Returns:
-            bool: True if Fourier domain data exists, False otherwise.
+            bool: True if Fourier-domain data are fixed, False otherwise.
         """
-        return bool(jnp.any(self.fd))
+        return self._fd_is_fixed
 
     def __init__(
         self,
@@ -153,14 +157,34 @@ class Data(ABC):
             start_time: GPS start time of the segment in seconds (default: 0).
             name: Name of the data (default: '').
             window: Window function to apply to the data before FFT (default: None).
+
+        Raises:
+            ValueError: If non-empty data have a non-finite or non-positive
+                time step.
         """
         self.name = name or ""
         self.td = td
+        if not self.is_empty:
+            try:
+                delta_t_value = float(delta_t)
+            except (TypeError, ValueError) as error:
+                raise ValueError(
+                    "delta_t must be finite and positive for non-empty data"
+                ) from error
+            if not np.isfinite(delta_t_value) or delta_t_value <= 0:
+                raise ValueError(
+                    "delta_t must be finite and positive for non-empty data"
+                )
         self.fd = jnp.zeros(self.n_freq, dtype="complex128")
+        self._fd_is_fixed = False
         self.delta_t = delta_t
         self.start_time = start_time
         if window is None:
-            self.set_tukey_window()
+            if self.is_empty:
+                # Empty Data instances are used as detector placeholders.
+                self.window = jnp.array([])
+            else:
+                self.set_tukey_window()
         else:
             self.window = window
 
@@ -174,16 +198,58 @@ class Data(ABC):
         """Check if the data is empty."""
         return len(self.td) > 0
 
-    def set_tukey_window(self, alpha: float = 0.2) -> None:
-        """Create a Tukey window on the data; the window is stored in the
-        window attribute and only applied when FFTing the data.
+    def set_tukey_window(
+        self,
+        alpha: Optional[float] = None,
+        roll_off: Optional[float] = None,
+    ) -> None:
+        """Configure the Tukey window used when FFTing time-domain data.
+
+        This must be called before Fourier-domain data are computed or supplied.
+        Only one of ``alpha`` and ``roll_off`` may be provided.
 
         Args:
-            alpha: Shape parameter of the Tukey window (default: 0.2); this is
-                the fraction of the segment that is tapered on each side.
+            alpha: Shape parameter passed directly to the Tukey window. If
+                supplied, it must be finite and between 0 and 1.
+            roll_off: Duration in seconds of the taper on each side. Defaults
+                to 0.4 seconds. It must be finite and between 0 and half the
+                data duration. The corresponding shape parameter is
+                ``2 * roll_off / duration``.
+
+        Raises:
+            ValueError: If the data are empty, both parameterizations are
+                supplied, or a parameter is outside its valid range.
+            RuntimeError: If Fourier-domain data have already been fixed.
         """
+        if self.is_empty:
+            raise ValueError("Cannot set a Tukey window on empty data")
+        if self._fd_is_fixed:
+            raise RuntimeError(
+                "Cannot change the Tukey window after frequency-domain data "
+                "have been fixed"
+            )
+        if alpha is not None and roll_off is not None:
+            raise ValueError("Specify either alpha or roll_off, not both")
+        duration = float(self.duration)
+        if not np.isfinite(duration) or duration <= 0:
+            raise ValueError("data duration must be finite and positive")
+
+        if alpha is None:
+            roll_off = DEFAULT_TUKEY_ROLL_OFF if roll_off is None else roll_off
+            roll_off = float(roll_off)
+            if not np.isfinite(roll_off) or not 0 <= roll_off <= duration / 2:
+                raise ValueError(
+                    "roll_off must be finite and between 0 and half the data duration"
+                )
+            resolved_alpha = 2 * roll_off / duration
+        else:
+            alpha = float(alpha)
+            if not np.isfinite(alpha) or not 0 <= alpha <= 1:
+                raise ValueError("alpha must be finite and between 0 and 1")
+            resolved_alpha = alpha
+
         logger.debug(f"Setting Tukey window on {self.name or '(unnamed)'}")
-        self.window = jnp.array(tukey(self.n_time, alpha))
+        self.window = jnp.array(tukey(self.n_time, resolved_alpha))
 
     def fft(
         self, window: Optional[Float[Array, "n_time"]] = None
@@ -194,18 +260,22 @@ class Data(ABC):
         Args:
             window: Window function to apply to the data before FFT (default: None).
         """
-        if self.n_time > 0:
-            assert self.delta_t > 0, "Delta t must be positive"
-        if self.has_fd and (window is None or window == self.window):
-            # Perhaps one needs to also check self.td and self.delta_t are the same.
+        if self._fd_is_fixed:
+            if window is not None:
+                raise RuntimeError(
+                    "Cannot apply a window after frequency-domain data have been fixed"
+                )
             logger.debug(f"{self.name} has FD data, skipping FFT.")
             return self.fd
+        if self.n_time > 0:
+            assert self.delta_t > 0, "Delta t must be positive"
         if window is None:
             window = self.window
 
         logger.info(f"Computing FFT of {self.name} data")
         self.fd = jnp.fft.rfft(self.td * window) * self.delta_t
         self.window = window
+        self._fd_is_fixed = True
         return self.fd
 
     def frequency_slice(
@@ -239,8 +309,6 @@ class Data(ABC):
         Returns:
             PowerSpectrum: Power spectral density of the data.
         """
-        if not self.has_fd:
-            self.fft()
         freq, psd = welch(self.td, fs=float(self.sampling_frequency), **kws)
         return PowerSpectrum(jnp.asarray(psd), jnp.asarray(freq), self.name)
 
@@ -327,8 +395,15 @@ class Data(ABC):
             "Generated frequencies do not match the input frequencies"
         )
         # Create a Data object
-        data = cls(data_td_full, delta_t, start_time=start_time, name=name)
+        data = cls(
+            data_td_full,
+            delta_t,
+            start_time=start_time,
+            name=name,
+            window=jnp.ones_like(data_td_full),
+        )
         data.fd = data_fd_full
+        data._fd_is_fixed = True
 
         # Ensures the newly constructed Data in FD faithfully
         # represents the input FD data.

@@ -1,5 +1,5 @@
 import logging
-from typing import Callable, Optional, Sequence, Union
+from typing import Any, Callable, Optional, Sequence, Union
 from abc import abstractmethod
 import jax
 import jax.numpy as jnp
@@ -91,38 +91,99 @@ class SingleEventLikelihood(LikelihoodBase):
         self.detectors = detectors
         self.waveform = waveform
         self.fixed_parameters = fixed_parameters if fixed_parameters is not None else {}
+        self.time_marginalization = False
+        self.phase_marginalization = False
+        self.distance_marginalization = False
 
-    def _generate_cached_polarizations(self, frequencies, params):
-        """Generate polarizations with analytic distance scaling factored out."""
-        cache_params = params.copy()
+    def _set_detector_frequency_bounds(
+        self,
+        f_min: float | dict[str, float],
+        f_max: float | dict[str, float],
+    ) -> list[Float[Array, " n_freq"]]:
+        """Set per-detector frequency bounds and return the resulting grids."""
+        detector_frequencies = []
+        for detector in self.detectors:
+            detector_f_min = f_min[detector.name] if isinstance(f_min, dict) else f_min
+            detector_f_max = f_max[detector.name] if isinstance(f_max, dict) else f_max
+            detector.set_frequency_bounds(detector_f_min, detector_f_max)
+            detector_frequencies.append(detector.sliced_frequencies)
+        return detector_frequencies
+
+    def _generate_distance_normalized_waveforms(
+        self,
+        frequencies: Float[Array, " n_freq"],
+        params: dict[str, Float],
+    ) -> dict[str, Complex[Array, " n_freq"]]:
+        """Generate sky-frame polarizations normalized to ``d_L = 1`` when possible."""
+        waveform_params = params.copy()
         if "d_L" in getattr(self.waveform, "parameter_names", ()):
-            cache_params["d_L"] = 1.0
-        return self.waveform(frequencies, cache_params)
+            waveform_params["d_L"] = 1.0
+        return self.waveform(frequencies, waveform_params)
 
-    def _restore_cached_distance(self, waveform_sky, params):
-        """Apply inverse-distance amplitude scaling to cached polarizations."""
+    def _apply_distance_scaling(
+        self,
+        polarizations: dict[str, Complex[Array, " n_freq"]],
+        params: dict[str, Float],
+    ) -> dict[str, Complex[Array, " n_freq"]]:
+        """Apply the physical inverse-distance scaling to cached polarizations."""
         if "d_L" not in getattr(self.waveform, "parameter_names", ()):
-            return waveform_sky
-        scale = 1.0 / params["d_L"]
+            return polarizations
+        distance_scale = 1.0 / params["d_L"]
         return {
-            polarization: strain * scale
-            for polarization, strain in waveform_sky.items()
+            polarization: strain * distance_scale
+            for polarization, strain in polarizations.items()
         }
 
+    def _prepare_parameters(self, params: dict[str, Float]) -> dict[str, Float]:
+        """Add event metadata, marginalization defaults, and fixed parameters."""
+        prepared_params = params.copy()
+        prepared_params["trigger_time"] = self.trigger_time  # type: ignore[reportAttributeAccessIssue]
+        prepared_params["gmst"] = self.gmst  # type: ignore[reportAttributeAccessIssue]
+        if self.time_marginalization:
+            prepared_params["t_c"] = 0.0
+        if self.phase_marginalization:
+            prepared_params["phase_c"] = 0.0
+        if self.distance_marginalization:
+            prepared_params["d_L"] = self.ref_dist  # type: ignore[reportAttributeAccessIssue]
+        apply_fixed_parameters(prepared_params, self.fixed_parameters)
+        return prepared_params
+
+    @abstractmethod
+    def generate_waveform(self, params: dict[str, Float]) -> Any:
+        """Generate a reusable, distance-normalized waveform cache."""
+        raise NotImplementedError("Subclasses must implement this method.")
+
+    def evaluate_from_waveform(
+        self,
+        params: dict[str, Float],
+        waveform_cache: Any,
+    ) -> FloatScalar:
+        """Evaluate this likelihood from a waveform cache."""
+        return self._likelihood_from_waveform(
+            self._prepare_parameters(params), waveform_cache
+        )
+
     def evaluate(self, params: dict[str, Float]) -> FloatScalar:
-        """Apply ``fixed_parameters`` overrides and evaluate the likelihood.
+        """Prepare parameters and evaluate the likelihood.
 
         Constants are injected directly; callables receive the current params
         dict and may return a scalar or a dict (the matching key is extracted).
         Callables are applied in insertion order.
         """
-        params = params.copy()
-        apply_fixed_parameters(params, self.fixed_parameters)
-        return self._likelihood(params)
+        return self._likelihood(self._prepare_parameters(params))
 
     @abstractmethod
     def _likelihood(self, params: dict[str, Float]) -> FloatScalar:
         """Core likelihood evaluation method to be implemented by subclasses."""
+        raise NotImplementedError("Subclasses must implement this method.")
+
+    @abstractmethod
+    def _likelihood_from_waveform(
+        self,
+        params: dict[str, Float],
+        waveform_cache: Any,
+    ) -> FloatScalar:
+        """Reduce a generated waveform cache to a likelihood value."""
         raise NotImplementedError("Subclasses must implement this method.")
 
 
@@ -218,12 +279,7 @@ class TransientLikelihoodFD(SingleEventLikelihood):
         super().__init__(detectors, waveform, fixed_parameters)
 
         # --- frequency setup ---
-        _frequencies = []
-        for detector in detectors:
-            f_min_ifo = f_min[detector.name] if isinstance(f_min, dict) else f_min
-            f_max_ifo = f_max[detector.name] if isinstance(f_max, dict) else f_max
-            detector.set_frequency_bounds(f_min_ifo, f_max_ifo)
-            _frequencies.append(detector.sliced_frequencies)
+        _frequencies = self._set_detector_frequency_bounds(f_min, f_max)
 
         assert all(
             jnp.isclose(
@@ -286,24 +342,6 @@ class TransientLikelihoodFD(SingleEventLikelihood):
         if distance_marginalization is not None:
             self._init_distance_marginalization(distance_marginalization)
 
-    def evaluate(self, params: dict[str, Float]) -> FloatScalar:
-        params = self._prepare_parameters(params)
-        return self._likelihood(params)
-
-    def _prepare_parameters(self, params: dict[str, Float]) -> dict[str, Float]:
-        """Return the effective likelihood parameters after internal overrides."""
-        params = params.copy()
-        params["trigger_time"] = self.trigger_time
-        params["gmst"] = self.gmst
-        if self.time_marginalization:
-            params["t_c"] = 0.0
-        if self.phase_marginalization:
-            params["phase_c"] = 0.0
-        if self.distance_marginalization:
-            params["d_L"] = self.ref_dist
-        apply_fixed_parameters(params, self.fixed_parameters)
-        return params
-
     def generate_waveform(
         self, params: dict[str, Float]
     ) -> dict[str, Complex[Array, " n_freq"]]:
@@ -314,29 +352,22 @@ class TransientLikelihoodFD(SingleEventLikelihood):
         unchanged.
         """
         prepared = self._prepare_parameters(params)
-        return self._generate_cached_polarizations(self.frequencies, prepared)
-
-    def evaluate_from_waveform(
-        self,
-        params: dict[str, Float],
-        waveform_sky: dict[str, Complex[Array, " n_freq"]],
-    ) -> FloatScalar:
-        """Evaluate detector projection and marginalisations from a waveform cache."""
-        prepared = self._prepare_parameters(params)
-        return self._likelihood_from_waveform(prepared, waveform_sky)
+        return self._generate_distance_normalized_waveforms(self.frequencies, prepared)
 
     def _likelihood(self, params: dict[str, Float]) -> FloatScalar:
-        waveform_sky = self._generate_cached_polarizations(self.frequencies, params)
+        waveform_sky = self._generate_distance_normalized_waveforms(
+            self.frequencies, params
+        )
         return self._likelihood_from_waveform(params, waveform_sky)
 
     def _likelihood_from_waveform(
         self,
         params: dict[str, Float],
-        waveform_sky: dict[str, Complex[Array, " n_freq"]],
+        waveform_cache: dict[str, Complex[Array, " n_freq"]],
     ) -> FloatScalar:
         """Core likelihood reduction for pre-generated waveform polarizations."""
 
-        waveform_sky = self._restore_cached_distance(waveform_sky, params)
+        waveform_sky = self._apply_distance_scaling(waveform_cache, params)
 
         # --- choose accumulation type based on flags ---
         if self.time_marginalization:
@@ -647,12 +678,7 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         self.phase_marginalization = phase_marginalization is not None
 
         # --- frequency setup (same as TransientLikelihoodFD) ---
-        _frequencies = []
-        for detector in detectors:
-            f_min_ifo = f_min[detector.name] if isinstance(f_min, dict) else f_min
-            f_max_ifo = f_max[detector.name] if isinstance(f_max, dict) else f_max
-            detector.set_frequency_bounds(f_min_ifo, f_max_ifo)
-            _frequencies.append(detector.sliced_frequencies)
+        _frequencies = self._set_detector_frequency_bounds(f_min, f_max)
 
         assert all(
             jnp.isclose(
@@ -767,42 +793,28 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
                 masked_freq_grid,
             )
 
-    def evaluate(self, params: dict[str, Float]) -> FloatScalar:
-        params = self._prepare_parameters(params)
-        return self._likelihood(params)
-
-    def _prepare_parameters(self, params: dict[str, Float]) -> dict[str, Float]:
-        params = params.copy()
-        params["trigger_time"] = self.trigger_time
-        params["gmst"] = self.gmst
-        if self.phase_marginalization:
-            params["phase_c"] = 0.0
-        apply_fixed_parameters(params, self.fixed_parameters)
-        return params
-
     def generate_waveform(
         self, params: dict[str, Float]
     ) -> dict[str, dict[str, Complex[Array, " n_bins"]]]:
         """Generate distance-normalized bin-edge polarizations for cache reuse."""
         prepared = self._prepare_parameters(params)
         return {
-            "low": self._generate_cached_polarizations(self.freq_grid_low, prepared),
-            "high": self._generate_cached_polarizations(self.freq_grid_high, prepared),
+            "low": self._generate_distance_normalized_waveforms(
+                self.freq_grid_low, prepared
+            ),
+            "high": self._generate_distance_normalized_waveforms(
+                self.freq_grid_high, prepared
+            ),
         }
-
-    def evaluate_from_waveform(
-        self,
-        params: dict[str, Float],
-        waveform_cache: dict[str, dict[str, Complex[Array, " n_bins"]]],
-    ) -> FloatScalar:
-        """Evaluate the heterodyned likelihood from cached bin-edge waveforms."""
-        prepared = self._prepare_parameters(params)
-        return self._likelihood_from_waveform(prepared, waveform_cache)
 
     def _likelihood(self, params: dict[str, Float]) -> FloatScalar:
         waveform_cache = {
-            "low": self._generate_cached_polarizations(self.freq_grid_low, params),
-            "high": self._generate_cached_polarizations(self.freq_grid_high, params),
+            "low": self._generate_distance_normalized_waveforms(
+                self.freq_grid_low, params
+            ),
+            "high": self._generate_distance_normalized_waveforms(
+                self.freq_grid_high, params
+            ),
         }
         return self._likelihood_from_waveform(params, waveform_cache)
 
@@ -815,10 +827,8 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         frequencies_high = self.freq_grid_high
         log_likelihood: FloatScalar = jnp.zeros(())
 
-        waveform_sky_low = self._restore_cached_distance(waveform_cache["low"], params)
-        waveform_sky_high = self._restore_cached_distance(
-            waveform_cache["high"], params
-        )
+        waveform_sky_low = self._apply_distance_scaling(waveform_cache["low"], params)
+        waveform_sky_high = self._apply_distance_scaling(waveform_cache["high"], params)
 
         complex_d_inner_h: ComplexScalar = jnp.zeros((), dtype=jnp.complex128)
 
@@ -1243,6 +1253,47 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
 
         logger.info("Multi-banding setup complete with %d bands", self.n_bands)
 
+    def generate_waveform(
+        self, params: dict[str, Float]
+    ) -> dict[str, Complex[Array, " n_freq"]]:
+        """Generate distance-normalized polarizations at multiband frequencies."""
+        prepared = self._prepare_parameters(params)
+        return self._generate_distance_normalized_waveforms(
+            self.unique_frequencies, prepared
+        )
+
+    def _likelihood(self, params: dict[str, Float]) -> FloatScalar:
+        waveform_sky = self._generate_distance_normalized_waveforms(
+            self.unique_frequencies, params
+        )
+        return self._likelihood_from_waveform(params, waveform_sky)
+
+    def _likelihood_from_waveform(
+        self,
+        params: dict[str, Float],
+        waveform_cache: dict[str, Complex[Array, " n_freq"]],
+    ) -> FloatScalar:
+        """Reduce cached multiband polarizations to a log-likelihood value."""
+        waveform_sky = self._apply_distance_scaling(waveform_cache, params)
+
+        log_likelihood: FloatScalar = jnp.zeros(())
+
+        for detector in self.detectors:
+            # Get detector response at banded frequencies.
+            h_det_unique = detector.fd_response(
+                self.unique_frequencies, waveform_sky, params
+            )
+            strain = h_det_unique[self.unique_to_original]
+
+            d_inner_h = jnp.sum(strain * self.linear_coeffs[detector.name])
+            h_inner_h = jnp.sum(
+                jnp.real(strain * jnp.conj(strain))
+                * self.quadratic_coeffs[detector.name]
+            )
+            log_likelihood += jnp.real(d_inner_h) - h_inner_h / 2
+
+        return log_likelihood
+
     # ── Prior-inference and validation helpers ────────────────────────────────
 
     def _resolve_reference_chirp_mass(
@@ -1346,7 +1397,7 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
         min_banding_duration: float,
         max_banding_frequency: Optional[float],
     ) -> None:
-        """Raise ValueError for any out-of-range banding parameter."""
+        """Validate the related multi-banding configuration values."""
         if reference_chirp_mass <= 0:
             raise ValueError(
                 f"reference_chirp_mass must be > 0, got {reference_chirp_mass}"
@@ -1466,8 +1517,10 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
             f_now, _ = fb_dfb_list[-1]
             fnext, dfnext = self._find_starting_frequency(dnext, f_now)
 
-            if fnext is not None and fnext < min(
-                self.maximum_frequency, self.max_banding_frequency
+            if (
+                fnext is not None
+                and dfnext is not None
+                and fnext < min(self.maximum_frequency, self.max_banding_frequency)
             ):
                 durations_list.append(dnext)
                 fb_dfb_list.append([fnext, dfnext])
@@ -1759,67 +1812,6 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
                 band_coeffs.append(coeffs)
 
             self.quadratic_coeffs[detector.name] = jnp.concatenate(band_coeffs)
-
-    def evaluate(self, params: dict[str, Float]) -> FloatScalar:
-        """Evaluate the log-likelihood for given parameters.
-
-        Parameters
-        ----------
-        params : dict[str, Float]
-            Dictionary of model parameters.
-
-        Returns
-        -------
-        FloatScalar
-            Log-likelihood value.
-        """
-        params = params.copy()
-        params["trigger_time"] = self.trigger_time
-        params["gmst"] = self.gmst
-        apply_fixed_parameters(params, self.fixed_parameters)
-        return self._likelihood(params)
-
-    def _likelihood(self, params: dict[str, Float]) -> FloatScalar:
-        """Core likelihood evaluation using multi-banding.
-
-        Parameters
-        ----------
-        params : dict[str, Float]
-            Dictionary of model parameters.
-
-        Returns
-        -------
-        FloatScalar
-            Log-likelihood value.
-        """
-        # Generate waveform at unique frequencies
-        waveform_sky = self.waveform(self.unique_frequencies, params)
-
-        log_likelihood: FloatScalar = jnp.zeros(())
-
-        for detector in self.detectors:
-            # Get detector response at banded frequencies
-            # First evaluate at unique frequencies, then map to banded
-            h_det_unique = detector.fd_response(
-                self.unique_frequencies, waveform_sky, params
-            )
-
-            # Map from unique to banded frequency points
-            strain = h_det_unique[self.unique_to_original]
-
-            # Compute (d|h) using pre-computed linear coefficients
-            d_inner_h = jnp.sum(strain * self.linear_coeffs[detector.name])
-
-            # Compute (h|h) using pre-computed quadratic coefficients and linear interpolation
-            h_inner_h = jnp.sum(
-                jnp.real(strain * jnp.conj(strain))
-                * self.quadratic_coeffs[detector.name]
-            )
-
-            # Accumulate log-likelihood: Re(d|h) - (h|h)/2
-            log_likelihood += jnp.real(d_inner_h) - h_inner_h / 2
-
-        return log_likelihood
 
 
 likelihood_presets = {

@@ -6,12 +6,11 @@ Each sampler has its own ``*Config`` class discriminated by a ``type`` literal;
 """
 
 import logging
-import math
 import pickle
 import time
 import warnings
 from pathlib import Path
-from typing import Annotated, Any, Literal, Optional, Self, Union
+from typing import Annotated, Any, Generic, Literal, Optional, Self, TypeVar, Union
 
 import jax
 import numpy as np
@@ -19,11 +18,14 @@ from pydantic import BaseModel, Discriminator, Field, field_validator, model_val
 
 logger = logging.getLogger(__name__)
 
+_SamplerType = TypeVar("_SamplerType", bound=str)
 
-class BaseSamplerConfig(BaseModel):
+
+class BaseSamplerConfig(BaseModel, Generic[_SamplerType]):
     """Fields shared by all sampler configs."""
 
     model_config = {"extra": "forbid", "arbitrary_types_allowed": True}
+    type: _SamplerType
 
 
 # ---------------------------------------------------------------------------
@@ -72,7 +74,7 @@ class _CheckpointMixin(BaseModel):
             )
         return self
 
-    def write_checkpoint(self, data: dict, tag: str) -> float:
+    def write_checkpoint(self, data: dict, label: str) -> float:
         """Atomically write *data* to ``checkpoint_dir/checkpoint.pkl``.
 
         The write is done via a temporary ``.pkl.tmp`` file that is renamed
@@ -80,7 +82,7 @@ class _CheckpointMixin(BaseModel):
 
         Args:
             data: Serialisable dict to pickle.
-            tag: Short prefix for the debug log message (e.g. ``"SMC-AP"``).
+            label: Human-readable label included in the debug log message.
 
         Returns:
             Wall-clock time of the write (``time.perf_counter()``), suitable
@@ -94,7 +96,11 @@ class _CheckpointMixin(BaseModel):
             pickle.dump(data, _f)
         tmp.replace(ckpt_path)
         t = time.perf_counter()
-        logger.debug("%s: checkpoint saved at n_iter=%s", tag, data.get("n_iter", "?"))
+        logger.debug(
+            "%s: checkpoint saved at n_iter=%s",
+            label,
+            data.get("n_iter", "?"),
+        )
         return t
 
     def configure_jax_cache(self) -> None:
@@ -178,7 +184,7 @@ class GRWConfig(BaseModel):
     step_size: float | np.ndarray = 2e-3
 
 
-class FlowMCConfig(BaseSamplerConfig, _CheckpointMixin):
+class FlowMCConfig(BaseSamplerConfig[Literal["flowmc"]], _CheckpointMixin):
     """Configuration for [`FlowMCSampler`][jimgw.samplers.flowmc.FlowMCSampler].
 
     The ``local_kernel`` field selects the MCMC kernel used for local proposals:
@@ -271,7 +277,9 @@ class FlowMCConfig(BaseSamplerConfig, _CheckpointMixin):
         return self
 
 
-class BlackJAXNSAWConfig(BaseSamplerConfig, _CheckpointMixin):
+class BlackJAXNSAWConfig(
+    BaseSamplerConfig[Literal["blackjax-ns-aw"]], _CheckpointMixin
+):
     """Configuration for the BlackJAX acceptance-walk nested sampler.
 
     !!! note
@@ -293,7 +301,7 @@ class BlackJAXNSAWConfig(BaseSamplerConfig, _CheckpointMixin):
     n_target: int = 60
     max_mcmc: int = 5000
     max_proposals: int = 1000
-    termination_dlogz: float = 0.1
+    termination_dlogz: float = Field(default=0.1, gt=0.0)
 
     @field_validator("n_delete_frac")
     @classmethod
@@ -316,7 +324,7 @@ class BlackJAXNSAWConfig(BaseSamplerConfig, _CheckpointMixin):
         return self
 
 
-class BlackJAXNSSConfig(BaseSamplerConfig, _CheckpointMixin):
+class BlackJAXNSSConfig(BaseSamplerConfig[Literal["blackjax-nss"]], _CheckpointMixin):
     """Configuration for the BlackJAX nested slice sampler.
 
     !!! note
@@ -329,7 +337,7 @@ class BlackJAXNSSConfig(BaseSamplerConfig, _CheckpointMixin):
     n_live: int = 2000
     n_delete_frac: float = 0.5
     num_inner_steps_per_dim: int = 20
-    termination_dlogz: float = 0.1
+    termination_dlogz: float = Field(default=0.1, gt=0.0)
 
     @field_validator("n_delete_frac")
     @classmethod
@@ -352,25 +360,24 @@ class BlackJAXNSSConfig(BaseSamplerConfig, _CheckpointMixin):
         return self
 
 
-class BlackJAXSwiGConfig(BaseSamplerConfig, _CheckpointMixin):
+class BlackJAXSwiGConfig(BaseSamplerConfig[Literal["blackjax-swig"]], _CheckpointMixin):
     """Configuration for Nested Slice within Gibbs (SwiG) sampling.
 
-    ``blocks`` are expressed in Jim's sampling-space parameter names. Jim
-    validates that they form an exact partition and determines which blocks
-    invalidate the waveform cache after accounting for transforms, fixed
-    parameters, and analytic marginalisation.
+    ``blocks`` are expressed in sampling-space parameter names.
+    A supported likelihood validates that they form an exact partition and
+    identifies which blocks refresh its cache.
     """
 
     type: Literal["blackjax-swig"] = "blackjax-swig"
 
     blocks: list[list[str]]
-    n_live: int = 512
+    n_live: int = 500
     n_delete_frac: float = 0.125
     num_gibbs_sweeps: int = 2
     num_inner_steps_per_dim: int = 1
     max_steps: int = 10
     max_shrinkage: int = 100
-    termination_dlogz: float = math.exp(-3.0)
+    termination_dlogz: float = Field(default=0.1, gt=0.0)
 
     @field_validator("blocks")
     @classmethod
@@ -417,7 +424,7 @@ class BlackJAXSwiGConfig(BaseSamplerConfig, _CheckpointMixin):
         return self
 
 
-class BlackJAXSMCConfig(BaseSamplerConfig, _CheckpointMixin):
+class BlackJAXSMCConfig(BaseSamplerConfig[Literal["blackjax-smc"]], _CheckpointMixin):
     """Configuration for the BlackJAX SMC sampler.
 
     Parameters

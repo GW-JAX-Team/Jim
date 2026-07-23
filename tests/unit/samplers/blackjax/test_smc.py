@@ -7,6 +7,7 @@ import numpy as np
 import pickle
 import pytest
 from pathlib import Path
+from typing import Optional
 
 blackjax = pytest.importorskip("blackjax")
 
@@ -25,7 +26,9 @@ class _GaussianLikelihood:
         return -0.5 * ((x - _MU) ** 2 + (y - _MU) ** 2) / _SIGMA**2
 
 
-def _make_sampler(n_particles: int = 200) -> BlackJAXSMCSampler:
+def _make_sampler(
+    n_particles: int = 200, config: Optional[BlackJAXSMCConfig] = None
+) -> BlackJAXSMCSampler:
     prior = CombinePrior(
         [
             UniformPrior(0.0, 1.0, parameter_names=["x"]),
@@ -33,14 +36,15 @@ def _make_sampler(n_particles: int = 200) -> BlackJAXSMCSampler:
         ]
     )
     likelihood = _GaussianLikelihood()
-    config = BlackJAXSMCConfig(
-        n_particles=n_particles,
-        n_mcmc_steps_per_dim=5,
-        target_ess=50,
-        initial_cov_scale=0.5,
-        target_acceptance_rate=0.234,
-        scale_adaptation_gain=3.0,
-    )
+    if config is None:
+        config = BlackJAXSMCConfig(
+            n_particles=n_particles,
+            n_mcmc_steps_per_dim=5,
+            target_ess=50,
+            initial_cov_scale=0.5,
+            target_acceptance_rate=0.234,
+            scale_adaptation_gain=3.0,
+        )
     parameter_names = prior.parameter_names  # ("x", "y")
 
     def log_prior_fn(arr):
@@ -327,10 +331,45 @@ def test_smc_checkpoint_file_created(tmp_path, monkeypatch):
         ckpt = pickle.load(f)
     assert "elapsed_time" in ckpt
     assert ckpt["elapsed_time"] >= 0.0
+    assert ckpt["sampler_name"] == sampler.sampler_name
+    assert ckpt["mode"] == sampler.mode
 
     # Now let a clean run delete it.
     ckpt_path.unlink()
     assert not ckpt_path.exists()
+
+
+@pytest.mark.parametrize(
+    ("persistent_sampling", "temperature_ladder", "expected_mode"),
+    [
+        (True, None, "ap"),
+        (True, [0.0, 1.0], "fp"),
+        (False, None, "at"),
+        (False, [0.0, 1.0], "ft"),
+    ],
+)
+def test_smc_mode_is_derived_from_config(
+    persistent_sampling, temperature_ladder, expected_mode
+):
+    sampler = _make_sampler(
+        config=BlackJAXSMCConfig(
+            n_particles=200,
+            persistent_sampling=persistent_sampling,
+            temperature_ladder=temperature_ladder,
+        )
+    )
+    assert sampler.mode == expected_mode
+
+
+def test_smc_checkpoint_validation_checks_mode():
+    sampler = _make_sampler()
+    sampler._validate_checkpoint(
+        {"sampler_name": sampler.sampler_name, "mode": sampler.mode}
+    )
+    with pytest.raises(ValueError, match="different SMC mode"):
+        sampler._validate_checkpoint(
+            {"sampler_name": sampler.sampler_name, "mode": "fp"}
+        )
 
 
 def test_smc_resume_gives_same_result(tmp_path, monkeypatch):

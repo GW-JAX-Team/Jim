@@ -60,6 +60,26 @@ def example_params():
     }
 
 
+def _waveform_cache_prior() -> CombinePrior:
+    bounds = {
+        "M_c": (20.0, 40.0),
+        "q": (0.5, 1.0),
+        "s1_z": (-0.05, 0.05),
+        "s2_z": (-0.05, 0.05),
+        "iota": (0.1, 3.0),
+        "ra": (0.0, 2.0 * jnp.pi),
+        "dec": (-1.5, 1.5),
+        "psi": (0.0, jnp.pi),
+        "t_c": (-0.05, 0.05),
+    }
+    return CombinePrior(
+        [
+            UniformPrior(lo, hi, parameter_names=[name])
+            for name, (lo, hi) in bounds.items()
+        ]
+    )
+
+
 class TestZeroLikelihood:
     def test_initialization_and_evaluation(self, detectors_and_waveform):
         likelihood = ZeroLikelihood()
@@ -103,26 +123,6 @@ class TestTransientLikelihoodFD:
             "psi": 0.0,
         }
 
-    @staticmethod
-    def swig_prior() -> CombinePrior:
-        bounds = {
-            "M_c": (20.0, 40.0),
-            "q": (0.5, 1.0),
-            "s1_z": (-0.05, 0.05),
-            "s2_z": (-0.05, 0.05),
-            "iota": (0.1, 3.0),
-            "ra": (0.0, 2.0 * jnp.pi),
-            "dec": (-1.5, 1.5),
-            "psi": (0.0, jnp.pi),
-            "t_c": (-0.05, 0.05),
-        }
-        return CombinePrior(
-            [
-                UniformPrior(lo, hi, parameter_names=[name])
-                for name, (lo, hi) in bounds.items()
-            ]
-        )
-
     # ── Initialization ────────────────────────────────────────────────────────
 
     def test_initialization(self, detectors_and_waveform):
@@ -152,6 +152,26 @@ class TestTransientLikelihoodFD:
             likelihood.evaluate_from_waveform(params, cache),
         )
 
+    def test_cached_waveform_restores_physical_distance_scaling(
+        self, detectors_and_waveform
+    ):
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        likelihood = TransientLikelihoodFD(
+            detectors=ifos,
+            waveform=waveform,
+            f_min=fmin,
+            f_max=fmax,
+            trigger_time=gps,
+        )
+        params = example_params()
+        cache = likelihood.generate_waveform(params)
+        physical_waveform = waveform(
+            likelihood.frequencies, likelihood._prepare_parameters(params)
+        )
+
+        for polarization, strain in physical_waveform.items():
+            assert jnp.allclose(cache[polarization] / params["d_L"], strain)
+
     def test_cached_waveform_supports_cache_reusing_changes(
         self, detectors_and_waveform
     ):
@@ -178,7 +198,7 @@ class TestTransientLikelihoodFD:
             likelihood.evaluate_from_waveform(moved, cache),
         )
 
-    def test_swig_infers_waveform_blocks_after_transform_and_marginalization(
+    def test_waveform_cache_infers_blocks_after_transform_and_marginalization(
         self, detectors_and_waveform
     ):
         ifos, waveform, fmin, fmax, gps = detectors_and_waveform
@@ -201,13 +221,21 @@ class TestTransientLikelihoodFD:
         ]
         jim = Jim(
             likelihood,
-            self.swig_prior(),
+            _waveform_cache_prior(),
             BlackJAXSwiGConfig(blocks=blocks, n_live=8, n_delete_frac=0.25),
             likelihood_transforms=[MassRatioToSymmetricMassRatioTransform],
+            periodic=[],
         )
-        assert jim.sampler._refresh_cache == (True, True, True, False, False, False)
+        assert jim.sampler._rebuild_required_by_block == {
+            (0, 1): True,
+            (2, 3): True,
+            (4,): True,
+            (5, 6): False,
+            (7,): False,
+            (8,): False,
+        }
 
-    def test_swig_distance_block_reuses_cache_with_time_marginalization(
+    def test_waveform_cache_distance_block_reuses_cache_with_time_marginalization(
         self, detectors_and_waveform
     ):
         ifos, waveform, fmin, fmax, gps = detectors_and_waveform
@@ -223,7 +251,7 @@ class TestTransientLikelihoodFD:
         prior = CombinePrior(
             [
                 base_prior
-                for base_prior in self.swig_prior().base_prior
+                for base_prior in _waveform_cache_prior().base_prior
                 if base_prior.parameter_names != ("t_c",)
             ]
             + [UniformPrior(100.0, 1000.0, parameter_names=["d_L"])]
@@ -242,9 +270,16 @@ class TestTransientLikelihoodFD:
             BlackJAXSwiGConfig(blocks=blocks, n_live=8, n_delete_frac=0.25),
             likelihood_transforms=[MassRatioToSymmetricMassRatioTransform],
         )
-        assert jim.sampler._refresh_cache == (True, True, True, False, False, False)
+        assert jim.sampler._rebuild_required_by_block == {
+            (0, 1): True,
+            (2, 3): True,
+            (4,): True,
+            (8,): False,
+            (5, 6): False,
+            (7,): False,
+        }
 
-    def test_swig_rejects_marginalized_parameter_in_blocks(
+    def test_waveform_cache_rejects_non_sampling_parameter_in_blocks(
         self, detectors_and_waveform
     ):
         ifos, waveform, fmin, fmax, gps = detectors_and_waveform
@@ -266,10 +301,10 @@ class TestTransientLikelihoodFD:
             ["t_c"],
             ["d_L"],
         ]
-        with pytest.raises(ValueError, match="analytically marginalized.*d_L"):
+        with pytest.raises(ValueError, match="d_L.*not sampling parameters"):
             Jim(
                 likelihood,
-                self.swig_prior(),
+                _waveform_cache_prior(),
                 BlackJAXSwiGConfig(blocks=blocks, n_live=8, n_delete_frac=0.25),
                 likelihood_transforms=[MassRatioToSymmetricMassRatioTransform],
             )
@@ -1275,6 +1310,42 @@ class TestHeterodynedTransientLikelihoodFD:
             likelihood.evaluate(projected),
         )
 
+    def test_waveform_cache_uses_heterodyned_likelihood(self, detectors_and_waveform):
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        likelihood = HeterodynedTransientLikelihoodFD(
+            detectors=ifos,
+            waveform=waveform,
+            fixed_parameters={"d_L": 400.0},
+            f_min=fmin,
+            f_max=fmax,
+            trigger_time=gps,
+            n_bins=32,
+            reference_parameters=example_params(),
+            phase_marginalization=True,
+        )
+        blocks = [
+            ["M_c", "q"],
+            ["s1_z", "s2_z"],
+            ["iota"],
+            ["ra", "dec"],
+            ["psi"],
+            ["t_c"],
+        ]
+        jim = Jim(
+            likelihood,
+            _waveform_cache_prior(),
+            BlackJAXSwiGConfig(blocks=blocks, n_live=8, n_delete_frac=0.25),
+            likelihood_transforms=[MassRatioToSymmetricMassRatioTransform],
+        )
+        assert jim.sampler._rebuild_required_by_block == {
+            (0, 1): True,
+            (2, 3): True,
+            (4,): True,
+            (5, 6): False,
+            (7,): False,
+            (8,): False,
+        }
+
     def test_evaluate_different_fmin(self, detectors_and_waveform):
         ifos, waveform, fmin, fmax, gps = detectors_and_waveform
         likelihood = HeterodynedTransientLikelihoodFD(
@@ -1382,9 +1453,7 @@ class TestHeterodynedTransientLikelihoodFD:
         reference_fmin = 80.0
         requested_n_bins = 32
 
-        def fake_compute_coefficients(
-            likelihood, detector, h_ref, f_bins
-        ):
+        def fake_compute_coefficients(likelihood, detector, h_ref, f_bins):
             freqs = detector.sliced_frequencies
             freqs_broadcast = freqs[None, :]
             left_bounds = f_bins[:-1][:, None]
@@ -1790,6 +1859,73 @@ class TestMultibandedTransientLikelihoodFD:
             )
 
     # ── Evaluation ────────────────────────────────────────────────────────────
+
+    def test_cached_waveform_matches_direct_evaluation(self, detectors_and_waveform):
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        likelihood = MultibandedTransientLikelihoodFD(
+            detectors=ifos,
+            waveform=waveform,
+            f_min=fmin,
+            f_max=fmax,
+            trigger_time=gps,
+            reference_chirp_mass=20.0,
+        )
+        params = example_params()
+        cache = likelihood.generate_waveform(params)
+
+        assert jnp.allclose(
+            likelihood.evaluate(params),
+            likelihood.evaluate_from_waveform(params, cache),
+        )
+        assert jnp.allclose(
+            likelihood.evaluate_from_waveform(params, cache),
+            jax.jit(likelihood.evaluate_from_waveform)(params, cache),
+        )
+
+        projected = {
+            **params,
+            "d_L": params["d_L"] * 1.2,
+            "psi": params["psi"] + 0.1,
+            "t_c": 0.002,
+        }
+        assert jnp.allclose(
+            likelihood.evaluate(projected),
+            likelihood.evaluate_from_waveform(projected, cache),
+        )
+
+    def test_waveform_cache_uses_multibanded_likelihood(self, detectors_and_waveform):
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        likelihood = MultibandedTransientLikelihoodFD(
+            detectors=ifos,
+            waveform=waveform,
+            fixed_parameters={"d_L": 400.0, "phase_c": 0.0},
+            f_min=fmin,
+            f_max=fmax,
+            trigger_time=gps,
+            reference_chirp_mass=20.0,
+        )
+        blocks = [
+            ["M_c", "q"],
+            ["s1_z", "s2_z"],
+            ["iota"],
+            ["ra", "dec"],
+            ["psi"],
+            ["t_c"],
+        ]
+        jim = Jim(
+            likelihood,
+            _waveform_cache_prior(),
+            BlackJAXSwiGConfig(blocks=blocks, n_live=8, n_delete_frac=0.25),
+            likelihood_transforms=[MassRatioToSymmetricMassRatioTransform],
+        )
+        assert jim.sampler._rebuild_required_by_block == {
+            (0, 1): True,
+            (2, 3): True,
+            (4,): True,
+            (5, 6): False,
+            (7,): False,
+            (8,): False,
+        }
 
     def test_evaluation(self, detectors_and_waveform):
         ifos, waveform, fmin, fmax, gps = detectors_and_waveform

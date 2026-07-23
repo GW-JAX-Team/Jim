@@ -205,7 +205,61 @@ def test_ns_aw_checkpoint_file_created(tmp_path, monkeypatch):
         ckpt = pickle.load(f)
     assert "elapsed_time" in ckpt
     assert ckpt["elapsed_time"] >= 0.0
+    assert ckpt["sampler_name"] == sampler.sampler_name
     ckpt_path.unlink()
+
+
+def test_ns_aw_falls_back_to_fresh_run_on_foreign_checkpoint(tmp_path):
+    """A checkpoint written by a different sampler is treated like a corrupt
+    one: NS-AW logs a warning and starts fresh rather than raising.
+
+    Unlike flowMC (which validates the checkpoint before entering its resume
+    try/except and so raises), NSS/NS-AW/SMC validate *inside* the same
+    try/except that already catches corrupt-checkpoint errors, so a foreign
+    ``sampler_name`` is swallowed the same way.
+    """
+    prior = CombinePrior(
+        [
+            UniformPrior(0.0, 1.0, parameter_names=["x"]),
+            UniformPrior(0.0, 1.0, parameter_names=["y"]),
+        ]
+    )
+    likelihood = _GaussianLikelihood()
+    parameter_names = prior.parameter_names
+    config = BlackJAXNSAWConfig(
+        n_live=20,
+        n_delete_frac=0.5,
+        n_target=10,
+        max_mcmc=500,
+        max_proposals=200,
+        termination_dlogz=2.0,
+        checkpoint_dir=tmp_path,
+        checkpoint_interval=1e-9,
+    )
+
+    def log_prior_fn(arr):
+        return prior.log_prob(dict(zip(parameter_names, arr, strict=True)))
+
+    def log_likelihood_fn(arr):
+        return likelihood.evaluate(dict(zip(parameter_names, arr, strict=True)))
+
+    def log_posterior_fn(arr):
+        return log_prior_fn(arr) + log_likelihood_fn(arr)
+
+    sampler = BlackJAXNSAWSampler(
+        n_dims=len(parameter_names),
+        log_prior_fn=log_prior_fn,
+        log_likelihood_fn=log_likelihood_fn,
+        log_posterior_fn=log_posterior_fn,
+        config=config,
+    )
+    ckpt_path = tmp_path / "checkpoint.pkl"
+    with open(ckpt_path, "wb") as f:
+        pickle.dump({"sampler_name": "BlackJAX SwiG"}, f)
+
+    sampler.sample(jax.random.key(42), _init_pos(20))
+    result = sampler.get_samples()
+    assert "samples" in result
 
 
 def test_ns_aw_resume_gives_same_result(tmp_path, monkeypatch):

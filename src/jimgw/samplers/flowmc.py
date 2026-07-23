@@ -18,6 +18,7 @@ from flowMC.resource_strategy_bundle.RQSpline_HMC import RQSpline_HMC_Bundle
 from flowMC.resource_strategy_bundle.RQSpline_HMC_PT import RQSpline_HMC_PT_Bundle
 from flowMC.resource_strategy_bundle.RQSpline_MALA import RQSpline_MALA_Bundle
 from flowMC.resource_strategy_bundle.RQSpline_MALA_PT import RQSpline_MALA_PT_Bundle
+from flowMC.resource.states import State
 from flowMC.Sampler import Sampler as FlowMCSamplerBackend
 from jaxtyping import Array, Float, Key
 from jimgw.typing import FloatScalar
@@ -37,6 +38,8 @@ _BUNDLE: dict[tuple[str, bool], Type] = {
     ("GRW", False): RQSpline_GRW_Bundle,
     ("GRW", True): RQSpline_GRW_PT_Bundle,
 }
+
+_FLOWMC_CHECKPOINT_METADATA_RESOURCE = "_jimgw_checkpoint_metadata"
 
 
 class FlowMCSampler(Sampler):
@@ -94,6 +97,10 @@ class FlowMCSampler(Sampler):
             order.append("parallel_tempering")
         self._strategy_order_from_config: list[str] = order
 
+    @property
+    def sampler_name(self) -> str:
+        return "flowMC"
+
     # flowMC expects callables with signature (params, data) -> Float.
     def _logpdf_flowmc(
         self, params: Float[Array, " n_dims"], _data: dict
@@ -113,6 +120,21 @@ class FlowMCSampler(Sampler):
             if order is not None:
                 return order
         return self._strategy_order_from_config
+
+    def _read_checkpoint_sampler_name(self, checkpoint: dict) -> Optional[str]:
+        """Read the sampler tag stored in a flowMC-owned checkpoint."""
+        if "sampler_name" in checkpoint:
+            return super()._read_checkpoint_sampler_name(checkpoint)
+
+        serialization, metadata = checkpoint["resources"][
+            _FLOWMC_CHECKPOINT_METADATA_RESOURCE
+        ]
+        if serialization != "pkl" or not isinstance(metadata, State):
+            raise ValueError("flowMC checkpoint has invalid sampler metadata")
+        sampler_name = metadata.data["sampler_name"]
+        if not isinstance(sampler_name, str):
+            raise ValueError("flowMC checkpoint has invalid sampler name")
+        return sampler_name
 
     def _sample(
         self,
@@ -207,6 +229,10 @@ class FlowMCSampler(Sampler):
             outdir=_outdir,
             checkpoint_interval=config.checkpoint_interval,
         )
+        if config.checkpoint_interval > 0:
+            self._flowmc_sampler.resources[_FLOWMC_CHECKPOINT_METADATA_RESOURCE] = (
+                State({"sampler_name": self.sampler_name}, name="JimCheckpointMetadata")
+            )
 
         # Skip initial_position validation when resuming from an existing checkpoint.
         _ckpt_path = (
@@ -221,7 +247,9 @@ class FlowMCSampler(Sampler):
         )
         if _resuming and _ckpt_path is not None:
             with open(_ckpt_path, "rb") as _f:
-                self._prev_elapsed = float(pickle.load(_f)["elapsed_time"])
+                checkpoint = pickle.load(_f)
+            self._validate_checkpoint(checkpoint)
+            self._prev_elapsed = float(checkpoint["elapsed_time"])
         initial_position = jnp.asarray(initial_position)
         if not _resuming:
             if initial_position.ndim == 1:

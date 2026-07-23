@@ -15,6 +15,7 @@ import time
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from typing import Any
+from typing import Optional
 
 import numpy as np
 from jaxtyping import Array, Float, Key
@@ -26,7 +27,7 @@ from jimgw.samplers.config import BaseSamplerConfig
 class Sampler(ABC):
     """Abstract base class for JAX sampler backends.
 
-    Each backend receives four injected callables from
+    Each backend receives sampling-space callables from
     [`Jim`][jimgw.core.jim.Jim] and operates entirely in the sampling
     space (flat arrays of shape ``(n_dims,)``).  It has no knowledge of
     parameter names, transforms, or likelihood/prior details beyond what
@@ -59,6 +60,29 @@ class Sampler(ABC):
         self._sampled = False
         self._sampling_time = 0.0
         self._prev_elapsed = 0.0
+
+    @property
+    @abstractmethod
+    def sampler_name(self) -> str:
+        """Human-readable sampler name used in status and checkpoint logs."""
+
+    def _read_checkpoint_sampler_name(self, checkpoint: dict) -> Optional[str]:
+        """Return the sampler name stored in a checkpoint, when available."""
+        try:
+            sampler_name = checkpoint["sampler_name"]
+        except KeyError:
+            return None
+        return sampler_name if isinstance(sampler_name, str) else None
+
+    def _validate_checkpoint(self, checkpoint: dict) -> None:
+        """Raise when a checkpoint was created by a different sampler backend."""
+        checkpoint_sampler_name = self._read_checkpoint_sampler_name(checkpoint)
+        if checkpoint_sampler_name != self.sampler_name:
+            raise ValueError(
+                "checkpoint belongs to a different sampler: "
+                f"{checkpoint_sampler_name or 'an unknown sampler'}, not "
+                f"{self.sampler_name}"
+            )
 
     def sample(
         self,

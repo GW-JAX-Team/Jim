@@ -104,6 +104,33 @@ H1.set_data(data)
 !!! warning
     The frequency array **must** come from `jnp.fft.rfftfreq`. Internally, `from_fd` reconstructs the full rfft grid and asserts it matches yours exactly. `jnp.linspace` produces floating-point values via a different arithmetic path, so the equality check will fail even for a nominally identical grid.
 
+## Time-domain windowing
+
+Time-domain data is multiplied by a Tukey window before its Fourier transform.
+This applies only to time-domain inputs: configure the window immediately after creating or loading the data, before starting frequency-domain analysis.
+Once frequency-domain data have been materialized, `set_tukey_window()` raises an error.
+`Data.from_fd()` is already frequency-domain data and cannot be re-windowed.
+
+The default taper has a 0.4-second roll-off on each side.
+For a segment of duration \(T\), `roll_off` must be between 0 and \(T / 2\); equivalently, `alpha` must be between 0 and 1.
+The two parameterizations cannot be provided together.
+Consequently, the default requires a segment at least 0.8 seconds long.
+
+For a segment of duration \(T\), the Tukey shape parameter is:
+
+\[
+\alpha = \frac{2\,t_{\mathrm{rolloff}}}{T},
+\]
+
+For a time-domain `Data` object, set a different roll-off time or provide the Tukey shape parameter directly:
+
+```python
+time_data = Data.from_file("path/to/data.npz")
+# Choose one parameterization:
+time_data.set_tukey_window(roll_off=0.2)  # seconds on each side
+# time_data.set_tukey_window(alpha=0.1)   # direct scipy Tukey parameter
+```
+
 ## PSD
 
 Before you can evaluate a likelihood, each detector also needs a power spectral density (PSD).

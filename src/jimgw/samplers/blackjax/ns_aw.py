@@ -85,7 +85,7 @@ class BlackJAXNSAWSampler(Sampler):
 
     @property
     def sampler_name(self) -> str:
-        return "BlackJAX NS-AW"
+        return "BlackJAX NS AW"
 
     def _validate_unit_cube_prior(self, log_prior_fn: Callable) -> None:
         """Raise ValueError if log_prior_fn is not the normalized uniform on [0, 1]^n_dims."""
@@ -117,7 +117,7 @@ class BlackJAXNSAWSampler(Sampler):
         rng_key: Key,
         initial_position: Float[Array, "n_live n_dims"],
     ) -> None:
-        """Run the BlackJAX NS-AW sampler.
+        """Run the BlackJAX NS AW sampler.
 
         If ``config.checkpoint_dir`` is set, a ``checkpoint.pkl`` is written
         atomically after each nested-sampling iteration (subject to
@@ -281,7 +281,7 @@ class BlackJAXNSAWSampler(Sampler):
         return {"samples": samples, "log_likelihood": log_L}
 
     def _get_diagnostics(self) -> dict[str, Any]:
-        """Return NS-AW run diagnostics.
+        """Return NS AW run diagnostics.
 
         Returns a dict with the following keys:
 

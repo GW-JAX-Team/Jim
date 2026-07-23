@@ -77,7 +77,7 @@ class Jim:
             periodic: Periodic sampling-space parameters.  For most samplers,
                 pass a ``dict`` mapping parameter name to ``(lo, hi)`` bounds
                 (e.g. ``{"phase_c": (0.0, 6.2832)}``).  For the BlackJAX
-                NS-AW sampler (unit-cube space), pass a ``list`` of parameter
+                NS AW sampler (unit-cube space), pass a ``list`` of parameter
                 names (bounds are implicit as ``[0, 1]``).
             seed: Integer random seed. The key for the sampling run is derived
                 from this seed at construction time, so `sample` is
@@ -153,7 +153,7 @@ class Jim:
                 )
 
             if isinstance(periodic, list):
-                # NS-AW style: list[str] → list[int].
+                # NS AW style: list[str] → list[int].
                 if sampler_config.type != "blackjax-ns-aw":
                     raise ValueError(
                         "List-form periodic (names without bounds) is only supported for "
@@ -548,7 +548,7 @@ class Jim:
 
                 - flowMC: ``(n_chains, n_dims)`` or ``(n_dims,)`` (broadcast
                   to all chains).
-                - BlackJAX NS-AW / NSS: exactly ``(n_live, n_dims)``.
+                - BlackJAX NS AW / NSS: exactly ``(n_live, n_dims)``.
                 - BlackJAX SMC: exactly ``(n_particles, n_dims)``.
 
                 The concrete sampler validates the shape and raises

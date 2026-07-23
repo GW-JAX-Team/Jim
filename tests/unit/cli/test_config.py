@@ -345,7 +345,7 @@ def test_incomplete_detector_sky_rejected():
 
 
 # ---------------------------------------------------------------------------
-# NS-AW sampler prior constraints
+# NS AW sampler prior constraints
 # ---------------------------------------------------------------------------
 
 

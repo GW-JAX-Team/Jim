@@ -77,9 +77,10 @@ def build_sampler(
         log_posterior_fn: Log-posterior callable ``(arr,) -> float``.
         periodic: Periodic-parameter spec already resolved to dimension
             indices by Jim.  For flowMC/NSS/SwiG/SMC this is a
-            ``dict[int, (lo, hi)]``; for NS-AW it is a ``list[int]``.
+            ``dict[int, (lo, hi)]``; for NS AW it is a ``list[int]``.
         **backend_kwargs: Backend-specific construction arguments. They are
             passed directly to the selected sampler class.
+
     Raises:
         KeyError: If no sampler is registered for ``config.type``.
     """

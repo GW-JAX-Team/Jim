@@ -199,7 +199,7 @@ def test_nss_falls_back_to_fresh_run_on_foreign_checkpoint(tmp_path):
     one: NSS logs a warning and starts fresh rather than raising.
 
     Unlike flowMC (which validates the checkpoint before entering its resume
-    try/except and so raises), NSS/NS-AW/SMC validate *inside* the same
+    try/except and so raises), NSS/NS AW/SMC validate *inside* the same
     try/except that already catches corrupt-checkpoint errors, so a foreign
     ``sampler_name`` is swallowed the same way.
     """

@@ -211,10 +211,10 @@ def test_ns_aw_checkpoint_file_created(tmp_path, monkeypatch):
 
 def test_ns_aw_falls_back_to_fresh_run_on_foreign_checkpoint(tmp_path):
     """A checkpoint written by a different sampler is treated like a corrupt
-    one: NS-AW logs a warning and starts fresh rather than raising.
+    one: NS AW logs a warning and starts fresh rather than raising.
 
     Unlike flowMC (which validates the checkpoint before entering its resume
-    try/except and so raises), NSS/NS-AW/SMC validate *inside* the same
+    try/except and so raises), NSS/NS AW/SMC validate *inside* the same
     try/except that already catches corrupt-checkpoint errors, so a foreign
     ``sampler_name`` is swallowed the same way.
     """

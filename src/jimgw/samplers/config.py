@@ -124,6 +124,39 @@ class _CheckpointMixin(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Live-set mixin — shared by the nested samplers (NS-AW, NSS, SwiG) that
+# maintain a live-particle set and delete/replace a fraction of it each step
+# ---------------------------------------------------------------------------
+
+
+class _LiveSetConfigMixin(BaseModel):
+    """Shared ``n_live``/``n_delete_frac`` fields and validation for nested samplers."""
+
+    n_live: int = 1000
+    n_delete_frac: float = 0.5
+
+    @field_validator("n_delete_frac")
+    @classmethod
+    def _n_delete_frac_range(cls, value: float) -> float:
+        if not (0.0 < value < 1.0):
+            raise ValueError("n_delete_frac must be strictly between 0 and 1")
+        return value
+
+    @model_validator(mode="after")
+    def _n_live_n_delete_consistency(self) -> Self:
+        if self.n_live < 2:
+            raise ValueError(f"n_live must be >= 2 (got {self.n_live}).")
+        n_delete = int(self.n_live * self.n_delete_frac)
+        if n_delete < 1:
+            raise ValueError(
+                f"n_live * n_delete_frac = {self.n_live * self.n_delete_frac} "
+                f"yields n_delete = {n_delete}; require n_delete >= 1. "
+                "Increase n_live or n_delete_frac."
+            )
+        return self
+
+
+# ---------------------------------------------------------------------------
 # flowMC sub-configs
 # ---------------------------------------------------------------------------
 
@@ -278,7 +311,7 @@ class FlowMCConfig(BaseSamplerConfig[Literal["flowmc"]], _CheckpointMixin):
 
 
 class BlackJAXNSAWConfig(
-    BaseSamplerConfig[Literal["blackjax-ns-aw"]], _CheckpointMixin
+    BaseSamplerConfig[Literal["blackjax-ns-aw"]], _CheckpointMixin, _LiveSetConfigMixin
 ):
     """Configuration for the BlackJAX acceptance-walk nested sampler.
 
@@ -303,28 +336,10 @@ class BlackJAXNSAWConfig(
     max_proposals: int = 1000
     termination_dlogz: float = Field(default=0.1, gt=0.0)
 
-    @field_validator("n_delete_frac")
-    @classmethod
-    def _n_delete_frac_range(cls, v: float) -> float:
-        if not (0.0 < v < 1.0):
-            raise ValueError("n_delete_frac must be strictly between 0 and 1")
-        return v
 
-    @model_validator(mode="after")
-    def _n_live_n_delete_consistency(self) -> Self:
-        if self.n_live < 2:
-            raise ValueError(f"n_live must be >= 2 (got {self.n_live}).")
-        n_delete = int(self.n_live * self.n_delete_frac)
-        if n_delete < 1:
-            raise ValueError(
-                f"n_live * n_delete_frac = {self.n_live * self.n_delete_frac} "
-                f"yields n_delete = {n_delete}; require n_delete >= 1. "
-                "Increase n_live or n_delete_frac."
-            )
-        return self
-
-
-class BlackJAXNSSConfig(BaseSamplerConfig[Literal["blackjax-nss"]], _CheckpointMixin):
+class BlackJAXNSSConfig(
+    BaseSamplerConfig[Literal["blackjax-nss"]], _CheckpointMixin, _LiveSetConfigMixin
+):
     """Configuration for the BlackJAX nested slice sampler.
 
     !!! note
@@ -339,28 +354,10 @@ class BlackJAXNSSConfig(BaseSamplerConfig[Literal["blackjax-nss"]], _CheckpointM
     num_inner_steps_per_dim: int = 20
     termination_dlogz: float = Field(default=0.1, gt=0.0)
 
-    @field_validator("n_delete_frac")
-    @classmethod
-    def _n_delete_frac_range(cls, v: float) -> float:
-        if not (0.0 < v < 1.0):
-            raise ValueError("n_delete_frac must be strictly between 0 and 1")
-        return v
 
-    @model_validator(mode="after")
-    def _n_live_n_delete_consistency(self) -> Self:
-        if self.n_live < 2:
-            raise ValueError(f"n_live must be >= 2 (got {self.n_live}).")
-        n_delete = int(self.n_live * self.n_delete_frac)
-        if n_delete < 1:
-            raise ValueError(
-                f"n_live * n_delete_frac = {self.n_live * self.n_delete_frac} "
-                f"yields n_delete = {n_delete}; require n_delete >= 1. "
-                "Increase n_live or n_delete_frac."
-            )
-        return self
-
-
-class BlackJAXSwiGConfig(BaseSamplerConfig[Literal["blackjax-swig"]], _CheckpointMixin):
+class BlackJAXSwiGConfig(
+    BaseSamplerConfig[Literal["blackjax-swig"]], _CheckpointMixin, _LiveSetConfigMixin
+):
     """Configuration for Nested Slice within Gibbs (SwiG) sampling.
 
     ``blocks`` are expressed in sampling-space parameter names.
@@ -403,25 +400,6 @@ class BlackJAXSwiGConfig(BaseSamplerConfig[Literal["blackjax-swig"]], _Checkpoin
         if value < 1:
             raise ValueError("must be >= 1")
         return value
-
-    @field_validator("n_delete_frac")
-    @classmethod
-    def _n_delete_frac_range(cls, value: float) -> float:
-        if not (0.0 < value < 1.0):
-            raise ValueError("n_delete_frac must be strictly between 0 and 1")
-        return value
-
-    @model_validator(mode="after")
-    def _n_live_n_delete_consistency(self) -> Self:
-        if self.n_live < 2:
-            raise ValueError(f"n_live must be >= 2 (got {self.n_live}).")
-        n_delete = int(self.n_live * self.n_delete_frac)
-        if n_delete < 1:
-            raise ValueError(
-                f"n_live * n_delete_frac = {self.n_live * self.n_delete_frac} "
-                f"yields n_delete = {n_delete}; require n_delete >= 1."
-            )
-        return self
 
 
 class BlackJAXSMCConfig(BaseSamplerConfig[Literal["blackjax-smc"]], _CheckpointMixin):

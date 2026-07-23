@@ -126,9 +126,10 @@ class FlowMCSampler(Sampler):
         if "sampler_name" in checkpoint:
             return super()._read_checkpoint_sampler_name(checkpoint)
 
-        serialization, metadata = checkpoint["resources"][
-            _FLOWMC_CHECKPOINT_METADATA_RESOURCE
-        ]
+        resources = checkpoint.get("resources")
+        if resources is None or _FLOWMC_CHECKPOINT_METADATA_RESOURCE not in resources:
+            raise ValueError("flowMC checkpoint is missing sampler metadata")
+        serialization, metadata = resources[_FLOWMC_CHECKPOINT_METADATA_RESOURCE]
         if serialization != "pkl" or not isinstance(metadata, State):
             raise ValueError("flowMC checkpoint has invalid sampler metadata")
         sampler_name = metadata.data["sampler_name"]

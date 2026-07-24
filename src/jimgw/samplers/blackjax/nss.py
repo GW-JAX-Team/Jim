@@ -215,6 +215,7 @@ class BlackJAXNSSSampler(Sampler):
             and config.checkpoint_interval > 0
             and ckpt_path.exists()
         ):
+            _initial_rng_key = rng_key
             try:
                 with open(ckpt_path, "rb") as _f:
                     _ckpt = pickle.load(_f)
@@ -247,6 +248,7 @@ class BlackJAXNSSSampler(Sampler):
                     ckpt_path,
                     _e,
                 )
+                rng_key = _initial_rng_key
                 state = _batched_nss_init(
                     _validated_initial_particles(initial_position)
                 )

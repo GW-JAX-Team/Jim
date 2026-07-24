@@ -440,6 +440,78 @@ def test_smc_resume_gives_same_result(tmp_path, monkeypatch):
     assert not (tmp_path / "checkpoint.pkl").exists(), "Checkpoint was not cleaned up"
 
 
+def test_smc_checkpoint_failure_restores_caller_rng_key(tmp_path):
+    """A checkpoint that fails *after* its rng_key is read (mode AP, the
+    default) falls back to the caller-supplied key, not the partially-loaded
+    checkpoint's key. The same fallback pattern is shared verbatim across all
+    four SMC modes.
+    """
+    prior = CombinePrior(
+        [
+            UniformPrior(0.0, 1.0, parameter_names=["x"]),
+            UniformPrior(0.0, 1.0, parameter_names=["y"]),
+        ]
+    )
+    likelihood = _GaussianLikelihood()
+    parameter_names = prior.parameter_names
+
+    def _make(checkpoint_dir=None):
+        config = BlackJAXSMCConfig(
+            n_particles=200,
+            n_mcmc_steps_per_dim=5,
+            target_ess=50,
+            initial_cov_scale=0.5,
+            target_acceptance_rate=0.234,
+            scale_adaptation_gain=3.0,
+            checkpoint_dir=checkpoint_dir,
+            checkpoint_interval=1e-9 if checkpoint_dir is not None else 0.0,
+        )
+
+        def log_prior_fn(arr):
+            return prior.log_prob(dict(zip(parameter_names, arr, strict=True)))
+
+        def log_likelihood_fn(arr):
+            return likelihood.evaluate(dict(zip(parameter_names, arr, strict=True)))
+
+        def log_posterior_fn(arr):
+            return log_prior_fn(arr) + log_likelihood_fn(arr)
+
+        return BlackJAXSMCSampler(
+            n_dims=len(parameter_names),
+            log_prior_fn=log_prior_fn,
+            log_likelihood_fn=log_likelihood_fn,
+            log_posterior_fn=log_posterior_fn,
+            config=config,
+        )
+
+    caller_key = jax.random.key(7)
+
+    reference = _make(checkpoint_dir=None)
+    reference.sample(caller_key, _init_pos(200))
+    log_z_reference = reference.get_diagnostics()["log_Z"]
+
+    sampler = _make(checkpoint_dir=tmp_path)
+    ckpt_path = tmp_path / "checkpoint.pkl"
+    # Valid enough to pass `_validate_checkpoint` and overwrite `rng_key` with
+    # a decoy key, but missing "n_iter" so loading fails right after.
+    with open(ckpt_path, "wb") as f:
+        pickle.dump(
+            {
+                "sampler_name": sampler.sampler_name,
+                "mode": sampler.mode,
+                "state": None,
+                "rng_key": jax.random.key(999),
+            },
+            f,
+        )
+
+    sampler.sample(caller_key, _init_pos(200))
+
+    assert sampler.get_diagnostics()["log_Z"] == pytest.approx(
+        log_z_reference, rel=1e-6
+    )
+
+
 def _make_sampler_batched(
     n_particles: int = 200, batch_size: int = 20
 ) -> BlackJAXSMCSampler:

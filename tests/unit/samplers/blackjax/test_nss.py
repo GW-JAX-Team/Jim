@@ -245,6 +245,74 @@ def test_nss_falls_back_to_fresh_run_on_foreign_checkpoint(tmp_path):
     assert "samples" in result
 
 
+def test_nss_checkpoint_failure_restores_caller_rng_key(tmp_path):
+    """A checkpoint that fails *after* its rng_key is read falls back to the
+    caller-supplied key, not the partially-loaded checkpoint's key.
+    """
+    prior = CombinePrior(
+        [
+            UniformPrior(0.0, 1.0, parameter_names=["x"]),
+            UniformPrior(0.0, 1.0, parameter_names=["y"]),
+        ]
+    )
+    likelihood = _GaussianLikelihood()
+    parameter_names = prior.parameter_names
+
+    def _make(checkpoint_dir=None):
+        config = BlackJAXNSSConfig(
+            n_live=20,
+            n_delete_frac=0.5,
+            num_inner_steps_per_dim=5,
+            termination_dlogz=0.5,
+            checkpoint_dir=checkpoint_dir,
+            checkpoint_interval=1e-9 if checkpoint_dir is not None else 0.0,
+        )
+
+        def log_prior_fn(arr):
+            return prior.log_prob(dict(zip(parameter_names, arr, strict=True)))
+
+        def log_likelihood_fn(arr):
+            return likelihood.evaluate(dict(zip(parameter_names, arr, strict=True)))
+
+        def log_posterior_fn(arr):
+            return log_prior_fn(arr) + log_likelihood_fn(arr)
+
+        return BlackJAXNSSSampler(
+            n_dims=len(parameter_names),
+            log_prior_fn=log_prior_fn,
+            log_likelihood_fn=log_likelihood_fn,
+            log_posterior_fn=log_posterior_fn,
+            config=config,
+        )
+
+    caller_key = jax.random.key(7)
+
+    reference = _make(checkpoint_dir=None)
+    reference.sample(caller_key, _init_pos(20))
+    log_z_reference = reference.get_diagnostics()["log_Z"]
+
+    sampler = _make(checkpoint_dir=tmp_path)
+    ckpt_path = tmp_path / "checkpoint.pkl"
+    # Valid enough to pass `_validate_checkpoint` and overwrite `rng_key` with
+    # a decoy key, but missing "n_iter" so loading fails right after.
+    with open(ckpt_path, "wb") as f:
+        pickle.dump(
+            {
+                "sampler_name": sampler.sampler_name,
+                "state": None,
+                "dead": None,
+                "rng_key": jax.random.key(999),
+            },
+            f,
+        )
+
+    sampler.sample(caller_key, _init_pos(20))
+
+    assert sampler.get_diagnostics()["log_Z"] == pytest.approx(
+        log_z_reference, rel=1e-6
+    )
+
+
 def test_nss_resume_gives_same_result(tmp_path, monkeypatch):
     """A run resumed from a crashed checkpoint gives the same log_Z as an uninterrupted run."""
     prior = CombinePrior(

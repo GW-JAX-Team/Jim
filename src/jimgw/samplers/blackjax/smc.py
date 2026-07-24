@@ -201,6 +201,7 @@ class BlackJAXSMCSampler(Sampler):
             and config.checkpoint_interval > 0
             and ckpt_path.exists()
         ):
+            _initial_rng_key = rng_key
             try:
                 with open(ckpt_path, "rb") as _f:
                     _ckpt = pickle.load(
@@ -234,6 +235,7 @@ class BlackJAXSMCSampler(Sampler):
                     ckpt_path,
                     _e,
                 )
+                rng_key = _initial_rng_key
                 state = smc_alg.init(initial_particles)  # type: ignore[call-arg]  # blackjax API
                 self._prev_elapsed = 0.0
         else:
@@ -334,6 +336,7 @@ class BlackJAXSMCSampler(Sampler):
             and config.checkpoint_interval > 0
             and ckpt_path.exists()
         ):
+            _initial_rng_key = rng_key
             try:
                 with open(ckpt_path, "rb") as _f:
                     _ckpt = pickle.load(_f)
@@ -349,6 +352,7 @@ class BlackJAXSMCSampler(Sampler):
                         n_iter,
                         n_schedule,
                     )
+                    rng_key = _initial_rng_key
                     state = smc_alg.init(initial_particles)  # type: ignore[call-arg]  # blackjax API
                     n_iter = 0
                     accept_list = []
@@ -375,6 +379,7 @@ class BlackJAXSMCSampler(Sampler):
                     ckpt_path,
                     _e,
                 )
+                rng_key = _initial_rng_key
                 state = smc_alg.init(initial_particles)  # type: ignore[call-arg]  # blackjax API
                 self._prev_elapsed = 0.0
         else:
@@ -460,6 +465,7 @@ class BlackJAXSMCSampler(Sampler):
             and config.checkpoint_interval > 0
             and ckpt_path.exists()
         ):
+            _initial_rng_key = rng_key
             try:
                 with open(ckpt_path, "rb") as _f:
                     _ckpt = pickle.load(_f)
@@ -491,6 +497,7 @@ class BlackJAXSMCSampler(Sampler):
                     ckpt_path,
                     _e,
                 )
+                rng_key = _initial_rng_key
                 state = smc_alg.init(initial_particles)  # type: ignore[call-arg]  # blackjax API
                 self._prev_elapsed = 0.0
         else:
@@ -584,6 +591,7 @@ class BlackJAXSMCSampler(Sampler):
             and config.checkpoint_interval > 0
             and ckpt_path.exists()
         ):
+            _initial_rng_key = rng_key
             try:
                 with open(ckpt_path, "rb") as _f:
                     _ckpt = pickle.load(_f)
@@ -600,6 +608,7 @@ class BlackJAXSMCSampler(Sampler):
                         n_iter,
                         n_schedule,
                     )
+                    rng_key = _initial_rng_key
                     state = smc_alg.init(initial_particles)  # type: ignore[call-arg]  # blackjax API
                     n_iter = 0
                     accept_list = []
@@ -627,6 +636,7 @@ class BlackJAXSMCSampler(Sampler):
                     ckpt_path,
                     _e,
                 )
+                rng_key = _initial_rng_key
                 state = smc_alg.init(initial_particles)  # type: ignore[call-arg]  # blackjax API
                 self._prev_elapsed = 0.0
         else:

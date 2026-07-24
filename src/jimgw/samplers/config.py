@@ -116,6 +116,12 @@ class _CheckpointMixin(BaseModel):
         jax.config.update("jax_persistent_cache_min_compile_time_secs", 0.0)
 
 
+class _ShardingMixin(BaseModel):
+    """Single-host device sharding — included by NSS and SwiG (not NS AW)."""
+
+    n_devices: int = Field(default=1, ge=1)
+
+
 # ---------------------------------------------------------------------------
 # Live-set mixin — shared by the nested samplers (NS-AW, NSS, SwiG) that
 # maintain a live-particle set and delete/replace a fraction of it each step
@@ -146,6 +152,13 @@ class _LiveSetConfigMixin(BaseModel):
                 f"yields n_delete = {n_delete}; require n_delete >= 1. "
                 "Increase n_live or n_delete_frac."
             )
+        # n_devices is only present on samplers that also mix in _ShardingMixin
+        # (NSS, SwiG); absent (default 1) elsewhere, so this is a no-op for NS AW.
+        n_devices = getattr(self, "n_devices", 1)
+        if n_devices > 1 and self.n_live % n_devices:
+            raise ValueError("n_live must be divisible by n_devices when sharding")
+        if n_devices > 1 and n_delete % n_devices:
+            raise ValueError("n_delete must be divisible by n_devices when sharding")
         return self
 
 
@@ -332,7 +345,10 @@ class BlackJAXNSAWConfig(
 
 
 class BlackJAXNSSConfig(
-    BaseSamplerConfig[Literal["blackjax-nss"]], _CheckpointMixin, _LiveSetConfigMixin
+    BaseSamplerConfig[Literal["blackjax-nss"]],
+    _CheckpointMixin,
+    _LiveSetConfigMixin,
+    _ShardingMixin,
 ):
     """Configuration for the BlackJAX nested slice sampler.
 
@@ -350,7 +366,10 @@ class BlackJAXNSSConfig(
 
 
 class BlackJAXSwiGConfig(
-    BaseSamplerConfig[Literal["blackjax-swig"]], _CheckpointMixin, _LiveSetConfigMixin
+    BaseSamplerConfig[Literal["blackjax-swig"]],
+    _CheckpointMixin,
+    _LiveSetConfigMixin,
+    _ShardingMixin,
 ):
     """Configuration for Nested Slice within Gibbs (SwiG) sampling.
 

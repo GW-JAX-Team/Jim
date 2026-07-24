@@ -149,6 +149,7 @@ jim = Jim(
         n_delete_frac=0.5,
         num_inner_steps_per_dim=20,
         termination_dlogz=0.1,
+        n_devices=1,
     ),
     sample_transforms=sample_transforms,
     likelihood_transforms=likelihood_transforms,
@@ -162,6 +163,9 @@ Key parameters:
 - `n_live` — number of live points.
 - `n_delete_frac` — fraction of live points replaced per iteration.
 - `num_inner_steps_per_dim` — slice-sampler steps per dimension per dead point; increase for strongly correlated posteriors.
+- `n_devices` — number of local devices used to shard the live points and
+  replacement chains. Both `n_live` and `int(n_live * n_delete_frac)` must be
+  divisible by this value. The default `1` uses the unsharded kernel.
 
 **Repository:** [blackjax-devs/blackjax](https://github.com/blackjax-devs/blackjax)
 
@@ -196,6 +200,7 @@ jim = Jim(
         n_delete_frac=0.125,
         num_inner_steps_per_dim=1,
         num_gibbs_sweeps=2,
+        n_devices=1,
     ),
     likelihood_transforms=likelihood_transforms,
 )
@@ -211,6 +216,17 @@ Key parameters:
 - `n_live` / `n_delete_frac` — live-set size and replacement fraction, matching NSS.
 - `num_inner_steps_per_dim` — random-direction slice steps per block dimension.
 - `num_gibbs_sweeps` — complete block sweeps per particle replacement.
+- `n_devices` — number of local devices used to shard the live points and
+  replacement chains. The waveform cache remains local to each replacement
+  chain; only live-point state participates in collectives.
+
+!!! tip "Sharding without a GPU/TPU cluster"
+    `n_devices` shards across whatever JAX reports as local devices — it does
+    not require accelerators. On a CPU-only host, set
+    `XLA_FLAGS=--xla_force_host_platform_device_count=N` (before JAX
+    initializes; the CPU device count cannot change at runtime) to expose `N`
+    simulated CPU devices and shard across them. See
+    [`examples/GW150914_NSS_sharded.py`](https://github.com/GW-JAX-Team/Jim/blob/main/examples/GW150914_NSS_sharded.py).
 
 ---
 

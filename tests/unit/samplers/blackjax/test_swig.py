@@ -73,6 +73,31 @@ def test_swig_has_a_distinct_sampler_name():
     assert _make_sampler().sampler_name == "BlackJAX SwiG"
 
 
+def test_swig_forwards_n_devices_to_internal_nss_config():
+    """`n_devices` must reach the internally-built `BlackJAXNSSConfig` that
+    `_sample` actually reads — a value forwarded by hand across two Pydantic
+    models is easy to silently drop.
+    """
+    config = BlackJAXSwiGConfig(
+        blocks=[["slow"], ["fast"]],
+        n_live=24,
+        n_delete_frac=0.25,
+        termination_dlogz=1.5,
+        n_devices=2,
+    )
+    sampler = BlackJAXSwiGSampler(
+        n_dims=2,
+        log_prior_fn=_log_prior,
+        log_likelihood_fn=_log_likelihood,
+        log_posterior_fn=lambda x: _log_prior(x) + _log_likelihood(x),
+        config=config,
+        rebuild_required_by_block={(0,): True, (1,): False},
+        build_cache=_build_cache,
+        log_likelihood_from_cache_fn=_log_likelihood_from_cache,
+    )
+    assert sampler._config.n_devices == 2
+
+
 def test_swig_checkpoint_records_sampler_name(tmp_path, monkeypatch):
     sampler = _make_sampler(checkpoint_dir=tmp_path)
     checkpoint_path = tmp_path / "checkpoint.pkl"

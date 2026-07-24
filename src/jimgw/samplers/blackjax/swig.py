@@ -8,17 +8,17 @@ from typing import NamedTuple, Optional
 import jax
 import jax.numpy as jnp
 from blackjax import SamplingAlgorithm
-from blackjax.base import Position, State
 from blackjax.mcmc.slice import SliceInfo
 from blackjax.mcmc.slice import build_kernel as build_slice_kernel
 from blackjax.mcmc.slice import stepping_out
 from blackjax.ns.from_mcmc import build_kernel as build_from_mcmc_kernel
 from blackjax.ns.nss import sample_direction_from_covariance
 from blackjax.smc.tuning.from_particles import particles_covariance_matrix
-from blackjax.types import PRNGKey
+from jax.sharding import Mesh
 from jaxtyping import Array, Float
 
 from jimgw.samplers.blackjax.nss import BlackJAXNSSSampler
+from jimgw.samplers.blackjax.sharding import build_sharded_from_mcmc_kernel
 from jimgw.samplers.config import BlackJAXNSSConfig, BlackJAXSwiGConfig
 from jimgw.samplers.periodic import _build_masks_arrays
 from jimgw.typing import FloatScalar
@@ -196,6 +196,7 @@ class BlackJAXSwiGSampler(BlackJAXNSSSampler):
             termination_dlogz=config.termination_dlogz,
             checkpoint_dir=config.checkpoint_dir,
             checkpoint_interval=config.checkpoint_interval,
+            n_devices=config.n_devices,
         )
         super().__init__(
             n_dims=n_dims,
@@ -237,7 +238,9 @@ class BlackJAXSwiGSampler(BlackJAXNSSSampler):
     def _update_inner_kernel_params_fn(self) -> Callable:
         return self._update_block_covariances
 
-    def _build_nested_sampler(self, n_delete: int) -> SamplingAlgorithm:
+    def _build_nested_sampler(
+        self, n_delete: int, mesh: Optional[Mesh] = None
+    ) -> SamplingAlgorithm:
         constrained_step = _build_swig_constrained_step(
             log_prior_fn=self._log_prior_fn,
             build_cache=self._build_cache,
@@ -250,17 +253,26 @@ class BlackJAXSwiGSampler(BlackJAXNSSSampler):
             periodic=self._periodic,
             n_dims=self.n_dims,
         )
-        kernel = build_from_mcmc_kernel(
-            constrained_step,
-            num_inner_steps=1,
-            update_inner_kernel_params_fn=self._update_block_covariances,
-            num_delete=n_delete,
+        if mesh is None:
+            kernel = build_from_mcmc_kernel(
+                constrained_step,
+                num_inner_steps=1,
+                update_inner_kernel_params_fn=self._update_block_covariances,
+                num_delete=n_delete,
+            )
+        else:
+            kernel = build_sharded_from_mcmc_kernel(
+                constrained_step,
+                n_inner_steps=1,
+                update_inner_kernel_params_fn=self._update_block_covariances,
+                n_delete=n_delete,
+                mesh=mesh,
+            )
+
+        # `nested_sampler.init` is never called (state init happens in
+        # `_batched_nss_init`); BlackJAX still requires SamplingAlgorithm.init
+        # to type as returning a State.
+        return SamplingAlgorithm(
+            lambda position, rng_key=None: position,  # type: ignore[return-value]
+            kernel,
         )
-
-        def initialize(position: Position, rng_key: Optional[PRNGKey]) -> State:
-            del rng_key
-            # ``build_from_mcmc_kernel`` initializes directly from a position,
-            # although BlackJAX types every initializer as returning a state.
-            return position  # type: ignore[return-value]
-
-        return SamplingAlgorithm(initialize, kernel)

@@ -198,6 +198,30 @@ class TestTransientLikelihoodFD:
             likelihood.evaluate_from_waveform(moved, cache),
         )
 
+    def test_evaluate_bypasses_waveform_cache_machinery(
+        self, detectors_and_waveform, monkeypatch
+    ):
+        # evaluate() must generate the waveform directly at the true d_L; the
+        # unit-distance-normalize-then-rescale machinery is reserved for the
+        # SwiG cache path (generate_waveform()/evaluate_from_waveform()) and
+        # must not add overhead to every other sampler's likelihood calls.
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        likelihood = TransientLikelihoodFD(
+            detectors=ifos, waveform=waveform, f_min=fmin, f_max=fmax, trigger_time=gps
+        )
+
+        def _unexpected(*args, **kwargs):
+            raise AssertionError(
+                "evaluate() must not use the distance-normalized cache machinery"
+            )
+
+        monkeypatch.setattr(
+            likelihood, "_generate_distance_normalized_waveforms", _unexpected
+        )
+        monkeypatch.setattr(likelihood, "_apply_distance_scaling", _unexpected)
+
+        assert jnp.isfinite(likelihood.evaluate(example_params()))
+
     def test_waveform_cache_infers_blocks_after_transform_and_marginalization(
         self, detectors_and_waveform
     ):
@@ -1310,6 +1334,36 @@ class TestHeterodynedTransientLikelihoodFD:
             likelihood.evaluate(projected),
         )
 
+    def test_evaluate_bypasses_waveform_cache_machinery(
+        self, detectors_and_waveform, monkeypatch
+    ):
+        # evaluate() must generate the waveform directly at the true d_L; the
+        # unit-distance-normalize-then-rescale machinery is reserved for the
+        # SwiG cache path (generate_waveform()/evaluate_from_waveform()) and
+        # must not add overhead to every other sampler's likelihood calls.
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        likelihood = HeterodynedTransientLikelihoodFD(
+            detectors=ifos,
+            waveform=waveform,
+            f_min=fmin,
+            f_max=fmax,
+            trigger_time=gps,
+            n_bins=32,
+            reference_parameters=example_params(),
+        )
+
+        def _unexpected(*args, **kwargs):
+            raise AssertionError(
+                "evaluate() must not use the distance-normalized cache machinery"
+            )
+
+        monkeypatch.setattr(
+            likelihood, "_generate_distance_normalized_waveforms", _unexpected
+        )
+        monkeypatch.setattr(likelihood, "_apply_distance_scaling", _unexpected)
+
+        assert jnp.isfinite(likelihood.evaluate(example_params()))
+
     def test_waveform_cache_uses_heterodyned_likelihood(self, detectors_and_waveform):
         ifos, waveform, fmin, fmax, gps = detectors_and_waveform
         likelihood = HeterodynedTransientLikelihoodFD(
@@ -1892,6 +1946,35 @@ class TestMultibandedTransientLikelihoodFD:
             likelihood.evaluate(projected),
             likelihood.evaluate_from_waveform(projected, cache),
         )
+
+    def test_evaluate_bypasses_waveform_cache_machinery(
+        self, detectors_and_waveform, monkeypatch
+    ):
+        # evaluate() must generate the waveform directly at the true d_L; the
+        # unit-distance-normalize-then-rescale machinery is reserved for the
+        # SwiG cache path (generate_waveform()/evaluate_from_waveform()) and
+        # must not add overhead to every other sampler's likelihood calls.
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        likelihood = MultibandedTransientLikelihoodFD(
+            detectors=ifos,
+            waveform=waveform,
+            f_min=fmin,
+            f_max=fmax,
+            trigger_time=gps,
+            reference_chirp_mass=20.0,
+        )
+
+        def _unexpected(*args, **kwargs):
+            raise AssertionError(
+                "evaluate() must not use the distance-normalized cache machinery"
+            )
+
+        monkeypatch.setattr(
+            likelihood, "_generate_distance_normalized_waveforms", _unexpected
+        )
+        monkeypatch.setattr(likelihood, "_apply_distance_scaling", _unexpected)
+
+        assert jnp.isfinite(likelihood.evaluate(example_params()))
 
     def test_waveform_cache_uses_multibanded_likelihood(self, detectors_and_waveform):
         ifos, waveform, fmin, fmax, gps = detectors_and_waveform

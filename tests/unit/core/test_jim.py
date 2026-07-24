@@ -447,13 +447,13 @@ class TestJimPriorLikelihoodConsistencyChecks:
                 self.phase_marginalization = False
                 self.distance_marginalization = False
 
-            def _likelihood(self, params) -> Float:
+            def _evaluate(self, params) -> Float:
                 return 0.0
 
             def generate_waveform(self, params):
                 return {}
 
-            def _likelihood_from_waveform(self, params, waveform_cache) -> Float:
+            def _evaluate_from_waveform(self, params, waveform_cache) -> Float:
                 return 0.0
 
         return FakeSingleEventLikelihood(

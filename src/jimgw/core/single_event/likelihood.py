@@ -159,7 +159,7 @@ class SingleEventLikelihood(LikelihoodBase):
         waveform_cache: Any,
     ) -> FloatScalar:
         """Evaluate this likelihood from a waveform cache."""
-        return self._likelihood_from_waveform(
+        return self._evaluate_from_waveform(
             self._prepare_parameters(params), waveform_cache
         )
 
@@ -170,20 +170,20 @@ class SingleEventLikelihood(LikelihoodBase):
         dict and may return a scalar or a dict (the matching key is extracted).
         Callables are applied in insertion order.
         """
-        return self._likelihood(self._prepare_parameters(params))
+        return self._evaluate(self._prepare_parameters(params))
 
     @abstractmethod
-    def _likelihood(self, params: dict[str, Float]) -> FloatScalar:
+    def _evaluate(self, params: dict[str, Float]) -> FloatScalar:
         """Core likelihood evaluation method to be implemented by subclasses."""
         raise NotImplementedError("Subclasses must implement this method.")
 
     @abstractmethod
-    def _likelihood_from_waveform(
+    def _evaluate_from_waveform(
         self,
         params: dict[str, Float],
         waveform_cache: Any,
     ) -> FloatScalar:
-        """Reduce a generated waveform cache to a likelihood value."""
+        """Evaluate the likelihood from a generated waveform cache."""
         raise NotImplementedError("Subclasses must implement this method.")
 
 
@@ -354,20 +354,25 @@ class TransientLikelihoodFD(SingleEventLikelihood):
         prepared = self._prepare_parameters(params)
         return self._generate_distance_normalized_waveforms(self.frequencies, prepared)
 
-    def _likelihood(self, params: dict[str, Float]) -> FloatScalar:
-        waveform_sky = self._generate_distance_normalized_waveforms(
-            self.frequencies, params
-        )
-        return self._likelihood_from_waveform(params, waveform_sky)
+    def _evaluate(self, params: dict[str, Float]) -> FloatScalar:
+        waveform_sky = self.waveform(self.frequencies, params)
+        return self._likelihood(params, waveform_sky)
 
-    def _likelihood_from_waveform(
+    def _evaluate_from_waveform(
         self,
         params: dict[str, Float],
         waveform_cache: dict[str, Complex[Array, " n_freq"]],
     ) -> FloatScalar:
-        """Core likelihood reduction for pre-generated waveform polarizations."""
-
+        """Core likelihood evaluation from a pre-generated waveform cache."""
         waveform_sky = self._apply_distance_scaling(waveform_cache, params)
+        return self._likelihood(params, waveform_sky)
+
+    def _likelihood(
+        self,
+        params: dict[str, Float],
+        waveform_sky: dict[str, Complex[Array, " n_freq"]],
+    ) -> FloatScalar:
+        """Core likelihood computation from a physical-distance sky-frame waveform."""
 
         # --- choose accumulation type based on flags ---
         if self.time_marginalization:
@@ -802,28 +807,31 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
             ),
         }
 
-    def _likelihood(self, params: dict[str, Float]) -> FloatScalar:
-        waveform_cache = {
-            "low": self._generate_distance_normalized_waveforms(
-                self.freq_grid_low, params
-            ),
-            "high": self._generate_distance_normalized_waveforms(
-                self.freq_grid_high, params
-            ),
-        }
-        return self._likelihood_from_waveform(params, waveform_cache)
+    def _evaluate(self, params: dict[str, Float]) -> FloatScalar:
+        waveform_sky_low = self.waveform(self.freq_grid_low, params)
+        waveform_sky_high = self.waveform(self.freq_grid_high, params)
+        return self._likelihood(params, waveform_sky_low, waveform_sky_high)
 
-    def _likelihood_from_waveform(
+    def _evaluate_from_waveform(
         self,
         params: dict[str, Float],
         waveform_cache: dict[str, dict[str, Complex[Array, " n_bins"]]],
     ) -> FloatScalar:
+        """Core likelihood evaluation from a pre-generated waveform cache."""
+        waveform_sky_low = self._apply_distance_scaling(waveform_cache["low"], params)
+        waveform_sky_high = self._apply_distance_scaling(waveform_cache["high"], params)
+        return self._likelihood(params, waveform_sky_low, waveform_sky_high)
+
+    def _likelihood(
+        self,
+        params: dict[str, Float],
+        waveform_sky_low: dict[str, Complex[Array, " n_bins"]],
+        waveform_sky_high: dict[str, Complex[Array, " n_bins"]],
+    ) -> FloatScalar:
+        """Core likelihood computation from physical-distance bin-edge polarizations."""
         frequencies_low = self.freq_grid_low
         frequencies_high = self.freq_grid_high
         log_likelihood: FloatScalar = jnp.zeros(())
-
-        waveform_sky_low = self._apply_distance_scaling(waveform_cache["low"], params)
-        waveform_sky_high = self._apply_distance_scaling(waveform_cache["high"], params)
 
         complex_d_inner_h: ComplexScalar = jnp.zeros((), dtype=jnp.complex128)
 
@@ -1257,20 +1265,25 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
             self.unique_frequencies, prepared
         )
 
-    def _likelihood(self, params: dict[str, Float]) -> FloatScalar:
-        waveform_sky = self._generate_distance_normalized_waveforms(
-            self.unique_frequencies, params
-        )
-        return self._likelihood_from_waveform(params, waveform_sky)
+    def _evaluate(self, params: dict[str, Float]) -> FloatScalar:
+        waveform_sky = self.waveform(self.unique_frequencies, params)
+        return self._likelihood(params, waveform_sky)
 
-    def _likelihood_from_waveform(
+    def _evaluate_from_waveform(
         self,
         params: dict[str, Float],
         waveform_cache: dict[str, Complex[Array, " n_freq"]],
     ) -> FloatScalar:
-        """Reduce cached multiband polarizations to a log-likelihood value."""
+        """Core likelihood evaluation from a pre-generated waveform cache."""
         waveform_sky = self._apply_distance_scaling(waveform_cache, params)
+        return self._likelihood(params, waveform_sky)
 
+    def _likelihood(
+        self,
+        params: dict[str, Float],
+        waveform_sky: dict[str, Complex[Array, " n_freq"]],
+    ) -> FloatScalar:
+        """Core likelihood computation from physical-distance multiband polarizations."""
         log_likelihood: FloatScalar = jnp.zeros(())
 
         for detector in self.detectors:

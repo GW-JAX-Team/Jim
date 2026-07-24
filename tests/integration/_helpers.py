@@ -63,13 +63,13 @@ class _GaussianWaveformCacheLikelihood(SingleEventLikelihood):
         self.phase_marginalization = False
         self.distance_marginalization = False
 
-    def _likelihood(self, params: dict) -> float:
+    def _evaluate(self, params: dict) -> float:
         return _gaussian_log_likelihood(params["x"], params["y"])
 
     def generate_waveform(self, params: dict) -> dict:
         return {"x": params["x"]}
 
-    def _likelihood_from_waveform(self, params: dict, waveform_cache: dict) -> float:
+    def _evaluate_from_waveform(self, params: dict, waveform_cache: dict) -> float:
         return _gaussian_log_likelihood(waveform_cache["x"], params["y"])
 
 

@@ -77,8 +77,6 @@ class BlackJAXSMCSampler(Sampler):
     _config: BlackJAXSMCConfig
     _displacement_wrapper: Callable
     _final_state: Any
-    # Mode tag set in sample() so get_samples() / get_diagnostics() know which path was taken.
-    _mode: str  # "ap" | "fp" | "at" | "ft"
     _n_iterations: int
     # Per-mode diagnostics stashes (set in the corresponding _run_* method).
     _acceptance_history: (
@@ -112,6 +110,27 @@ class BlackJAXSMCSampler(Sampler):
             config=config,
         )
         self._displacement_wrapper = to_displacement_wrapper(periodic, n_dims)
+
+    @property
+    def sampler_name(self) -> str:
+        return "BlackJAX SMC"
+
+    @property
+    def mode(self) -> str:
+        """SMC implementation selected by the sampler configuration."""
+        if self._config.persistent_sampling:
+            return "fp" if self._config.temperature_ladder is not None else "ap"
+        return "ft" if self._config.temperature_ladder is not None else "at"
+
+    def _validate_checkpoint(self, checkpoint: dict) -> None:
+        """Raise when a checkpoint is incompatible with this SMC configuration."""
+        super()._validate_checkpoint(checkpoint)
+        checkpoint_mode = checkpoint.get("mode")
+        if checkpoint_mode != self.mode:
+            raise ValueError(
+                "checkpoint belongs to a different SMC mode: "
+                f"{checkpoint_mode or 'an unknown mode'}, not {self.mode}"
+            )
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -187,31 +206,31 @@ class BlackJAXSMCSampler(Sampler):
                     _ckpt = pickle.load(
                         _f
                     )  # Only load trusted checkpoints — pickle executes arbitrary code.
-                if _ckpt.get("mode") == "ap":
-                    state = _ckpt["state"]
-                    rng_key = _ckpt["rng_key"]
-                    n_iter = _ckpt["n_iter"]
-                    cov_scale = float(_ckpt.get("cov_scale", cov_scale))
-                    accept_list = list(_ckpt["accept_history"])
-                    cov_scale_list = list(_ckpt["cov_scale_history"])
-                    self._prev_elapsed = float(_ckpt["elapsed_time"])
-                    logger.info(
-                        "SMC-AP: resumed from checkpoint at n_iter=%d (%s)",
-                        n_iter,
-                        ckpt_path,
-                    )
-                else:
-                    state = smc_alg.init(initial_particles)  # type: ignore[call-arg]  # blackjax API
-                    self._prev_elapsed = 0.0
+                self._validate_checkpoint(_ckpt)
+                state = _ckpt["state"]
+                rng_key = _ckpt["rng_key"]
+                n_iter = _ckpt["n_iter"]
+                cov_scale = float(_ckpt.get("cov_scale", cov_scale))
+                accept_list = list(_ckpt["accept_history"])
+                cov_scale_list = list(_ckpt["cov_scale_history"])
+                self._prev_elapsed = float(_ckpt["elapsed_time"])
+                logger.info(
+                    "%s: resumed from checkpoint at n_iter=%d (%s)",
+                    f"{self.sampler_name} ({self.mode.upper()})",
+                    n_iter,
+                    ckpt_path,
+                )
             except (
                 OSError,
                 EOFError,
                 KeyError,
+                TypeError,
                 ValueError,
                 pickle.UnpicklingError,
             ) as _e:
                 logger.warning(
-                    "SMC-AP: corrupt checkpoint at %s (%s) — starting fresh.",
+                    "%s: incompatible or corrupt checkpoint at %s (%s) — starting fresh.",
+                    f"{self.sampler_name} ({self.mode.upper()})",
                     ckpt_path,
                     _e,
                 )
@@ -254,18 +273,18 @@ class BlackJAXSMCSampler(Sampler):
                         "state": state,
                         "rng_key": rng_key,
                         "n_iter": n_iter,
-                        "mode": "ap",
+                        "mode": self.mode,
+                        "sampler_name": self.sampler_name,
                         "elapsed_time": self._prev_elapsed
                         + (time.perf_counter() - _method_t0),
                         "cov_scale": cov_scale,
                         "accept_history": accept_list.copy(),
                         "cov_scale_history": cov_scale_list.copy(),
                     },
-                    "SMC-AP",
+                    f"{self.sampler_name} ({self.mode.upper()})",
                 )
 
         self._final_state = state
-        self._mode = "ap"
         self._n_iterations = n_iter
         self._acceptance_history = np.asarray(accept_list)
         self._cov_scale_history = np.asarray(cov_scale_list)
@@ -318,40 +337,41 @@ class BlackJAXSMCSampler(Sampler):
             try:
                 with open(ckpt_path, "rb") as _f:
                     _ckpt = pickle.load(_f)
-                if _ckpt.get("mode") == "fp":
-                    state = _ckpt["state"]
-                    rng_key = _ckpt["rng_key"]
-                    n_iter = _ckpt["n_iter"]
-                    accept_list = list(_ckpt["accept_history"])
-                    if n_iter > n_schedule:
-                        logger.warning(
-                            "SMC-FP: checkpoint n_iter=%d exceeds current schedule length=%d — starting fresh.",
-                            n_iter,
-                            n_schedule,
-                        )
-                        state = smc_alg.init(initial_particles)  # type: ignore[call-arg]  # blackjax API
-                        n_iter = 0
-                        accept_list = []
-                        self._prev_elapsed = 0.0
-                    else:
-                        self._prev_elapsed = float(_ckpt["elapsed_time"])
-                        logger.info(
-                            "SMC-FP: resumed from checkpoint at n_iter=%d (%s)",
-                            n_iter,
-                            ckpt_path,
-                        )
-                else:
+                self._validate_checkpoint(_ckpt)
+                state = _ckpt["state"]
+                rng_key = _ckpt["rng_key"]
+                n_iter = _ckpt["n_iter"]
+                accept_list = list(_ckpt["accept_history"])
+                if n_iter > n_schedule:
+                    logger.warning(
+                        "%s: checkpoint n_iter=%d exceeds current schedule length=%d — starting fresh.",
+                        f"{self.sampler_name} ({self.mode.upper()})",
+                        n_iter,
+                        n_schedule,
+                    )
                     state = smc_alg.init(initial_particles)  # type: ignore[call-arg]  # blackjax API
+                    n_iter = 0
+                    accept_list = []
                     self._prev_elapsed = 0.0
+                else:
+                    self._prev_elapsed = float(_ckpt["elapsed_time"])
+                    logger.info(
+                        "%s: resumed from checkpoint at n_iter=%d (%s)",
+                        f"{self.sampler_name} ({self.mode.upper()})",
+                        n_iter,
+                        ckpt_path,
+                    )
             except (
                 OSError,
                 EOFError,
                 KeyError,
+                TypeError,
                 ValueError,
                 pickle.UnpicklingError,
             ) as _e:
                 logger.warning(
-                    "SMC-FP: corrupt checkpoint at %s (%s) — starting fresh.",
+                    "%s: incompatible or corrupt checkpoint at %s (%s) — starting fresh.",
+                    f"{self.sampler_name} ({self.mode.upper()})",
                     ckpt_path,
                     _e,
                 )
@@ -378,16 +398,16 @@ class BlackJAXSMCSampler(Sampler):
                         "state": state,
                         "rng_key": rng_key,
                         "n_iter": n_iter,
-                        "mode": "fp",
+                        "mode": self.mode,
+                        "sampler_name": self.sampler_name,
                         "elapsed_time": self._prev_elapsed
                         + (time.perf_counter() - _method_t0),
                         "accept_history": accept_list.copy(),
                     },
-                    "SMC-FP",
+                    f"{self.sampler_name} ({self.mode.upper()})",
                 )
 
         self._final_state = state
-        self._mode = "fp"
         self._n_iterations = n_schedule
         self._acceptance_history = np.asarray(accept_list)
         if ckpt_path is not None:
@@ -443,31 +463,31 @@ class BlackJAXSMCSampler(Sampler):
             try:
                 with open(ckpt_path, "rb") as _f:
                     _ckpt = pickle.load(_f)
-                if _ckpt.get("mode") == "at":
-                    state = _ckpt["state"]
-                    rng_key = _ckpt["rng_key"]
-                    n_iter = _ckpt["n_iter"]
-                    accept_list = list(_ckpt["accept_history"])
-                    temp_list = list(_ckpt["tempering_schedule"])
-                    is_weights_list = list(_ckpt["is_weights_history"])
-                    self._prev_elapsed = float(_ckpt["elapsed_time"])
-                    logger.info(
-                        "SMC-AT: resumed from checkpoint at n_iter=%d (%s)",
-                        n_iter,
-                        ckpt_path,
-                    )
-                else:
-                    state = smc_alg.init(initial_particles)  # type: ignore[call-arg]  # blackjax API
-                    self._prev_elapsed = 0.0
+                self._validate_checkpoint(_ckpt)
+                state = _ckpt["state"]
+                rng_key = _ckpt["rng_key"]
+                n_iter = _ckpt["n_iter"]
+                accept_list = list(_ckpt["accept_history"])
+                temp_list = list(_ckpt["tempering_schedule"])
+                is_weights_list = list(_ckpt["is_weights_history"])
+                self._prev_elapsed = float(_ckpt["elapsed_time"])
+                logger.info(
+                    "%s: resumed from checkpoint at n_iter=%d (%s)",
+                    f"{self.sampler_name} ({self.mode.upper()})",
+                    n_iter,
+                    ckpt_path,
+                )
             except (
                 OSError,
                 EOFError,
                 KeyError,
+                TypeError,
                 ValueError,
                 pickle.UnpicklingError,
             ) as _e:
                 logger.warning(
-                    "SMC-AT: corrupt checkpoint at %s (%s) — starting fresh.",
+                    "%s: incompatible or corrupt checkpoint at %s (%s) — starting fresh.",
+                    f"{self.sampler_name} ({self.mode.upper()})",
                     ckpt_path,
                     _e,
                 )
@@ -498,18 +518,18 @@ class BlackJAXSMCSampler(Sampler):
                         "state": state,
                         "rng_key": rng_key,
                         "n_iter": n_iter,
-                        "mode": "at",
+                        "mode": self.mode,
+                        "sampler_name": self.sampler_name,
                         "elapsed_time": self._prev_elapsed
                         + (time.perf_counter() - _method_t0),
                         "accept_history": accept_list.copy(),
                         "tempering_schedule": temp_list.copy(),
                         "is_weights_history": np.stack(is_weights_list),
                     },
-                    "SMC-AT",
+                    f"{self.sampler_name} ({self.mode.upper()})",
                 )
 
         self._final_state = state
-        self._mode = "at"
         self._n_iterations = n_iter
         self._acceptance_history = np.asarray(accept_list)
         self._tempering_schedule = np.asarray(temp_list)
@@ -567,42 +587,43 @@ class BlackJAXSMCSampler(Sampler):
             try:
                 with open(ckpt_path, "rb") as _f:
                     _ckpt = pickle.load(_f)
-                if _ckpt.get("mode") == "ft":
-                    state = _ckpt["state"]
-                    rng_key = _ckpt["rng_key"]
-                    n_iter = _ckpt["n_iter"]
-                    accept_list = list(_ckpt["accept_history"])
-                    is_weights_list = list(_ckpt["is_weights_history"])
-                    if n_iter > n_schedule:
-                        logger.warning(
-                            "SMC-FT: checkpoint n_iter=%d exceeds current schedule length=%d — starting fresh.",
-                            n_iter,
-                            n_schedule,
-                        )
-                        state = smc_alg.init(initial_particles)  # type: ignore[call-arg]  # blackjax API
-                        n_iter = 0
-                        accept_list = []
-                        is_weights_list = []
-                        self._prev_elapsed = 0.0
-                    else:
-                        self._prev_elapsed = float(_ckpt["elapsed_time"])
-                        logger.info(
-                            "SMC-FT: resumed from checkpoint at n_iter=%d (%s)",
-                            n_iter,
-                            ckpt_path,
-                        )
-                else:
+                self._validate_checkpoint(_ckpt)
+                state = _ckpt["state"]
+                rng_key = _ckpt["rng_key"]
+                n_iter = _ckpt["n_iter"]
+                accept_list = list(_ckpt["accept_history"])
+                is_weights_list = list(_ckpt["is_weights_history"])
+                if n_iter > n_schedule:
+                    logger.warning(
+                        "%s: checkpoint n_iter=%d exceeds current schedule length=%d — starting fresh.",
+                        f"{self.sampler_name} ({self.mode.upper()})",
+                        n_iter,
+                        n_schedule,
+                    )
                     state = smc_alg.init(initial_particles)  # type: ignore[call-arg]  # blackjax API
+                    n_iter = 0
+                    accept_list = []
+                    is_weights_list = []
                     self._prev_elapsed = 0.0
+                else:
+                    self._prev_elapsed = float(_ckpt["elapsed_time"])
+                    logger.info(
+                        "%s: resumed from checkpoint at n_iter=%d (%s)",
+                        f"{self.sampler_name} ({self.mode.upper()})",
+                        n_iter,
+                        ckpt_path,
+                    )
             except (
                 OSError,
                 EOFError,
                 KeyError,
+                TypeError,
                 ValueError,
                 pickle.UnpicklingError,
             ) as _e:
                 logger.warning(
-                    "SMC-FT: corrupt checkpoint at %s (%s) — starting fresh.",
+                    "%s: incompatible or corrupt checkpoint at %s (%s) — starting fresh.",
+                    f"{self.sampler_name} ({self.mode.upper()})",
                     ckpt_path,
                     _e,
                 )
@@ -630,17 +651,17 @@ class BlackJAXSMCSampler(Sampler):
                         "state": state,
                         "rng_key": rng_key,
                         "n_iter": n_iter,
-                        "mode": "ft",
+                        "mode": self.mode,
+                        "sampler_name": self.sampler_name,
                         "elapsed_time": self._prev_elapsed
                         + (time.perf_counter() - _method_t0),
                         "accept_history": accept_list.copy(),
                         "is_weights_history": np.stack(is_weights_list),
                     },
-                    "SMC-FT",
+                    f"{self.sampler_name} ({self.mode.upper()})",
                 )
 
         self._final_state = state
-        self._mode = "ft"
         self._n_iterations = n_schedule
         self._acceptance_history = np.asarray(accept_list)
         self._is_weights_history = (
@@ -692,13 +713,14 @@ class BlackJAXSMCSampler(Sampler):
         initial_particles = arr
 
         ladder = config.temperature_ladder
-        persistent = config.persistent_sampling
+        mode = self.mode
 
-        if persistent and ladder is None:
+        if mode == "ap":
             self._run_adaptive_persistent(rng_key, initial_particles)
-        elif persistent and ladder is not None:
+        elif mode == "fp":
+            assert ladder is not None
             self._run_fixed_persistent(rng_key, initial_particles, ladder)
-        elif not persistent and ladder is None:
+        elif mode == "at":
             self._run_adaptive_tempered(rng_key, initial_particles)
         else:
             assert ladder is not None
@@ -722,7 +744,7 @@ class BlackJAXSMCSampler(Sampler):
         if not self._sampled:
             raise RuntimeError("get_samples() called before sample()")
 
-        mode = self._mode
+        mode = self.mode
         state = self._final_state
 
         if mode in ("ap", "fp"):
@@ -802,7 +824,7 @@ class BlackJAXSMCSampler(Sampler):
             raise RuntimeError("get_diagnostics() called before sample()")
 
         cfg = self._config
-        mode = self._mode
+        mode = self.mode
         n_mcmc = cfg.n_mcmc_steps_per_dim * self.n_dims
         n_iter = self._n_iterations
 

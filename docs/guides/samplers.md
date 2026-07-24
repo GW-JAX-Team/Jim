@@ -16,6 +16,7 @@ samples = jim.get_samples()  # dict[str, np.ndarray] keyed by parameter name
 | [flowMC](#flowmc) | normalizing-flow-enhanced MCMC | No | None |
 | [NS AW](#blackjax-ns-aw) | Nested sampling (bilby/dynesty-style acceptance-walk) | Yes | Uniform prior; unit-cube sampling space |
 | [NSS](#blackjax-nss) | Nested slice sampling | Yes | Normalised prior |
+| [SwiG](#blackjax-swig) | Nested Slice within Gibbs with waveform caching | Yes | Normalised prior |
 | [SMC](#blackjax-smc) | Sequential Monte Carlo | Yes | Normalised prior |
 
 ---
@@ -168,6 +169,51 @@ Key parameters:
 
 ---
 
+### BlackJAX SwiG
+
+Nested Slice within Gibbs (SwiG) applies covariance-shaped slice updates to named parameter blocks.
+With `TransientLikelihoodFD`, `HeterodynedTransientLikelihoodFD`, or `MultibandedTransientLikelihoodFD`, the likelihood provides a cache of generated waveform polarizations to the sampler.
+Blocks that affect waveform inputs refresh that cache, while detector-projection-only blocks reuse it.
+Luminosity distance is also factored out analytically, so a `d_L` block reuses the cache.
+The likelihood determines the remaining dependencies after sample transforms, likelihood transforms, fixed parameters, and analytic marginalisation have been applied.
+
+```python
+from jimgw.samplers.config import BlackJAXSwiGConfig
+
+jim = Jim(
+    likelihood,
+    prior,
+    sampler_config=BlackJAXSwiGConfig(
+        blocks=[
+            ["M_c", "q", "lambda_1", "lambda_2"],
+            ["s1_z", "s2_z"],
+            ["iota"],
+            ["ra", "dec"],
+            ["psi"],
+            ["t_c"],
+        ],
+        n_live=512,
+        n_delete_frac=0.125,
+        num_inner_steps_per_dim=1,
+        num_gibbs_sweeps=2,
+    ),
+    likelihood_transforms=likelihood_transforms,
+)
+```
+
+The cache-capable likelihood requires blocks to form an exact partition of the sampling parameters.
+A block that contains any waveform dependency refreshes the cache, so mixed blocks are safe but may be less efficient.
+Parameters that are analytically marginalised must not appear in the blocks — for example, the `["t_c"]` block above assumes `time_marginalization` is disabled; see [`examples/GW170817_SwiG.py`](https://github.com/GW-JAX-Team/Jim/blob/main/examples/GW170817_SwiG.py) for a run with time and phase marginalisation enabled, where the `t_c` and `phase_c` blocks are dropped entirely.
+
+Key parameters:
+
+- `blocks` — ordered sampling-space parameter blocks for each Gibbs sweep.
+- `n_live` / `n_delete_frac` — live-set size and replacement fraction, matching NSS.
+- `num_inner_steps_per_dim` — random-direction slice steps per block dimension.
+- `num_gibbs_sweeps` — complete block sweeps per particle replacement.
+
+---
+
 ## Checkpointing and resuming
 
 All samplers support checkpoint/resume so long-running jobs can survive interruptions.
@@ -205,7 +251,7 @@ jim = Jim(
 jim.sample()  # resumes from ./my_run/checkpoint.pkl
 ```
 
-The same fields work identically for `FlowMCConfig`, `BlackJAXNSAWConfig`, and `BlackJAXNSSConfig`.
+The same fields work identically for `FlowMCConfig`, `BlackJAXNSAWConfig`, `BlackJAXNSSConfig` and `BlackJAXSwiGConfig`.
 
 | Field | Default | Notes |
 | --- | --- | --- |
@@ -213,6 +259,19 @@ The same fields work identically for `FlowMCConfig`, `BlackJAXNSAWConfig`, and `
 | `checkpoint_interval` | `0.0` (disabled) | Minimum seconds between writes. `0` disables checkpointing entirely. |
 
 > **Validation** — setting `checkpoint_interval > 0` without `checkpoint_dir` raises a `ValidationError` at config construction time.
+
+> **Cross-sampler checkpoints** — every checkpoint records which sampler backend wrote it.
+> Pointing a *different* backend at that `checkpoint_dir` (or, for SMC, the same backend in
+> a different mode — persistent/tempered/adaptive) is handled differently depending on the
+> backend you point there:
+>
+> - **flowMC** raises a `ValueError` immediately, before touching any sampler state.
+> - **BlackJAX NS AW / NSS / SwiG / SMC** log a warning ("incompatible or corrupt checkpoint
+>   … — starting fresh") and silently start a new run instead, the same way they handle a
+>   truly corrupt file.
+>
+> If you switch sampler backends or SMC modes between runs, point `checkpoint_dir` at a new,
+> empty directory to avoid silently discarding an existing checkpoint.
 
 When using the [CLI](cli.md), checkpointing is enabled automatically (600 s, writing to `output.dir`).
 Set `checkpoint_interval = 0` in the `[sampler]` block to opt out.
@@ -312,8 +371,9 @@ diag["log_Z"]                     # float      — final log Bayesian evidence
 
 > This section is for advanced users who want to integrate a custom sampling backend with Jim.  It requires familiarity with JAX and the Jim sampler internals.
 
-Subclass `Sampler`, implement three methods, and register it:
+Subclass `Sampler`, implement three methods and the `sampler_name` property, and register it:
 
+- `sampler_name` — a human-readable backend name used in status and checkpoint logs.
 - `_sample(rng_key, initial_position)` — run the sampler and store results. The base class wraps this in `sample()`, which also records `sampling_time`.
 - `get_samples()` — return a dict with `"samples"` and `"log_likelihood"` keys.
 - `_get_diagnostics()` — return a plain dict with diagnostic information. The base class wraps this in `get_diagnostics()`, which injects `sampling_time`.
@@ -333,6 +393,10 @@ class MyConfig(BaseSamplerConfig):
 
 class MySampler(Sampler):
     _config: MyConfig
+
+    @property
+    def sampler_name(self) -> str:
+        return "My sampler"
 
     def __init__(self, *, n_dims, log_prior_fn, log_likelihood_fn,
                  log_posterior_fn, config: Optional[MyConfig] = None,

@@ -83,6 +83,10 @@ class BlackJAXNSAWSampler(Sampler):
         self._stepper_fn = to_unit_cube_stepper(periodic, n_dims)
         self._validate_unit_cube_prior(log_prior_fn)
 
+    @property
+    def sampler_name(self) -> str:
+        return "BlackJAX NS AW"
+
     def _validate_unit_cube_prior(self, log_prior_fn: Callable) -> None:
         """Raise ValueError if log_prior_fn is not the normalized uniform on [0, 1]^n_dims."""
         n = self.n_dims
@@ -170,13 +174,15 @@ class BlackJAXNSAWSampler(Sampler):
             try:
                 with open(ckpt_path, "rb") as _f:
                     _ckpt = pickle.load(_f)
+                self._validate_checkpoint(_ckpt)
                 state = _ckpt["state"]
                 dead = _ckpt["dead"]
                 rng_key = _ckpt["rng_key"]
                 n_iter = _ckpt["n_iter"]
                 self._prev_elapsed = float(_ckpt["elapsed_time"])
                 logger.info(
-                    "NS AW: resumed from checkpoint at n_iter=%d (%s)",
+                    "%s: resumed from checkpoint at n_iter=%d (%s)",
+                    self.sampler_name,
                     n_iter,
                     ckpt_path,
                 )
@@ -184,11 +190,13 @@ class BlackJAXNSAWSampler(Sampler):
                 OSError,
                 EOFError,
                 KeyError,
+                TypeError,
                 ValueError,
                 pickle.UnpicklingError,
             ) as _e:
                 logger.warning(
-                    "NS AW: corrupt checkpoint at %s (%s) — starting fresh.",
+                    "%s: incompatible or corrupt checkpoint at %s (%s) — starting fresh.",
+                    self.sampler_name,
                     ckpt_path,
                     _e,
                 )
@@ -226,10 +234,11 @@ class BlackJAXNSAWSampler(Sampler):
                         "dead": dead,
                         "rng_key": rng_key,
                         "n_iter": n_iter,
+                        "sampler_name": self.sampler_name,
                         "elapsed_time": self._prev_elapsed
                         + (time.perf_counter() - _method_t0),
                     },
-                    "NS AW",
+                    self.sampler_name,
                 )
 
         self._final_state = finalise(state, dead)

@@ -21,7 +21,10 @@ from jimgw.core.prior import (
     SequentialTransformPrior,
     find_specific_prior,
 )
-from jimgw.samplers.config import BlackJAXNSSConfig, BlackJAXSMCConfig
+from jimgw.samplers.config import (
+    BlackJAXNSSConfig,
+    BlackJAXSMCConfig,
+)
 from tests.utils import assert_all_finite, assert_all_in_range
 
 
@@ -393,7 +396,7 @@ class TestOther:
         assert MyPrior(("x",)).is_normalized is False
 
     def test_unnormalized_prior_raises_for_evidence_samplers(self):
-        """Jim raises ValueError at construction when an unnormalized prior is paired with NSS or SMC."""
+        """Jim rejects unnormalized priors for evidence-computing samplers."""
 
         class MyPrior(Prior):
             def log_prob(self, z):  # noqa: ARG002
@@ -409,7 +412,13 @@ class TestOther:
         prior = MyPrior(("x",))
         lh = MockLikelihood()
 
-        with pytest.raises(ValueError, match="normalized prior"):
-            Jim(likelihood=lh, prior=prior, sampler_config=BlackJAXNSSConfig())  # type: ignore[arg-type]
-        with pytest.raises(ValueError, match="normalized prior"):
-            Jim(likelihood=lh, prior=prior, sampler_config=BlackJAXSMCConfig())  # type: ignore[arg-type]
+        for sampler_config in (
+            BlackJAXNSSConfig(),
+            BlackJAXSMCConfig(),
+        ):
+            with pytest.raises(ValueError, match="normalized prior"):
+                Jim(  # type: ignore[arg-type]
+                    likelihood=lh,
+                    prior=prior,
+                    sampler_config=sampler_config,
+                )

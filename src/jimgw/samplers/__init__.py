@@ -11,11 +11,12 @@ caller requests a backend via `build_sampler`.
 """
 
 from collections.abc import Callable
-from typing import Optional
+from typing import Any, Optional
 
 from jimgw.samplers.base import Sampler
 from jimgw.samplers.config import (
     BaseSamplerConfig,
+    BlackJAXSwiGConfig,
     BlackJAXNSAWConfig,
     BlackJAXNSSConfig,
     BlackJAXSMCConfig,
@@ -28,6 +29,7 @@ __all__ = [
     "SamplerConfig",
     "BaseSamplerConfig",
     "FlowMCConfig",
+    "BlackJAXSwiGConfig",
     "BlackJAXNSAWConfig",
     "BlackJAXNSSConfig",
     "BlackJAXSMCConfig",
@@ -36,7 +38,7 @@ __all__ = [
 ]
 
 
-# Each entry is a zero-arg loader returning the concrete sampler's constructor.
+# Each entry is a zero-arg loader returning a concrete sampler class.
 SamplerBuilder = Callable[..., Sampler]
 _REGISTRY: dict[str, Callable[[], SamplerBuilder]] = {}
 
@@ -63,6 +65,7 @@ def build_sampler(
     log_likelihood_fn: Callable,
     log_posterior_fn: Callable,
     periodic: Optional[list[int] | dict[int, tuple[float, float]]] = None,
+    **backend_kwargs: Any,
 ) -> Sampler:
     """Instantiate the concrete [`Sampler`][jimgw.samplers.base.Sampler] identified by ``config.type``.
 
@@ -73,8 +76,10 @@ def build_sampler(
         log_likelihood_fn: Log-likelihood callable ``(arr,) -> float``.
         log_posterior_fn: Log-posterior callable ``(arr,) -> float``.
         periodic: Periodic-parameter spec already resolved to dimension
-            indices by Jim.  For flowMC/NSS/SMC this is a
+            indices by Jim.  For flowMC/NSS/SwiG/SMC this is a
             ``dict[int, (lo, hi)]``; for NS AW it is a ``list[int]``.
+        **backend_kwargs: Backend-specific construction arguments. They are
+            passed directly to the selected sampler class.
 
     Raises:
         KeyError: If no sampler is registered for ``config.type``.
@@ -93,6 +98,7 @@ def build_sampler(
         log_posterior_fn=log_posterior_fn,
         config=config,
         periodic=periodic,
+        **backend_kwargs,
     )
 
 
@@ -111,3 +117,7 @@ register_sampler("blackjax-ns-aw", lambda: BlackJAXNSAWSampler)
 from jimgw.samplers.blackjax.nss import BlackJAXNSSSampler  # noqa: E402
 
 register_sampler("blackjax-nss", lambda: BlackJAXNSSSampler)
+
+from jimgw.samplers.blackjax.swig import BlackJAXSwiGSampler  # noqa: E402
+
+register_sampler("blackjax-swig", lambda: BlackJAXSwiGSampler)

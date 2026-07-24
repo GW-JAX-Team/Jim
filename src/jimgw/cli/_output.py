@@ -133,7 +133,7 @@ def _injection_truths_in_prior_space(
         named: dict = {k: jnp.float64(v) for k, v in result.items()}
         for transform in jim.sample_transforms:
             named = transform.forward(named)
-        arr = jnp.array([named[k] for k in jim.parameter_names])
+        arr = jnp.array([named[k] for k in jim.sampling_parameter_names])
         result["log_likelihood"] = float(jim._log_likelihood_fn(arr))
     except Exception as exc:
         logger.warning("Could not compute injection log-likelihood: %s", exc)

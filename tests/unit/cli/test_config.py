@@ -377,3 +377,36 @@ def test_ns_aw_non_uniform_t_det_rejected():
                 "sampler": {"type": "blackjax-ns-aw"},
             }
         )
+
+
+# ---------------------------------------------------------------------------
+# SwiG sampler config
+# ---------------------------------------------------------------------------
+
+
+def test_swig_sampler_parses_from_toml():
+    from jimgw.samplers.config import BlackJAXSwiGConfig
+
+    cfg = PipelineConfig.model_validate(
+        {
+            **_MINIMAL_RAW,
+            "sampler": {
+                "type": "blackjax-swig",
+                "blocks": [["M_c"], ["q"]],
+                "n_live": 4,
+                "n_delete_frac": 0.5,
+            },
+        }
+    )
+    assert isinstance(cfg.sampler, BlackJAXSwiGConfig)
+    assert cfg.sampler.blocks == [["M_c"], ["q"]]
+
+
+def test_swig_sampler_requires_blocks():
+    with pytest.raises(ValidationError, match="blocks"):
+        PipelineConfig.model_validate(
+            {
+                **_MINIMAL_RAW,
+                "sampler": {"type": "blackjax-swig"},
+            }
+        )

@@ -76,6 +76,25 @@ class BlackJAXNSSSampler(Sampler):
             periodic, n_dims, sample_direction_from_covariance
         )
 
+    @property
+    def sampler_name(self) -> str:
+        return "BlackJAX NSS"
+
+    @property
+    def _update_inner_kernel_params_fn(self) -> Callable:
+        return live_covariance
+
+    def _build_nested_sampler(self, n_delete: int):
+        config = self._config
+        num_inner_steps = config.num_inner_steps_per_dim * self.n_dims
+        return blackjax.nss(
+            logprior_fn=self._log_prior_fn,
+            loglikelihood_fn=self._log_likelihood_fn,
+            num_delete=n_delete,
+            num_inner_steps=num_inner_steps,
+            proposal=self._proposal,
+        )
+
     def _sample(
         self,
         rng_key: Key,
@@ -101,7 +120,6 @@ class BlackJAXNSSSampler(Sampler):
         config = self._config
         n_live = config.n_live
         n_delete = int(n_live * config.n_delete_frac)
-        num_inner_steps = config.num_inner_steps_per_dim * self.n_dims
         ckpt_path = (
             config.checkpoint_dir / "checkpoint.pkl"
             if config.checkpoint_dir is not None
@@ -119,13 +137,7 @@ class BlackJAXNSSSampler(Sampler):
                 )
             return arr
 
-        nested_sampler = blackjax.nss(
-            logprior_fn=self._log_prior_fn,
-            loglikelihood_fn=self._log_likelihood_fn,
-            num_delete=n_delete,
-            num_inner_steps=num_inner_steps,
-            proposal=self._proposal,
-        )
+        nested_sampler = self._build_nested_sampler(n_delete)
 
         # Bypass BlackJAX's jax.vmap(init_state_fn) to avoid peak-memory OOM.
         # A full vmap over all live particles materialises O(n_live) concurrent
@@ -145,7 +157,7 @@ class BlackJAXNSSSampler(Sampler):
             return _ns_adaptive_init(
                 positions,
                 init_state_fn=_batched_fn,
-                update_inner_kernel_params_fn=live_covariance,
+                update_inner_kernel_params_fn=self._update_inner_kernel_params_fn,
             )
 
         # Resume from checkpoint if one exists.
@@ -157,23 +169,29 @@ class BlackJAXNSSSampler(Sampler):
             try:
                 with open(ckpt_path, "rb") as _f:
                     _ckpt = pickle.load(_f)
+                self._validate_checkpoint(_ckpt)
                 state = _ckpt["state"]
                 dead = _ckpt["dead"]
                 rng_key = _ckpt["rng_key"]
                 n_iter = _ckpt["n_iter"]
                 self._prev_elapsed = float(_ckpt["elapsed_time"])
                 logger.info(
-                    "NSS: resumed from checkpoint at n_iter=%d (%s)", n_iter, ckpt_path
+                    "%s: resumed from checkpoint at n_iter=%d (%s)",
+                    self.sampler_name,
+                    n_iter,
+                    ckpt_path,
                 )
             except (
                 OSError,
                 EOFError,
                 KeyError,
+                TypeError,
                 ValueError,
                 pickle.UnpicklingError,
             ) as _e:
                 logger.warning(
-                    "NSS: corrupt checkpoint at %s (%s) — starting fresh.",
+                    "%s: incompatible or corrupt checkpoint at %s (%s) — starting fresh.",
+                    self.sampler_name,
                     ckpt_path,
                     _e,
                 )
@@ -211,10 +229,11 @@ class BlackJAXNSSSampler(Sampler):
                         "dead": dead,
                         "rng_key": rng_key,
                         "n_iter": n_iter,
+                        "sampler_name": self.sampler_name,
                         "elapsed_time": self._prev_elapsed
                         + (time.perf_counter() - _method_t0),
                     },
-                    "NSS",
+                    self.sampler_name,
                 )
 
         self._final_state = finalise(state, dead)  # type: ignore[arg-type]  # AdaptiveNSState structurally satisfies NSState (.particles field)

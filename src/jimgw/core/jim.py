@@ -13,8 +13,11 @@ from jimgw.core.base import LikelihoodBase
 from jimgw.core.prior import Prior
 from jimgw.core.transforms import BijectiveTransform, NtoMTransform
 from jimgw.core.single_event.likelihood import SingleEventLikelihood
+from jimgw.core.single_event.blocked_likelihood import (
+    _validate_parameter_blocks,
+    _build_rebuild_required_by_block,
+)
 from jimgw.samplers import Sampler, SamplerConfig, build_sampler
-from jimgw.samplers.config import FlowMCConfig
 from jimgw._logging import ensure_logger_handler
 
 logger = logging.getLogger(__name__)
@@ -42,7 +45,10 @@ class Jim:
     prior: Prior
     sample_transforms: Sequence[BijectiveTransform]
     likelihood_transforms: Sequence[NtoMTransform]
-    parameter_names: tuple[str, ...]
+    sampling_parameter_names: tuple[str, ...]
+    prior_parameter_names: tuple[str, ...]
+    likelihood_parameter_names: tuple[str, ...]
+    marginalized_parameter_names: tuple[str, ...]
     sampler: Sampler
 
     def __init__(
@@ -82,18 +88,52 @@ class Jim:
                 Pass ``True`` to also see per-step diagnostics and
                 backend-specific progress output (e.g. flowMC training loss).
         """
-        if isinstance(sampler_config, FlowMCConfig):
+        if sampler_config.type == "flowmc":
             ensure_logger_handler("flowMC", logging.INFO)
         if verbose:
             logging.getLogger("jimgw").setLevel(logging.DEBUG)
-            if isinstance(sampler_config, FlowMCConfig):
+            if sampler_config.type == "flowmc":
                 logging.getLogger("flowMC").setLevel(logging.DEBUG)
 
+        self.prior_parameter_names = prior.parameter_names
+        self.sampling_parameter_names = self.prior_parameter_names
+        for transform in sample_transforms:
+            self.sampling_parameter_names = transform.propagate_name(
+                self.sampling_parameter_names
+            )
+        self.likelihood_parameter_names = self.prior_parameter_names
+        for transform in likelihood_transforms:
+            self.likelihood_parameter_names = transform.propagate_name(
+                self.likelihood_parameter_names
+            )
+        if isinstance(likelihood, SingleEventLikelihood):
+            self.marginalized_parameter_names = tuple(
+                parameter_name
+                for flag_name, parameter_name in (
+                    ("time_marginalization", "t_c"),
+                    ("phase_marginalization", "phase_c"),
+                    ("distance_marginalization", "d_L"),
+                )
+                if getattr(likelihood, flag_name, False)
+            )
+        else:
+            self.marginalized_parameter_names = ()
+
         self._validate_problem(
-            likelihood, prior, sample_transforms, likelihood_transforms
+            likelihood,
+            prior,
+            sample_transforms,
+            likelihood_transforms,
+            sampler_config,
         )
-        self._setup_problem(likelihood, prior, sample_transforms, likelihood_transforms)
         self._validate_normalized_prior(prior, sampler_config)
+        self._setup_problem(
+            likelihood,
+            prior,
+            sample_transforms,
+            likelihood_transforms,
+            sampler_config,
+        )
         root_key: Key = jax.random.key(seed)
 
         # Reserve _sampler_key immediately so sampling is reproducible even if
@@ -101,40 +141,43 @@ class Jim:
         self._rng_key, self._sampler_key = jax.random.split(root_key)
         self._sampler_config = sampler_config
 
-        # Resolve periodic parameter names → dimension indices
-        if periodic is not None:
-            names = self.parameter_names
+        # Resolve periodic parameter names → dimension indices.
+        if periodic:
+            names = self.sampling_parameter_names
 
-            unknown = [n for n in periodic if n not in names]
+            unknown = [name for name in periodic if name not in names]
             if unknown:
                 raise ValueError(
                     f"Periodic parameter(s) {unknown} not found in "
-                    f"sampling parameters {tuple(self.parameter_names)}."
+                    f"sampling parameters {self.sampling_parameter_names}."
                 )
 
             if isinstance(periodic, list):
                 # NS AW style: list[str] → list[int].
-                if periodic and sampler_config.type != "blackjax-ns-aw":
+                if sampler_config.type != "blackjax-ns-aw":
                     raise ValueError(
                         "List-form periodic (names without bounds) is only supported for "
                         "the 'blackjax-ns-aw' sampler. For other samplers pass a dict "
                         "mapping parameter names to (lo, hi) bounds, e.g. "
                         '{"phase_c": (0.0, 6.2832)}.'
                     )
-                periodic_resolved = [names.index(n) for n in periodic]
+                periodic_resolved = [names.index(name) for name in periodic]
             elif isinstance(periodic, dict):
                 # dict[str, (lo, hi)] → dict[int, (lo, hi)]
-                periodic_resolved = {names.index(k): v for k, v in periodic.items()}
+                periodic_resolved = {
+                    names.index(name): bounds for name, bounds in periodic.items()
+                }
         else:
             periodic_resolved = None
 
         self.sampler = build_sampler(
             sampler_config,
-            n_dims=len(self.parameter_names),
+            n_dims=len(self.sampling_parameter_names),
             log_prior_fn=self._log_prior_fn,
             log_likelihood_fn=self._log_likelihood_fn,
             log_posterior_fn=self._log_posterior_fn,
             periodic=periodic_resolved,
+            **self._sampler_backend_kwargs,
         )
         self._verify_posterior()
 
@@ -148,6 +191,7 @@ class Jim:
         prior: Prior,
         sample_transforms: Sequence[BijectiveTransform],
         likelihood_transforms: Sequence[NtoMTransform],
+        sampler_config: SamplerConfig,
     ) -> None:
         """Validate that the prior and likelihood parameter spaces are compatible.
 
@@ -156,25 +200,31 @@ class Jim:
             prior: The prior distribution.
             sample_transforms: Bijective transforms from prior space to sampling space.
             likelihood_transforms: Transforms from prior space to likelihood space.
+            sampler_config: Configuration for the selected sampler.
 
         Raises:
             ValueError: If any transform (sample or likelihood) produces a parameter
                 that already exists in the current parameter space but is not consumed
                 by that same transform; if prior parameters overlap with fixed
-                parameters; if prior parameters are not consumed by the likelihood; or
-                if the likelihood requires parameters not provided by the prior or
-                fixed_parameters.
+                parameters; if analytically marginalized parameters appear in the
+                prior, sampling, or likelihood parameter spaces; if prior parameters
+                are not consumed by the likelihood; or if the likelihood requires
+                parameters not provided by the prior or fixed_parameters.
+            TypeError: If a cache-aware sampler is paired with a likelihood that
+                does not support waveform caching.
         """
-        if not isinstance(likelihood, SingleEventLikelihood):
-            return
+        if sampler_config.type == "blackjax-swig":
+            if not isinstance(likelihood, SingleEventLikelihood):
+                raise TypeError(
+                    "The selected cache-aware sampler requires a waveform-cache-capable "
+                    "single-event likelihood."
+                )
 
-        prior_names: tuple[str, ...] = prior.parameter_names
-
-        sample_names: tuple[str, ...] = prior_names
+        current_sampling_names = self.prior_parameter_names
         for transform in sample_transforms:
             consumed = set(transform.name_mapping[0])
             produced = set(transform.name_mapping[1])
-            overwritten = (produced & set(sample_names)) - consumed
+            overwritten = (produced & set(current_sampling_names)) - consumed
             if overwritten:
                 raise ValueError(
                     f"Sample transform {transform!r} produces parameter(s) "
@@ -182,66 +232,83 @@ class Jim:
                     "space but are not consumed by this transform. Remove the "
                     "prior on these parameters or remove the conflicting transform."
                 )
-            sample_names = transform.propagate_name(sample_names)
-
-        likelihood_names: tuple[str, ...] = prior_names
-        for transform in likelihood_transforms:
-            consumed = set(transform.name_mapping[0])
-            produced = set(transform.name_mapping[1])
-            overwritten = (produced & set(likelihood_names)) - consumed
-            if overwritten:
-                raise ValueError(
-                    f"Likelihood transform {transform!r} produces parameter(s) "
-                    f"{sorted(overwritten)} that already exist in the parameter "
-                    "space but are not consumed by this transform. Remove the "
-                    "prior on these parameters or remove the conflicting transform."
-                )
-            likelihood_names = transform.propagate_name(likelihood_names)
-
-        if likelihood.fixed_parameters:
-            overlap = set(likelihood_names) & set(likelihood.fixed_parameters.keys())
-            if overlap:
-                raise ValueError(
-                    f"Prior defines parameter(s) {sorted(overlap)} that are "
-                    "also in fixed_parameters. Either remove them from the prior "
-                    "or from fixed_parameters."
+            current_sampling_names = transform.propagate_name(current_sampling_names)
+        if isinstance(likelihood, SingleEventLikelihood):
+            marginalized_names = set(self.marginalized_parameter_names)
+            if sampler_config.type == "blackjax-swig":
+                _validate_parameter_blocks(
+                    sampler_config.blocks,
+                    parameter_names=self.sampling_parameter_names,
                 )
 
-        # Waveforms that publish a `parameter_names` attribute can be
-        # cross-checked against the prior.
-        wf_param_names = getattr(likelihood.waveform, "parameter_names", None)
-        if not (
-            isinstance(likelihood.waveform, Waveform) and wf_param_names is not None
-        ):
-            return
+            current_likelihood_names = self.prior_parameter_names
+            for transform in likelihood_transforms:
+                consumed = set(transform.name_mapping[0])
+                produced = set(transform.name_mapping[1])
+                overwritten = (produced & set(current_likelihood_names)) - consumed
+                if overwritten:
+                    raise ValueError(
+                        f"Likelihood transform {transform!r} produces parameter(s) "
+                        f"{sorted(overwritten)} that already exist in the parameter "
+                        "space but are not consumed by this transform. Remove the "
+                        "prior on these parameters or remove the conflicting transform."
+                    )
+                current_likelihood_names = transform.propagate_name(
+                    current_likelihood_names
+                )
 
-        consumed: set[str] = set(wf_param_names)
-        consumed |= {"ra", "dec", "psi", "t_c"}
-        if getattr(likelihood, "time_marginalization", False):
-            consumed.discard("t_c")
-        if getattr(likelihood, "phase_marginalization", False):
-            consumed.discard("phase_c")
-        if getattr(likelihood, "distance_marginalization", False):
-            consumed.discard("d_L")
-
-        provided = set(likelihood_names)
-        if likelihood.fixed_parameters:
-            provided |= set(likelihood.fixed_parameters.keys())
-
-        unused = provided - consumed
-        if unused:
-            raise ValueError(
-                f"Prior defines parameter(s) {sorted(unused)} that are not "
-                "consumed by the likelihood. Remove them from the prior or "
-                "add appropriate likelihood_transforms."
+            invalid_marginalized_names = sorted(
+                marginalized_names
+                & (
+                    set(self.prior_parameter_names)
+                    | set(self.sampling_parameter_names)
+                    | set(self.likelihood_parameter_names)
+                )
             )
-        missing = consumed - provided
-        if missing:
-            raise ValueError(
-                f"Likelihood requires parameter(s) {sorted(missing)} that are "
-                "not provided by the prior or fixed_parameters. Add them to "
-                "the prior or to fixed_parameters."
-            )
+            if invalid_marginalized_names:
+                raise ValueError(
+                    f"Marginalized parameter(s) {invalid_marginalized_names} "
+                    "must not appear in the prior, sampling, or likelihood "
+                    "parameter spaces."
+                )
+
+            if likelihood.fixed_parameters:
+                overlap = set(self.likelihood_parameter_names) & set(
+                    likelihood.fixed_parameters.keys()
+                )
+                if overlap:
+                    raise ValueError(
+                        f"Prior defines parameter(s) {sorted(overlap)} that are "
+                        "also in fixed_parameters. Either remove them from the prior "
+                        "or from fixed_parameters."
+                    )
+
+            # Waveforms that publish a `parameter_names` attribute can be
+            # cross-checked against the prior.
+            wf_param_names = getattr(likelihood.waveform, "parameter_names", None)
+            if isinstance(likelihood.waveform, Waveform) and wf_param_names is not None:
+                consumed: set[str] = set(wf_param_names)
+                consumed |= {"ra", "dec", "psi", "t_c"}
+                consumed -= marginalized_names
+
+                provided = set(self.likelihood_parameter_names)
+                if likelihood.fixed_parameters:
+                    provided |= set(likelihood.fixed_parameters.keys())
+
+                unused = provided - consumed
+                if unused:
+                    raise ValueError(
+                        f"Prior defines parameter(s) {sorted(unused)} that are not "
+                        "consumed by the likelihood. Remove them from the prior or "
+                        "add appropriate likelihood_transforms."
+                    )
+                missing = consumed - provided
+                if missing:
+                    raise ValueError(
+                        f"Likelihood requires parameter(s) {sorted(missing)} that are "
+                        "not provided by the prior or fixed_parameters. Add them to "
+                        "the prior or to fixed_parameters."
+                    )
 
     def _setup_problem(
         self,
@@ -249,37 +316,34 @@ class Jim:
         prior: Prior,
         sample_transforms: Sequence[BijectiveTransform],
         likelihood_transforms: Sequence[NtoMTransform],
+        sampler_config: SamplerConfig,
     ) -> None:
-        """Wire together likelihood, prior, and transforms; build sampling-space callables.
+        """Wire together the likelihood, prior, and transforms.
 
         Constructs ``_log_prior_fn``, ``_log_likelihood_fn``, and
-        ``_log_posterior_fn`` — flat-array callables injected into the sampler.
-        Validation is performed separately by ``_validate_problem`` before
-        this method is called.
+        ``_log_posterior_fn`` — flat-array callables used by the sampler.
+        Validation is performed separately by ``_validate_problem`` before this
+        method is called.
 
         Args:
             likelihood: The likelihood to evaluate.
             prior: The prior distribution.
             sample_transforms: Bijective transforms from prior space to sampling space.
             likelihood_transforms: Transforms from prior space to likelihood space.
+            sampler_config: Configuration for the selected sampler.
         """
         self.likelihood = likelihood
         self.prior = prior
         self.sample_transforms = sample_transforms
         self.likelihood_transforms = likelihood_transforms
 
-        self.parameter_names = prior.parameter_names
         if not sample_transforms:
             logger.info(
                 "No sample transforms provided. Using prior parameters as sampling parameters."
             )
         else:
             logger.info("Using sample transforms.")
-            for transform in sample_transforms:
-                self.parameter_names = transform.propagate_name(self.parameter_names)
-                logger.debug(
-                    f"  Applied transform {type(transform).__name__}: parameter_names = {self.parameter_names}"
-                )
+            logger.debug(f"Sampling parameter names = {self.sampling_parameter_names}")
 
         if not likelihood_transforms:
             logger.info(
@@ -292,7 +356,17 @@ class Jim:
 
         # Build sampling-space callables. These operate on flat arrays of shape
         # (n_dims,) and are injected into the sampler.
-        names = self.parameter_names
+        names = self.sampling_parameter_names
+
+        def _sampling_array_to_likelihood_parameters(
+            arr: Float[Array, " n_dims"],
+        ) -> dict[str, Float]:
+            named = dict(zip(names, arr, strict=True))
+            for transform in reversed(sample_transforms):
+                named, _ = transform.inverse(named)
+            for transform in likelihood_transforms:
+                named = transform.forward(named)
+            return named
 
         def _log_prior_fn(arr: Float[Array, " n_dims"]) -> FloatScalar:
             named = dict(zip(names, arr, strict=True))
@@ -303,11 +377,7 @@ class Jim:
             return prior.log_prob(named) + jac
 
         def _log_likelihood_fn(arr: Float[Array, " n_dims"]) -> FloatScalar:
-            named = dict(zip(names, arr, strict=True))
-            for transform in reversed(sample_transforms):
-                named, _ = transform.inverse(named)
-            for transform in likelihood_transforms:
-                named = transform.forward(named)
+            named = _sampling_array_to_likelihood_parameters(arr)
             return likelihood.evaluate(named)
 
         def _log_posterior_fn(arr: Float[Array, " n_dims"]) -> FloatScalar:
@@ -324,6 +394,34 @@ class Jim:
         self._log_prior_fn = _log_prior_fn
         self._log_likelihood_fn = _log_likelihood_fn
         self._log_posterior_fn = _log_posterior_fn
+        self._sampler_backend_kwargs: dict[str, Any] = {}
+
+        if sampler_config.type == "blackjax-swig":
+            # `_validate_problem` has already established the waveform-cache API.
+            assert isinstance(likelihood, SingleEventLikelihood)
+            self._rebuild_required_by_block = _build_rebuild_required_by_block(
+                likelihood,
+                sampler_config.blocks,
+                parameter_names=self.sampling_parameter_names,
+                sample_transforms=sample_transforms,
+                likelihood_transforms=likelihood_transforms,
+            )
+
+            def build_cache(position):
+                return likelihood.generate_waveform(
+                    _sampling_array_to_likelihood_parameters(position)
+                )
+
+            def log_likelihood_from_cache_fn(position, cache):
+                return likelihood.evaluate_from_waveform(
+                    _sampling_array_to_likelihood_parameters(position), cache
+                )
+
+            self._sampler_backend_kwargs = {
+                "rebuild_required_by_block": self._rebuild_required_by_block,
+                "build_cache": build_cache,
+                "log_likelihood_from_cache_fn": log_likelihood_from_cache_fn,
+            }
 
     def _verify_posterior(self) -> None:
         """Draw test points from the prior and verify the posterior is not mostly NaN.
@@ -360,15 +458,11 @@ class Jim:
             sampler_config: The sampler configuration to check against.
 
         Raises:
-            ValueError: If ``sampler_config`` is a
-                [`BlackJAXNSSConfig`][jimgw.samplers.config.BlackJAXNSSConfig] or
-                [`BlackJAXSMCConfig`][jimgw.samplers.config.BlackJAXSMCConfig] and
-                ``prior.is_normalized`` is ``False``.
+            ValueError: If an evidence-computing sampler is paired with an
+                unnormalized prior.
         """
-        from jimgw.samplers.config import BlackJAXNSSConfig, BlackJAXSMCConfig
-
         if (
-            isinstance(sampler_config, (BlackJAXNSSConfig, BlackJAXSMCConfig))
+            sampler_config.type in ("blackjax-nss", "blackjax-swig", "blackjax-smc")
             and not prior.is_normalized
         ):
             raise ValueError(
@@ -394,7 +488,7 @@ class Jim:
         initial = self.prior.sample(key, n)
         for transform in self.sample_transforms:
             initial = jax.vmap(transform.forward)(initial)
-        arr = jnp.array([initial[name] for name in self.parameter_names]).T
+        arr = jnp.array([initial[name] for name in self.sampling_parameter_names]).T
         if not jnp.all(jnp.isfinite(arr)):
             raise ValueError(
                 "Initial positions contain non-finite values (NaN or inf). "
@@ -408,7 +502,7 @@ class Jim:
 
     def add_name(self, x: Float[Array, " n_dims"]) -> dict[str, Float]:
         """Convert a flat sampling-space array to a named dict."""
-        return dict(zip(self.parameter_names, x, strict=True))
+        return dict(zip(self.sampling_parameter_names, x, strict=True))
 
     def evaluate_prior(self, params: Float[Array, " n_dims"]) -> Float:
         """Log-prior in the sampling space (with Jacobian corrections from sample_transforms)."""
@@ -522,7 +616,7 @@ class Jim:
         named = jax.vmap(self.add_name)(jnp.array(sample_array))
         for transform in reversed(self.sample_transforms):
             named = jax.vmap(transform.backward)(named)
-        out = {k: np.array(named[k]) for k in self.prior.parameter_names}
+        out = {k: np.array(named[k]) for k in self.prior_parameter_names}
         out["log_likelihood"] = np.asarray(log_likelihood)
         return out
 

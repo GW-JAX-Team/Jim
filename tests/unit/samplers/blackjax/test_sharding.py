@@ -39,6 +39,20 @@ def test_make_live_mesh_rejects_unavailable_devices():
         make_live_mesh(jax.local_device_count() + 1, 16, 4)
 
 
+def test_make_live_mesh_rejects_indivisible_n_live(monkeypatch):
+    # Fake enough devices to clear the availability check without needing
+    # real hardware, so the n_live divisibility check below it is reachable.
+    monkeypatch.setattr(jax, "local_devices", lambda: [object(), object()])
+    with pytest.raises(ValueError, match="n_live=11 must be divisible by n_devices=2"):
+        make_live_mesh(2, 11, 4)
+
+
+def test_make_live_mesh_rejects_indivisible_n_delete(monkeypatch):
+    monkeypatch.setattr(jax, "local_devices", lambda: [object(), object()])
+    with pytest.raises(ValueError, match="n_delete=3 must be divisible by n_devices=2"):
+        make_live_mesh(2, 12, 3)
+
+
 @pytest.mark.skipif(
     not _HAS_FOUR_DEVICES,
     reason="run with XLA_FLAGS=--xla_force_host_platform_device_count=4",

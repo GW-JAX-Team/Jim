@@ -959,6 +959,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#blackjax-swig" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        BlackJAX SwiG
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1439,6 +1450,33 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/jimgw/core/single_event/blocked_likelihood/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  blocked_likelihood
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -2011,6 +2049,33 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/jimgw/samplers/blackjax/swig/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  swig
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -2246,6 +2311,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#blackjax-swig" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        BlackJAX SwiG
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2356,6 +2432,12 @@ You select one by passing a typed config object to <code>Jim</code>.</p>
 <tr>
 <td><a href="#blackjax-nss">NSS</a></td>
 <td>Nested slice sampling</td>
+<td>Yes</td>
+<td>Normalised prior</td>
+</tr>
+<tr>
+<td><a href="#blackjax-swig">SwiG</a></td>
+<td>Nested Slice within Gibbs with waveform caching</td>
 <td>Yes</td>
 <td>Normalised prior</td>
 </tr>
@@ -2493,6 +2575,45 @@ Unlike NS AW, it does not require a unit-cube prior and works in any bounded sam
 <p><strong>Repository:</strong> <a href="https://github.com/blackjax-devs/blackjax">blackjax-devs/blackjax</a></p>
 <p><strong>References:</strong> Yallup, D., Prathaban, M., Alvey, J., Handley, W., <em>"Parallel Nested Slice Sampling for Gravitational Wave Parameter Estimation"</em>, <a href="https://arxiv.org/abs/2509.24949">arXiv:2509.24949</a> (Sep 2025). Yallup, D., Kroupa, N., Handley, W., <em>"Nested Slice Sampling"</em>, <a href="https://openreview.net/forum?id=ekbkMSuPo4">OpenReview</a> (2025).</p>
 <hr />
+<h3 id="blackjax-swig">BlackJAX SwiG<a class="headerlink" href="#blackjax-swig" title="Permanent link">¤</a></h3>
+<p>Nested Slice within Gibbs (SwiG) applies covariance-shaped slice updates to named parameter blocks.
+With <code>TransientLikelihoodFD</code>, <code>HeterodynedTransientLikelihoodFD</code>, or <code>MultibandedTransientLikelihoodFD</code>, the likelihood provides a cache of generated waveform polarizations to the sampler.
+Blocks that affect waveform inputs refresh that cache, while detector-projection-only blocks reuse it.
+Luminosity distance is also factored out analytically, so a <code>d_L</code> block reuses the cache.
+The likelihood determines the remaining dependencies after sample transforms, likelihood transforms, fixed parameters, and analytic marginalisation have been applied.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.samplers.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">BlackJAXSwiGConfig</span>
+
+<span class="n">jim</span> <span class="o">=</span> <span class="n">Jim</span><span class="p">(</span>
+    <span class="n">likelihood</span><span class="p">,</span>
+    <span class="n">prior</span><span class="p">,</span>
+    <span class="n">sampler_config</span><span class="o">=</span><span class="n">BlackJAXSwiGConfig</span><span class="p">(</span>
+        <span class="n">blocks</span><span class="o">=</span><span class="p">[</span>
+            <span class="p">[</span><span class="s2">&quot;M_c&quot;</span><span class="p">,</span> <span class="s2">&quot;q&quot;</span><span class="p">,</span> <span class="s2">&quot;lambda_1&quot;</span><span class="p">,</span> <span class="s2">&quot;lambda_2&quot;</span><span class="p">],</span>
+            <span class="p">[</span><span class="s2">&quot;s1_z&quot;</span><span class="p">,</span> <span class="s2">&quot;s2_z&quot;</span><span class="p">],</span>
+            <span class="p">[</span><span class="s2">&quot;iota&quot;</span><span class="p">],</span>
+            <span class="p">[</span><span class="s2">&quot;ra&quot;</span><span class="p">,</span> <span class="s2">&quot;dec&quot;</span><span class="p">],</span>
+            <span class="p">[</span><span class="s2">&quot;psi&quot;</span><span class="p">],</span>
+            <span class="p">[</span><span class="s2">&quot;t_c&quot;</span><span class="p">],</span>
+        <span class="p">],</span>
+        <span class="n">n_live</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span>
+        <span class="n">n_delete_frac</span><span class="o">=</span><span class="mf">0.125</span><span class="p">,</span>
+        <span class="n">num_inner_steps_per_dim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">num_gibbs_sweeps</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">likelihood_transforms</span><span class="o">=</span><span class="n">likelihood_transforms</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>The cache-capable likelihood requires blocks to form an exact partition of the sampling parameters.
+A block that contains any waveform dependency refreshes the cache, so mixed blocks are safe but may be less efficient.
+Parameters that are analytically marginalised must not appear in the blocks — for example, the <code>["t_c"]</code> block above assumes <code>time_marginalization</code> is disabled; see <a href="https://github.com/GW-JAX-Team/Jim/blob/main/examples/GW170817_SwiG.py"><code>examples/GW170817_SwiG.py</code></a> for a run with time and phase marginalisation enabled, where the <code>t_c</code> and <code>phase_c</code> blocks are dropped entirely.</p>
+<p>Key parameters:</p>
+<ul>
+<li><code>blocks</code> — ordered sampling-space parameter blocks for each Gibbs sweep.</li>
+<li><code>n_live</code> / <code>n_delete_frac</code> — live-set size and replacement fraction, matching NSS.</li>
+<li><code>num_inner_steps_per_dim</code> — random-direction slice steps per block dimension.</li>
+<li><code>num_gibbs_sweeps</code> — complete block sweeps per particle replacement.</li>
+</ul>
+<hr />
 <h2 id="checkpointing-and-resuming">Checkpointing and resuming<a class="headerlink" href="#checkpointing-and-resuming" title="Permanent link">¤</a></h2>
 <p>All samplers support checkpoint/resume so long-running jobs can survive interruptions.
 Set <code>checkpoint_dir</code> to a directory and <code>checkpoint_interval</code> to the minimum wall-clock seconds between writes:</p>
@@ -2523,7 +2644,7 @@ To resume after an interruption, construct the same config pointing at the same 
 <span class="p">)</span>
 <span class="n">jim</span><span class="o">.</span><span class="n">sample</span><span class="p">()</span>  <span class="c1"># resumes from ./my_run/checkpoint.pkl</span>
 </code></pre></div>
-<p>The same fields work identically for <code>FlowMCConfig</code>, <code>BlackJAXNSAWConfig</code>, and <code>BlackJAXNSSConfig</code>.</p>
+<p>The same fields work identically for <code>FlowMCConfig</code>, <code>BlackJAXNSAWConfig</code>, <code>BlackJAXNSSConfig</code> and <code>BlackJAXSwiGConfig</code>.</p>
 <table>
 <thead>
 <tr>
@@ -2547,6 +2668,18 @@ To resume after an interruption, construct the same config pointing at the same 
 </table>
 <blockquote>
 <p><strong>Validation</strong> — setting <code>checkpoint_interval &gt; 0</code> without <code>checkpoint_dir</code> raises a <code>ValidationError</code> at config construction time.</p>
+<p><strong>Cross-sampler checkpoints</strong> — every checkpoint records which sampler backend wrote it.
+Pointing a <em>different</em> backend at that <code>checkpoint_dir</code> (or, for SMC, the same backend in
+a different mode — persistent/tempered/adaptive) is handled differently depending on the
+backend you point there:</p>
+<ul>
+<li><strong>flowMC</strong> raises a <code>ValueError</code> immediately, before touching any sampler state.</li>
+<li><strong>BlackJAX NS AW / NSS / SwiG / SMC</strong> log a warning ("incompatible or corrupt checkpoint
+  … — starting fresh") and silently start a new run instead, the same way they handle a
+  truly corrupt file.</li>
+</ul>
+<p>If you switch sampler backends or SMC modes between runs, point <code>checkpoint_dir</code> at a new,
+empty directory to avoid silently discarding an existing checkpoint.</p>
 </blockquote>
 <p>When using the <a href="../cli/">CLI</a>, checkpointing is enabled automatically (600 s, writing to <code>output.dir</code>).
 Set <code>checkpoint_interval = 0</code> in the <code>[sampler]</code> block to opt out.</p>
@@ -2620,8 +2753,9 @@ Pass a dict of <code>parameter_name: (lower, upper)</code> bounds:</p>
 <blockquote>
 <p>This section is for advanced users who want to integrate a custom sampling backend with Jim.  It requires familiarity with JAX and the Jim sampler internals.</p>
 </blockquote>
-<p>Subclass <code>Sampler</code>, implement three methods, and register it:</p>
+<p>Subclass <code>Sampler</code>, implement three methods and the <code>sampler_name</code> property, and register it:</p>
 <ul>
+<li><code>sampler_name</code> — a human-readable backend name used in status and checkpoint logs.</li>
 <li><code>_sample(rng_key, initial_position)</code> — run the sampler and store results. The base class wraps this in <code>sample()</code>, which also records <code>sampling_time</code>.</li>
 <li><code>get_samples()</code> — return a dict with <code>"samples"</code> and <code>"log_likelihood"</code> keys.</li>
 <li><code>_get_diagnostics()</code> — return a plain dict with diagnostic information. The base class wraps this in <code>get_diagnostics()</code>, which injects <code>sampling_time</code>.</li>
@@ -2640,6 +2774,10 @@ Pass a dict of <code>parameter_name: (lower, upper)</code> bounds:</p>
 
 <span class="k">class</span><span class="w"> </span><span class="nc">MySampler</span><span class="p">(</span><span class="n">Sampler</span><span class="p">):</span>
     <span class="n">_config</span><span class="p">:</span> <span class="n">MyConfig</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sampler_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;My sampler&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">n_dims</span><span class="p">,</span> <span class="n">log_prior_fn</span><span class="p">,</span> <span class="n">log_likelihood_fn</span><span class="p">,</span>
                  <span class="n">log_posterior_fn</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">MyConfig</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>

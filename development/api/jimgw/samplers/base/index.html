@@ -1290,6 +1290,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../core/single_event/blocked_likelihood/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  blocked_likelihood
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../core/single_event/data/" class="md-nav__link">
         
   
@@ -1785,6 +1812,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#jimgw.samplers.base.Sampler.sampler_name" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        sampler_name
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#jimgw.samplers.base.Sampler.get_diagnostics" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1948,6 +1986,33 @@
     
   
   smc
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../blackjax/swig/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  swig
 
     
   </span>
@@ -2159,6 +2224,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#jimgw.samplers.base.Sampler.sampler_name" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        sampler_name
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#jimgw.samplers.base.Sampler.get_diagnostics" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -2272,7 +2348,7 @@ named prior-space dict via <a class="autorefs autorefs-internal" title="&lt;code
 
 
         <p>Abstract base class for JAX sampler backends.</p>
-<p>Each backend receives four injected callables from
+<p>Each backend receives sampling-space callables from
 <a class="autorefs autorefs-internal" href="../../core/jim/#jimgw.core.jim.Jim"><code>Jim</code></a> and operates entirely in the sampling
 space (flat arrays of shape <code>(n_dims,)</code>).  It has no knowledge of
 parameter names, transforms, or likelihood/prior details beyond what
@@ -2332,6 +2408,36 @@ samples themselves.</p>
 
 
 
+<p><span class="doc-section-title">Attributes:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;sampler_name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;/code&gt;
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-abstractmethod&quot;&gt;&lt;code&gt;abstractmethod&lt;/code&gt;&lt;/small&gt;
+      &lt;small class=&quot;doc doc-label doc-label-property&quot;&gt;&lt;code&gt;property&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="./#jimgw.samplers.base.Sampler.sampler_name">sampler_name</a></code></td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Human-readable sampler name used in status and checkpoint logs.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
 
 
 <div class="doc doc-children">
@@ -2341,6 +2447,29 @@ samples themselves.</p>
 
 
 
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="jimgw.samplers.base.Sampler.sampler_name" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">sampler_name</span><span class="p">:</span> <span class="nb">str</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#jimgw.samplers.base.Sampler.sampler_name" class="headerlink" title="Permanent link">¤</a></h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Human-readable sampler name used in status and checkpoint logs.</p>
+
+    </div>
+
+</div>
 
 
 

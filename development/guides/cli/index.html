@@ -1118,6 +1118,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#type-blackjax-swig" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>type = "blackjax-swig"</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#type-blackjax-ns-aw" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1697,6 +1708,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/jimgw/core/single_event/blocked_likelihood/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  blocked_likelihood
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/jimgw/core/single_event/data/" class="md-nav__link">
         
   
@@ -2261,6 +2299,33 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/jimgw/samplers/blackjax/swig/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  swig
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -2756,6 +2821,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         <code>type = "blackjax-nss"</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#type-blackjax-swig" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>type = "blackjax-swig"</code>
       </span>
     </span>
   </a>
@@ -3310,6 +3386,11 @@ Supported PSD formats: <code>.npz</code>, <code>.txt</code>, <code>.dat</code>, 
 <td>Yes</td>
 </tr>
 <tr>
+<td><code>blackjax-swig</code></td>
+<td>Nested Slice within Gibbs with waveform caching</td>
+<td>Yes</td>
+</tr>
+<tr>
 <td><code>blackjax-ns-aw</code></td>
 <td>Nested sampling (acceptance-walk)</td>
 <td>Yes</td>
@@ -3495,6 +3576,68 @@ Supported PSD formats: <code>.npz</code>, <code>.txt</code>, <code>.dat</code>, 
 <td><code>termination_dlogz</code></td>
 <td><code>0.1</code></td>
 <td>Stop when the remaining log-evidence contribution falls below this</td>
+</tr>
+<tr>
+<td><code>checkpoint_dir</code></td>
+<td><code>{output.dir}/</code></td>
+<td>Directory for <code>checkpoint.pkl</code>; set by the CLI automatically</td>
+</tr>
+<tr>
+<td><code>checkpoint_interval</code></td>
+<td><code>600.0</code></td>
+<td>Seconds between checkpoint writes; <code>0</code> disables checkpointing</td>
+</tr>
+</tbody>
+</table>
+<h3 id="type-blackjax-swig"><code>type = "blackjax-swig"</code><a class="headerlink" href="#type-blackjax-swig" title="Permanent link">¤</a></h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>blocks</code></td>
+<td>required</td>
+<td>Ordered lists of sampling-space parameter names</td>
+</tr>
+<tr>
+<td><code>n_live</code></td>
+<td><code>500</code></td>
+<td>Number of live points</td>
+</tr>
+<tr>
+<td><code>n_delete_frac</code></td>
+<td><code>0.125</code></td>
+<td>Fraction of live points replaced per iteration</td>
+</tr>
+<tr>
+<td><code>num_inner_steps_per_dim</code></td>
+<td><code>1</code></td>
+<td>Slice steps per dimension within each block</td>
+</tr>
+<tr>
+<td><code>num_gibbs_sweeps</code></td>
+<td><code>2</code></td>
+<td>Complete block sweeps per replacement</td>
+</tr>
+<tr>
+<td><code>max_steps</code></td>
+<td><code>10</code></td>
+<td>Maximum stepping-out expansions per slice</td>
+</tr>
+<tr>
+<td><code>max_shrinkage</code></td>
+<td><code>100</code></td>
+<td>Maximum shrinkage evaluations per slice</td>
+</tr>
+<tr>
+<td><code>termination_dlogz</code></td>
+<td><code>0.1</code></td>
+<td>Stop when the remaining evidence contribution falls below this</td>
 </tr>
 <tr>
 <td><code>checkpoint_dir</code></td>

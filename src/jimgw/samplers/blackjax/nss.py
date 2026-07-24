@@ -90,8 +90,8 @@ class BlackJAXNSSSampler(Sampler):
         )
 
     @property
-    def _checkpoint_tag(self) -> str:
-        return "NSS"
+    def sampler_name(self) -> str:
+        return "BlackJAX NSS"
 
     @property
     def _update_inner_kernel_params_fn(self) -> Callable:
@@ -211,6 +211,7 @@ class BlackJAXNSSSampler(Sampler):
             try:
                 with open(ckpt_path, "rb") as _f:
                     _ckpt = pickle.load(_f)
+                self._validate_checkpoint(_ckpt)
                 state = _ckpt["state"]
                 dead = _ckpt["dead"]
                 rng_key = _ckpt["rng_key"]
@@ -221,7 +222,7 @@ class BlackJAXNSSSampler(Sampler):
                 self._prev_elapsed = float(_ckpt["elapsed_time"])
                 logger.info(
                     "%s: resumed from checkpoint at n_iter=%d (%s)",
-                    self._checkpoint_tag,
+                    self.sampler_name,
                     n_iter,
                     ckpt_path,
                 )
@@ -229,12 +230,13 @@ class BlackJAXNSSSampler(Sampler):
                 OSError,
                 EOFError,
                 KeyError,
+                TypeError,
                 ValueError,
                 pickle.UnpicklingError,
             ) as _e:
                 logger.warning(
-                    "%s: corrupt checkpoint at %s (%s) — starting fresh.",
-                    self._checkpoint_tag,
+                    "%s: incompatible or corrupt checkpoint at %s (%s) — starting fresh.",
+                    self.sampler_name,
                     ckpt_path,
                     _e,
                 )
@@ -275,10 +277,11 @@ class BlackJAXNSSSampler(Sampler):
                         "dead": jax.device_get(dead),
                         "rng_key": jax.device_get(rng_key),
                         "n_iter": n_iter,
+                        "sampler_name": self.sampler_name,
                         "elapsed_time": self._prev_elapsed
                         + (time.perf_counter() - _method_t0),
                     },
-                    self._checkpoint_tag,
+                    self.sampler_name,
                 )
 
         final_state = finalise(state, dead)  # type: ignore[arg-type]  # AdaptiveNSState structurally satisfies NSState (.particles field)

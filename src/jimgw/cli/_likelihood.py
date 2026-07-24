@@ -128,7 +128,7 @@ def build_likelihood(
         mb = cfg.multiband
 
         # MultibandedTransientLikelihoodFD._infer_time_offsets only searches for
-        # t_c. When the NS-AW sampler is used it renames t_c → t_det in the built
+        # t_c. When the NS AW sampler is used it renames t_c → t_det in the built
         # prior (same relative-offset bounds). Detect that here and compute
         # time_offset / delta_f_end explicitly so auto-inference works correctly.
         mb_time_offset = mb.time_offset

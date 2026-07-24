@@ -1,5 +1,9 @@
 """Tests for cache-aware Nested Slice within Gibbs."""
 
+import pickle
+from pathlib import Path
+from typing import Optional
+
 import jax
 import jax.numpy as jnp
 import numpy as np
@@ -24,7 +28,9 @@ def _log_likelihood(position):
     return _log_likelihood_from_cache(position, _build_cache(position))
 
 
-def _make_sampler() -> BlackJAXSwiGSampler:
+def _make_sampler(
+    checkpoint_dir: Optional[Path] = None,
+) -> BlackJAXSwiGSampler:
     config = BlackJAXSwiGConfig(
         blocks=[["slow"], ["fast"]],
         n_live=24,
@@ -32,6 +38,8 @@ def _make_sampler() -> BlackJAXSwiGSampler:
         termination_dlogz=1.5,
         max_steps=4,
         max_shrinkage=30,
+        checkpoint_dir=checkpoint_dir,
+        checkpoint_interval=1e-9 if checkpoint_dir is not None else 0.0,
     )
     return BlackJAXSwiGSampler(
         n_dims=2,
@@ -39,9 +47,8 @@ def _make_sampler() -> BlackJAXSwiGSampler:
         log_likelihood_fn=_log_likelihood,
         log_posterior_fn=lambda x: _log_prior(x) + _log_likelihood(x),
         config=config,
-        block_indices=((0,), (1,)),
-        refresh_cache=(True, False),
-        build_cache_fn=_build_cache,
+        rebuild_required_by_block={(0,): True, (1,): False},
+        build_cache=_build_cache,
         log_likelihood_from_cache_fn=_log_likelihood_from_cache,
     )
 
@@ -60,3 +67,32 @@ def test_swig_does_not_store_cache_on_live_particles():
     initial = jax.random.uniform(jax.random.key(3), (24, 2))
     sampler.sample(jax.random.key(4), initial)
     assert not hasattr(sampler._final_state.particles, "cache")
+
+
+def test_swig_has_a_distinct_sampler_name():
+    assert _make_sampler().sampler_name == "BlackJAX SwiG"
+
+
+def test_swig_checkpoint_records_sampler_name(tmp_path, monkeypatch):
+    sampler = _make_sampler(checkpoint_dir=tmp_path)
+    checkpoint_path = tmp_path / "checkpoint.pkl"
+    original_unlink = Path.unlink
+    monkeypatch.setattr(
+        Path,
+        "unlink",
+        lambda self, missing_ok=False: (
+            None
+            if self == checkpoint_path
+            else original_unlink(self, missing_ok=missing_ok)
+        ),
+    )
+    sampler.sample(
+        jax.random.key(5),
+        jax.random.uniform(jax.random.key(6), (24, 2)),
+    )
+    monkeypatch.setattr(Path, "unlink", original_unlink)
+
+    with open(checkpoint_path, "rb") as checkpoint_file:
+        checkpoint = pickle.load(checkpoint_file)
+    assert checkpoint["sampler_name"] == sampler.sampler_name
+    checkpoint_path.unlink()

@@ -11,7 +11,7 @@ caller requests a backend via `build_sampler`.
 """
 
 from collections.abc import Callable
-from typing import Optional
+from typing import Any, Optional
 
 from jimgw.samplers.base import Sampler
 from jimgw.samplers.config import (
@@ -38,7 +38,7 @@ __all__ = [
 ]
 
 
-# Each entry is a zero-arg loader returning the concrete sampler's constructor.
+# Each entry is a zero-arg loader returning a concrete sampler class.
 SamplerBuilder = Callable[..., Sampler]
 _REGISTRY: dict[str, Callable[[], SamplerBuilder]] = {}
 
@@ -65,10 +65,7 @@ def build_sampler(
     log_likelihood_fn: Callable,
     log_posterior_fn: Callable,
     periodic: Optional[list[int] | dict[int, tuple[float, float]]] = None,
-    block_indices: Optional[tuple[tuple[int, ...], ...]] = None,
-    refresh_cache: Optional[tuple[bool, ...]] = None,
-    build_cache_fn: Optional[Callable] = None,
-    log_likelihood_from_cache_fn: Optional[Callable] = None,
+    **backend_kwargs: Any,
 ) -> Sampler:
     """Instantiate the concrete [`Sampler`][jimgw.samplers.base.Sampler] identified by ``config.type``.
 
@@ -79,8 +76,10 @@ def build_sampler(
         log_likelihood_fn: Log-likelihood callable ``(arr,) -> float``.
         log_posterior_fn: Log-posterior callable ``(arr,) -> float``.
         periodic: Periodic-parameter spec already resolved to dimension
-            indices by Jim.  For flowMC/NSS/SMC this is a
-            ``dict[int, (lo, hi)]``; for NS-AW it is a ``list[int]``.
+            indices by Jim.  For flowMC/NSS/SwiG/SMC this is a
+            ``dict[int, (lo, hi)]``; for NS AW it is a ``list[int]``.
+        **backend_kwargs: Backend-specific construction arguments. They are
+            passed directly to the selected sampler class.
 
     Raises:
         KeyError: If no sampler is registered for ``config.type``.
@@ -92,22 +91,15 @@ def build_sampler(
             f"Registered types: {sorted(_REGISTRY)}"
         )
     builder = _REGISTRY[type_str]()
-    kwargs = dict(
+    return builder(
         n_dims=n_dims,
         log_prior_fn=log_prior_fn,
         log_likelihood_fn=log_likelihood_fn,
         log_posterior_fn=log_posterior_fn,
         config=config,
         periodic=periodic,
+        **backend_kwargs,
     )
-    if config.type == "blackjax-swig":
-        kwargs.update(
-            block_indices=block_indices,
-            refresh_cache=refresh_cache,
-            build_cache_fn=build_cache_fn,
-            log_likelihood_from_cache_fn=log_likelihood_from_cache_fn,
-        )
-    return builder(**kwargs)
 
 
 from jimgw.samplers.flowmc import FlowMCSampler  # noqa: E402
@@ -126,8 +118,6 @@ from jimgw.samplers.blackjax.nss import BlackJAXNSSSampler  # noqa: E402
 
 register_sampler("blackjax-nss", lambda: BlackJAXNSSSampler)
 
-from jimgw.samplers.blackjax.swig import (  # noqa: E402
-    BlackJAXSwiGSampler,
-)
+from jimgw.samplers.blackjax.swig import BlackJAXSwiGSampler  # noqa: E402
 
 register_sampler("blackjax-swig", lambda: BlackJAXSwiGSampler)

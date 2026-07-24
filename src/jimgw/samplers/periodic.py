@@ -4,7 +4,7 @@ sampler backend expects.
     periodic_index = {1: (0.0, 2 * math.pi), ...}   # key = dimension index
 
 Each backend wants a different shape: flowMC already accepts an index-keyed dict
-directly; BlackJAX NS-AW needs a stepper function on flat arrays; BlackJAX NSS
+directly; BlackJAX NS AW needs a stepper function on flat arrays; BlackJAX NSS
 needs a ``proposal`` factory with the same interface as
 ``blackjax.ns.nss.covariance_proposal``; BlackJAX SMC needs a displacement
 wrapper.  The adapters below handle those conversions.
@@ -62,7 +62,7 @@ def _build_masks_arrays(
 
 
 # ---------------------------------------------------------------------------
-# BlackJAX NS-AW
+# BlackJAX NS AW
 # ---------------------------------------------------------------------------
 
 
@@ -70,12 +70,12 @@ def to_unit_cube_stepper(
     periodic_index: Optional[list[int]],
     n_dims: int,
 ) -> Callable:
-    """Stepper function for BlackJAX NS-AW (unit-cube space).
+    """Stepper function for BlackJAX NS AW (unit-cube space).
 
     Signature: ``stepper_fn(position, direction, step_size) -> new_position``
 
     ``periodic_index`` is a list of dimension indices to wrap; bounds are implicit
-    because NS-AW always operates in ``[0, 1]^n_dims``, so wrapping is always
+    because NS AW always operates in ``[0, 1]^n_dims``, so wrapping is always
     ``mod(pos + step_size * dir, 1.0)``.
     """
     mask = jnp.zeros(n_dims, dtype=bool)

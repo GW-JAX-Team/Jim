@@ -91,9 +91,8 @@ def test_swig_runs_sharded_with_consistent_cache():
         log_likelihood_fn=_log_likelihood,
         log_posterior_fn=lambda x: _log_prior(x) + _log_likelihood(x),
         config=config,
-        block_indices=((0,), (1,)),
-        refresh_cache=(True, False),
-        build_cache_fn=_build_cache,
+        rebuild_required_by_block={(0,): True, (1,): False},
+        build_cache=_build_cache,
         log_likelihood_from_cache_fn=_log_likelihood_from_cache,
     )
 

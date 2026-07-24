@@ -1,5 +1,6 @@
 """Unit tests for the Jim class."""
 
+import logging
 from typing import Optional
 
 import jax
@@ -205,9 +206,14 @@ class TestGetSamples:
             assert_all_finite(val)
 
     def test_get_samples_warning_when_requesting_more_than_available(
-        self, jim_sampler, caplog
+        self, jim_sampler, caplog, monkeypatch
     ):
         n_available = 20
+        # The "jimgw" logger sets propagate=False (to avoid duplicate output
+        # when an application also configures the root logger via
+        # basicConfig), which also keeps records from reaching caplog's
+        # root-logger handler. Re-enable propagation for this test only.
+        monkeypatch.setattr(logging.getLogger("jimgw"), "propagate", True)
         with caplog.at_level("WARNING"):
             samples = jim_sampler.get_samples(n_samples=100)
         assert any(
@@ -227,11 +233,15 @@ class TestJimInitialization:
     def test_basic_initialization(self, basic_jim, mock_likelihood, gw_prior):
         assert basic_jim.likelihood == mock_likelihood
         assert basic_jim.prior == gw_prior
-        assert len(basic_jim.parameter_names) == 2
+        assert len(basic_jim.sampling_parameter_names) == 2
+        assert basic_jim.prior_parameter_names == ("M_c", "q")
+        assert basic_jim.likelihood_parameter_names == ("M_c", "q")
+        assert basic_jim.marginalized_parameter_names == ()
+        assert not hasattr(basic_jim, "parameter_names")
 
-    def test_parameter_names_propagation(self, basic_jim):
-        assert "M_c" in basic_jim.parameter_names
-        assert "q" in basic_jim.parameter_names
+    def test_sampling_parameter_names(self, basic_jim):
+        assert "M_c" in basic_jim.sampling_parameter_names
+        assert "q" in basic_jim.sampling_parameter_names
 
 
 # ---------------------------------------------------------------------------
@@ -241,12 +251,16 @@ class TestJimInitialization:
 
 class TestJimWithTransforms:
     def test_sample_transforms(self, jim_with_sample_transforms):
-        assert "M_c_unbounded" in jim_with_sample_transforms.parameter_names
-        assert "q" in jim_with_sample_transforms.parameter_names
+        assert "M_c_unbounded" in jim_with_sample_transforms.sampling_parameter_names
+        assert "q" in jim_with_sample_transforms.sampling_parameter_names
 
     def test_likelihood_transforms(self, jim_with_likelihood_transforms):
         assert jim_with_likelihood_transforms.likelihood_transforms is not None
         assert len(jim_with_likelihood_transforms.likelihood_transforms) == 1
+        assert jim_with_likelihood_transforms.likelihood_parameter_names == (
+            "M_c",
+            "eta",
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -309,7 +323,7 @@ class TestJimPosteriorEvaluation:
     def test_evaluate_posterior_with_sample_transforms(
         self, jim_with_sample_transforms
     ):
-        assert "M_c_unbounded" in jim_with_sample_transforms.parameter_names
+        assert "M_c_unbounded" in jim_with_sample_transforms.sampling_parameter_names
         samples_transformed = jnp.array([0.5, 0.6])
         assert jnp.isfinite(
             jim_with_sample_transforms.evaluate_posterior(samples_transformed)
@@ -427,8 +441,19 @@ class TestJimPriorLikelihoodConsistencyChecks:
             def __init__(self, waveform, fixed_parameters):
                 self.waveform = waveform
                 self.fixed_parameters = fixed_parameters or {}
+                self.trigger_time = 0.0
+                self.gmst = 0.0
+                self.time_marginalization = False
+                self.phase_marginalization = False
+                self.distance_marginalization = False
 
-            def _likelihood(self, params) -> Float:
+            def _evaluate(self, params) -> Float:
+                return 0.0
+
+            def generate_waveform(self, params):
+                return {}
+
+            def _evaluate_from_waveform(self, params, waveform_cache) -> Float:
                 return 0.0
 
         return FakeSingleEventLikelihood(
@@ -510,6 +535,104 @@ class TestJimPriorLikelihoodConsistencyChecks:
             waveform_parameter_names=("M_c", "ra", "dec", "psi", "t_c"),
         )
         Jim(likelihood=lh, prior=prior, sampler_config=_tiny_flowmc_config())
+
+    @pytest.mark.parametrize("space", ["prior", "sampling", "likelihood"])
+    def test_marginalized_parameter_in_any_space_raises(self, space):
+        prior_parameters = [
+            UniformPrior(10.0, 80.0, parameter_names=["M_c"]),
+            UniformPrior(0.0, 3.14, parameter_names=["ra"]),
+            UniformPrior(-1.57, 1.57, parameter_names=["dec"]),
+            UniformPrior(0.0, 3.14, parameter_names=["psi"]),
+            UniformPrior(-0.1, 0.1, parameter_names=["t_c"]),
+        ]
+        sample_transforms = []
+        likelihood_transforms = []
+        if space == "prior":
+            prior_parameters.append(
+                UniformPrior(0.0, 6.28, parameter_names=["phase_c"])
+            )
+        else:
+            transform = BoundToUnbound(
+                name_mapping=(["M_c"], ["phase_c"]),
+                original_lower_bound=10.0,
+                original_upper_bound=80.0,
+            )
+            if space == "sampling":
+                sample_transforms = [transform]
+            else:
+                likelihood_transforms = [transform]
+
+        likelihood = self._make_mock_single_event_likelihood(
+            waveform_parameter_names=("M_c", "ra", "dec", "psi", "t_c"),
+        )
+        likelihood.phase_marginalization = True
+        with pytest.raises(ValueError, match="Marginalized parameter.*phase_c"):
+            Jim(
+                likelihood=likelihood,
+                prior=CombinePrior(prior_parameters),
+                sampler_config=_tiny_flowmc_config(),
+                sample_transforms=sample_transforms,
+                likelihood_transforms=likelihood_transforms,
+            )
+
+    def test_swig_requires_single_event_likelihood(self, mock_likelihood, gw_prior):
+        from jimgw.samplers.config import BlackJAXSwiGConfig
+
+        with pytest.raises(TypeError, match="waveform-cache-capable"):
+            Jim(
+                likelihood=mock_likelihood,
+                prior=gw_prior,
+                sampler_config=BlackJAXSwiGConfig(
+                    blocks=[["M_c"], ["q"]], n_live=4, n_delete_frac=0.5
+                ),
+            )
+
+    def test_swig_builds_cache_callbacks_from_likelihood(self):
+        from jimgw.samplers.blackjax.swig import BlackJAXSwiGSampler
+        from jimgw.samplers.config import BlackJAXSwiGConfig
+
+        prior = CombinePrior(
+            [
+                UniformPrior(10.0, 80.0, parameter_names=["M_c"]),
+                UniformPrior(0.125, 1.0, parameter_names=["q"]),
+                UniformPrior(0.0, 3.14, parameter_names=["ra"]),
+                UniformPrior(-1.57, 1.57, parameter_names=["dec"]),
+                UniformPrior(0.0, 3.14, parameter_names=["psi"]),
+                UniformPrior(-0.1, 0.1, parameter_names=["t_c"]),
+            ]
+        )
+        # Only the intrinsic (M_c, q) block feeds the waveform; ra/dec/psi/t_c
+        # are extrinsic/projection-only and must be treated as cache-reusing
+        # even though the always-consumed check in Jim covers them separately.
+        lh = self._make_mock_single_event_likelihood(
+            waveform_parameter_names=("M_c", "q"),
+        )
+        jim = Jim(
+            likelihood=lh,
+            prior=prior,
+            sampler_config=BlackJAXSwiGConfig(
+                blocks=[["M_c", "q"], ["ra", "dec"], ["psi"], ["t_c"]],
+                n_live=4,
+                n_delete_frac=0.5,
+            ),
+        )
+
+        assert isinstance(jim.sampler, BlackJAXSwiGSampler)
+        assert set(jim._sampler_backend_kwargs) == {
+            "rebuild_required_by_block",
+            "build_cache",
+            "log_likelihood_from_cache_fn",
+        }
+        rebuild = jim._rebuild_required_by_block
+        intrinsic_block = tuple(
+            jim.sampling_parameter_names.index(name) for name in ("M_c", "q")
+        )
+        assert rebuild[intrinsic_block] is True
+        assert all(
+            required is False
+            for block, required in rebuild.items()
+            if block != intrinsic_block
+        )
 
     def test_sample_transform_overwrites_unconsumed_prior_parameter_raises(self):
         # Prior defines both M_c and M_c_unbounded; sample transform maps
@@ -676,6 +799,11 @@ class TestJimNaNPosteriorCheck:
             "sample_initial_positions",
             lambda self, n_points=None, rng_key=None: _fixed_positions,
         )
+        # The "jimgw" logger sets propagate=False (to avoid duplicate output
+        # when an application also configures the root logger via
+        # basicConfig), which also keeps records from reaching caplog's
+        # root-logger handler. Re-enable propagation for this test only.
+        monkeypatch.setattr(logging.getLogger("jimgw"), "propagate", True)
 
         with caplog.at_level("WARNING"):
             Jim(
@@ -768,18 +896,20 @@ class TestJimPeriodic:
 
     def test_periodic_empty_list_constructs(self):
         """Explicit empty list for periodic should construct without error."""
-        Jim(
+        jim = Jim(
             likelihood=self._make_likelihood(),
             prior=self._make_prior(),
             sampler_config=_tiny_flowmc_config(),
             periodic=[],
         )
+        assert jim.sampler._periodic_index_dict is None
 
     def test_periodic_empty_dict_constructs(self):
         """Explicit empty dict for periodic should construct without error."""
-        Jim(
+        jim = Jim(
             likelihood=self._make_likelihood(),
             prior=self._make_prior(),
             sampler_config=_tiny_flowmc_config(),
             periodic={},
         )
+        assert jim.sampler._periodic_index_dict is None

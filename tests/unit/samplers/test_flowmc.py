@@ -10,6 +10,7 @@ import numpy as np
 import pickle
 import pytest
 from pathlib import Path
+from typing import Optional
 
 from jimgw.core.base import LikelihoodBase
 from jimgw.core.prior import CombinePrior, UniformPrior  # type: ignore[attr-defined]
@@ -42,7 +43,7 @@ def _make_tiny_config() -> FlowMCConfig:
     )
 
 
-def _make_sampler() -> FlowMCSampler:
+def _make_sampler(config: Optional[FlowMCConfig] = None) -> FlowMCSampler:
     prior = CombinePrior(
         [
             UniformPrior(0.0, 1.0, parameter_names=["x"]),
@@ -69,7 +70,7 @@ def _make_sampler() -> FlowMCSampler:
         log_prior_fn=log_prior_fn,
         log_likelihood_fn=log_likelihood_fn,
         log_posterior_fn=log_posterior_fn,
-        config=_make_tiny_config(),
+        config=config if config is not None else _make_tiny_config(),
     )
 
 
@@ -81,6 +82,42 @@ def test_flowmc_sampler_construction():
 def test_flowmc_sampler_no_tempering_strategy_order():
     s = _make_sampler()
     assert "parallel_tempering" not in s.strategy_order
+
+
+def test_flowmc_rejects_named_foreign_checkpoint(tmp_path, monkeypatch):
+    """Reject a BlackJAX checkpoint before flowMC attempts to resume it."""
+    from jimgw.samplers import flowmc as flowmc_module
+
+    config = _make_tiny_config().model_copy(
+        update={"checkpoint_dir": tmp_path, "checkpoint_interval": 1.0}
+    )
+    checkpoint_path = tmp_path / "checkpoint.pkl"
+    with open(checkpoint_path, "wb") as checkpoint_file:
+        pickle.dump(
+            {"sampler_name": "BlackJAX NSS", "elapsed_time": 0.0},
+            checkpoint_file,
+        )
+
+    class FakeBundle:
+        def __init__(self, **kwargs):
+            del kwargs
+
+    class FakeFlowMCSampler:
+        def __init__(self, **kwargs):
+            del kwargs
+            self.rng_key = None
+            self.resources = {}
+
+        def sample(self, *args):
+            del args
+            raise AssertionError("the foreign checkpoint should be rejected first")
+
+    monkeypatch.setitem(flowmc_module._BUNDLE, ("MALA", False), FakeBundle)
+    monkeypatch.setattr(flowmc_module, "FlowMCSamplerBackend", FakeFlowMCSampler)
+
+    sampler = _make_sampler(config=config)
+    with pytest.raises(ValueError, match="different sampler"):
+        sampler.sample(jax.random.key(0), jnp.ones((10, 2)) * 0.5)
 
 
 @pytest.mark.slow
@@ -194,6 +231,9 @@ def test_flowmc_checkpoint_file_created(tmp_path, monkeypatch):
         ckpt = pickle.load(f)
     assert "elapsed_time" in ckpt
     assert ckpt["elapsed_time"] >= 0.0
+    metadata = ckpt["resources"]["_jimgw_checkpoint_metadata"]
+    assert metadata[0] == "pkl"
+    assert metadata[1].data["sampler_name"] == s.sampler_name
     ckpt_path.unlink()
 
 

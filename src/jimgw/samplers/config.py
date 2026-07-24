@@ -6,12 +6,11 @@ Each sampler has its own ``*Config`` class discriminated by a ``type`` literal;
 """
 
 import logging
-import math
 import pickle
 import time
 import warnings
 from pathlib import Path
-from typing import Annotated, Any, Literal, Optional, Self, Union
+from typing import Annotated, Any, Generic, Literal, Optional, Self, TypeVar, Union
 
 import jax
 import numpy as np
@@ -19,11 +18,14 @@ from pydantic import BaseModel, Discriminator, Field, field_validator, model_val
 
 logger = logging.getLogger(__name__)
 
+_SamplerType = TypeVar("_SamplerType", bound=str)
 
-class BaseSamplerConfig(BaseModel):
+
+class BaseSamplerConfig(BaseModel, Generic[_SamplerType]):
     """Fields shared by all sampler configs."""
 
     model_config = {"extra": "forbid", "arbitrary_types_allowed": True}
+    type: _SamplerType
 
 
 # ---------------------------------------------------------------------------
@@ -47,7 +49,7 @@ class _CheckpointMixin(BaseModel):
     # model_config is inherited from BaseSamplerConfig; not redeclared here.
 
     checkpoint_dir: Optional[Path] = None
-    checkpoint_interval: float = 0.0
+    checkpoint_interval: float = Field(default=0.0, ge=0.0)
 
     @field_validator("checkpoint_dir", mode="before")
     @classmethod
@@ -55,13 +57,6 @@ class _CheckpointMixin(BaseModel):
         if v is None:
             return None
         return Path(str(v))
-
-    @field_validator("checkpoint_interval")
-    @classmethod
-    def _check_checkpoint_interval(cls, v: float) -> float:
-        if v < 0.0:
-            raise ValueError("checkpoint_interval must be >= 0.0")
-        return v
 
     @model_validator(mode="after")
     def _check_checkpoint_consistency(self) -> Self:
@@ -72,7 +67,7 @@ class _CheckpointMixin(BaseModel):
             )
         return self
 
-    def write_checkpoint(self, data: dict, tag: str) -> float:
+    def write_checkpoint(self, data: dict, label: str) -> float:
         """Atomically write *data* to ``checkpoint_dir/checkpoint.pkl``.
 
         The write is done via a temporary ``.pkl.tmp`` file that is renamed
@@ -80,7 +75,7 @@ class _CheckpointMixin(BaseModel):
 
         Args:
             data: Serialisable dict to pickle.
-            tag: Short prefix for the debug log message (e.g. ``"SMC-AP"``).
+            label: Human-readable label included in the debug log message.
 
         Returns:
             Wall-clock time of the write (``time.perf_counter()``), suitable
@@ -94,7 +89,11 @@ class _CheckpointMixin(BaseModel):
             pickle.dump(data, _f)
         tmp.replace(ckpt_path)
         t = time.perf_counter()
-        logger.debug("%s: checkpoint saved at n_iter=%s", tag, data.get("n_iter", "?"))
+        logger.debug(
+            "%s: checkpoint saved at n_iter=%s",
+            label,
+            data.get("n_iter", "?"),
+        )
         return t
 
     def configure_jax_cache(self) -> None:
@@ -118,16 +117,49 @@ class _CheckpointMixin(BaseModel):
 
 
 class _ShardingMixin(BaseModel):
-    """Single-host device sharding shared by BlackJAX nested samplers."""
+    """Single-host device sharding — included by NSS and SwiG (not NS AW)."""
 
-    n_devices: int = 1
+    n_devices: int = Field(default=1, ge=1)
 
-    @field_validator("n_devices")
+
+# ---------------------------------------------------------------------------
+# Live-set mixin — shared by the nested samplers (NS-AW, NSS, SwiG) that
+# maintain a live-particle set and delete/replace a fraction of it each step
+# ---------------------------------------------------------------------------
+
+
+class _LiveSetConfigMixin(BaseModel):
+    """Shared ``n_live``/``n_delete_frac`` fields and validation for nested samplers."""
+
+    n_live: int
+    n_delete_frac: float
+
+    @field_validator("n_delete_frac")
     @classmethod
-    def _positive_n_devices(cls, value: int) -> int:
-        if value < 1:
-            raise ValueError("n_devices must be >= 1")
+    def _n_delete_frac_range(cls, value: float) -> float:
+        if not (0.0 < value < 1.0):
+            raise ValueError("n_delete_frac must be strictly between 0 and 1")
         return value
+
+    @model_validator(mode="after")
+    def _n_live_n_delete_consistency(self) -> Self:
+        if self.n_live < 2:
+            raise ValueError(f"n_live must be >= 2 (got {self.n_live}).")
+        n_delete = int(self.n_live * self.n_delete_frac)
+        if n_delete < 1:
+            raise ValueError(
+                f"n_live * n_delete_frac = {self.n_live * self.n_delete_frac} "
+                f"yields n_delete = {n_delete}; require n_delete >= 1. "
+                "Increase n_live or n_delete_frac."
+            )
+        # n_devices is only present on samplers that also mix in _ShardingMixin
+        # (NSS, SwiG); absent (default 1) elsewhere, so this is a no-op for NS AW.
+        n_devices = getattr(self, "n_devices", 1)
+        if n_devices > 1 and self.n_live % n_devices:
+            raise ValueError("n_live must be divisible by n_devices when sharding")
+        if n_devices > 1 and n_delete % n_devices:
+            raise ValueError("n_delete must be divisible by n_devices when sharding")
+        return self
 
 
 # ---------------------------------------------------------------------------
@@ -144,9 +176,9 @@ class ParallelTemperingConfig(BaseModel):
 
     model_config = {"extra": "forbid"}
 
-    n_temperatures: int = 5
-    max_temperature: float = 10.0
-    n_tempered_steps: int = 5
+    n_temperatures: int = Field(default=5, ge=1)
+    max_temperature: float = Field(default=10.0, gt=0.0)
+    n_tempered_steps: int = Field(default=5, ge=1)
 
 
 class MALAConfig(BaseModel):
@@ -175,7 +207,7 @@ class HMCConfig(BaseModel):
 
     step_size: float = 2e-3
     condition_matrix: float | np.ndarray = 1.0
-    n_leapfrog_steps: int = 10
+    n_leapfrog_steps: int = Field(default=10, ge=1)
 
 
 class GRWConfig(BaseModel):
@@ -191,7 +223,7 @@ class GRWConfig(BaseModel):
     step_size: float | np.ndarray = 2e-3
 
 
-class FlowMCConfig(BaseSamplerConfig, _CheckpointMixin):
+class FlowMCConfig(BaseSamplerConfig[Literal["flowmc"]], _CheckpointMixin):
     """Configuration for [`FlowMCSampler`][jimgw.samplers.flowmc.FlowMCSampler].
 
     The ``local_kernel`` field selects the MCMC kernel used for local proposals:
@@ -217,12 +249,12 @@ class FlowMCConfig(BaseSamplerConfig, _CheckpointMixin):
 
     type: Literal["flowmc"] = "flowmc"
 
-    n_chains: int = 1000
-    n_local_steps: int = 100
-    n_global_steps: int = 1000
-    n_training_loops: int = 20
-    n_production_loops: int = 10
-    n_epochs: int = 20
+    n_chains: int = Field(default=1000, ge=1)
+    n_local_steps: int = Field(default=100, ge=1)
+    n_global_steps: int = Field(default=1000, ge=1)
+    n_training_loops: int = Field(default=20, ge=1)
+    n_production_loops: int = Field(default=10, ge=1)
+    n_epochs: int = Field(default=20, ge=1)
 
     local_kernel: Literal["MALA", "HMC", "GRW"] = "MALA"
     parallel_tempering: Optional[ParallelTemperingConfig] = None
@@ -232,23 +264,24 @@ class FlowMCConfig(BaseSamplerConfig, _CheckpointMixin):
     grw: GRWConfig | dict[str, Any] = Field(default_factory=GRWConfig)
 
     rq_spline_hidden_units: list[int] = Field(default_factory=lambda: [128, 128])
-    rq_spline_n_bins: int = 10
-    rq_spline_n_layers: int = 8
-    n_NFproposal_batch_size: int = 1000
+    rq_spline_n_bins: int = Field(default=10, ge=1)
+    rq_spline_n_layers: int = Field(default=8, ge=1)
+    n_NFproposal_batch_size: int = Field(default=1000, ge=1)
 
-    learning_rate: float = 1e-3
-    batch_size: int = 10000
-    n_max_examples: int = 30000
-    history_window: int = 100
+    learning_rate: float = Field(default=1e-3, gt=0.0)
+    batch_size: int = Field(default=10000, ge=1)
+    n_max_examples: int = Field(default=30000, ge=1)
+    history_window: int = Field(default=100, ge=1)
 
-    chain_batch_size: int = 0
-    local_thinning: int = 1
-    global_thinning: int = 100
+    # chain_batch_size=0 means "full batch" (flowMC's off sentinel), not a lower bound of 1.
+    chain_batch_size: int = Field(default=0, ge=0)
+    local_thinning: int = Field(default=1, ge=1)
+    global_thinning: int = Field(default=100, ge=1)
 
     early_stopping: bool = True
-    early_stopping_tolerance: float = 0.1
-    early_stopping_patience: int = 3
-    early_stopping_min_acceptance: float = 0.1
+    early_stopping_tolerance: float = Field(default=0.1, ge=0.0)
+    early_stopping_patience: int = Field(default=3, ge=1)
+    early_stopping_min_acceptance: float = Field(default=0.1, ge=0.0, le=1.0)
 
     @field_validator("parallel_tempering", mode="before")
     @classmethod
@@ -284,7 +317,9 @@ class FlowMCConfig(BaseSamplerConfig, _CheckpointMixin):
         return self
 
 
-class BlackJAXNSAWConfig(BaseSamplerConfig, _CheckpointMixin):
+class BlackJAXNSAWConfig(
+    BaseSamplerConfig[Literal["blackjax-ns-aw"]], _CheckpointMixin, _LiveSetConfigMixin
+):
     """Configuration for the BlackJAX acceptance-walk nested sampler.
 
     !!! note
@@ -295,7 +330,7 @@ class BlackJAXNSAWConfig(BaseSamplerConfig, _CheckpointMixin):
     !!! note
         Periodic parameters are **not** configured here.  Pass a
         ``periodic`` argument to [`Jim`][jimgw.core.jim.Jim] instead.
-        For NS-AW, bounds are implicit as ``[0, 1]``; just list the
+        For NS AW, bounds are implicit as ``[0, 1]``; just list the
         parameter names.
     """
 
@@ -303,33 +338,18 @@ class BlackJAXNSAWConfig(BaseSamplerConfig, _CheckpointMixin):
 
     n_live: int = 1000
     n_delete_frac: float = 0.5
-    n_target: int = 60
-    max_mcmc: int = 5000
-    max_proposals: int = 1000
-    termination_dlogz: float = 0.1
-
-    @field_validator("n_delete_frac")
-    @classmethod
-    def _n_delete_frac_range(cls, v: float) -> float:
-        if not (0.0 < v < 1.0):
-            raise ValueError("n_delete_frac must be strictly between 0 and 1")
-        return v
-
-    @model_validator(mode="after")
-    def _n_live_n_delete_consistency(self) -> Self:
-        if self.n_live < 2:
-            raise ValueError(f"n_live must be >= 2 (got {self.n_live}).")
-        n_delete = int(self.n_live * self.n_delete_frac)
-        if n_delete < 1:
-            raise ValueError(
-                f"n_live * n_delete_frac = {self.n_live * self.n_delete_frac} "
-                f"yields n_delete = {n_delete}; require n_delete >= 1. "
-                "Increase n_live or n_delete_frac."
-            )
-        return self
+    n_target: int = Field(default=60, ge=1)
+    max_mcmc: int = Field(default=5000, ge=1)
+    max_proposals: int = Field(default=1000, ge=1)
+    termination_dlogz: float = Field(default=0.1, gt=0.0)
 
 
-class BlackJAXNSSConfig(BaseSamplerConfig, _CheckpointMixin, _ShardingMixin):
+class BlackJAXNSSConfig(
+    BaseSamplerConfig[Literal["blackjax-nss"]],
+    _CheckpointMixin,
+    _LiveSetConfigMixin,
+    _ShardingMixin,
+):
     """Configuration for the BlackJAX nested slice sampler.
 
     !!! note
@@ -341,53 +361,33 @@ class BlackJAXNSSConfig(BaseSamplerConfig, _CheckpointMixin, _ShardingMixin):
 
     n_live: int = 2000
     n_delete_frac: float = 0.5
-    num_inner_steps_per_dim: int = 20
-    termination_dlogz: float = 0.1
-
-    @field_validator("n_delete_frac")
-    @classmethod
-    def _n_delete_frac_range(cls, v: float) -> float:
-        if not (0.0 < v < 1.0):
-            raise ValueError("n_delete_frac must be strictly between 0 and 1")
-        return v
-
-    @model_validator(mode="after")
-    def _n_live_n_delete_consistency(self) -> Self:
-        if self.n_live < 2:
-            raise ValueError(f"n_live must be >= 2 (got {self.n_live}).")
-        n_delete = int(self.n_live * self.n_delete_frac)
-        if n_delete < 1:
-            raise ValueError(
-                f"n_live * n_delete_frac = {self.n_live * self.n_delete_frac} "
-                f"yields n_delete = {n_delete}; require n_delete >= 1. "
-                "Increase n_live or n_delete_frac."
-            )
-        if self.n_devices > 1 and self.n_live % self.n_devices:
-            raise ValueError("n_live must be divisible by n_devices when sharding")
-        if self.n_devices > 1 and n_delete % self.n_devices:
-            raise ValueError("n_delete must be divisible by n_devices when sharding")
-        return self
+    num_inner_steps_per_dim: int = Field(default=20, ge=1)
+    termination_dlogz: float = Field(default=0.1, gt=0.0)
 
 
-class BlackJAXSwiGConfig(BaseSamplerConfig, _CheckpointMixin, _ShardingMixin):
+class BlackJAXSwiGConfig(
+    BaseSamplerConfig[Literal["blackjax-swig"]],
+    _CheckpointMixin,
+    _LiveSetConfigMixin,
+    _ShardingMixin,
+):
     """Configuration for Nested Slice within Gibbs (SwiG) sampling.
 
-    ``blocks`` are expressed in Jim's sampling-space parameter names. Jim
-    validates that they form an exact partition and determines which blocks
-    invalidate the waveform cache after accounting for transforms, fixed
-    parameters, and analytic marginalisation.
+    ``blocks`` are expressed in sampling-space parameter names.
+    A supported likelihood validates that they form an exact partition and
+    identifies which blocks refresh its cache.
     """
 
     type: Literal["blackjax-swig"] = "blackjax-swig"
 
     blocks: list[list[str]]
-    n_live: int = 512
+    n_live: int = 500
     n_delete_frac: float = 0.125
-    num_gibbs_sweeps: int = 2
-    num_inner_steps_per_dim: int = 1
-    max_steps: int = 10
-    max_shrinkage: int = 100
-    termination_dlogz: float = math.exp(-3.0)
+    num_gibbs_sweeps: int = Field(default=2, ge=1)
+    num_inner_steps_per_dim: int = Field(default=1, ge=1)
+    max_steps: int = Field(default=10, ge=1)
+    max_shrinkage: int = Field(default=100, ge=1)
+    termination_dlogz: float = Field(default=0.1, gt=0.0)
 
     @field_validator("blocks")
     @classmethod
@@ -402,43 +402,8 @@ class BlackJAXSwiGConfig(BaseSamplerConfig, _CheckpointMixin, _ShardingMixin):
             raise ValueError(f"parameters appear in multiple blocks: {duplicates}")
         return blocks
 
-    @field_validator(
-        "num_gibbs_sweeps",
-        "num_inner_steps_per_dim",
-        "max_steps",
-        "max_shrinkage",
-    )
-    @classmethod
-    def _positive_integer(cls, value: int) -> int:
-        if value < 1:
-            raise ValueError("must be >= 1")
-        return value
 
-    @field_validator("n_delete_frac")
-    @classmethod
-    def _n_delete_frac_range(cls, value: float) -> float:
-        if not (0.0 < value < 1.0):
-            raise ValueError("n_delete_frac must be strictly between 0 and 1")
-        return value
-
-    @model_validator(mode="after")
-    def _n_live_n_delete_consistency(self) -> Self:
-        if self.n_live < 2:
-            raise ValueError(f"n_live must be >= 2 (got {self.n_live}).")
-        n_delete = int(self.n_live * self.n_delete_frac)
-        if n_delete < 1:
-            raise ValueError(
-                f"n_live * n_delete_frac = {self.n_live * self.n_delete_frac} "
-                f"yields n_delete = {n_delete}; require n_delete >= 1."
-            )
-        if self.n_devices > 1 and self.n_live % self.n_devices:
-            raise ValueError("n_live must be divisible by n_devices when sharding")
-        if self.n_devices > 1 and n_delete % self.n_devices:
-            raise ValueError("n_delete must be divisible by n_devices when sharding")
-        return self
-
-
-class BlackJAXSMCConfig(BaseSamplerConfig, _CheckpointMixin):
+class BlackJAXSMCConfig(BaseSamplerConfig[Literal["blackjax-smc"]], _CheckpointMixin):
     """Configuration for the BlackJAX SMC sampler.
 
     Parameters
@@ -457,14 +422,15 @@ class BlackJAXSMCConfig(BaseSamplerConfig, _CheckpointMixin):
 
     type: Literal["blackjax-smc"] = "blackjax-smc"
 
-    n_particles: int = 5000
-    n_mcmc_steps_per_dim: int = 100
+    n_particles: int = Field(default=5000, ge=1)
+    n_mcmc_steps_per_dim: int = Field(default=100, ge=1)
     target_ess: Optional[int] = None
     target_ess_fraction: Optional[float] = None
-    batch_size: int = 0  # 0 = full vmap; >0 = lax.map batch size to reduce peak memory
-    initial_cov_scale: float = 0.5
-    target_acceptance_rate: float = 0.234
-    scale_adaptation_gain: float = 3.0
+    # 0 = full vmap; >0 = lax.map batch size to reduce peak memory
+    batch_size: int = Field(default=0, ge=0)
+    initial_cov_scale: float = Field(default=0.5, gt=0.0)
+    target_acceptance_rate: float = Field(default=0.234, gt=0.0, lt=1.0)
+    scale_adaptation_gain: float = Field(default=3.0, gt=0.0)
 
     persistent_sampling: bool = True
     temperature_ladder: Optional[list[float]] = None

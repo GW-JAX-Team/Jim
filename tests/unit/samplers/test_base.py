@@ -1,7 +1,7 @@
 """Unit tests for the Sampler ABC."""
 
 import inspect
-from typing import Any
+from typing import Any, Literal
 
 import jax
 import jax.numpy as jnp
@@ -31,6 +31,10 @@ def _make_callables(n_dims: int = 1):
 class _TrivialSampler(Sampler):
     """Minimal concrete Sampler for ABC contract tests."""
 
+    @property
+    def sampler_name(self) -> str:
+        return "trivial"
+
     def _sample(self, rng_key, initial_position) -> None:  # noqa: ARG002
         self._ran = True
 
@@ -44,6 +48,10 @@ class _TrivialSampler(Sampler):
         return {"n_likelihood_evaluations": 0}
 
 
+class _TrivialConfig(BaseSamplerConfig[Literal["trivial"]]):
+    type: Literal["trivial"] = "trivial"
+
+
 # --- ABC instantiation ---
 
 
@@ -55,7 +63,7 @@ def test_sampler_is_abstract():
             log_prior_fn=lp,
             log_likelihood_fn=ll,
             log_posterior_fn=lpost,
-            config=BaseSamplerConfig(),
+            config=_TrivialConfig(),
         )
 
 
@@ -66,7 +74,7 @@ def test_trivial_sampler_works():
         log_prior_fn=lp,
         log_likelihood_fn=ll,
         log_posterior_fn=lpost,
-        config=BaseSamplerConfig(),
+        config=_TrivialConfig(),
     )
     assert s._prev_elapsed == 0.0
     s.sample(jax.random.key(0), jnp.zeros((3, 2)))
@@ -82,7 +90,7 @@ def test_trivial_sampler_get_diagnostics_returns_dict():
         log_prior_fn=lp,
         log_likelihood_fn=ll,
         log_posterior_fn=lpost,
-        config=BaseSamplerConfig(),
+        config=_TrivialConfig(),
     )
     s.sample(jax.random.key(0), jnp.zeros((3, 1)))
     diag = s.get_diagnostics()
@@ -99,7 +107,7 @@ def test_get_diagnostics_before_sample_raises():
         log_prior_fn=lp,
         log_likelihood_fn=ll,
         log_posterior_fn=lpost,
-        config=BaseSamplerConfig(),
+        config=_TrivialConfig(),
     )
     with pytest.raises(RuntimeError, match="before sample"):
         s.get_diagnostics()
@@ -112,7 +120,7 @@ def test_sampling_time_is_non_negative():
         log_prior_fn=lp,
         log_likelihood_fn=ll,
         log_posterior_fn=lpost,
-        config=BaseSamplerConfig(),
+        config=_TrivialConfig(),
     )
     s.sample(jax.random.key(0), jnp.zeros((3, 2)))
     diag = s.get_diagnostics()
@@ -124,7 +132,7 @@ def test_sampling_time_is_non_negative():
         log_prior_fn=lp,
         log_likelihood_fn=ll,
         log_posterior_fn=lpost,
-        config=BaseSamplerConfig(),
+        config=_TrivialConfig(),
     )
     s2._prev_elapsed = 5.0
     s2.sample(jax.random.key(0), jnp.zeros((3, 2)))
@@ -141,7 +149,7 @@ def test_log_prior_fn_is_called():
         log_prior_fn=lp,
         log_likelihood_fn=ll,
         log_posterior_fn=lpost,
-        config=BaseSamplerConfig(),
+        config=_TrivialConfig(),
     )
     # Inside [0,1]: log_prior = 0
     assert float(s._log_prior_fn(jnp.array([0.5]))) == pytest.approx(0.0)
@@ -157,7 +165,7 @@ def test_sampler_does_not_own_initial_position_callable():
         log_prior_fn=lp,
         log_likelihood_fn=ll,
         log_posterior_fn=lpost,
-        config=BaseSamplerConfig(),
+        config=_TrivialConfig(),
     )
     assert not hasattr(s, "_sample_initial_positions_fn")
 
@@ -170,7 +178,7 @@ def test_initial_position_is_required():
         log_prior_fn=lp,
         log_likelihood_fn=ll,
         log_posterior_fn=lpost,
-        config=BaseSamplerConfig(),
+        config=_TrivialConfig(),
     )
     sig = inspect.signature(s.sample)
     param = sig.parameters["initial_position"]
@@ -186,6 +194,22 @@ def test_n_dims_stored():
         log_prior_fn=lp,
         log_likelihood_fn=ll,
         log_posterior_fn=lpost,
-        config=BaseSamplerConfig(),
+        config=_TrivialConfig(),
     )
     assert s.n_dims == 4
+
+
+def test_checkpoint_must_match_sampler_name():
+    lp, ll, lpost = _make_callables()
+    sampler = _TrivialSampler(
+        n_dims=1,
+        log_prior_fn=lp,
+        log_likelihood_fn=ll,
+        log_posterior_fn=lpost,
+        config=_TrivialConfig(),
+    )
+    sampler._validate_checkpoint({"sampler_name": "trivial"})
+    with pytest.raises(ValueError, match="different sampler"):
+        sampler._validate_checkpoint({"sampler_name": "another"})
+    with pytest.raises(ValueError, match="unknown sampler"):
+        sampler._validate_checkpoint({})

@@ -64,17 +64,17 @@ class GWOSCDataConfig(_DataBase):
     """Fetch strain and PSD from GWOSC."""
 
     type: Literal["gwosc"] = "gwosc"
-    duration: float
+    duration: float = Field(gt=0.0)
     post_trigger_duration: float = 2.0
-    psd_duration: float
+    psd_duration: float = Field(gt=0.0)
 
 
 class InjectionDataConfig(_DataBase):
     """Synthetic injection into design-sensitivity noise."""
 
     type: Literal["injection"] = "injection"
-    duration: float
-    sampling_frequency: float
+    duration: float = Field(gt=0.0)
+    sampling_frequency: float = Field(gt=0.0)
     injection_parameters: dict[str, float]
     zero_noise: bool = False
 
@@ -139,7 +139,7 @@ Approximant = Literal[
 class WaveformConfig(BaseModel):
     model_config = {"extra": "forbid"}
     approximant: Approximant
-    f_ref: float = 20.0
+    f_ref: float = Field(default=20.0, gt=0.0)
 
 
 # ---------------------------------------------------------------------------
@@ -307,8 +307,8 @@ class CLIDistanceMargConfig(BaseModel):
 
     model_config = {"extra": "forbid"}
     distance_prior: PriorConfig
-    n_dist_points: int = 10000
-    ref_dist: Optional[float] = None
+    n_dist_points: int = Field(default=10000, ge=2)
+    ref_dist: Optional[float] = Field(default=None, gt=0.0)
 
     @model_validator(mode="after")
     def _check_single_distance_param(self) -> "CLIDistanceMargConfig":
@@ -324,8 +324,8 @@ class CLIOptimizerRefParams(BaseModel):
 
     model_config = {"extra": "forbid"}
     type: Literal["optimizer"] = "optimizer"
-    popsize: int = 500
-    n_steps: int = 1000
+    popsize: int = Field(default=500, ge=1)
+    n_steps: int = Field(default=1000, ge=1)
 
 
 class CLIProvidedRefParams(BaseModel):
@@ -370,8 +370,8 @@ class CLIHeterodynedConfig(BaseModel):
     """
 
     model_config = {"extra": "forbid"}
-    n_bins: Optional[int] = None
-    epsilon: Optional[float] = None
+    n_bins: Optional[int] = Field(default=None, ge=1)
+    epsilon: Optional[float] = Field(default=None, gt=0.0)
     reference_parameters: HeterodynedRefParams = Field(
         default_factory=CLIOptimizerRefParams
     )
@@ -390,19 +390,19 @@ class CLIMultibandedConfig(BaseModel):
     """
 
     model_config = {"extra": "forbid"}
-    reference_chirp_mass: Optional[float] = None
-    highest_mode: int = 2
-    accuracy_factor: float = 5.0
-    time_offset: Optional[float] = None
-    delta_f_end: Optional[float] = None
-    max_banding_frequency: Optional[float] = None
-    min_banding_duration: float = 0.0
+    reference_chirp_mass: Optional[float] = Field(default=None, gt=0.0)
+    highest_mode: int = Field(default=2, ge=1)
+    accuracy_factor: float = Field(default=5.0, gt=0.0)
+    time_offset: Optional[float] = Field(default=None, ge=0.0)
+    delta_f_end: Optional[float] = Field(default=None, gt=0.0)
+    max_banding_frequency: Optional[float] = Field(default=None, gt=0.0)
+    min_banding_duration: float = Field(default=0.0, ge=0.0)
 
 
 class LikelihoodConfig(BaseModel):
     model_config = {"extra": "forbid"}
-    f_min: float
-    f_max: float
+    f_min: float = Field(gt=0.0)
+    f_max: float = Field(gt=0.0)
     fixed_parameters: dict[str, float] = Field(default_factory=dict)
     phase_marginalization: bool = False
     time_marginalization: Optional[CLITimeMargConfig] = None
@@ -449,7 +449,7 @@ class OutputConfig(BaseModel):
     dir: Path
     save_corner: bool = False
     n_samples: int = Field(
-        default=10000, description="Number of posterior samples to save. 0 = all."
+        default=10000, ge=0, description="Number of posterior samples to save. 0 = all."
     )
     overwrite: bool = False
     corner_parameters: Optional[list[str]] = None
@@ -621,7 +621,7 @@ class PipelineConfig(BaseModel):
             self.prior.root["t_det"], UniformSpec
         ):
             raise ValueError(
-                "NS-AW sampler: the 't_det' prior must be 'uniform' for automatic "
+                "NS AW sampler: the 't_det' prior must be 'uniform' for automatic "
                 "conversion to 't_c'. Either use a uniform t_det prior or replace "
                 "'t_det' with 't_c' in [prior]."
             )
@@ -632,7 +632,7 @@ class PipelineConfig(BaseModel):
             and not isinstance(self.prior.root["t_c"], UniformSpec)
         ):
             raise ValueError(
-                "NS-AW sampler: the 't_c' prior must be 'uniform' for automatic "
+                "NS AW sampler: the 't_c' prior must be 'uniform' for automatic "
                 "conversion to 't_det'. Either use a uniform t_c prior, set "
                 "[sampling] time_frame = 'geocentric' to sample t_c directly, or "
                 "replace 't_c' with 't_det' in [prior]."

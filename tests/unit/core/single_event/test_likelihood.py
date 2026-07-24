@@ -760,7 +760,7 @@ class TestTransientLikelihoodFD:
 
     def test_dist_marg_n_dist_points_raises(self, detectors_and_waveform):
         ifos, waveform, fmin, fmax, gps = detectors_and_waveform
-        with pytest.raises(ValueError, match="n_dist_points must be at least 2"):
+        with pytest.raises(ValueError, match="greater than or equal to 2"):
             TransientLikelihoodFD(
                 detectors=ifos,
                 waveform=waveform,
@@ -775,7 +775,7 @@ class TestTransientLikelihoodFD:
 
     def test_dist_marg_negative_ref_dist_raises(self, detectors_and_waveform):
         ifos, waveform, fmin, fmax, gps = detectors_and_waveform
-        with pytest.raises(ValueError, match="ref_dist must be > 0"):
+        with pytest.raises(ValueError, match="greater than 0"):
             TransientLikelihoodFD(
                 detectors=ifos,
                 waveform=waveform,

@@ -1,5 +1,6 @@
 """Unit tests for the Jim class."""
 
+import logging
 from typing import Optional
 
 import jax
@@ -205,9 +206,14 @@ class TestGetSamples:
             assert_all_finite(val)
 
     def test_get_samples_warning_when_requesting_more_than_available(
-        self, jim_sampler, caplog
+        self, jim_sampler, caplog, monkeypatch
     ):
         n_available = 20
+        # The "jimgw" logger sets propagate=False (to avoid duplicate output
+        # when an application also configures the root logger via
+        # basicConfig), which also keeps records from reaching caplog's
+        # root-logger handler. Re-enable propagation for this test only.
+        monkeypatch.setattr(logging.getLogger("jimgw"), "propagate", True)
         with caplog.at_level("WARNING"):
             samples = jim_sampler.get_samples(n_samples=100)
         assert any(
@@ -793,6 +799,11 @@ class TestJimNaNPosteriorCheck:
             "sample_initial_positions",
             lambda self, n_points=None, rng_key=None: _fixed_positions,
         )
+        # The "jimgw" logger sets propagate=False (to avoid duplicate output
+        # when an application also configures the root logger via
+        # basicConfig), which also keeps records from reaching caplog's
+        # root-logger handler. Re-enable propagation for this test only.
+        monkeypatch.setattr(logging.getLogger("jimgw"), "propagate", True)
 
         with caplog.at_level("WARNING"):
             Jim(

@@ -2,7 +2,7 @@
 
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from jimgw.core.prior import Prior
 
@@ -25,5 +25,5 @@ class DistanceMargConfig(BaseModel):
 
     model_config = {"extra": "forbid", "arbitrary_types_allowed": True}
     distance_prior: Prior  # required — no default
-    n_dist_points: int = 10000
-    ref_dist: Optional[float] = None
+    n_dist_points: int = Field(default=10000, ge=2)
+    ref_dist: Optional[float] = Field(default=None, gt=0.0)

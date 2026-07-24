@@ -528,14 +528,9 @@ class TransientLikelihoodFD(SingleEventLikelihood):
         if dist_max <= dist_min:
             raise ValueError("The d_L prior's xmax must be greater than xmin")
 
-        if n_dist_points < 2:
-            raise ValueError("n_dist_points must be at least 2")
-
         if ref_dist is None:
             self.ref_dist = (dist_min + dist_max) / 2.0
         else:
-            if ref_dist <= 0:
-                raise ValueError("ref_dist must be > 0")
             self.ref_dist = ref_dist
 
         distance_grid = jnp.linspace(dist_min, dist_max, n_dist_points)

@@ -49,7 +49,7 @@ class _CheckpointMixin(BaseModel):
     # model_config is inherited from BaseSamplerConfig; not redeclared here.
 
     checkpoint_dir: Optional[Path] = None
-    checkpoint_interval: float = 0.0
+    checkpoint_interval: float = Field(default=0.0, ge=0.0)
 
     @field_validator("checkpoint_dir", mode="before")
     @classmethod
@@ -57,13 +57,6 @@ class _CheckpointMixin(BaseModel):
         if v is None:
             return None
         return Path(str(v))
-
-    @field_validator("checkpoint_interval")
-    @classmethod
-    def _check_checkpoint_interval(cls, v: float) -> float:
-        if v < 0.0:
-            raise ValueError("checkpoint_interval must be >= 0.0")
-        return v
 
     @model_validator(mode="after")
     def _check_checkpoint_consistency(self) -> Self:
@@ -132,8 +125,8 @@ class _CheckpointMixin(BaseModel):
 class _LiveSetConfigMixin(BaseModel):
     """Shared ``n_live``/``n_delete_frac`` fields and validation for nested samplers."""
 
-    n_live: int = 1000
-    n_delete_frac: float = 0.5
+    n_live: int
+    n_delete_frac: float
 
     @field_validator("n_delete_frac")
     @classmethod
@@ -170,9 +163,9 @@ class ParallelTemperingConfig(BaseModel):
 
     model_config = {"extra": "forbid"}
 
-    n_temperatures: int = 5
-    max_temperature: float = 10.0
-    n_tempered_steps: int = 5
+    n_temperatures: int = Field(default=5, ge=1)
+    max_temperature: float = Field(default=10.0, gt=0.0)
+    n_tempered_steps: int = Field(default=5, ge=1)
 
 
 class MALAConfig(BaseModel):
@@ -201,7 +194,7 @@ class HMCConfig(BaseModel):
 
     step_size: float = 2e-3
     condition_matrix: float | np.ndarray = 1.0
-    n_leapfrog_steps: int = 10
+    n_leapfrog_steps: int = Field(default=10, ge=1)
 
 
 class GRWConfig(BaseModel):
@@ -243,12 +236,12 @@ class FlowMCConfig(BaseSamplerConfig[Literal["flowmc"]], _CheckpointMixin):
 
     type: Literal["flowmc"] = "flowmc"
 
-    n_chains: int = 1000
-    n_local_steps: int = 100
-    n_global_steps: int = 1000
-    n_training_loops: int = 20
-    n_production_loops: int = 10
-    n_epochs: int = 20
+    n_chains: int = Field(default=1000, ge=1)
+    n_local_steps: int = Field(default=100, ge=1)
+    n_global_steps: int = Field(default=1000, ge=1)
+    n_training_loops: int = Field(default=20, ge=1)
+    n_production_loops: int = Field(default=10, ge=1)
+    n_epochs: int = Field(default=20, ge=1)
 
     local_kernel: Literal["MALA", "HMC", "GRW"] = "MALA"
     parallel_tempering: Optional[ParallelTemperingConfig] = None
@@ -258,23 +251,24 @@ class FlowMCConfig(BaseSamplerConfig[Literal["flowmc"]], _CheckpointMixin):
     grw: GRWConfig | dict[str, Any] = Field(default_factory=GRWConfig)
 
     rq_spline_hidden_units: list[int] = Field(default_factory=lambda: [128, 128])
-    rq_spline_n_bins: int = 10
-    rq_spline_n_layers: int = 8
-    n_NFproposal_batch_size: int = 1000
+    rq_spline_n_bins: int = Field(default=10, ge=1)
+    rq_spline_n_layers: int = Field(default=8, ge=1)
+    n_NFproposal_batch_size: int = Field(default=1000, ge=1)
 
-    learning_rate: float = 1e-3
-    batch_size: int = 10000
-    n_max_examples: int = 30000
-    history_window: int = 100
+    learning_rate: float = Field(default=1e-3, gt=0.0)
+    batch_size: int = Field(default=10000, ge=1)
+    n_max_examples: int = Field(default=30000, ge=1)
+    history_window: int = Field(default=100, ge=1)
 
-    chain_batch_size: int = 0
-    local_thinning: int = 1
-    global_thinning: int = 100
+    # chain_batch_size=0 means "full batch" (flowMC's off sentinel), not a lower bound of 1.
+    chain_batch_size: int = Field(default=0, ge=0)
+    local_thinning: int = Field(default=1, ge=1)
+    global_thinning: int = Field(default=100, ge=1)
 
     early_stopping: bool = True
-    early_stopping_tolerance: float = 0.1
-    early_stopping_patience: int = 3
-    early_stopping_min_acceptance: float = 0.1
+    early_stopping_tolerance: float = Field(default=0.1, ge=0.0)
+    early_stopping_patience: int = Field(default=3, ge=1)
+    early_stopping_min_acceptance: float = Field(default=0.1, ge=0.0, le=1.0)
 
     @field_validator("parallel_tempering", mode="before")
     @classmethod
@@ -331,9 +325,9 @@ class BlackJAXNSAWConfig(
 
     n_live: int = 1000
     n_delete_frac: float = 0.5
-    n_target: int = 60
-    max_mcmc: int = 5000
-    max_proposals: int = 1000
+    n_target: int = Field(default=60, ge=1)
+    max_mcmc: int = Field(default=5000, ge=1)
+    max_proposals: int = Field(default=1000, ge=1)
     termination_dlogz: float = Field(default=0.1, gt=0.0)
 
 
@@ -351,7 +345,7 @@ class BlackJAXNSSConfig(
 
     n_live: int = 2000
     n_delete_frac: float = 0.5
-    num_inner_steps_per_dim: int = 20
+    num_inner_steps_per_dim: int = Field(default=20, ge=1)
     termination_dlogz: float = Field(default=0.1, gt=0.0)
 
 
@@ -370,10 +364,10 @@ class BlackJAXSwiGConfig(
     blocks: list[list[str]]
     n_live: int = 500
     n_delete_frac: float = 0.125
-    num_gibbs_sweeps: int = 2
-    num_inner_steps_per_dim: int = 1
-    max_steps: int = 10
-    max_shrinkage: int = 100
+    num_gibbs_sweeps: int = Field(default=2, ge=1)
+    num_inner_steps_per_dim: int = Field(default=1, ge=1)
+    max_steps: int = Field(default=10, ge=1)
+    max_shrinkage: int = Field(default=100, ge=1)
     termination_dlogz: float = Field(default=0.1, gt=0.0)
 
     @field_validator("blocks")
@@ -388,18 +382,6 @@ class BlackJAXSwiGConfig(
         if duplicates:
             raise ValueError(f"parameters appear in multiple blocks: {duplicates}")
         return blocks
-
-    @field_validator(
-        "num_gibbs_sweeps",
-        "num_inner_steps_per_dim",
-        "max_steps",
-        "max_shrinkage",
-    )
-    @classmethod
-    def _positive_integer(cls, value: int) -> int:
-        if value < 1:
-            raise ValueError("must be >= 1")
-        return value
 
 
 class BlackJAXSMCConfig(BaseSamplerConfig[Literal["blackjax-smc"]], _CheckpointMixin):
@@ -421,14 +403,15 @@ class BlackJAXSMCConfig(BaseSamplerConfig[Literal["blackjax-smc"]], _CheckpointM
 
     type: Literal["blackjax-smc"] = "blackjax-smc"
 
-    n_particles: int = 5000
-    n_mcmc_steps_per_dim: int = 100
+    n_particles: int = Field(default=5000, ge=1)
+    n_mcmc_steps_per_dim: int = Field(default=100, ge=1)
     target_ess: Optional[int] = None
     target_ess_fraction: Optional[float] = None
-    batch_size: int = 0  # 0 = full vmap; >0 = lax.map batch size to reduce peak memory
-    initial_cov_scale: float = 0.5
-    target_acceptance_rate: float = 0.234
-    scale_adaptation_gain: float = 3.0
+    # 0 = full vmap; >0 = lax.map batch size to reduce peak memory
+    batch_size: int = Field(default=0, ge=0)
+    initial_cov_scale: float = Field(default=0.5, gt=0.0)
+    target_acceptance_rate: float = Field(default=0.234, gt=0.0, lt=1.0)
+    scale_adaptation_gain: float = Field(default=3.0, gt=0.0)
 
     persistent_sampling: bool = True
     temperature_ladder: Optional[list[float]] = None

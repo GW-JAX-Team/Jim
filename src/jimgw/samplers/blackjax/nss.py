@@ -13,7 +13,7 @@ import numpy as np
 from anesthetic.samples import NestedSamples
 from jaxtyping import Array, Float, Key
 
-import blackjax
+from blackjax import SamplingAlgorithm, nss
 from blackjax.ns.adaptive import AdaptiveNSState, init as _ns_adaptive_init
 from blackjax.ns.base import NSInfo, init_state_strategy as _init_state_strategy
 from blackjax.ns.nss import (
@@ -27,6 +27,7 @@ from blackjax.mcmc.slice import stepping_out
 from jax.sharding import Mesh, NamedSharding, PartitionSpec as P
 from jimgw.samplers.base import Sampler
 from jimgw.samplers.blackjax.sharding import (
+    _LIVE_AXIS,
     build_sharded_from_mcmc_kernel,
     make_live_mesh,
     place_key,
@@ -97,7 +98,7 @@ class BlackJAXNSSSampler(Sampler):
     def _update_inner_kernel_params_fn(self) -> Callable:
         return live_covariance
 
-    def _build_nested_sampler(self, n_delete: int, mesh: Mesh | None = None):
+    def _build_nested_sampler(self, n_delete: int, mesh: Optional[Mesh] = None):
         config = self._config
         num_inner_steps = config.num_inner_steps_per_dim * self.n_dims
         if mesh is not None:
@@ -121,10 +122,14 @@ class BlackJAXNSSSampler(Sampler):
                 n_delete=n_delete,
                 mesh=mesh,
             )
-            return blackjax.SamplingAlgorithm(
-                lambda position, rng_key=None: position, kernel
+            # `nested_sampler.init` is never called (state init happens in
+            # `_batched_nss_init`); BlackJAX still requires SamplingAlgorithm.init
+            # to type as returning a State.
+            return SamplingAlgorithm(
+                lambda position, rng_key=None: position,  # type: ignore[return-value]
+                kernel,
             )
-        return blackjax.nss(
+        return nss(
             logprior_fn=self._log_prior_fn,
             loglikelihood_fn=self._log_likelihood_fn,
             num_delete=n_delete,
@@ -190,7 +195,9 @@ class BlackJAXNSSSampler(Sampler):
 
         def _batched_nss_init(positions):
             if mesh is not None:
-                positions = jax.device_put(positions, NamedSharding(mesh, P("live")))
+                positions = jax.device_put(
+                    positions, NamedSharding(mesh, P(_LIVE_AXIS))
+                )
 
             def _batched_fn(pos):
                 return jax.lax.map(_single_init_fn, pos, batch_size=n_delete)

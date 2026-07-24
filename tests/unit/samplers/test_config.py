@@ -94,7 +94,9 @@ def test_nested_sampler_sharding_requires_divisible_particle_counts(config_cls):
     kwargs = {"blocks": [["x"]]} if config_cls is BlackJAXSwiGConfig else {}
     with pytest.raises(ValidationError, match="n_live must be divisible by n_devices"):
         config_cls(n_live=10, n_delete_frac=0.4, n_devices=4, **kwargs)
-    with pytest.raises(ValidationError, match="n_delete must be divisible by n_devices"):
+    with pytest.raises(
+        ValidationError, match="n_delete must be divisible by n_devices"
+    ):
         config_cls(n_live=12, n_delete_frac=0.25, n_devices=2, **kwargs)
 
 

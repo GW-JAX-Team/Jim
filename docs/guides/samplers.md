@@ -220,6 +220,14 @@ Key parameters:
   replacement chains. The waveform cache remains local to each replacement
   chain; only live-point state participates in collectives.
 
+!!! tip "Sharding without a GPU/TPU cluster"
+    `n_devices` shards across whatever JAX reports as local devices — it does
+    not require accelerators. On a CPU-only host, set
+    `XLA_FLAGS=--xla_force_host_platform_device_count=N` (before JAX
+    initializes; the CPU device count cannot change at runtime) to expose `N`
+    simulated CPU devices and shard across them. See
+    [`examples/GW150914_NSS_sharded.py`](https://github.com/GW-JAX-Team/Jim/blob/main/examples/GW150914_NSS_sharded.py).
+
 ---
 
 ## Checkpointing and resuming

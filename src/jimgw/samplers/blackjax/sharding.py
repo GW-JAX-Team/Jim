@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Callable
+from typing import Callable, Optional
 
 import jax
 import jax.numpy as jnp
@@ -13,7 +13,7 @@ from jax.sharding import Mesh, NamedSharding, PartitionSpec as P
 _LIVE_AXIS = "live"
 
 
-def make_live_mesh(n_devices: int, n_live: int, n_delete: int) -> Mesh | None:
+def make_live_mesh(n_devices: int, n_live: int, n_delete: int) -> Optional[Mesh]:
     """Build a single-host device mesh for the live-particle axis."""
     if n_devices == 1:
         return None

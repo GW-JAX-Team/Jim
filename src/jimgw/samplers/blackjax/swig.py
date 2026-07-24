@@ -8,14 +8,13 @@ from typing import NamedTuple, Optional
 import jax
 import jax.numpy as jnp
 from blackjax import SamplingAlgorithm
-from blackjax.base import Position, State
 from blackjax.mcmc.slice import SliceInfo
 from blackjax.mcmc.slice import build_kernel as build_slice_kernel
 from blackjax.mcmc.slice import stepping_out
 from blackjax.ns.from_mcmc import build_kernel as build_from_mcmc_kernel
 from blackjax.ns.nss import sample_direction_from_covariance
 from blackjax.smc.tuning.from_particles import particles_covariance_matrix
-from blackjax.types import PRNGKey
+from jax.sharding import Mesh
 from jaxtyping import Array, Float
 
 from jimgw.samplers.blackjax.nss import BlackJAXNSSSampler
@@ -239,7 +238,9 @@ class BlackJAXSwiGSampler(BlackJAXNSSSampler):
     def _update_inner_kernel_params_fn(self) -> Callable:
         return self._update_block_covariances
 
-    def _build_nested_sampler(self, n_delete: int, mesh=None) -> SamplingAlgorithm:
+    def _build_nested_sampler(
+        self, n_delete: int, mesh: Optional[Mesh] = None
+    ) -> SamplingAlgorithm:
         constrained_step = _build_swig_constrained_step(
             log_prior_fn=self._log_prior_fn,
             build_cache=self._build_cache,
@@ -268,10 +269,10 @@ class BlackJAXSwiGSampler(BlackJAXNSSSampler):
                 mesh=mesh,
             )
 
-        def initialize(position: Position, rng_key: Optional[PRNGKey]) -> State:
-            del rng_key
-            # ``build_from_mcmc_kernel`` initializes directly from a position,
-            # although BlackJAX types every initializer as returning a state.
-            return position  # type: ignore[return-value]
-
-        return SamplingAlgorithm(initialize, kernel)
+        # `nested_sampler.init` is never called (state init happens in
+        # `_batched_nss_init`); BlackJAX still requires SamplingAlgorithm.init
+        # to type as returning a State.
+        return SamplingAlgorithm(
+            lambda position, rng_key=None: position,  # type: ignore[return-value]
+            kernel,
+        )

@@ -112,6 +112,9 @@
         <loc>https://gw-jax-team.github.io/Jim/development/api/jimgw/samplers/blackjax/nss/</loc>
       </url>
       <url>
+        <loc>https://gw-jax-team.github.io/Jim/development/api/jimgw/samplers/blackjax/sharding/</loc>
+      </url>
+      <url>
         <loc>https://gw-jax-team.github.io/Jim/development/api/jimgw/samplers/blackjax/smc/</loc>
       </url>
       <url>

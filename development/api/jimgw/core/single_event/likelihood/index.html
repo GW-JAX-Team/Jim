@@ -2136,6 +2136,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../samplers/blackjax/sharding/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  sharding
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../samplers/blackjax/smc/" class="md-nav__link">
         
   
@@ -2915,7 +2942,7 @@ likelihood parameters (e.g. mass-ratio → symmetric mass-ratio).</p>
             <td>
               <div class="doc-md-description">
                 <p>If provided, marginalize over coalescence phase
-<code>phase_c</code>.  Pass a <a class="autorefs autorefs-internal" href="../marginalization_config/#jimgw.core.single_event.marginalization_config.PhaseMargConfig"><code>PhaseMargConfig</code></a>
+<code>phase_c</code>.  Pass a [<code>PhaseMargConfig</code>][jimgw.core.single_event.likelihood.PhaseMargConfig]
 object, a plain dict <code>{}</code>, or <code>True</code> (shorthand for <code>PhaseMargConfig()</code>).
 <code>None</code> or <code>False</code> (default) disables phase marginalization.</p>
               </div>
@@ -4093,7 +4120,7 @@ Can be a single float or a per-detector dictionary.</p>
             <td>
               <div class="doc-md-description">
                 <p>If provided, marginalize over coalescence time
-<code>t_c</code>.  Pass a <a class="autorefs autorefs-internal" href="../marginalization_config/#jimgw.core.single_event.marginalization_config.TimeMargConfig"><code>TimeMargConfig</code></a>
+<code>t_c</code>.  Pass a [<code>TimeMargConfig</code>][jimgw.core.single_event.likelihood.TimeMargConfig]
 object, a plain dict (e.g. <code>{"tc_range": (-0.1, 0.1)}</code>), or <code>True</code>
 (shorthand for <code>TimeMargConfig()</code>).  <code>False</code> or the default <code>None</code>
 disables time marginalization.</p>
@@ -4113,7 +4140,7 @@ disables time marginalization.</p>
             <td>
               <div class="doc-md-description">
                 <p>If provided, marginalize over coalescence phase
-<code>phase_c</code>.  Pass a <a class="autorefs autorefs-internal" href="../marginalization_config/#jimgw.core.single_event.marginalization_config.PhaseMargConfig"><code>PhaseMargConfig</code></a>
+<code>phase_c</code>.  Pass a [<code>PhaseMargConfig</code>][jimgw.core.single_event.likelihood.PhaseMargConfig]
 object, a plain dict <code>{}</code>, or <code>True</code> (shorthand for <code>PhaseMargConfig()</code>).
 <code>False</code> or the default <code>None</code> disables phase marginalization.</p>
               </div>
@@ -4132,7 +4159,7 @@ object, a plain dict <code>{}</code>, or <code>True</code> (shorthand for <code>
             <td>
               <div class="doc-md-description">
                 <p>If provided, marginalize over luminosity
-distance <code>d_L</code>.  Pass a <a class="autorefs autorefs-internal" href="../marginalization_config/#jimgw.core.single_event.marginalization_config.DistanceMargConfig"><code>DistanceMargConfig</code></a>
+distance <code>d_L</code>.  Pass a [<code>DistanceMargConfig</code>][jimgw.core.single_event.likelihood.DistanceMargConfig]
 object or a plain dict (e.g. <code>{"distance_prior": prior, "n_dist_points": 10000}</code>).
 <code>False</code> or the default <code>None</code> disables distance marginalization.
 <code>True</code> is not supported — <code>distance_prior</code> has no default; pass a

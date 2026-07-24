@@ -2029,6 +2029,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/jimgw/samplers/blackjax/sharding/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  sharding
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/jimgw/samplers/blackjax/smc/" class="md-nav__link">
         
   
@@ -2559,6 +2586,7 @@ Unlike NS AW, it does not require a unit-cube prior and works in any bounded sam
         <span class="n">n_delete_frac</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
         <span class="n">num_inner_steps_per_dim</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
         <span class="n">termination_dlogz</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+        <span class="n">n_devices</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
     <span class="p">),</span>
     <span class="n">sample_transforms</span><span class="o">=</span><span class="n">sample_transforms</span><span class="p">,</span>
     <span class="n">likelihood_transforms</span><span class="o">=</span><span class="n">likelihood_transforms</span><span class="p">,</span>
@@ -2571,6 +2599,9 @@ Unlike NS AW, it does not require a unit-cube prior and works in any bounded sam
 <li><code>n_live</code> — number of live points.</li>
 <li><code>n_delete_frac</code> — fraction of live points replaced per iteration.</li>
 <li><code>num_inner_steps_per_dim</code> — slice-sampler steps per dimension per dead point; increase for strongly correlated posteriors.</li>
+<li><code>n_devices</code> — number of local devices used to shard the live points and
+  replacement chains. Both <code>n_live</code> and <code>int(n_live * n_delete_frac)</code> must be
+  divisible by this value. The default <code>1</code> uses the unsharded kernel.</li>
 </ul>
 <p><strong>Repository:</strong> <a href="https://github.com/blackjax-devs/blackjax">blackjax-devs/blackjax</a></p>
 <p><strong>References:</strong> Yallup, D., Prathaban, M., Alvey, J., Handley, W., <em>"Parallel Nested Slice Sampling for Gravitational Wave Parameter Estimation"</em>, <a href="https://arxiv.org/abs/2509.24949">arXiv:2509.24949</a> (Sep 2025). Yallup, D., Kroupa, N., Handley, W., <em>"Nested Slice Sampling"</em>, <a href="https://openreview.net/forum?id=ekbkMSuPo4">OpenReview</a> (2025).</p>
@@ -2599,6 +2630,7 @@ The likelihood determines the remaining dependencies after sample transforms, li
         <span class="n">n_delete_frac</span><span class="o">=</span><span class="mf">0.125</span><span class="p">,</span>
         <span class="n">num_inner_steps_per_dim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
         <span class="n">num_gibbs_sweeps</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+        <span class="n">n_devices</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
     <span class="p">),</span>
     <span class="n">likelihood_transforms</span><span class="o">=</span><span class="n">likelihood_transforms</span><span class="p">,</span>
 <span class="p">)</span>
@@ -2612,7 +2644,19 @@ Parameters that are analytically marginalised must not appear in the blocks — 
 <li><code>n_live</code> / <code>n_delete_frac</code> — live-set size and replacement fraction, matching NSS.</li>
 <li><code>num_inner_steps_per_dim</code> — random-direction slice steps per block dimension.</li>
 <li><code>num_gibbs_sweeps</code> — complete block sweeps per particle replacement.</li>
+<li><code>n_devices</code> — number of local devices used to shard the live points and
+  replacement chains. The waveform cache remains local to each replacement
+  chain; only live-point state participates in collectives.</li>
 </ul>
+<div class="admonition tip">
+<p class="admonition-title">Sharding without a GPU/TPU cluster</p>
+<p><code>n_devices</code> shards across whatever JAX reports as local devices — it does
+not require accelerators. On a CPU-only host, set
+<code>XLA_FLAGS=--xla_force_host_platform_device_count=N</code> (before JAX
+initializes; the CPU device count cannot change at runtime) to expose <code>N</code>
+simulated CPU devices and shard across them. See
+<a href="https://github.com/GW-JAX-Team/Jim/blob/main/examples/GW150914_NSS_sharded.py"><code>examples/GW150914_NSS_sharded.py</code></a>.</p>
+</div>
 <hr />
 <h2 id="checkpointing-and-resuming">Checkpointing and resuming<a class="headerlink" href="#checkpointing-and-resuming" title="Permanent link">¤</a></h2>
 <p>All samplers support checkpoint/resume so long-running jobs can survive interruptions.

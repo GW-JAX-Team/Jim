@@ -2279,6 +2279,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/jimgw/samplers/blackjax/sharding/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  sharding
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/jimgw/samplers/blackjax/smc/" class="md-nav__link">
         
   
@@ -3578,6 +3605,11 @@ Supported PSD formats: <code>.npz</code>, <code>.txt</code>, <code>.dat</code>, 
 <td>Stop when the remaining log-evidence contribution falls below this</td>
 </tr>
 <tr>
+<td><code>n_devices</code></td>
+<td><code>1</code></td>
+<td>Number of local devices used to shard live points; <code>n_live</code> and <code>n_delete</code> must be divisible by it</td>
+</tr>
+<tr>
 <td><code>checkpoint_dir</code></td>
 <td><code>{output.dir}/</code></td>
 <td>Directory for <code>checkpoint.pkl</code>; set by the CLI automatically</td>
@@ -3638,6 +3670,11 @@ Supported PSD formats: <code>.npz</code>, <code>.txt</code>, <code>.dat</code>, 
 <td><code>termination_dlogz</code></td>
 <td><code>0.1</code></td>
 <td>Stop when the remaining evidence contribution falls below this</td>
+</tr>
+<tr>
+<td><code>n_devices</code></td>
+<td><code>1</code></td>
+<td>Number of local devices used to shard live points; <code>n_live</code> and <code>n_delete</code> must be divisible by it</td>
 </tr>
 <tr>
 <td><code>checkpoint_dir</code></td>

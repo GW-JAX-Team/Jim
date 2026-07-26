@@ -2699,7 +2699,7 @@ is provided.</p>
                 <code>detectors</code>
             </td>
             <td>
-                  <code><span title="typing.Sequence">Sequence</span>[<a class="autorefs autorefs-internal" href="../detector/#jimgw.core.single_event.detector.Detector">Detector</a>]</code>
+                  <code><span title="collections.abc.Sequence">Sequence</span>[<a class="autorefs autorefs-internal" href="../detector/#jimgw.core.single_event.detector.Detector">Detector</a>]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -2731,7 +2731,7 @@ is provided.</p>
                 <code>fixed_parameters</code>
             </td>
             <td>
-                  <code><span title="typing.Optional">Optional</span>[<span title="dict">dict</span>[<span title="str">str</span>, <span title="jaxtyping.Float">Float</span> | <span title="typing.Callable">Callable</span>[[<span title="dict">dict</span>[<span title="str">str</span>, <span title="jaxtyping.Float">Float</span>]], <span title="jaxtyping.Float">Float</span> | <span title="dict">dict</span>[<span title="str">str</span>, <span title="jaxtyping.Float">Float</span>]]]]</code>
+                  <code><span title="typing.Optional">Optional</span>[<span title="jimgw.core.single_event.utils.FixedParameters">FixedParameters</span>]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -3299,7 +3299,7 @@ using coarser grids at higher frequencies to speed up likelihood evaluation.</p>
                 <code>detectors</code>
             </td>
             <td>
-                  <code><span title="typing.Sequence">Sequence</span>[<a class="autorefs autorefs-internal" href="../detector/#jimgw.core.single_event.detector.Detector">Detector</a>]</code>
+                  <code><span title="collections.abc.Sequence">Sequence</span>[<a class="autorefs autorefs-internal" href="../detector/#jimgw.core.single_event.detector.Detector">Detector</a>]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -3657,7 +3657,7 @@ to 2.12 s with a warning when the prior is unavailable.</p>
       </thead>
       <tbody>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;fm&quot;&gt;__init__&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;detectors&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Sequence&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Detector&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;waveform&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Waveform&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fixed_parameters&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Optional&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;dict&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Float&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Callable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;dict&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]],&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Float&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;dict&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]]]]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;None&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;None&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.core.single_event.likelihood.SingleEventLikelihood.__init__">__init__</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;fm&quot;&gt;__init__&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;detectors&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Sequence&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Detector&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;waveform&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Waveform&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fixed_parameters&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Optional&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;FixedParameters&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;None&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;None&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.core.single_event.likelihood.SingleEventLikelihood.__init__">__init__</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Args:</p>
@@ -3803,7 +3803,7 @@ to 2.12 s with a warning when the prior is unavailable.</p>
 
 
 <h4 id="jimgw.core.single_event.likelihood.SingleEventLikelihood.__init__" class="doc doc-heading">
-            <code class="highlight language-python"><span class="fm">__init__</span><span class="p">(</span><span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Detector</span><span class="p">],</span> <span class="n">waveform</span><span class="p">:</span> <span class="n">Waveform</span><span class="p">,</span> <span class="n">fixed_parameters</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span> <span class="o">|</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">]],</span> <span class="n">Float</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">]]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span></code>
+            <code class="highlight language-python"><span class="fm">__init__</span><span class="p">(</span><span class="n">detectors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Detector</span><span class="p">],</span> <span class="n">waveform</span><span class="p">:</span> <span class="n">Waveform</span><span class="p">,</span> <span class="n">fixed_parameters</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FixedParameters</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span></code>
 
 <a href="#jimgw.core.single_event.likelihood.SingleEventLikelihood.__init__" class="headerlink" title="Permanent link">¤</a></h4>
 
@@ -3828,7 +3828,7 @@ to 2.12 s with a warning when the prior is unavailable.</p>
                 <code>detectors</code>
             </td>
             <td>
-                  <code><span title="typing.Sequence">Sequence</span>[<a class="autorefs autorefs-internal" href="../detector/#jimgw.core.single_event.detector.Detector">Detector</a>]</code>
+                  <code><span title="collections.abc.Sequence">Sequence</span>[<a class="autorefs autorefs-internal" href="../detector/#jimgw.core.single_event.detector.Detector">Detector</a>]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -4014,7 +4014,7 @@ dict shorthand) to the relevant parameter.</p>
                 <code>detectors</code>
             </td>
             <td>
-                  <code><span title="typing.Sequence">Sequence</span>[<a class="autorefs autorefs-internal" href="../detector/#jimgw.core.single_event.detector.Detector">Detector</a>]</code>
+                  <code><span title="collections.abc.Sequence">Sequence</span>[<a class="autorefs autorefs-internal" href="../detector/#jimgw.core.single_event.detector.Detector">Detector</a>]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -4046,7 +4046,7 @@ dict shorthand) to the relevant parameter.</p>
                 <code>fixed_parameters</code>
             </td>
             <td>
-                  <code><span title="typing.Optional">Optional</span>[<span title="dict">dict</span>[<span title="str">str</span>, <span title="jaxtyping.Float">Float</span> | <span title="typing.Callable">Callable</span>[[<span title="dict">dict</span>[<span title="str">str</span>, <span title="jaxtyping.Float">Float</span>]], <span title="jaxtyping.Float">Float</span> | <span title="dict">dict</span>[<span title="str">str</span>, <span title="jaxtyping.Float">Float</span>]]]]</code>
+                  <code><span title="typing.Optional">Optional</span>[<span title="jimgw.core.single_event.utils.FixedParameters">FixedParameters</span>]</code>
             </td>
             <td>
               <div class="doc-md-description">

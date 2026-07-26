@@ -1545,6 +1545,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#jimgw.core.prior.Prior.get_bounds" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        get_bounds
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#jimgw.core.prior.Prior.log_prob" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -2928,6 +2939,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         add_name
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#jimgw.core.prior.Prior.get_bounds" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        get_bounds
       </span>
     </span>
   </a>
@@ -4534,6 +4556,14 @@ bookkeeping for parameter names and transforms.</p>
               </td>
             </tr>
             <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;get_bounds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Optional&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;tuple&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]]&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.core.prior.Prior.get_bounds">get_bounds</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Return scalar bounds when this prior exposes <code>xmin</code> and <code>xmax</code>.</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
               <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;log_prob&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;z&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;dict&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;FloatScalar&lt;/span&gt;&lt;/code&gt;
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
@@ -4805,6 +4835,24 @@ Jim will raise at construction time if this returns False for those backends.</p
           </tr>
       </tbody>
     </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="jimgw.core.prior.Prior.get_bounds" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">get_bounds</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span></code>
+
+<a href="#jimgw.core.prior.Prior.get_bounds" class="headerlink" title="Permanent link">¤</a></h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Return scalar bounds when this prior exposes <code>xmin</code> and <code>xmax</code>.</p>
 
 
     </div>

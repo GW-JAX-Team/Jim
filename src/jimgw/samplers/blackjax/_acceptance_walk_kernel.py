@@ -16,21 +16,27 @@ from typing import NamedTuple, cast
 import jax
 import jax.flatten_util
 import jax.numpy as jnp
-from jaxtyping import Array, Bool, Float, Key
-
 from blackjax.base import SamplingAlgorithm
-from blackjax.types import ArrayLikeTree
+from blackjax.ns.adaptive import (
+    AdaptiveNSState,
+)
+from blackjax.ns.adaptive import (
+    build_kernel as build_adaptive_kernel,
+)
+from blackjax.ns.adaptive import (
+    init as adaptive_init,
+)
 from blackjax.ns.base import (
     NSState,
     StateWithLogLikelihood,
-    delete_fn as default_delete_fn,
     init_state_strategy,
 )
-from blackjax.ns.adaptive import (
-    AdaptiveNSState,
-    build_kernel as build_adaptive_kernel,
-    init as adaptive_init,
+from blackjax.ns.base import (
+    delete_fn as default_delete_fn,
 )
+from blackjax.types import ArrayLikeTree
+from jaxtyping import Array, Bool, Float, Key
+
 from jimgw.typing import FloatScalar, IntScalar
 
 
@@ -70,7 +76,7 @@ def _de_one_step(
     max_proposals: int = 1000,
 ):
     def body_fun(carry):
-        is_valid, key, pos, logp, count = carry
+        _is_valid, key, _pos, _logp, count = carry
         key_a, key_b, key_mix, key_gamma, new_key = jax.random.split(key, 5)
 
         _, top_indices = jax.lax.top_k(params.loglikelihoods, num_survivors)
@@ -245,7 +251,7 @@ def _update_bilby_walks(
         ),
     )
 
-    leaves = cast(list[Array], jax.tree_util.tree_leaves(ns_state.particles))
+    leaves = jax.tree_util.tree_leaves(ns_state.particles)
     nlive = leaves[0].shape[0]
     og_delay = nlive // 10 - 1
     delay = jnp.maximum(og_delay // n_delete, 1)

@@ -29,16 +29,16 @@ class MockLikelihood:
 
 def _tiny_flowmc_config(pt: Optional[dict] = None, **kwargs) -> FlowMCConfig:
     """Minimal FlowMCConfig for fast unit tests."""
-    defaults: dict = dict(
-        n_chains=5,
-        n_local_steps=2,
-        n_global_steps=2,
-        global_thinning=1,
-        n_training_loops=1,
-        n_production_loops=1,
-        n_epochs=1,
-        parallel_tempering=pt if pt is not None else False,
-    )
+    defaults: dict = {
+        "n_chains": 5,
+        "n_local_steps": 2,
+        "n_global_steps": 2,
+        "global_thinning": 1,
+        "n_training_loops": 1,
+        "n_production_loops": 1,
+        "n_epochs": 1,
+        "parallel_tempering": pt if pt is not None else False,
+    }
     defaults.update(kwargs)
     return FlowMCConfig(**defaults)
 
@@ -422,9 +422,10 @@ class TestJimPriorLikelihoodConsistencyChecks:
         waveform_parameter_names: tuple[str, ...],
         fixed_parameters: Optional[dict] = None,
     ):
-        from jimgw.core.single_event.likelihood import SingleEventLikelihood
-        from ripplegw.interfaces import Waveform as RippleWaveform
         from jaxtyping import Float
+        from ripplegw.interfaces import Waveform as RippleWaveform
+
+        from jimgw.core.single_event.likelihood import SingleEventLikelihood
 
         class MockWaveform(RippleWaveform):
             def __init__(self, param_names):

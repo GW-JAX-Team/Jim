@@ -21,13 +21,13 @@ for get_ifo, name in [(get_H1, "H1"), (get_L1, "L1")]:
     print(f"\nProcessing {name}...")
 
     # Fetch 4s analysis segment
-    print(f"  Fetching 4s strain data...")
+    print("  Fetching 4s strain data...")
     strain_data = Data.from_gwosc(name, start, end)
     strain_data.to_file(f"GW150914_strain_{name}.npz")
     print(f"  Saved GW150914_strain_{name}.npz")
 
     # Fetch 4096s for PSD estimation
-    print(f"  Fetching 4096s data for PSD estimation...")
+    print("  Fetching 4096s data for PSD estimation...")
     psd_data = Data.from_gwosc(name, psd_start, psd_end)
 
     # Compute PSD using the 4s data's duration and sampling frequency

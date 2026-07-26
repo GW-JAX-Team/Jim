@@ -1,29 +1,29 @@
+import logging
+import os
+import tempfile
+import time
 from abc import ABC, abstractmethod
 from typing import Optional
-import logging
-import time
-import tempfile
-import os
 
 import jax
 import jax.numpy as jnp
-from jaxtyping import Array, Float, Complex, Key, jaxtyped, Bool
-from jimgw.typing import FloatLike, FloatScalar
 import requests
 from beartype import beartype as typechecker
+from jaxtyping import Array, Bool, Complex, Float, Key, jaxtyped
 
 from jimgw.core.constants import (
     C_SI,
+    DEG_TO_RAD,
     EARTH_SEMI_MAJOR_AXIS,
     EARTH_SEMI_MINOR_AXIS,
-    DEG_TO_RAD,
 )
-from jimgw.core.single_event.polarization import Polarization
 from jimgw.core.single_event.data import Data, PowerSpectrum
-from jimgw.core.single_event.utils import inner_product, complex_inner_product
+from jimgw.core.single_event.polarization import Polarization
 from jimgw.core.single_event.time_utils import (
     greenwich_mean_sidereal_time as compute_gmst,
 )
+from jimgw.core.single_event.utils import complex_inner_product, inner_product
+from jimgw.typing import FloatLike, FloatScalar
 
 logger = logging.getLogger(__name__)
 
@@ -105,7 +105,6 @@ class Detector(ABC):
         Returns:
             Complex[Array, "n_sample"]: Complex strain measured by the detector in frequency domain.
         """
-        pass
 
     @abstractmethod
     def td_response(
@@ -124,7 +123,6 @@ class Detector(ABC):
         Returns:
             Array of detector response in time domain.
         """
-        pass
 
     def set_frequency_bounds(
         self, f_min: Optional[float] = None, f_max: Optional[float] = None
@@ -554,11 +552,7 @@ class GroundBased2G(Detector):
         if self.psd.n_freq != self.data.n_freq:
             # Cannot proceed comparison, needs interpolation
             return False
-        if (self.psd.frequencies == self.data.frequencies).all():
-            # Frequencies match
-            return True
-        # This case means the frequencies are different
-        return False
+        return (self.psd.frequencies == self.data.frequencies).all()
 
     def set_data(self, data: Data | Array, **kws) -> None:
         """Add data to the detector.

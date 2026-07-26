@@ -16,23 +16,23 @@ from typing import Any, Optional
 from jimgw.samplers.base import Sampler
 from jimgw.samplers.config import (
     BaseSamplerConfig,
-    BlackJAXSwiGConfig,
     BlackJAXNSAWConfig,
     BlackJAXNSSConfig,
     BlackJAXSMCConfig,
+    BlackJAXSwiGConfig,
     FlowMCConfig,
     SamplerConfig,
 )
 
 __all__ = [
-    "Sampler",
-    "SamplerConfig",
     "BaseSamplerConfig",
-    "FlowMCConfig",
-    "BlackJAXSwiGConfig",
     "BlackJAXNSAWConfig",
     "BlackJAXNSSConfig",
     "BlackJAXSMCConfig",
+    "BlackJAXSwiGConfig",
+    "FlowMCConfig",
+    "Sampler",
+    "SamplerConfig",
     "build_sampler",
     "register_sampler",
 ]
@@ -102,22 +102,22 @@ def build_sampler(
     )
 
 
-from jimgw.samplers.flowmc import FlowMCSampler  # noqa: E402
+from jimgw.samplers.flowmc import FlowMCSampler
 
 register_sampler("flowmc", lambda: FlowMCSampler)
 
-from jimgw.samplers.blackjax.smc import BlackJAXSMCSampler  # noqa: E402
+from jimgw.samplers.blackjax.smc import BlackJAXSMCSampler
 
 register_sampler("blackjax-smc", lambda: BlackJAXSMCSampler)
 
-from jimgw.samplers.blackjax.ns_aw import BlackJAXNSAWSampler  # noqa: E402
+from jimgw.samplers.blackjax.ns_aw import BlackJAXNSAWSampler
 
 register_sampler("blackjax-ns-aw", lambda: BlackJAXNSAWSampler)
 
-from jimgw.samplers.blackjax.nss import BlackJAXNSSSampler  # noqa: E402
+from jimgw.samplers.blackjax.nss import BlackJAXNSSSampler
 
 register_sampler("blackjax-nss", lambda: BlackJAXNSSSampler)
 
-from jimgw.samplers.blackjax.swig import BlackJAXSwiGSampler  # noqa: E402
+from jimgw.samplers.blackjax.swig import BlackJAXSwiGSampler
 
 register_sampler("blackjax-swig", lambda: BlackJAXSwiGSampler)

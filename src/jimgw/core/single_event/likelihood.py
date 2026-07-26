@@ -1,34 +1,38 @@
 import logging
-from typing import Any, Callable, Optional, Sequence, Union
 from abc import abstractmethod
+from collections.abc import Sequence
+from dataclasses import replace
+from typing import Any, Optional, Union
+
 import jax
 import jax.numpy as jnp
-from jax.scipy.special import logsumexp
-from jaxtyping import Array, Float, Complex
-from jimgw.typing import ComplexScalar, FloatLike, FloatScalar
-from scipy.interpolate import interp1d
 from evosax.algorithms import CMA_ES
+from jax.scipy.special import logsumexp
+from jaxtyping import Array, Complex, Float
 from ripplegw.interfaces import Waveform
+from scipy.interpolate import interp1d
 
-from jimgw.core.utils import log_i0, round_up_to_power_of_two
-from jimgw.core.prior import Prior, find_specific_prior
 from jimgw.core.base import LikelihoodBase
-from jimgw.core.transforms import NtoMTransform
+from jimgw.core.constants import EARTH_RADIUS_LIGHT_S, MTSUN
+from jimgw.core.prior import Prior, find_specific_prior
 from jimgw.core.single_event.detector import Detector
-from jimgw.core.single_event.utils import (
-    inner_product,
-    complex_inner_product,
-    apply_fixed_parameters,
-)
 from jimgw.core.single_event.marginalization_config import (
+    DistanceMargConfig,
     PhaseMargConfig,
     TimeMargConfig,
-    DistanceMargConfig,
 )
 from jimgw.core.single_event.time_utils import (
     greenwich_mean_sidereal_time as compute_gmst,
 )
-from jimgw.core.constants import MTSUN, EARTH_RADIUS_LIGHT_S
+from jimgw.core.single_event.utils import (
+    FixedParameters,
+    apply_fixed_parameters,
+    complex_inner_product,
+    inner_product,
+)
+from jimgw.core.transforms import NtoMTransform
+from jimgw.core.utils import log_i0, round_up_to_power_of_two
+from jimgw.typing import ComplexScalar, FloatLike, FloatScalar
 
 logger = logging.getLogger(__name__)
 
@@ -36,9 +40,10 @@ logger = logging.getLogger(__name__)
 class SingleEventLikelihood(LikelihoodBase):
     detectors: Sequence[Detector]
     waveform: Waveform
-    fixed_parameters: dict[
-        str, Float | Callable[[dict[str, Float]], Float | dict[str, Float]]
-    ]
+    fixed_parameters: FixedParameters
+    trigger_time: float
+    gmst: FloatScalar
+    ref_dist: FloatLike
 
     @property
     def duration(self) -> FloatLike:
@@ -54,12 +59,7 @@ class SingleEventLikelihood(LikelihoodBase):
         self,
         detectors: Sequence[Detector],
         waveform: Waveform,
-        fixed_parameters: Optional[
-            dict[
-                str,
-                Float | Callable[[dict[str, Float]], Float | dict[str, Float]],
-            ]
-        ] = None,
+        fixed_parameters: Optional[FixedParameters] = None,
     ) -> None:
         """
         Args:
@@ -137,14 +137,14 @@ class SingleEventLikelihood(LikelihoodBase):
     def _prepare_parameters(self, params: dict[str, Float]) -> dict[str, Float]:
         """Add event metadata, marginalization defaults, and fixed parameters."""
         prepared_params = params.copy()
-        prepared_params["trigger_time"] = self.trigger_time  # type: ignore[reportAttributeAccessIssue]
-        prepared_params["gmst"] = self.gmst  # type: ignore[reportAttributeAccessIssue]
+        prepared_params["trigger_time"] = self.trigger_time
+        prepared_params["gmst"] = self.gmst
         if self.time_marginalization:
             prepared_params["t_c"] = 0.0
         if self.phase_marginalization:
             prepared_params["phase_c"] = 0.0
         if self.distance_marginalization:
-            prepared_params["d_L"] = self.ref_dist  # type: ignore[reportAttributeAccessIssue]
+            prepared_params["d_L"] = self.ref_dist
         apply_fixed_parameters(prepared_params, self.fixed_parameters)
         return prepared_params
 
@@ -261,12 +261,7 @@ class TransientLikelihoodFD(SingleEventLikelihood):
         self,
         detectors: Sequence[Detector],
         waveform: Waveform,
-        fixed_parameters: Optional[
-            dict[
-                str,
-                Float | Callable[[dict[str, Float]], Float | dict[str, Float]],
-            ]
-        ] = None,
+        fixed_parameters: Optional[FixedParameters] = None,
         f_min: float | dict[str, float] = 0.0,
         f_max: float | dict[str, float] = jnp.inf,
         trigger_time: float = 0,
@@ -517,14 +512,13 @@ class TransientLikelihoodFD(SingleEventLikelihood):
                 f"got parameter_names={list(distance_prior.parameter_names)}."
             )
 
-        if not hasattr(distance_prior, "xmin") or not hasattr(distance_prior, "xmax"):
+        bounds = distance_prior.get_bounds()
+        if bounds is None:
             raise ValueError(
                 "The d_L sub-prior must have xmin and xmax attributes. "
                 "Use a bounded prior such as PowerLawPrior or UniformPrior."
             )
-
-        dist_min = float(getattr(distance_prior, "xmin"))
-        dist_max = float(getattr(distance_prior, "xmax"))
+        dist_min, dist_max = bounds
 
         if dist_min <= 0:
             raise ValueError(
@@ -647,12 +641,7 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         self,
         detectors: Sequence[Detector],
         waveform: Waveform,
-        fixed_parameters: Optional[
-            dict[
-                str,
-                Float | Callable[[dict[str, Float]], Float | dict[str, Float]],
-            ]
-        ] = None,
+        fixed_parameters: Optional[FixedParameters] = None,
         f_min: float | dict[str, float] = 0.0,
         f_max: float | dict[str, float] = jnp.inf,
         trigger_time: float = 0,
@@ -1063,7 +1052,7 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         # Set up CMA-ES in normalized space: init_mean=0, std_init=1
         # ------------------------------------------------------------------
         es = CMA_ES(population_size=optimizer_popsize, solution=jnp.zeros(n_dim))
-        es_params = es.default_params.replace(std_init=1e-3)  # type: ignore[attr-defined]  # evosax stubs
+        es_params = replace(es.default_params, std_init=1e-3)
         key = jax.random.key(42)
         state = es.init(key, jnp.zeros(n_dim), es_params)
 
@@ -1177,9 +1166,7 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
         self,
         detectors: Sequence[Detector],
         waveform: Waveform,
-        fixed_parameters: Optional[
-            dict[str, Float | Callable[[dict[str, Float]], Float | dict[str, Float]]]
-        ] = None,
+        fixed_parameters: Optional[FixedParameters] = None,
         f_min: float | dict[str, float] = 0,
         f_max: float | dict[str, float] = jnp.inf,
         trigger_time: float = 0,
@@ -1317,14 +1304,13 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
                 "Either reference_chirp_mass or a prior with an M_c component must be provided."
             )
         mc_prior = find_specific_prior(prior, "M_c")
-        if mc_prior is None or not (
-            hasattr(mc_prior, "xmin") and hasattr(mc_prior, "xmax")
-        ):
+        mc_bounds = mc_prior.get_bounds() if mc_prior is not None else None
+        if mc_bounds is None:
             raise ValueError(
                 "reference_chirp_mass=None but no M_c prior found. "
                 "Pass either reference_chirp_mass or a prior with an M_c component."
             )
-        mc_min = float(getattr(mc_prior, "xmin"))
+        mc_min, _ = mc_bounds
         logger.info(
             "reference_chirp_mass inferred from M_c prior minimum: %.4f M_sun", mc_min
         )
@@ -1351,17 +1337,14 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
 
         if prior is not None and (time_offset is None or delta_f_end is None):
             tc_prior = find_specific_prior(prior, "t_c")
-            if (
-                tc_prior is not None
-                and hasattr(tc_prior, "xmin")
-                and hasattr(tc_prior, "xmax")
-            ):
+            tc_bounds = tc_prior.get_bounds() if tc_prior is not None else None
+            if tc_bounds is not None:
+                tc_min, tc_max = tc_bounds
                 t_end = min(
                     float(d.data.start_time) + float(d.data.duration) - trigger_time
                     for d in detectors
                 )
                 RE_S = EARTH_RADIUS_LIGHT_S
-                tc_max = float(getattr(tc_prior, "xmax"))
                 denom = t_end - tc_max - RE_S
 
                 if denom <= 0:
@@ -1370,7 +1353,7 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
                         f"t_end - xmax - s = {t_end:.4f} - {tc_max:.4f} - {RE_S:.6f} = {denom:.6f} <= 0. "
                         "Check that the t_c prior upper bound is well within the data segment."
                     )
-                inferred_to = t_end - float(getattr(tc_prior, "xmin")) + RE_S
+                inferred_to = t_end - tc_min + RE_S
                 inferred_dfe = 100.0 / denom
 
         if time_offset is None:

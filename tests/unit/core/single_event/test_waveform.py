@@ -6,9 +6,9 @@ import pytest
 
 from jimgw.core.single_event.waveform import (
     RippleIMRPhenomD,
+    RippleIMRPhenomD_NRTidalv2,
     RippleIMRPhenomPv2,
     RippleTaylorF2,
-    RippleIMRPhenomD_NRTidalv2,
 )
 from tests.utils import assert_all_finite
 

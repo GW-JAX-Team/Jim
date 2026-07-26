@@ -9,7 +9,6 @@ from jimgw.samplers.periodic import (
     to_unit_cube_stepper,
 )
 
-
 # Index-based periodic specs matching PARAMS_3D = ("alpha", "phase_c", "psi")
 # phase_c → index 1, psi → index 2
 PERIODIC_3D = {1: (0.0, 2 * math.pi), 2: (0.0, math.pi)}

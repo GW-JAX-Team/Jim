@@ -8,6 +8,7 @@ from pydantic import ValidationError
 from jimgw.cli._config import (
     CosineSpec,
     FileDataConfig,
+    GaussianSpec,
     GWOSCDataConfig,
     InjectionDataConfig,
     PipelineConfig,
@@ -16,7 +17,6 @@ from jimgw.cli._config import (
     RayleighSpec,
     SineSpec,
     UniformSpec,
-    GaussianSpec,
     WaveformConfig,
 )
 
@@ -186,7 +186,7 @@ def test_file_config_from_toml():
     assert isinstance(cfg.data, FileDataConfig)
     assert cfg.data.trigger_time == 1126259462.4
     assert len(cfg.prior.root) == 11
-    assert cfg.sampler.type == "flowmc"  # type: ignore[union-attr]
+    assert cfg.sampler.type == "flowmc"
 
 
 def test_sampling_config_defaults():

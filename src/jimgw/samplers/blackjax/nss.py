@@ -4,27 +4,31 @@ import logging
 import pickle
 import shutil
 import time
+from collections.abc import Callable
 from functools import partial
-from typing import Any, Callable, Optional
+from typing import Any, Optional
 
 import jax
 import jax.numpy as jnp
 import numpy as np
 from anesthetic.samples import NestedSamples
-from jaxtyping import Array, Float, Key
-
 from blackjax import SamplingAlgorithm, nss
-from blackjax.ns.adaptive import AdaptiveNSState, init as _ns_adaptive_init
-from blackjax.ns.base import NSInfo, init_state_strategy as _init_state_strategy
+from blackjax.mcmc.slice import build_kernel as build_slice_kernel
+from blackjax.mcmc.slice import stepping_out
+from blackjax.ns.adaptive import AdaptiveNSState
+from blackjax.ns.adaptive import init as _ns_adaptive_init
+from blackjax.ns.base import NSInfo
+from blackjax.ns.base import init_state_strategy as _init_state_strategy
 from blackjax.ns.nss import (
     live_covariance,
     sample_direction_from_covariance,
     slice_constrained_step,
 )
 from blackjax.ns.utils import finalise
-from blackjax.mcmc.slice import build_kernel as build_slice_kernel
-from blackjax.mcmc.slice import stepping_out
-from jax.sharding import Mesh, NamedSharding, PartitionSpec as P
+from jax.sharding import Mesh, NamedSharding
+from jax.sharding import PartitionSpec as P
+from jaxtyping import Array, Float, Key
+
 from jimgw.samplers.base import Sampler
 from jimgw.samplers.blackjax.sharding import (
     _LIVE_AXIS,

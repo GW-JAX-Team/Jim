@@ -3,6 +3,7 @@
 import equinox as eqx
 import jax.numpy as jnp
 from jaxtyping import Array, Float
+
 from jimgw.typing import FloatScalar
 
 KNOWN_POLS = "pcxybl"

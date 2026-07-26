@@ -6,19 +6,19 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 from jaxtyping import Array, Float, Key
-from jimgw.typing import FloatScalar
 from ripplegw.interfaces import Waveform
 
+from jimgw._logging import ensure_logger_handler
 from jimgw.core.base import LikelihoodBase
 from jimgw.core.prior import Prior
-from jimgw.core.transforms import BijectiveTransform, NtoMTransform
-from jimgw.core.single_event.likelihood import SingleEventLikelihood
 from jimgw.core.single_event.blocked_likelihood import (
-    _validate_parameter_blocks,
     _build_rebuild_required_by_block,
+    _validate_parameter_blocks,
 )
+from jimgw.core.single_event.likelihood import SingleEventLikelihood
+from jimgw.core.transforms import BijectiveTransform, NtoMTransform
 from jimgw.samplers import Sampler, SamplerConfig, build_sampler
-from jimgw._logging import ensure_logger_handler
+from jimgw.typing import FloatScalar
 
 logger = logging.getLogger(__name__)
 
@@ -213,12 +213,13 @@ class Jim:
             TypeError: If a cache-aware sampler is paired with a likelihood that
                 does not support waveform caching.
         """
-        if sampler_config.type == "blackjax-swig":
-            if not isinstance(likelihood, SingleEventLikelihood):
-                raise TypeError(
-                    "The selected cache-aware sampler requires a waveform-cache-capable "
-                    "single-event likelihood."
-                )
+        if sampler_config.type == "blackjax-swig" and not isinstance(
+            likelihood, SingleEventLikelihood
+        ):
+            raise TypeError(
+                "The selected cache-aware sampler requires a waveform-cache-capable "
+                "single-event likelihood."
+            )
 
         current_sampling_names = self.prior_parameter_names
         for transform in sample_transforms:

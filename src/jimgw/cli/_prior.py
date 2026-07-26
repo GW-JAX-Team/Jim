@@ -45,7 +45,7 @@ def build_prior(cfg: PriorConfig):
         elif isinstance(spec, UniformSphereSpec):
             components.append(UniformSpherePrior([name]))
         else:
-            raise ValueError(f"Unknown prior spec type for '{name}': {type(spec)}")
+            raise TypeError(f"Unknown prior spec type for '{name}': {type(spec)}")
 
     prior = CombinePrior(components)
     logger.info(

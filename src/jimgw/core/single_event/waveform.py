@@ -1,5 +1,4 @@
 from ripplegw import (
-    TaylorF2,
     IMRPhenomD,
     IMRPhenomD_NRTidalv2,
     IMRPhenomHM,
@@ -10,6 +9,7 @@ from ripplegw import (
     IMRPhenomXP,
     IMRPhenomXPHM,
     SineGaussian,
+    TaylorF2,
 )
 
 RippleTaylorF2 = TaylorF2
@@ -25,7 +25,6 @@ RippleIMRPhenomXPHM = IMRPhenomXPHM
 RippleSineGaussian = SineGaussian
 
 __all__ = [
-    "RippleTaylorF2",
     "RippleIMRPhenomD",
     "RippleIMRPhenomD_NRTidalv2",
     "RippleIMRPhenomHM",
@@ -36,4 +35,5 @@ __all__ = [
     "RippleIMRPhenomXP",
     "RippleIMRPhenomXPHM",
     "RippleSineGaussian",
+    "RippleTaylorF2",
 ]

@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 
 from jaxtyping import Float
+
 from jimgw.typing import FloatScalar
 
 

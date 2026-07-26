@@ -20,18 +20,16 @@ from pydantic import (
     model_validator,
 )
 
-# SamplerConfig is safe to import here — samplers/config.py only uses numpy.
-from jimgw.samplers.config import SamplerConfig
-
-
 from jimgw.cli._utils import (
-    CARTESIAN_SPIN_PARAMS as _CARTESIAN_SPIN_PARAMS,
-    DETECTOR_SKY_PARAMS as _DETECTOR_SKY_PARAMS,
-    EQUATORIAL_SKY_PARAMS as _EQUATORIAL_SKY_PARAMS,
-    J_FRAME_SPIN_PARAMS as _J_FRAME_SPIN_PARAMS,
-    SUPPORTED_DETECTORS as _SUPPORTED_DETECTORS,
+    CARTESIAN_SPIN_PARAMS,
+    DETECTOR_SKY_PARAMS,
+    EQUATORIAL_SKY_PARAMS,
+    J_FRAME_SPIN_PARAMS,
+    SUPPORTED_DETECTORS,
 )
 
+# SamplerConfig is safe to import here — samplers/config.py only uses numpy.
+from jimgw.samplers.config import SamplerConfig
 
 # ---------------------------------------------------------------------------
 # Data section
@@ -48,11 +46,11 @@ class _DataBase(BaseModel):
     def _check_detectors(cls, v: list[str]) -> list[str]:
         if not v:
             raise ValueError("data.detectors must be a non-empty list")
-        unknown = [d for d in v if d not in _SUPPORTED_DETECTORS]
+        unknown = [d for d in v if d not in SUPPORTED_DETECTORS]
         if unknown:
             raise ValueError(
                 f"Unknown detector name(s): {unknown}. "
-                f"Supported: {sorted(_SUPPORTED_DETECTORS)}"
+                f"Supported: {sorted(SUPPORTED_DETECTORS)}"
             )
         if len(v) != len(set(v)):
             duplicates = [d for d in set(v) if v.count(d) > 1]
@@ -483,13 +481,13 @@ class PipelineConfig(BaseModel):
                 "'geocentric'. Use 't_c' in injection_parameters, or set "
                 "time_frame to 'detector' or a specific detector name."
             )
-        if inj & _DETECTOR_SKY_PARAMS and self.sampling.sky_frame != "detector":
+        if inj & DETECTOR_SKY_PARAMS and self.sampling.sky_frame != "detector":
             raise ValueError(
                 "injection_parameters uses detector-frame sky position "
                 "('azimuth'/'zenith') but [sampling].sky_frame != 'detector'. "
                 "Use 'ra'/'dec' in injection_parameters, or set sky_frame = 'detector'."
             )
-        if inj & _J_FRAME_SPIN_PARAMS and "phase_c" not in inj:
+        if inj & J_FRAME_SPIN_PARAMS and "phase_c" not in inj:
             raise ValueError(
                 "injection_parameters uses J-frame spin angles but 'phase_c' is missing. "
                 "SpinAnglesToCartesianSpinTransform requires 'phase_c' as a conditioning "
@@ -501,13 +499,13 @@ class PipelineConfig(BaseModel):
     def _validate_spin_parametrization(self) -> "PipelineConfig":
         prior_keys = frozenset(self.prior.root.keys())
 
-        has_j_frame = bool(prior_keys & _J_FRAME_SPIN_PARAMS)
+        has_j_frame = bool(prior_keys & J_FRAME_SPIN_PARAMS)
         has_sphere_spin = any(
             isinstance(self.prior.root.get(label), UniformSphereSpec)
             or all(f"{label}_{s}" in prior_keys for s in ("mag", "theta", "phi"))
             for label in ("s1", "s2")
         )
-        has_cartesian_spin = bool(prior_keys & _CARTESIAN_SPIN_PARAMS)
+        has_cartesian_spin = bool(prior_keys & CARTESIAN_SPIN_PARAMS)
 
         if sum([has_j_frame, has_sphere_spin, has_cartesian_spin]) > 1:
             raise ValueError(
@@ -521,7 +519,7 @@ class PipelineConfig(BaseModel):
                 raise ValueError(
                     "J-frame spin angles produce 'iota' — 'iota' must not also appear in [prior]."
                 )
-            missing_j = _J_FRAME_SPIN_PARAMS - prior_keys
+            missing_j = J_FRAME_SPIN_PARAMS - prior_keys
             if missing_j:
                 raise ValueError(
                     "J-frame spin parametrization requires all 7 parameters; "
@@ -540,16 +538,16 @@ class PipelineConfig(BaseModel):
     def _validate_sky_time_parametrization(self) -> "PipelineConfig":
         prior_keys = frozenset(self.prior.root.keys())
 
-        equatorial_present = prior_keys & _EQUATORIAL_SKY_PARAMS
-        if equatorial_present and not (_EQUATORIAL_SKY_PARAMS <= prior_keys):
-            missing = _EQUATORIAL_SKY_PARAMS - prior_keys
+        equatorial_present = prior_keys & EQUATORIAL_SKY_PARAMS
+        if equatorial_present and not (EQUATORIAL_SKY_PARAMS <= prior_keys):
+            missing = EQUATORIAL_SKY_PARAMS - prior_keys
             raise ValueError(
                 f"[prior] must contain both 'ra' and 'dec' together; "
                 f"missing: {sorted(missing)}"
             )
-        detector_present = prior_keys & _DETECTOR_SKY_PARAMS
-        if detector_present and not (_DETECTOR_SKY_PARAMS <= prior_keys):
-            missing = _DETECTOR_SKY_PARAMS - prior_keys
+        detector_present = prior_keys & DETECTOR_SKY_PARAMS
+        if detector_present and not (DETECTOR_SKY_PARAMS <= prior_keys):
+            missing = DETECTOR_SKY_PARAMS - prior_keys
             raise ValueError(
                 f"[prior] must contain both 'azimuth' and 'zenith' together; "
                 f"missing: {sorted(missing)}"
@@ -587,16 +585,18 @@ class PipelineConfig(BaseModel):
 
     @model_validator(mode="after")
     def _validate_sampling_ifo_consistency(self) -> "PipelineConfig":
-        if self.sampling.time_frame not in ("detector", "geocentric"):
-            if self.sampling.time_frame not in self.data.detectors:
-                raise ValueError(
-                    f"[sampling] time_frame={self.sampling.time_frame!r} is not in "
-                    f"data.detectors {self.data.detectors}"
-                )
+        if (
+            self.sampling.time_frame not in ("detector", "geocentric")
+            and self.sampling.time_frame not in self.data.detectors
+        ):
+            raise ValueError(
+                f"[sampling] time_frame={self.sampling.time_frame!r} is not in "
+                f"data.detectors {self.data.detectors}"
+            )
 
         prior_keys = frozenset(self.prior.root.keys())
         has_sky_params = bool(
-            prior_keys & (_EQUATORIAL_SKY_PARAMS | _DETECTOR_SKY_PARAMS)
+            prior_keys & (EQUATORIAL_SKY_PARAMS | DETECTOR_SKY_PARAMS)
         )
         if (
             has_sky_params

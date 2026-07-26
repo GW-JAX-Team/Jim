@@ -14,14 +14,13 @@ named prior-space dict via [`Jim.get_samples`][jimgw.core.jim.Jim.get_samples].
 import time
 from abc import ABC, abstractmethod
 from collections.abc import Callable
-from typing import Any
-from typing import Optional
+from typing import Any, Optional
 
 import numpy as np
 from jaxtyping import Array, Float, Key
-from jimgw.typing import FloatScalar
 
 from jimgw.samplers.config import BaseSamplerConfig
+from jimgw.typing import FloatScalar
 
 
 class Sampler(ABC):

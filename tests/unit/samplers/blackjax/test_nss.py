@@ -2,24 +2,25 @@
 
 from __future__ import annotations
 
+import pickle
+from pathlib import Path
+
 import jax
 import numpy as np
-import pickle
 import pytest
-from pathlib import Path
 
 blackjax = pytest.importorskip("blackjax")
 
-from jimgw.core.prior import CombinePrior, UniformPrior  # noqa: E402
-from jimgw.samplers.blackjax.nss import BlackJAXNSSSampler  # noqa: E402
-from jimgw.samplers.config import BlackJAXNSSConfig  # noqa: E402
+from jimgw.core.prior import CombinePrior, UniformPrior
+from jimgw.samplers.blackjax.nss import BlackJAXNSSSampler
+from jimgw.samplers.config import BlackJAXNSSConfig
 
 _SIGMA = 0.05
 _MU = 0.5
 
 
 class _GaussianLikelihood:
-    def evaluate(self, params: dict) -> float:  # type: ignore[override]
+    def evaluate(self, params: dict) -> float:
         x = params["x"]
         y = params["y"]
         return -0.5 * ((x - _MU) ** 2 + (y - _MU) ** 2) / _SIGMA**2
@@ -72,7 +73,7 @@ def test_nss_get_samples_before_sample_raises():
         sampler.get_samples()
 
 
-def _init_pos(n_live: int, seed: int = 99) -> "jax.Array":
+def _init_pos(n_live: int, seed: int = 99) -> jax.Array:
     return jax.random.uniform(jax.random.key(seed), (n_live, 2))
 
 

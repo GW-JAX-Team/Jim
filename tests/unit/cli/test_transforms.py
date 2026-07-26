@@ -6,7 +6,6 @@ from pydantic import ValidationError
 from jimgw.cli._config import PipelineConfig, PriorConfig, SamplingConfig, UniformSpec
 from jimgw.cli._prior import adapt_prior_for_ns_time
 
-
 _MINIMAL_DATA = {
     "type": "gwosc",
     "detectors": ["H1", "L1"],
@@ -421,7 +420,6 @@ def _make_prior_cfg(params: dict):
 
 def test_adapt_ns_time_converts_t_c_to_t_det():
     """t_c in prior + detector time_frame → replaced by t_det with widened GPS bounds."""
-    ifos = _make_ifos()
     cfg = SamplingConfig(time_frame="detector")
     prior_cfg = _make_prior_cfg(
         {
@@ -446,7 +444,6 @@ def test_adapt_ns_time_converts_t_c_to_t_det():
 
 def test_adapt_ns_time_geocentric_no_conversion():
     """time_frame='geocentric' → no conversion; t_c sampled directly is already exact."""
-    ifos = _make_ifos()
     cfg = SamplingConfig(time_frame="geocentric")
     prior_cfg = _make_prior_cfg(
         {
@@ -461,7 +458,6 @@ def test_adapt_ns_time_geocentric_no_conversion():
 
 def test_adapt_ns_time_t_det_in_prior_no_conversion():
     """User already put t_det in prior → no conversion needed."""
-    ifos = _make_ifos()
     cfg = SamplingConfig(time_frame="detector")
     lo = TRIGGER_TIME - 0.15
     hi = TRIGGER_TIME + 0.15
@@ -478,7 +474,6 @@ def test_adapt_ns_time_t_det_in_prior_no_conversion():
 
 def test_adapt_ns_time_t_det_geocentric():
     """t_det in prior + geocentric sampling → adapted to widened t_c prior."""
-    ifos = _make_ifos()
     cfg = SamplingConfig(time_frame="geocentric")
     lo = TRIGGER_TIME - 0.15
     hi = TRIGGER_TIME + 0.15

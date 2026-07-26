@@ -8,9 +8,8 @@ from typing import NamedTuple, Optional
 import jax
 import jax.numpy as jnp
 from blackjax import SamplingAlgorithm
-from blackjax.mcmc.slice import SliceInfo
+from blackjax.mcmc.slice import SliceInfo, stepping_out
 from blackjax.mcmc.slice import build_kernel as build_slice_kernel
-from blackjax.mcmc.slice import stepping_out
 from blackjax.ns.from_mcmc import build_kernel as build_from_mcmc_kernel
 from blackjax.ns.nss import sample_direction_from_covariance
 from blackjax.smc.tuning.from_particles import particles_covariance_matrix

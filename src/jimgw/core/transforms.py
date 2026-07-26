@@ -1,11 +1,12 @@
 from abc import ABC
-from typing import Callable, Sequence
+from collections.abc import Callable, Sequence
 
 import jax
 import jax.numpy as jnp
-from jax.scipy.special import logit
 from beartype import beartype as typechecker
-from jaxtyping import Float, Array, jaxtyped
+from jax.scipy.special import logit
+from jaxtyping import Array, Float, jaxtyped
+
 from jimgw.typing import FloatScalar
 
 
@@ -113,7 +114,7 @@ class NtoNTransform(NtoMTransform):
             Jacobian determinant.
         """
         x_copy = x.copy()
-        transform_params = dict((key, x_copy[key]) for key in self.name_mapping[0])
+        transform_params = {key: x_copy[key] for key in self.name_mapping[0]}
         output_params = self.transform_func(transform_params)
         jacobian = jax.jacfwd(self.transform_func)(transform_params)
         jacobian = jnp.array(jax.tree.leaves(jacobian))
@@ -157,7 +158,7 @@ class BijectiveTransform(NtoNTransform):
             absolute Jacobian determinant.
         """
         y_copy = y.copy()
-        transform_params = dict((key, y_copy[key]) for key in self.name_mapping[1])
+        transform_params = {key: y_copy[key] for key in self.name_mapping[1]}
         output_params = self.inverse_transform_func(transform_params)
         jacobian = jax.jacfwd(self.inverse_transform_func)(transform_params)
         jacobian = jnp.array(jax.tree.leaves(jacobian))
@@ -239,10 +240,8 @@ class ConditionalBijectiveTransform(BijectiveTransform):
             determinant w.r.t. the primary parameters.
         """
         x_copy = x.copy()
-        transform_params = dict((key, x_copy[key]) for key in self.name_mapping[0])
-        transform_params.update(
-            dict((key, x_copy[key]) for key in self.conditional_names)
-        )
+        transform_params = {key: x_copy[key] for key in self.name_mapping[0]}
+        transform_params.update({key: x_copy[key] for key in self.conditional_names})
         output_params = self.transform_func(transform_params)
         jacobian = jax.jacfwd(self.transform_func)(transform_params)
         jacobian_copy = {
@@ -275,10 +274,8 @@ class ConditionalBijectiveTransform(BijectiveTransform):
             Jacobian determinant w.r.t. the primary output parameters.
         """
         y_copy = y.copy()
-        transform_params = dict((key, y_copy[key]) for key in self.name_mapping[1])
-        transform_params.update(
-            dict((key, y_copy[key]) for key in self.conditional_names)
-        )
+        transform_params = {key: y_copy[key] for key in self.name_mapping[1]}
+        transform_params.update({key: y_copy[key] for key in self.conditional_names})
         output_params = self.inverse_transform_func(transform_params)
         jacobian = jax.jacfwd(self.inverse_transform_func)(transform_params)
         jacobian_copy = {
@@ -877,6 +874,5 @@ def reverse_bijective_transform(
         reversed_transform = BijectiveTransform(name_mapping=reversed_name_mapping)
     reversed_transform.transform_func = original_transform.inverse_transform_func
     reversed_transform.inverse_transform_func = original_transform.transform_func
-    reversed_transform.__repr__ = lambda: f"Reversed{repr(original_transform)}"
 
     return reversed_transform

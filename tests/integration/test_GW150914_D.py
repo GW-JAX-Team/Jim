@@ -2,22 +2,23 @@ import pytest
 
 pytestmark = pytest.mark.integration
 
-import jax.numpy as jnp
 from pathlib import Path
+
+import jax.numpy as jnp
 
 from jimgw.core.jim import Jim
 from jimgw.core.prior import (
     CombinePrior,
-    UniformPrior,
     CosinePrior,
-    SinePrior,
     PowerLawPrior,
+    SinePrior,
+    UniformPrior,
 )
 from jimgw.core.single_event.data import Data, PowerSpectrum
 from jimgw.core.single_event.detector import get_detector_preset
 from jimgw.core.single_event.likelihood import TransientLikelihoodFD
-from jimgw.core.single_event.waveform import RippleIMRPhenomD
 from jimgw.core.single_event.transforms import MassRatioToSymmetricMassRatioTransform
+from jimgw.core.single_event.waveform import RippleIMRPhenomD
 from jimgw.samplers.config import FlowMCConfig
 
 FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"

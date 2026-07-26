@@ -8,7 +8,6 @@ import pytest
 pytestmark = pytest.mark.integration
 
 from jimgw.samplers.config import FlowMCConfig
-
 from tests.integration._helpers import make_gaussian_jim
 
 

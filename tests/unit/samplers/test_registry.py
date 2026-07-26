@@ -2,14 +2,14 @@
 
 import pytest
 
-from jimgw.core.prior import CombinePrior, UniformPrior  # type: ignore[attr-defined]
+from jimgw.core.prior import CombinePrior, UniformPrior
 from jimgw.samplers import build_sampler
+from jimgw.samplers.blackjax.swig import BlackJAXSwiGSampler
 from jimgw.samplers.config import (
     BlackJAXSwiGConfig,
     FlowMCConfig,
 )
-from jimgw.samplers.blackjax.swig import BlackJAXSwiGSampler
-from jimgw.samplers.flowmc import FlowMCSampler  # type: ignore[import]
+from jimgw.samplers.flowmc import FlowMCSampler
 
 
 def _make_prior():
@@ -97,7 +97,7 @@ def test_build_sampler_unknown_type_raises():
     from jimgw.samplers.config import BaseSamplerConfig
 
     class _FakeConfig(BaseSamplerConfig[str]):
-        type: str = "not-a-real-type"  # type: ignore[assignment]
+        type: str = "not-a-real-type"
 
     prior = _make_prior()
     lp, ll, lpost = _make_callables(prior)

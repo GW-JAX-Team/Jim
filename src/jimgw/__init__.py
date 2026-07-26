@@ -1,6 +1,5 @@
 import logging
-
-from importlib.metadata import version, PackageNotFoundError
+from importlib.metadata import PackageNotFoundError, version
 
 from jimgw._logging import LOG_FORMAT
 

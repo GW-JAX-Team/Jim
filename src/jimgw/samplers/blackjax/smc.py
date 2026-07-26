@@ -20,8 +20,6 @@ from typing import Any, Optional
 import jax
 import jax.numpy as jnp
 import numpy as np
-from jaxtyping import Array, Float, Key
-
 from blackjax import (
     adaptive_persistent_sampling_smc,
     adaptive_tempered_smc,
@@ -38,6 +36,7 @@ from blackjax.smc.persistent_sampling import (
     compute_persistent_ess,
 )
 from blackjax.smc.resampling import systematic
+from jaxtyping import Array, Float, Key
 
 from jimgw.samplers.base import Sampler
 from jimgw.samplers.config import BlackJAXSMCConfig
@@ -181,7 +180,7 @@ class BlackJAXSMCSampler(Sampler):
         ):
             self._prev_elapsed = 0.0
             return (
-                smc_alg.init(initial_particles),  # type: ignore[call-arg]  # blackjax API
+                smc_alg.init(initial_particles),
                 rng_key,
                 0,
                 dict(fresh_extra),
@@ -206,7 +205,7 @@ class BlackJAXSMCSampler(Sampler):
                     n_schedule,
                 )
                 rng_key = _initial_rng_key
-                state = smc_alg.init(initial_particles)  # type: ignore[call-arg]  # blackjax API
+                state = smc_alg.init(initial_particles)
                 n_iter = 0
                 extra = dict(fresh_extra)
                 self._prev_elapsed = 0.0
@@ -235,7 +234,7 @@ class BlackJAXSMCSampler(Sampler):
             )
             self._prev_elapsed = 0.0
             return (
-                smc_alg.init(initial_particles),  # type: ignore[call-arg]  # blackjax API
+                smc_alg.init(initial_particles),
                 _initial_rng_key,
                 0,
                 dict(fresh_extra),
@@ -308,15 +307,15 @@ class BlackJAXSMCSampler(Sampler):
             rng_key, subkey = jax.random.split(rng_key)
             state, info = step_fn(subkey, state)
 
-            ps = state.sampler_state  # type: ignore[attr-defined]  # blackjax stubs
-            acceptance_rate = float(info.update_info.acceptance_rate.mean())  # type: ignore[attr-defined]  # blackjax stubs
+            ps = state.sampler_state
+            acceptance_rate = float(info.update_info.acceptance_rate.mean())
             new_scale = cov_scale * float(
                 jnp.exp(
                     config.scale_adaptation_gain
                     * (acceptance_rate - config.target_acceptance_rate)
                 )
             )
-            current_cov = state.parameter_override["cov"]  # type: ignore[attr-defined]  # blackjax stubs
+            current_cov = state.parameter_override["cov"]
             new_params = extend_params({"cov": current_cov[0] * new_scale})  # type: ignore[arg-type]  # blackjax stubs
             state = StateWithParameterOverride(ps, new_params)  # type: ignore[arg-type]  # blackjax stubs
 
@@ -404,7 +403,7 @@ class BlackJAXSMCSampler(Sampler):
 
         for lmbda in ladder_values[n_iter:]:
             rng_key, subkey = jax.random.split(rng_key)
-            state, info = step_fn(subkey, state, lmbda)  # type: ignore[call-arg]  # blackjax API: step accepts extra arg
+            state, info = step_fn(subkey, state, lmbda)
             accept_list.append(float(info.update_info.acceptance_rate.mean()))
             n_iter += 1
             if (
@@ -492,13 +491,13 @@ class BlackJAXSMCSampler(Sampler):
         step_fn = jax.jit(smc_alg.step)
         _last_ckpt_t = time.perf_counter()
 
-        while state.sampler_state.tempering_param < 1.0:  # type: ignore[attr-defined]  # blackjax stubs
+        while state.sampler_state.tempering_param < 1.0:
             rng_key, subkey = jax.random.split(rng_key)
             state, info = step_fn(subkey, state)
 
-            accept_list.append(float(info.update_info.acceptance_rate.mean()))  # type: ignore[attr-defined]  # blackjax stubs
-            temp_list.append(float(state.sampler_state.tempering_param))  # type: ignore[attr-defined]  # blackjax stubs
-            is_weights_list.append(np.asarray(state.sampler_state.weights))  # type: ignore[attr-defined]
+            accept_list.append(float(info.update_info.acceptance_rate.mean()))
+            temp_list.append(float(state.sampler_state.tempering_param))
+            is_weights_list.append(np.asarray(state.sampler_state.weights))
             n_iter += 1
 
             if (
@@ -588,7 +587,7 @@ class BlackJAXSMCSampler(Sampler):
 
         for lmbda in ladder_values[n_iter:]:
             rng_key, subkey = jax.random.split(rng_key)
-            state, info = step_fn(subkey, state, lmbda)  # type: ignore[call-arg]  # blackjax API: step accepts extra arg
+            state, info = step_fn(subkey, state, lmbda)
             accept_list.append(float(info.update_info.acceptance_rate.mean()))
             is_weights_list.append(np.asarray(state.weights))
             n_iter += 1
@@ -813,9 +812,9 @@ class BlackJAXSMCSampler(Sampler):
             ess_hist = np.zeros(n)
             for t in range(1, n + 1):
                 log_w, _ = compute_log_persistent_weights(
-                    ps.persistent_log_likelihoods,  # type: ignore[attr-defined]
-                    ps.persistent_log_Z,  # type: ignore[attr-defined]
-                    ps.tempering_schedule,  # type: ignore[attr-defined]
+                    ps.persistent_log_likelihoods,
+                    ps.persistent_log_Z,
+                    ps.tempering_schedule,
                     t,
                     include_current=True,
                 )

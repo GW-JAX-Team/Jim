@@ -6,17 +6,23 @@ and the fixed-parameter application helper.
 - For mass, spin, and sky/detector coordinate transforms, see ``jimgw.core.single_event.transform_utils``.
 """
 
+from collections.abc import Callable, Mapping
+from typing import TypeAlias
+
 import jax.numpy as jnp
 from jaxtyping import Array, Float
+
 from jimgw.typing import ComplexScalar, FloatLike, FloatScalar
-from typing import Callable
+
+FixedParameter: TypeAlias = (
+    Float | Callable[[dict[str, Float]], Float | dict[str, Float]]
+)
+FixedParameters: TypeAlias = Mapping[str, FixedParameter]
 
 
 def apply_fixed_parameters(
     params: dict[str, Float],
-    fixed_parameters: dict[
-        str, Float | Callable[[dict[str, Float]], Float | dict[str, Float]]
-    ],
+    fixed_parameters: FixedParameters,
 ) -> dict[str, Float]:
     """Merge ``fixed_parameters`` into *params*, resolving callables in-place.
 

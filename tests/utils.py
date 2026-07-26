@@ -75,7 +75,7 @@ def check_bilby_available() -> None:
     """
     try:
         import bilby  # noqa: F401
-    except ImportError as e:
+    except ImportError:
         raise ImportError(
             "cross_validation tests require bilby. Install with: pip install bilby"
         )

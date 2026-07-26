@@ -1,12 +1,13 @@
-import jax
-
-import numpy as np
-import jax.numpy as jnp
 from itertools import combinations
 from pathlib import Path
+
+import jax
+import jax.numpy as jnp
+import numpy as np
+
+from jimgw.core.constants import EARTH_SEMI_MAJOR_AXIS, EARTH_SEMI_MINOR_AXIS
 from jimgw.core.single_event.data import PowerSpectrum
 from jimgw.core.single_event.detector import get_ET, get_H1
-from jimgw.core.constants import EARTH_SEMI_MAJOR_AXIS, EARTH_SEMI_MINOR_AXIS
 from jimgw.core.single_event.waveform import RippleIMRPhenomD
 from tests.utils import assert_all_in_range
 

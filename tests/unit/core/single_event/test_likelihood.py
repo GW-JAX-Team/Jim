@@ -1,26 +1,28 @@
+from pathlib import Path
+
 import jax
 import jax.numpy as jnp
 import pytest
-from pathlib import Path
+
+from jimgw.core.constants import EARTH_RADIUS_LIGHT_S
+from jimgw.core.jim import Jim
+from jimgw.core.prior import CombinePrior, GaussianPrior, PowerLawPrior, UniformPrior
+from jimgw.core.single_event.data import Data, PowerSpectrum
+from jimgw.core.single_event.detector import get_H1, get_L1
 from jimgw.core.single_event.likelihood import (
-    ZeroLikelihood,
-    TransientLikelihoodFD,
     HeterodynedTransientLikelihoodFD,
     MultibandedTransientLikelihoodFD,
-)
-from jimgw.core.single_event.detector import get_H1, get_L1
-from jimgw.core.single_event.waveform import RippleIMRPhenomD
-from jimgw.core.single_event.data import Data, PowerSpectrum
-from jimgw.core.single_event.transforms import (
-    GeocentricArrivalTimeToDetectorArrivalTimeTransform,
-    MassRatioToSymmetricMassRatioTransform,
+    TransientLikelihoodFD,
+    ZeroLikelihood,
 )
 from jimgw.core.single_event.time_utils import (
     greenwich_mean_sidereal_time as compute_gmst,
 )
-from jimgw.core.constants import EARTH_RADIUS_LIGHT_S
-from jimgw.core.jim import Jim
-from jimgw.core.prior import CombinePrior, GaussianPrior, PowerLawPrior, UniformPrior
+from jimgw.core.single_event.transforms import (
+    GeocentricArrivalTimeToDetectorArrivalTimeTransform,
+    MassRatioToSymmetricMassRatioTransform,
+)
+from jimgw.core.single_event.waveform import RippleIMRPhenomD
 from jimgw.samplers.config import BlackJAXSwiGConfig
 from tests.utils import assert_all_finite, common_keys_allclose
 
@@ -746,6 +748,7 @@ class TestTransientLikelihoodFD:
 
     def test_dist_marg_no_prior_raises(self):
         from pydantic import ValidationError
+
         from jimgw.core.single_event.likelihood import DistanceMargConfig
 
         with pytest.raises(ValidationError):

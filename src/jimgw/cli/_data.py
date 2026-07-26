@@ -35,7 +35,7 @@ def build_data(
     for name in data_cfg.detectors:
         val = preset[name]
         if isinstance(val, list):
-            ifos.extend(val)
+            ifos.extend(val)  # ty: ignore[invalid-argument-type]
         else:
             ifos.append(val)
 
@@ -77,7 +77,7 @@ def _load_gwosc(ifos: list[GroundBased2G], cfg: GWOSCDataConfig) -> None:
 
         logger.info("Fetching %s PSD data [%.1f, %.1f]", ifo.name, psd_start, psd_end)
         psd_data = Data.from_gwosc(ifo.name, psd_start, psd_end)
-        nperseg = int(round(strain.duration * strain.sampling_frequency))
+        nperseg = round(strain.duration * strain.sampling_frequency)
         ifo.set_psd(psd_data.to_psd(nperseg=nperseg))
 
 

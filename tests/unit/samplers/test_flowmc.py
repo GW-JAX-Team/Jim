@@ -4,16 +4,17 @@ Uses a tiny 2D Gaussian toy problem with very few steps to verify the
 sampler runs and returns well-formed dicts from get_samples() and get_diagnostics().
 """
 
-import jax
-import jax.numpy as jnp
-import numpy as np
 import pickle
-import pytest
 from pathlib import Path
 from typing import Optional
 
+import jax
+import jax.numpy as jnp
+import numpy as np
+import pytest
+
 from jimgw.core.base import LikelihoodBase
-from jimgw.core.prior import CombinePrior, UniformPrior  # type: ignore[attr-defined]
+from jimgw.core.prior import CombinePrior, UniformPrior
 from jimgw.samplers.config import FlowMCConfig
 from jimgw.samplers.flowmc import FlowMCSampler
 
@@ -24,7 +25,7 @@ class _GaussianLikelihood(LikelihoodBase):
     _model = None
     _data = None
 
-    def evaluate(self, params: dict) -> float:  # noqa: ARG002
+    def evaluate(self, params: dict) -> float:
         x = params["x"]
         y = params["y"]
         return -0.5 * ((x - 0.5) ** 2 + (y - 0.5) ** 2) / 0.1**2

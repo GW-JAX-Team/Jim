@@ -9,10 +9,11 @@ from jimgw.cli._config import (
     CLIOptimizerRefParams,
     CLIProvidedRefParams,
     DataConfig,
+    InjectionDataConfig,
     LikelihoodConfig,
 )
-from jimgw.cli._transforms import to_likelihood_space
 from jimgw.cli._prior import build_prior
+from jimgw.cli._transforms import to_likelihood_space
 from jimgw.core.constants import EARTH_RADIUS_LIGHT_S
 from jimgw.core.prior import CombinePrior, UniformPrior
 from jimgw.core.single_event.detector import GroundBased2G
@@ -88,8 +89,13 @@ def build_likelihood(
         elif isinstance(ref_cfg, CLIProvidedRefParams):
             reference_params = ref_cfg.values
         elif isinstance(ref_cfg, CLIInjectionRefParams):
+            if not isinstance(data_cfg, InjectionDataConfig):
+                raise TypeError(
+                    "Heterodyne reference_parameters.type='injection' requires "
+                    "data.type='injection'."
+                )
             reference_params = to_likelihood_space(
-                data_cfg.injection_parameters,  # type: ignore[attr-defined]
+                data_cfg.injection_parameters,
                 waveform_f_ref=waveform_f_ref,
                 trigger_time=trigger_time,
                 ifos=ifos,
@@ -137,14 +143,12 @@ def build_likelihood(
             "t_c" not in prior.parameter_names and "t_det" in prior.parameter_names
         ):
             tdet_comp = next(
-                (
-                    p
-                    for p in prior.base_prior
-                    if "t_det" in p.parameter_names and hasattr(p, "xmin")
-                ),
+                (p for p in prior.base_prior if "t_det" in p.parameter_names),
                 None,
             )
-            if tdet_comp is not None:
+            tdet_bounds = tdet_comp.get_bounds() if tdet_comp is not None else None
+            if tdet_bounds is not None:
+                xmin, xmax = tdet_bounds
                 ref_ifo = (
                     ifos[0]
                     if time_frame == "detector"
@@ -157,12 +161,11 @@ def build_likelihood(
                 )
                 s = EARTH_RADIUS_LIGHT_S
                 if mb_time_offset is None:
-                    mb_time_offset = t_end - float(getattr(tdet_comp, "xmin")) + s
+                    mb_time_offset = t_end - xmin + s
                     logger.info(
                         "time_offset inferred from t_det prior: %.4f s", mb_time_offset
                     )
                 if mb_delta_f_end is None:
-                    xmax = float(getattr(tdet_comp, "xmax"))
                     denom = t_end - xmax - s
                     if denom <= 0:
                         raise ValueError(

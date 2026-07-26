@@ -12,10 +12,10 @@ wrapper.  The adapters below handle those conversions.
 All adapters operate on flat JAX arrays of shape ``(n_dims,)``.
 """
 
-from typing import Callable, Optional
+from collections.abc import Callable
+from typing import Optional
 
 import jax.numpy as jnp
-
 
 # ---------------------------------------------------------------------------
 # Shared helpers

@@ -1,24 +1,27 @@
+from typing import cast
+
 import jax
 import jax.numpy as jnp
 import pytest
-import scipy.stats as stats
+from scipy import stats
 
+from jimgw.core.base import LikelihoodBase
 from jimgw.core.jim import Jim
 from jimgw.core.prior import (
+    BoundedMixin,
     CombinePrior,
+    CosinePrior,
+    GaussianPrior,
     LogisticDistribution,
+    PowerLawPrior,
     Prior,
+    RayleighPrior,
+    SequentialTransformPrior,
+    SinePrior,
     StandardNormalDistribution,
     UniformDistribution,
     UniformPrior,
-    SinePrior,
-    CosinePrior,
     UniformSpherePrior,
-    PowerLawPrior,
-    GaussianPrior,
-    RayleighPrior,
-    BoundedMixin,
-    SequentialTransformPrior,
     find_specific_prior,
 )
 from jimgw.samplers.config import (
@@ -387,10 +390,10 @@ class TestOther:
         """A custom Prior subclass without is_normalized override returns False."""
 
         class MyPrior(Prior):
-            def log_prob(self, z):  # noqa: ARG002
+            def log_prob(self, z):
                 return jnp.array(0.0)
 
-            def sample(self, rng_key, n_samples):  # noqa: ARG002
+            def sample(self, rng_key, n_samples):
                 return {"x": jnp.zeros(n_samples)}
 
         assert MyPrior(("x",)).is_normalized is False
@@ -399,14 +402,14 @@ class TestOther:
         """Jim rejects unnormalized priors for evidence-computing samplers."""
 
         class MyPrior(Prior):
-            def log_prob(self, z):  # noqa: ARG002
+            def log_prob(self, z):
                 return jnp.array(0.0)
 
-            def sample(self, rng_key, n_samples):  # noqa: ARG002
+            def sample(self, rng_key, n_samples):
                 return {"x": jnp.zeros(n_samples)}
 
         class MockLikelihood:
-            def evaluate(self, params):  # noqa: ARG002
+            def evaluate(self, params):
                 return jnp.array(0.0)
 
         prior = MyPrior(("x",))
@@ -417,8 +420,8 @@ class TestOther:
             BlackJAXSMCConfig(),
         ):
             with pytest.raises(ValueError, match="normalized prior"):
-                Jim(  # type: ignore[arg-type]
-                    likelihood=lh,
+                Jim(
+                    likelihood=cast(LikelihoodBase, lh),
                     prior=prior,
                     sampler_config=sampler_config,
                 )

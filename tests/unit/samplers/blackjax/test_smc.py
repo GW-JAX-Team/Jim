@@ -2,25 +2,26 @@
 
 from __future__ import annotations
 
-import jax
-import numpy as np
 import pickle
-import pytest
 from pathlib import Path
 from typing import Optional
 
+import jax
+import numpy as np
+import pytest
+
 blackjax = pytest.importorskip("blackjax")
 
-from jimgw.core.prior import CombinePrior, UniformPrior  # noqa: E402
-from jimgw.samplers.blackjax.smc import BlackJAXSMCSampler  # noqa: E402
-from jimgw.samplers.config import BlackJAXSMCConfig  # noqa: E402
+from jimgw.core.prior import CombinePrior, UniformPrior
+from jimgw.samplers.blackjax.smc import BlackJAXSMCSampler
+from jimgw.samplers.config import BlackJAXSMCConfig
 
 _SIGMA = 0.1
 _MU = 0.5
 
 
 class _GaussianLikelihood:
-    def evaluate(self, params: dict) -> float:  # type: ignore[override]
+    def evaluate(self, params: dict) -> float:
         x = params["x"]
         y = params["y"]
         return -0.5 * ((x - _MU) ** 2 + (y - _MU) ** 2) / _SIGMA**2
@@ -78,7 +79,7 @@ def test_smc_get_samples_before_sample_raises():
         sampler.get_samples()
 
 
-def _init_pos(n: int, seed: int = 99) -> "jax.Array":
+def _init_pos(n: int, seed: int = 99) -> jax.Array:
     return jax.random.uniform(jax.random.key(seed), (n, 2))
 
 

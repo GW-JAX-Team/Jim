@@ -28,9 +28,8 @@ pytestmark = [
 
 blackjax = pytest.importorskip("blackjax")
 
-from jimgw.samplers.config import BlackJAXNSSConfig, BlackJAXSwiGConfig  # noqa: E402
-
-from tests.integration._helpers import (  # noqa: E402
+from jimgw.samplers.config import BlackJAXNSSConfig, BlackJAXSwiGConfig
+from tests.integration._helpers import (
     make_gaussian_jim,
     make_gaussian_swig_jim,
 )

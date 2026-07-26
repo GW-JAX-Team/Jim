@@ -291,7 +291,7 @@ class FlowMCConfig(BaseSamplerConfig[Literal["flowmc"]], _CheckpointMixin):
         if v is True:
             return ParallelTemperingConfig()
         if isinstance(v, dict):
-            return ParallelTemperingConfig(**v)
+            return ParallelTemperingConfig.model_validate(v)
         if isinstance(v, ParallelTemperingConfig):
             return v
         raise ValueError(

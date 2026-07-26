@@ -23,10 +23,11 @@ import os
 
 os.environ["JAX_PLATFORMS"] = "cpu"
 
+from pathlib import Path
+
 import jax.numpy as jnp
 import numpy as np
 import pytest
-from pathlib import Path
 
 bilby = pytest.importorskip("bilby")
 
@@ -115,8 +116,8 @@ def bilby_to_jim_params(bilby_params: dict) -> dict:
 
 def load_jim_detectors():
     """Load H1 and L1 with GW150914 fixture data and PSD."""
-    from jimgw.core.single_event.detector import get_H1, get_L1
     from jimgw.core.single_event.data import Data, PowerSpectrum
+    from jimgw.core.single_event.detector import get_H1, get_L1
 
     ifos = [get_H1(), get_L1()]
     for ifo in ifos:
@@ -213,8 +214,8 @@ def ripple_pv2_bilby_source(
     """
     import jax.numpy as jnp
     import numpy as np
-    from ripplegw.waveforms.IMRPhenomPv2 import gen_IMRPhenomPv2_hphc
     from bilby.gw.conversion import bilby_to_lalsimulation_spins as b2lal
+    from ripplegw.waveforms.IMRPhenomPv2 import gen_IMRPhenomPv2_hphc
 
     # bilby's relative-binning likelihood sets waveform_arguments['fiducial']:
     #   1 → computing the fiducial waveform  → return full frequency grid array
@@ -463,8 +464,8 @@ class TestTransientLikelihoodFD:
         Jim uses direct logsumexp over a fine distance grid;
         bilby uses a 2-D spline look-up table.
         """
-        from jimgw.core.single_event.likelihood import TransientLikelihoodFD
         from jimgw.core.prior import PowerLawPrior
+        from jimgw.core.single_event.likelihood import TransientLikelihoodFD
 
         dist_min, dist_max = 100.0, 2000.0
 
@@ -523,8 +524,8 @@ class TestTransientLikelihoodFD:
         Uses phase=0 for parameter conversion so that jim's forced ``phase_c=0`` remains
         consistent with the cartesian spin components.
         """
-        from jimgw.core.single_event.likelihood import TransientLikelihoodFD
         from jimgw.core.prior import PowerLawPrior
+        from jimgw.core.single_event.likelihood import TransientLikelihoodFD
 
         dist_min, dist_max = 100.0, 2000.0
 

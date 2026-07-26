@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
-from typing import Callable, Optional
+from collections.abc import Callable
+from typing import Optional
 
 import jax
 import jax.numpy as jnp
 import numpy as np
 from blackjax.ns.adaptive import build_kernel as build_adaptive_kernel
-from jax.sharding import Mesh, NamedSharding, PartitionSpec as P
+from jax.sharding import Mesh, NamedSharding
+from jax.sharding import PartitionSpec as P
 
 _LIVE_AXIS = "live"
 

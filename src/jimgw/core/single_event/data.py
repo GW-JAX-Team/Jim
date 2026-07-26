@@ -1,20 +1,22 @@
-from abc import ABC
 import logging
-import numpy as np
+from abc import ABC
+from typing import Optional, Self
+
 import jax
 import jax.numpy as jnp
-from jaxtyping import Array, Float, Complex, Key
-from jimgw.typing import FloatLike, FloatScalar
-
+import numpy as np
 from gwpy.timeseries import TimeSeries
-from typing import Optional, Self
+from jaxtyping import Array, Complex, Float, Key
+from scipy.interpolate import interp1d
 from scipy.signal import welch
 from scipy.signal.windows import tukey
-from scipy.interpolate import interp1d
+
+from jimgw.typing import FloatLike, FloatScalar
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_TUKEY_ROLL_OFF = 0.4
+_EMPTY_ARRAY = jnp.array([])
 
 # TODO: Need to expand this list. Currently it is only O3.
 asd_file_dict = {
@@ -143,7 +145,7 @@ class Data(ABC):
 
     def __init__(
         self,
-        td: Float[Array, "n_time"] = jnp.array([]),
+        td: Float[Array, "n_time"] = _EMPTY_ARRAY,
         delta_t: FloatLike = 0.0,
         start_time: float = 0.0,
         name: str = "",
@@ -342,7 +344,12 @@ class Data(ABC):
         data_td = TimeSeries.fetch_open_data(
             ifo, gps_start_time, gps_end_time, cache=cache, **kws
         )
-        return cls(data_td.value, data_td.dt.value, data_td.epoch.value, ifo)  # type: ignore[union-attr]
+        if data_td.epoch is None:
+            raise ValueError("GWOSC data have no epoch")
+        epoch = data_td.epoch.value
+        if not isinstance(epoch, (int, float, np.floating)):
+            raise TypeError("GWOSC data epoch must be a scalar")
+        return cls(data_td.value, data_td.dt.value, float(epoch), ifo)
 
     @classmethod
     def from_fd(
@@ -542,16 +549,11 @@ class Data(ABC):
                 t0 = float(npz["start_time"])
                 name = str(npz.get("name", ""))
             return cls(td, dt, t0, name)
-        elif path_lower.endswith(".gwf") or path_lower.endswith(".gwf.gz"):
+        elif path_lower.endswith((".gwf", ".gwf.gz")):
             return cls._from_gwf(
                 path, channel=channel, start_time=start_time, end_time=end_time
             )
-        elif (
-            path_lower.endswith(".hdf5")
-            or path_lower.endswith(".h5")
-            or path_lower.endswith(".hdf")
-            or path_lower.endswith(".csv")
-        ):
+        elif path_lower.endswith((".hdf5", ".h5", ".hdf", ".csv")):
             kwargs: dict = {}
             if channel is not None:
                 kwargs["channel"] = channel
@@ -602,11 +604,7 @@ class Data(ABC):
                 start_time=self.start_time,
                 name=self.name,
             )
-        elif (
-            path_lower.endswith(".txt")
-            or path_lower.endswith(".dat")
-            or path_lower.endswith(".csv")
-        ):
+        elif path_lower.endswith((".txt", ".dat", ".csv")):
             self.fft()
             fd = np.array(self.fd)
             data = np.column_stack(
@@ -626,11 +624,7 @@ class Data(ABC):
                 )
             else:
                 np.savetxt(path, data, header="f real_h(f) imag_h(f)")
-        elif (
-            path_lower.endswith(".gwf")
-            or path_lower.endswith(".hdf5")
-            or path_lower.endswith(".h5")
-        ):
+        elif path_lower.endswith((".gwf", ".hdf5", ".h5")):
             channel = (
                 self.name
                 if ":" in self.name
@@ -721,8 +715,8 @@ class PowerSpectrum(ABC):
 
     def __init__(
         self,
-        values: Float[Array, "n_freq"] = jnp.array([]),
-        frequencies: Float[Array, "n_freq"] = jnp.array([]),
+        values: Float[Array, "n_freq"] = _EMPTY_ARRAY,
+        frequencies: Float[Array, "n_freq"] = _EMPTY_ARRAY,
         name: Optional[str] = None,
     ) -> None:
         """Initialize PowerSpectrum.
@@ -847,11 +841,7 @@ class PowerSpectrum(ABC):
                 frequencies = jnp.array(data["frequencies"])
                 name = str(data.get("name", ""))
             return cls(values, frequencies, name)
-        elif (
-            path_lower.endswith(".txt")
-            or path_lower.endswith(".dat")
-            or path_lower.endswith(".csv")
-        ):
+        elif path_lower.endswith((".txt", ".dat", ".csv")):
             delimiter = "," if path_lower.endswith(".csv") else None
             frequencies_np, values_np = np.genfromtxt(
                 path, delimiter=delimiter, unpack=True

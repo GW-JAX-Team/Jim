@@ -1,13 +1,14 @@
-import jax
-
-import jax.numpy as jnp
-import numpy as np
-import pytest
 from copy import deepcopy
 from pathlib import Path
 from unittest.mock import MagicMock, patch
+
+import jax
+import jax.numpy as jnp
+import numpy as np
+import pytest
 from scipy.signal import welch
 from scipy.signal.windows import tukey
+
 from jimgw.core.single_event.data import Data, PowerSpectrum
 
 
@@ -437,12 +438,14 @@ class TestDataFromFile:
 
     def test_from_gwf_explicit_channel_not_found_raises(self):
         """_from_gwf re-raises as ValueError when the named channel is missing."""
-        with patch(
-            "jimgw.core.single_event.data.TimeSeries.read",
-            side_effect=RuntimeError("no channel"),
+        with (
+            patch(
+                "jimgw.core.single_event.data.TimeSeries.read",
+                side_effect=RuntimeError("no channel"),
+            ),
+            pytest.raises(ValueError, match="Could not read channel"),
         ):
-            with pytest.raises(ValueError, match="Could not read channel"):
-                Data._from_gwf("strain.gwf", channel="H1:BAD_CHANNEL")
+            Data._from_gwf("strain.gwf", channel="H1:BAD_CHANNEL")
 
     def test_from_gwf_auto_channel_fallback(self):
         """_from_gwf tries presets and succeeds on a later candidate."""
@@ -469,12 +472,14 @@ class TestDataFromFile:
 
     def test_from_gwf_no_channel_all_fail_raises(self):
         """_from_gwf raises ValueError when no preset channel works."""
-        with patch(
-            "jimgw.core.single_event.data.TimeSeries.read",
-            side_effect=RuntimeError("channel not found"),
+        with (
+            patch(
+                "jimgw.core.single_event.data.TimeSeries.read",
+                side_effect=RuntimeError("channel not found"),
+            ),
+            pytest.raises(ValueError, match="Could not load any data"),
         ):
-            with pytest.raises(ValueError, match="Could not load any data"):
-                Data._from_gwf("strain.gwf")
+            Data._from_gwf("strain.gwf")
 
     # -- HDF5 / CSV -----------------------------------------------------------
 

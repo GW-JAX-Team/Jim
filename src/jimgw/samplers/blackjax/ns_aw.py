@@ -4,16 +4,17 @@ import logging
 import pickle
 import shutil
 import time
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any, Optional
 
 import jax
 import jax.numpy as jnp
 import numpy as np
-from jaxtyping import Array, Float, Key
 from anesthetic.samples import NestedSamples
 from blackjax.ns.adaptive import AdaptiveNSState
 from blackjax.ns.base import NSInfo
 from blackjax.ns.utils import finalise
+from jaxtyping import Array, Float, Key
 
 from jimgw.samplers.base import Sampler
 from jimgw.samplers.blackjax._acceptance_walk_kernel import bilby_adaptive_de_sampler

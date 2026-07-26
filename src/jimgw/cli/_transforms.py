@@ -34,7 +34,11 @@ from jimgw.cli._config import (
 )
 from jimgw.cli._utils import (
     DETECTOR_SKY_PARAMS as _DETECTOR_SKY_PARAMS,
+)
+from jimgw.cli._utils import (
     EQUATORIAL_SKY_PARAMS as _EQUATORIAL_SKY_PARAMS,
+)
+from jimgw.cli._utils import (
     J_FRAME_SPIN_PARAMS as _J_FRAME_SPIN_PARAMS,
 )
 from jimgw.core.single_event.detector import GroundBased2G
@@ -42,8 +46,8 @@ from jimgw.core.single_event.transforms import (
     GeocentricArrivalTimeToDetectorArrivalTimeTransform,
     MassRatioToSymmetricMassRatioTransform,
     SkyFrameToDetectorFrameSkyPositionTransform,
-    SpinAnglesToCartesianSpinTransform,
     SphereSpinToCartesianSpinTransform,
+    SpinAnglesToCartesianSpinTransform,
 )
 from jimgw.core.transforms import (
     BijectiveTransform,

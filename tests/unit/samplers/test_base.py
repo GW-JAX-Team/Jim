@@ -35,7 +35,7 @@ class _TrivialSampler(Sampler):
     def sampler_name(self) -> str:
         return "trivial"
 
-    def _sample(self, rng_key, initial_position) -> None:  # noqa: ARG002
+    def _sample(self, rng_key, initial_position) -> None:
         self._ran = True
 
     def get_samples(self) -> dict[str, np.ndarray]:

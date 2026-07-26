@@ -98,9 +98,27 @@ markers = [
 
 [tool.pyright]
 include = ["src"]
+reportUnnecessaryTypeIgnoreComment = "error"
 
 [tool.ruff.lint]
-ignore = ["F722"]
+ignore = ["F722", "UP007", "UP045"]
+
+[tool.ruff.lint.per-file-ignores]
+# These test modules intentionally retain the conventional GW event spelling.
+"tests/integration/test_GW150914_*.py" = ["N999"]
+
+[tool.ty.src]
+include = ["src"]
+
+[tool.ty.analysis]
+# These libraries expose dynamic APIs or annotation helpers that ty cannot yet model.
+# Pyright remains responsible for checking their richer type information.
+replace-imports-with-any = [
+    "astropy.**",
+    "blackjax.**",
+    "flowMC.**",
+    "jaxtyping.**",
+]
 
 [tool.coverage.report]
 exclude_also = [

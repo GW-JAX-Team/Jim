@@ -13,9 +13,8 @@ pytestmark = pytest.mark.integration
 
 blackjax = pytest.importorskip("blackjax")
 
-from jimgw.samplers.config import BlackJAXSMCConfig  # noqa: E402
-
-from tests.integration._helpers import make_gaussian_jim  # noqa: E402
+from jimgw.samplers.config import BlackJAXSMCConfig
+from tests.integration._helpers import make_gaussian_jim
 
 _SMC_MODES = [
     pytest.param(True, id="adaptive-persistent"),

@@ -4,7 +4,8 @@ The likelihood connects your detector data with a waveform model and scores how 
 
 ## Waveform Model
 
-Jim uses [ripple](https://github.com/GW-JAX-Team/ripple) waveform models, which are JAX-native and fully differentiable. Import any available model from `jimgw.core.single_event.waveform`:
+Jim uses [ripple](https://github.com/GW-JAX-Team/ripple) waveform models, which are JAX-native and fully differentiable.
+Import any available model from `jimgw.core.single_event.waveform`:
 
 ```python
 from jimgw.core.single_event.waveform import RippleIMRPhenomD
@@ -42,7 +43,8 @@ likelihood = TransientLikelihoodFD(
 
 ### Analytic Marginalisation
 
-The likelihood supports analytic marginalisation over coalescence time, phase, and/or luminosity distance. Each is activated by passing a typed config object or a plain dict shorthand:
+The likelihood supports analytic marginalisation over coalescence time, phase, and/or luminosity distance.
+Each is activated by passing a typed config object or a plain dict shorthand:
 
 ```python
 from jimgw.core.prior import PowerLawPrior
@@ -90,13 +92,18 @@ These values are automatically merged with the sampled parameters at evaluation 
 
 #### Derived fixed parameters (callables)
 
-Sometimes the value you want to fix is not a constant but depends on other sampled parameters. A common example: you want to fix the detector arrival time `t_det` rather than the geocentric coalescence time `t_c`. The two are related by
+Sometimes the value you want to fix is not a constant but depends on other sampled parameters.
+A common example: you want to fix the detector arrival time `t_det` rather than the geocentric coalescence time `t_c`.
+The two are related by
 
 $$t_c = t_{\text{det}} - \Delta t(\text{ra}, \text{dec})$$
 
-so `t_c` depends on sky location, which is sampled. Passing a plain number for `"t_c"` would not capture this.
+so `t_c` depends on sky location, which is sampled.
+Passing a plain number for `"t_c"` would not capture this.
 
-For this case every value in `fixed_parameters` may also be a **callable** `f(params) -> value`. The callable receives the full parameter dict at evaluation time and must return either a scalar or a full dict. When a dict is returned, Jim extracts only the value for the key being fixed.
+For this case every value in `fixed_parameters` may also be a **callable** `f(params) -> value`.
+The callable receives the full parameter dict at evaluation time and must return either a scalar or a full dict.
+When a dict is returned, Jim extracts only the value for the key being fixed.
 
 The cleanest way to express this is to reuse the same transform you already define for Jim's likelihood-transform pipeline and pass its `backward` method directly:
 
@@ -137,11 +144,13 @@ likelihood = TransientLikelihoodFD(
 )
 ```
 
-Both forms are `jax.jit`-compatible. Callables are evaluated in **insertion order**, so later entries in `fixed_parameters` can read values written by earlier ones.
+Both forms are `jax.jit`-compatible.
+Callables are evaluated in **insertion order**, so later entries in `fixed_parameters` can read values written by earlier ones.
 
 ## Fast Likelihoods
 
-`HeterodynedTransientLikelihoodFD` and `MultibandedTransientLikelihoodFD` are both approximations that trade exactness for speed. They are suitable when the full likelihood is computationally expensive (e.g., long duration signals) and the signal is well-approximated by the underlying assumptions of the method.
+`HeterodynedTransientLikelihoodFD` and `MultibandedTransientLikelihoodFD` are both approximations that trade exactness for speed.
+They are suitable when the full likelihood is computationally expensive (e.g., long duration signals) and the signal is well-approximated by the underlying assumptions of the method.
 
 | Likelihood | Method |
 | --- | --- |
@@ -233,4 +242,5 @@ likelihood = MultibandedTransientLikelihoodFD(
 )
 ```
 
-**Choosing `reference_chirp_mass`:** use the **minimum** of your chirp-mass prior. A lower chirp mass means a longer signal and finer frequency resolution; setting the reference to the prior minimum ensures the bands are correct for all systems in the prior.
+**Choosing `reference_chirp_mass`:** use the **minimum** of your chirp-mass prior.
+A lower chirp mass means a longer signal and finer frequency resolution; setting the reference to the prior minimum ensures the bands are correct for all systems in the prior.

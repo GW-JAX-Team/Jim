@@ -12,7 +12,8 @@ flowchart LR
 - The **prior space** is where you define your priors. You are free to use whichever parameterisation is most natural.
 - The **sampling space** is where the sampler explores. You can choose a parameterisation that reduces correlations between parameters or reduces multimodality in the posterior.
 
-Of the three spaces, only the **likelihood space** is fixed — it is determined by what your waveform model expects as input. The **prior space** and **sampling space** are both your choices, and the transforms you need follow from those choices:
+Of the three spaces, only the **likelihood space** is fixed — it is determined by what your waveform model expects as input.
+The **prior space** and **sampling space** are both your choices, and the transforms you need follow from those choices:
 
 - **Likelihood transforms** bridge the gap from your prior space to the likelihood space required by the waveform model.
 - **Sample transforms** bridge the gap from your prior space to the sampling space you want the sampler to explore.
@@ -27,7 +28,8 @@ If instead your prior is on `q` but you want the sampler to explore in `eta`:
 
 ## Likelihood Transforms
 
-Likelihood transforms map from the **prior space** to the **likelihood space**. They are applied just before the waveform model is called, so they handle whatever parameter conversions the waveform model requires.
+Likelihood transforms map from the **prior space** to the **likelihood space**.
+They are applied just before the waveform model is called, so they handle whatever parameter conversions the waveform model requires.
 
 Likelihood transforms do **not** need to be invertible.
 
@@ -48,7 +50,8 @@ likelihood_transforms = [
 
 ## Sample Transforms
 
-Sample transforms map from the **prior space** to the **sampling space**. Jim applies them to prior samples to obtain the initial positions in sampling space, and applies their inverses to proposed sampling-space points when evaluating the prior.
+Sample transforms map from the **prior space** to the **sampling space**.
+Jim applies them to prior samples to obtain the initial positions in sampling space, and applies their inverses to proposed sampling-space points when evaluating the prior.
 
 Sample transforms **must be bijective** (invertible), because Jim needs both forward and inverse directions.
 
@@ -190,7 +193,8 @@ sample_transforms += [
 
 ### Gaussian priors
 
-For parameters with a Gaussian prior, use the reversed `GaussianTransform`.  The forward direction maps `u ∈ (0, 1)` to `x = mu + sigma * ndtri(u)` (probit function); the reverse direction is the normal CDF `x → ndtr((x - mu) / sigma) ∈ (0, 1)`:
+For parameters with a Gaussian prior, use the reversed `GaussianTransform`.
+The forward direction maps `u ∈ (0, 1)` to `x = mu + sigma * ndtri(u)` (probit function); the reverse direction is the normal CDF `x → ndtr((x - mu) / sigma) ∈ (0, 1)`:
 
 ```python
 from jimgw.core.transforms import GaussianTransform, reverse_bijective_transform
@@ -223,4 +227,6 @@ jim = Jim(
 )
 ```
 
-Either list can be empty. If `sample_transforms=[]`, the sampler operates directly in the prior space. If `likelihood_transforms=[]`, the waveform is called with the prior parameters unchanged.
+Either list can be empty.
+If `sample_transforms=[]`, the sampler operates directly in the prior space.
+If `likelihood_transforms=[]`, the waveform is called with the prior parameters unchanged.

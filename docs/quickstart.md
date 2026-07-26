@@ -1,6 +1,7 @@
 # Quick Start
 
-The fastest way to run a gravitational-wave parameter-estimation analysis with Jim is the `jim-run` command-line tool. It takes a single TOML config file and handles the full pipeline — data loading, prior construction, transform inference, sampling, and output — with no Python scripting required.
+The fastest way to run a gravitational-wave parameter-estimation analysis with Jim is the `jim-run` command-line tool.
+It takes a single TOML config file and handles the full pipeline — data loading, prior construction, transform inference, sampling, and output — with no Python scripting required.
 
 ## Bootstrap a config
 
@@ -10,7 +11,8 @@ Generate a GW150914-style template to start from:
 jim-run --init gw150914.toml
 ```
 
-This writes a ready-to-run config (shown below) and exits. Edit it to match your analysis before running.
+This writes a ready-to-run config (shown below) and exits.
+Edit it to match your analysis before running.
 
 ## Config at a glance
 
@@ -78,7 +80,8 @@ Each top-level section has a single responsibility:
 jim-run gw150914.toml
 ```
 
-Add `-v` for debug-level logging. Progress is written to stdout:
+Add `-v` for debug-level logging.
+Progress is written to stdout:
 
 ```text
 INFO | jimgw.cli | Loaded config from gw150914.toml
@@ -96,7 +99,7 @@ Results are written to the directory specified by `output.dir`:
 
 | File | Contents |
 | --- | --- |
-| `samples.npz` | Posterior samples array |
+| `samples.npz` | Posterior samples; one array key per parameter name, plus `log_likelihood` |
 | `diagnostics.json` | Scalar sampler diagnostics (log evidence, acceptance rates, …) |
 | `diagnostics.npz` | Array diagnostics (chains, log-prob traces, …) |
 | `config.final.toml` | The resolved config — useful for reproducing a run exactly |
@@ -107,9 +110,9 @@ Load the posterior samples in Python:
 ```python
 import numpy as np
 
-data = np.load("output/my_run/samples.npz")
-samples = data["samples"]  # shape: (n_samples, n_params)
-params  = data["parameter_names"].tolist()
+data    = np.load("output/my_run/samples.npz")
+params  = [k for k in data.keys() if k != "log_likelihood"]  # one key per parameter
+samples = np.column_stack([data[p] for p in params])          # shape: (n_samples, n_params)
 ```
 
 ## What's next
@@ -123,7 +126,8 @@ params  = data["parameter_names"].tolist()
 
 ## Using the Python API directly
 
-For analyses that need custom transforms, non-standard likelihoods, or scripted workflows, Jim can be assembled programmatically. The core components are:
+For analyses that need custom transforms, non-standard likelihoods, or scripted workflows, Jim can be assembled programmatically.
+The core components are:
 
 ```mermaid
 flowchart LR

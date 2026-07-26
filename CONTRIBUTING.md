@@ -12,8 +12,7 @@ If it has been more than a week or two, feel free to ping the maintainers on the
 ## Did you find a bug?
 
 **Ensure the bug was not already reported** by searching on GitHub under [Issues](https://github.com/GW-JAX-Team/Jim/issues).
-If you’re unable to find an
-open issue addressing the problem, [open a new one](https://github.com/GW-JAX-Team/Jim/issues/new).
+If you’re unable to find an open issue addressing the problem, [open a new one](https://github.com/GW-JAX-Team/Jim/issues/new).
 Be sure to include a **title and clear description**, as much relevant information as possible, and the simplest possible **code sample** demonstrating the expected behaviour that is not occurring.
 
 ## Did you write a patch that fixes a bug?
@@ -29,7 +28,8 @@ Please follow these principles:
 
 1. New features should be JAX-compatible.
 2. Lightweight and modular implementation is preferred.
-3. Jim is a gravitational-wave inference toolkit. Waveform models belong in [ripple](https://github.com/GW-JAX-Team/ripple), and sampling algorithms belong in the respective sampler package.
+3. Jim is a gravitational-wave inference toolkit.
+   Waveform models belong in [ripple](https://github.com/GW-JAX-Team/ripple), and sampling algorithms belong in the respective sampler package.
 
 If you are unsure whether a feature fits, open an issue first to discuss it with the maintainers.
 

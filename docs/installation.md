@@ -7,7 +7,7 @@ pip install JimGW
 ```
 
 This will install the latest stable release and its dependencies.
-Jim is built on [JAX](https://github.com/google/jax).
+Jim is built on [JAX](https://github.com/jax-ml/jax).
 By default, this installs the CPU version of JAX.
 If you have an NVIDIA GPU, install the CUDA-enabled version:
 
@@ -23,4 +23,5 @@ cd Jim
 pip install -e .
 ```
 
-We recommend using [uv](https://docs.astral.sh/uv/) to manage your Python environment. After cloning the repository, run `uv sync` to create a virtual environment with all dependencies installed.
+We recommend using [uv](https://docs.astral.sh/uv/) to manage your Python environment.
+After cloning the repository, run `uv sync` to create a virtual environment with all dependencies installed.

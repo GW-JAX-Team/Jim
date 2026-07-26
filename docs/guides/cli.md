@@ -1,6 +1,7 @@
 # CLI Config Reference
 
-`jim-run` is driven entirely by a single TOML file. This page documents every section, field, and default value.
+`jim-run` is driven entirely by a single TOML file.
+This page documents every section, field, and default value.
 
 ## CLI flags
 
@@ -27,7 +28,8 @@ jim-run [CONFIG] [OPTIONS]
 
 ## `[data]`
 
-Selects where strain and PSD data come from. The `type` field is required and determines which other fields are valid.
+Selects where strain and PSD data come from.
+The `type` field is required and determines which other fields are valid.
 
 ### `type = "gwosc"` — fetch from GWOSC
 
@@ -80,7 +82,8 @@ dec     = -1.21
 
 ### `type = "file"` — load from local files
 
-Loads strain and PSD from local files. Useful for offline or CI use.
+Loads strain and PSD from local files.
+Useful for offline or CI use.
 
 Supported strain formats: `.npz`, `.gwf` / `.gwf.gz`, `.hdf5` / `.h5`, `.csv`.
 Supported PSD formats: `.npz`, `.txt`, `.dat`, `.csv`.
@@ -149,7 +152,8 @@ L1 = true
 
 ## `[prior]`
 
-Each entry maps a parameter name to a prior specification. The parameter name becomes the column name in the output samples.
+Each entry maps a parameter name to a prior specification.
+The parameter name becomes the column name in the output samples.
 
 ```toml
 [prior]
@@ -181,7 +185,8 @@ Normal distribution with mean `loc` and standard deviation `scale`.
 param = { type = "sine" }
 ```
 
-Sine-weighted prior on $[0, \pi]$. Standard choice for inclination `iota`.
+Sine-weighted prior on $[0, \pi]$.
+Standard choice for inclination `iota`.
 
 #### `cosine`
 
@@ -189,7 +194,8 @@ Sine-weighted prior on $[0, \pi]$. Standard choice for inclination `iota`.
 param = { type = "cosine" }
 ```
 
-Cosine-weighted prior on $[-\pi/2, \pi/2]$. Standard choice for declination `dec`.
+Cosine-weighted prior on $[-\pi/2, \pi/2]$.
+Standard choice for declination `dec`.
 
 #### `power_law`
 
@@ -197,7 +203,8 @@ Cosine-weighted prior on $[-\pi/2, \pi/2]$. Standard choice for declination `dec
 param = { type = "power_law", min = <float>, max = <float>, alpha = <float> }
 ```
 
-Power-law $p(x) \propto x^\alpha$ on [`min`, `max`]. Use `alpha = 2` for a prior uniform in volume on luminosity distance.
+Power-law $p(x) \propto x^\alpha$ on [`min`, `max`].
+Use `alpha = 2` for a prior uniform in volume on luminosity distance.
 
 #### `rayleigh`
 
@@ -213,13 +220,16 @@ Rayleigh distribution with scale parameter σ.
 spin1 = { type = "uniform_sphere" }
 ```
 
-Uniform distribution on the unit sphere. Generates **three** output parameters: `{name}_mag`, `{name}_theta`, `{name}_phi`. Use for 3-D spin vectors.
+Uniform distribution on the unit sphere.
+Generates **three** output parameters: `{name}_mag`, `{name}_theta`, `{name}_phi`.
+Use for 3-D spin vectors.
 
 ---
 
 ## `[sampling]`
 
-Optional section that controls the coordinate system the sampler explores. The CLI auto-infers transforms for all other cases.
+Optional section that controls the coordinate system the sampler explores.
+The CLI auto-infers transforms for all other cases.
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
@@ -291,7 +301,8 @@ All fields are optional; when omitted, defaults are chosen adaptively based on t
 
 ## `[sampler]`
 
-The `type` field selects the backend. Each backend has its own set of tuning parameters.
+The `type` field selects the backend.
+Each backend has its own set of tuning parameters.
 
 ### Sampler comparison
 
@@ -376,7 +387,8 @@ n_tempered_steps = 5
 
 ### `type = "blackjax-ns-aw"`
 
-Requires all sampling-space parameters to lie in $[0, 1]$. The CLI enforces this automatically.
+Requires all sampling-space parameters to lie in $[0, 1]$.
+The CLI enforces this automatically.
 
 | Field | Default | Description |
 | --- | --- | --- |
@@ -405,7 +417,7 @@ Requires all sampling-space parameters to lie in $[0, 1]$. The CLI enforces this
 
 | File | Description |
 | --- | --- |
-| `samples.npz` | Posterior samples; keys `samples` (shape `n_samples × n_params`) and `parameter_names` |
+| `samples.npz` | Posterior samples; one array key per parameter name, plus `log_likelihood` |
 | `diagnostics.json` | Scalar diagnostics: log evidence (nested samplers), acceptance rates, etc. |
 | `diagnostics.npz` | Array diagnostics: log-probability traces, chain arrays, etc. |
 | `config.final.toml` | The fully-resolved config including all defaults; re-run with `jim-run config.final.toml` |

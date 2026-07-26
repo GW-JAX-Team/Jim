@@ -55,7 +55,8 @@ Key parameters:
 
 **Repository:** [GW-JAX-Team/flowMC](https://github.com/GW-JAX-Team/flowMC)
 
-**References:** Wong, K. W. K., Gabrié, M., Foreman-Mackey, D., *"flowMC: Normalizing flow enhanced sampling package for probabilistic inference in JAX"*, [arXiv:2211.06397](https://arxiv.org/abs/2211.06397), JOSS 8 (83) 5021 (2023). Wong, K. W. K., Isi, M., Edwards, T. D. P., *"Fast Gravitational-wave Parameter Estimation without Compromises"*, [arXiv:2302.05333](https://arxiv.org/abs/2302.05333), ApJ 958 129 (2023).
+**References:** Wong, K. W. K., Gabrié, M., Foreman-Mackey, D., *"flowMC: Normalizing flow enhanced sampling package for probabilistic inference in JAX"*, [arXiv:2211.06397](https://arxiv.org/abs/2211.06397), JOSS 8 (83) 5021 (2023).
+Wong, K. W. K., Isi, M., Edwards, T. D. P., *"Fast Gravitational-wave Parameter Estimation without Compromises"*, [arXiv:2302.05333](https://arxiv.org/abs/2302.05333), ApJ 958 129 (2023).
 
 ---
 
@@ -63,7 +64,10 @@ Key parameters:
 
 Sequential Monte Carlo (SMC) maintains a population of particles and gradually shifts them from the prior toward the posterior through a sequence of intermediate temperature steps.
 
-> **Normalised-prior requirement** — SMC computes a Bayesian evidence estimate and therefore requires a normalised prior. All built-in Jim priors are normalised. If you add custom constraints, check whether the resulting distribution is still normalised; if so, override `is_normalized` to return `True`. Jim raises a `ValueError` at construction if this condition is not met.
+> **Normalised-prior requirement** — SMC computes a Bayesian evidence estimate and therefore requires a normalised prior.
+> All built-in Jim priors are normalised.
+> If you add custom constraints, check whether the resulting distribution is still normalised; if so, override `is_normalized` to return `True`.
+> Jim raises a `ValueError` at construction if this condition is not met.
 
 ```python
 from jimgw.samplers.config import BlackJAXSMCConfig
@@ -97,7 +101,8 @@ Key parameters:
 
 Nested sampling with a bilby/dynesty-style adaptive differential-evolution acceptance-walk inner kernel.
 
-> **Unit-cube requirement** — this sampler works in the unit hypercube `[0, 1]^n_dims`.  All parameters must be mapped into `[0, 1]` via sample transforms, which the CLI constructs automatically.
+> **Unit-cube requirement** — this sampler works in the unit hypercube `[0, 1]^n_dims`.
+> All parameters must be mapped into `[0, 1]` via sample transforms, which the CLI constructs automatically.
 
 ```python
 from jimgw.samplers.config import BlackJAXNSAWConfig
@@ -136,7 +141,10 @@ Key parameters:
 Nested sampling with a slice-sampling inner kernel.
 Unlike NS AW, it does not require a unit-cube prior and works in any bounded sampling space.
 
-> **Normalised-prior requirement** — NSS computes a Bayesian evidence estimate and therefore requires a normalised prior. All built-in Jim priors are normalised. If you add custom constraints, check whether the resulting distribution is still normalised; if so, override `is_normalized` to return `True`. Jim raises a `ValueError` at construction if this condition is not met.
+> **Normalised-prior requirement** — NSS computes a Bayesian evidence estimate and therefore requires a normalised prior.
+> All built-in Jim priors are normalised.
+> If you add custom constraints, check whether the resulting distribution is still normalised; if so, override `is_normalized` to return `True`.
+> Jim raises a `ValueError` at construction if this condition is not met.
 
 ```python
 from jimgw.samplers.config import BlackJAXNSSConfig
@@ -169,7 +177,8 @@ Key parameters:
 
 **Repository:** [blackjax-devs/blackjax](https://github.com/blackjax-devs/blackjax)
 
-**References:** Yallup, D., Prathaban, M., Alvey, J., Handley, W., *"Parallel Nested Slice Sampling for Gravitational Wave Parameter Estimation"*, [arXiv:2509.24949](https://arxiv.org/abs/2509.24949) (Sep 2025). Yallup, D., Kroupa, N., Handley, W., *"Nested Slice Sampling"*, [OpenReview](https://openreview.net/forum?id=ekbkMSuPo4) (2025).
+**References:** Yallup, D., Prathaban, M., Alvey, J., Handley, W., *"Parallel Nested Slice Sampling for Gravitational Wave Parameter Estimation"*, [arXiv:2509.24949](https://arxiv.org/abs/2509.24949) (Sep 2025).
+Yallup, D., Kroupa, N., Handley, W., *"Nested Slice Sampling"*, [OpenReview](https://openreview.net/forum?id=ekbkMSuPo4) (2025).
 
 ---
 
@@ -221,12 +230,9 @@ Key parameters:
   chain; only live-point state participates in collectives.
 
 !!! tip "Sharding without a GPU/TPU cluster"
-    `n_devices` shards across whatever JAX reports as local devices — it does
-    not require accelerators. On a CPU-only host, set
-    `XLA_FLAGS=--xla_force_host_platform_device_count=N` (before JAX
-    initializes; the CPU device count cannot change at runtime) to expose `N`
-    simulated CPU devices and shard across them. See
-    [`examples/GW150914_NSS_sharded.py`](https://github.com/GW-JAX-Team/Jim/blob/main/examples/GW150914_NSS_sharded.py).
+    `n_devices` shards across whatever JAX reports as local devices — it does not require accelerators.
+    On a CPU-only host, set `XLA_FLAGS=--xla_force_host_platform_device_count=N` (before JAX initializes; the CPU device count cannot change at runtime) to expose `N` simulated CPU devices and shard across them.
+    See [`examples/GW150914_NSS_sharded.py`](https://github.com/GW-JAX-Team/Jim/blob/main/examples/GW150914_NSS_sharded.py).
 
 ---
 
@@ -277,17 +283,14 @@ The same fields work identically for `FlowMCConfig`, `BlackJAXNSAWConfig`, `Blac
 > **Validation** — setting `checkpoint_interval > 0` without `checkpoint_dir` raises a `ValidationError` at config construction time.
 
 > **Cross-sampler checkpoints** — every checkpoint records which sampler backend wrote it.
-> Pointing a *different* backend at that `checkpoint_dir` (or, for SMC, the same backend in
-> a different mode — persistent/tempered/adaptive) is handled differently depending on the
-> backend you point there:
+> Pointing a *different* backend at that `checkpoint_dir` (or, for SMC, the same backend in a different mode — persistent/tempered/adaptive) is handled differently depending on the backend you point there:
 >
 > - **flowMC** raises a `ValueError` immediately, before touching any sampler state.
 > - **BlackJAX NS AW / NSS / SwiG / SMC** log a warning ("incompatible or corrupt checkpoint
 >   … — starting fresh") and silently start a new run instead, the same way they handle a
 >   truly corrupt file.
 >
-> If you switch sampler backends or SMC modes between runs, point `checkpoint_dir` at a new,
-> empty directory to avoid silently discarding an existing checkpoint.
+> If you switch sampler backends or SMC modes between runs, point `checkpoint_dir` at a new, empty directory to avoid silently discarding an existing checkpoint.
 
 When using the [CLI](cli.md), checkpointing is enabled automatically (600 s, writing to `output.dir`).
 Set `checkpoint_interval = 0` in the `[sampler]` block to opt out.
@@ -385,7 +388,8 @@ diag["log_Z"]                     # float      — final log Bayesian evidence
 
 ## Writing your own sampler
 
-> This section is for advanced users who want to integrate a custom sampling backend with Jim.  It requires familiarity with JAX and the Jim sampler internals.
+> This section is for advanced users who want to integrate a custom sampling backend with Jim.
+> It requires familiarity with JAX and the Jim sampler internals.
 
 Subclass `Sampler`, implement three methods and the `sampler_name` property, and register it:
 

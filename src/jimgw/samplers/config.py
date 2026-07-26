@@ -123,7 +123,7 @@ class _ShardingMixin(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Live-set mixin — shared by the nested samplers (NS-AW, NSS, SwiG) that
+# Live-set mixin — shared by the nested samplers (NS AW, NSS, SwiG) that
 # maintain a live-particle set and delete/replace a fraction of it each step
 # ---------------------------------------------------------------------------
 

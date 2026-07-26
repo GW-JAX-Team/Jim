@@ -2575,7 +2575,8 @@
 
 <h1 id="data">Data<a class="headerlink" href="#data" title="Permanent link">¤</a></h1>
 <p>This guide covers the different ways to get gravitational-wave data into Jim.</p>
-<p>All detector data in Jim lives inside <code>Detector</code> objects. Jim ships with convenience constructors for common detectors — LIGO Hanford (<code>get_H1</code>), LIGO Livingston (<code>get_L1</code>), Virgo (<code>get_V1</code>), Einstein Telescope (<code>get_ET</code>), and Cosmic Explorer (<code>get_CE</code>):</p>
+<p>All detector data in Jim lives inside <code>Detector</code> objects.
+Jim ships with convenience constructors for common detectors — LIGO Hanford (<code>get_H1</code>), LIGO Livingston (<code>get_L1</code>), Virgo (<code>get_V1</code>), Einstein Telescope (<code>get_ET</code>), and Cosmic Explorer (<code>get_CE</code>):</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.single_event.detector</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_H1</span><span class="p">,</span> <span class="n">get_L1</span><span class="p">,</span> <span class="n">get_V1</span>
 
 <span class="n">H1</span> <span class="o">=</span> <span class="n">get_H1</span><span class="p">()</span>
@@ -2609,7 +2610,8 @@
 <span class="n">H1</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 </code></pre></div>
 <h4 id="gwf-lal-frame-file-gwf">GWF / LAL frame file (<code>.gwf</code>)<a class="headerlink" href="#gwf-lal-frame-file-gwf" title="Permanent link">¤</a></h4>
-<p>Pass a channel name via the <code>channel</code> argument. If omitted, a set of common LIGO/Virgo channel names is tried automatically:</p>
+<p>Pass a channel name via the <code>channel</code> argument.
+If omitted, a set of common LIGO/Virgo channel names is tried automatically:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Explicit channel (recommended)</span>
 <span class="n">data</span> <span class="o">=</span> <span class="n">Data</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;path/to/data.gwf&quot;</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="s2">&quot;H1:GDS-CALIB_STRAIN&quot;</span><span class="p">)</span>
 <span class="n">H1</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
@@ -2628,7 +2630,8 @@
 <span class="n">H1</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="construct-from-frequency-domain-arrays">Construct from Frequency-Domain Arrays<a class="headerlink" href="#construct-from-frequency-domain-arrays" title="Permanent link">¤</a></h3>
-<p>Use <code>Data.from_fd()</code> when you already have frequency-domain strain (e.g. from your own pipeline). The frequency array must form a valid rfft grid:</p>
+<p>Use <code>Data.from_fd()</code> when you already have frequency-domain strain (e.g. from your own pipeline).
+The frequency array must form a valid rfft grid:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
 
 <span class="n">duration</span> <span class="o">=</span> <span class="mf">4.0</span>
@@ -2642,7 +2645,9 @@
 </code></pre></div>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>The frequency array <strong>must</strong> come from <code>jnp.fft.rfftfreq</code>. Internally, <code>from_fd</code> reconstructs the full rfft grid and asserts it matches yours exactly. <code>jnp.linspace</code> produces floating-point values via a different arithmetic path, so the equality check will fail even for a nominally identical grid.</p>
+<p>The frequency array <strong>must</strong> come from <code>jnp.fft.rfftfreq</code>.
+Internally, <code>from_fd</code> reconstructs the full rfft grid and asserts it matches yours exactly.
+<code>jnp.linspace</code> produces floating-point values via a different arithmetic path, so the equality check will fail even for a nominally identical grid.</p>
 </div>
 <h2 id="time-domain-windowing">Time-domain windowing<a class="headerlink" href="#time-domain-windowing" title="Permanent link">¤</a></h2>
 <p>Time-domain data is multiplied by a Tukey window before its Fourier transform.
@@ -2672,7 +2677,8 @@ Consequently, the default requires a segment at least 0.8 seconds long.</p>
 <h3 id="load-from-a-file">Load from a file<a class="headerlink" href="#load-from-a-file" title="Permanent link">¤</a></h3>
 <p>There are two ways to load a PSD from a local file, depending on how much control you need.</p>
 <h4 id="one-liner-load_and_set_psd">One-liner: <code>load_and_set_psd</code><a class="headerlink" href="#one-liner-load_and_set_psd" title="Permanent link">¤</a></h4>
-<p><code>load_and_set_psd</code> is a convenience method that loads and sets the PSD in a single call. It supports all the same formats as <code>PowerSpectrum.from_file</code> (<code>.npz</code>, <code>.txt</code>, <code>.dat</code>, <code>.csv</code>):</p>
+<p><code>load_and_set_psd</code> is a convenience method that loads and sets the PSD in a single call.
+It supports all the same formats as <code>PowerSpectrum.from_file</code> (<code>.npz</code>, <code>.txt</code>, <code>.dat</code>, <code>.csv</code>):</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># PSD file — any supported format (values in Hz^{-1})</span>
 <span class="n">H1</span><span class="o">.</span><span class="n">load_and_set_psd</span><span class="p">(</span><span class="n">psd_file</span><span class="o">=</span><span class="s2">&quot;path/to/psd.txt&quot;</span><span class="p">)</span>
 
@@ -2680,7 +2686,8 @@ Consequently, the default requires a segment at least 0.8 seconds long.</p>
 <span class="n">H1</span><span class="o">.</span><span class="n">load_and_set_psd</span><span class="p">(</span><span class="n">asd_file</span><span class="o">=</span><span class="s2">&quot;path/to/asd.npz&quot;</span><span class="p">)</span>
 </code></pre></div>
 <h4 id="explicit-powerspectrumfrom_file-set_psd">Explicit: <code>PowerSpectrum.from_file</code> + <code>set_psd</code><a class="headerlink" href="#explicit-powerspectrumfrom_file-set_psd" title="Permanent link">¤</a></h4>
-<p>For full control, or when your file is not a plain text file, use <code>PowerSpectrum.from_file</code>. Supported formats:</p>
+<p>For full control, or when your file is not a plain text file, use <code>PowerSpectrum.from_file</code>.
+Supported formats:</p>
 <table>
 <thead>
 <tr>
@@ -2732,7 +2739,8 @@ Consequently, the default requires a segment at least 0.8 seconds long.</p>
 <span class="n">H1</span><span class="o">.</span><span class="n">set_psd</span><span class="p">(</span><span class="n">PowerSpectrum</span><span class="p">(</span><span class="n">psd_values</span><span class="p">,</span> <span class="n">frequencies</span><span class="p">))</span>
 </code></pre></div>
 <h2 id="injecting-a-simulated-signal">Injecting a Simulated Signal<a class="headerlink" href="#injecting-a-simulated-signal" title="Permanent link">¤</a></h2>
-<p>For testing and validation, you can inject a waveform directly into a detector. Set the PSD and frequency bounds first, then call <code>inject_signal</code>.</p>
+<p>For testing and validation, you can inject a waveform directly into a detector.
+Set the PSD and frequency bounds first, then call <code>inject_signal</code>.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.single_event.waveform</span><span class="w"> </span><span class="kn">import</span> <span class="n">RippleIMRPhenomD</span>
 

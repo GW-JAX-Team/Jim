@@ -2928,7 +2928,8 @@
 
 
 <h1 id="cli-config-reference">CLI Config Reference<a class="headerlink" href="#cli-config-reference" title="Permanent link">¤</a></h1>
-<p><code>jim-run</code> is driven entirely by a single TOML file. This page documents every section, field, and default value.</p>
+<p><code>jim-run</code> is driven entirely by a single TOML file.
+This page documents every section, field, and default value.</p>
 <h2 id="cli-flags">CLI flags<a class="headerlink" href="#cli-flags" title="Permanent link">¤</a></h2>
 <div class="highlight"><pre><span></span><code>jim-run<span class="w"> </span><span class="o">[</span>CONFIG<span class="o">]</span><span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
 </code></pre></div>
@@ -2980,7 +2981,8 @@
 </table>
 <hr />
 <h2 id="data"><code>[data]</code><a class="headerlink" href="#data" title="Permanent link">¤</a></h2>
-<p>Selects where strain and PSD data come from. The <code>type</code> field is required and determines which other fields are valid.</p>
+<p>Selects where strain and PSD data come from.
+The <code>type</code> field is required and determines which other fields are valid.</p>
 <h3 id="type-gwosc-fetch-from-gwosc"><code>type = "gwosc"</code> — fetch from GWOSC<a class="headerlink" href="#type-gwosc-fetch-from-gwosc" title="Permanent link">¤</a></h3>
 <p>Fetches public LIGO/Virgo/KAGRA strain and PSD from the Gravitational-Wave Open Science Center.</p>
 <table>
@@ -3097,7 +3099,8 @@
 <span class="n">dec</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="mf">-1.21</span>
 </code></pre></div>
 <h3 id="type-file-load-from-local-files"><code>type = "file"</code> — load from local files<a class="headerlink" href="#type-file-load-from-local-files" title="Permanent link">¤</a></h3>
-<p>Loads strain and PSD from local files. Useful for offline or CI use.</p>
+<p>Loads strain and PSD from local files.
+Useful for offline or CI use.</p>
 <p>Supported strain formats: <code>.npz</code>, <code>.gwf</code> / <code>.gwf.gz</code>, <code>.hdf5</code> / <code>.h5</code>, <code>.csv</code>.
 Supported PSD formats: <code>.npz</code>, <code>.txt</code>, <code>.dat</code>, <code>.csv</code>.</p>
 <table>
@@ -3212,7 +3215,8 @@ Supported PSD formats: <code>.npz</code>, <code>.txt</code>, <code>.dat</code>, 
 </table>
 <hr />
 <h2 id="prior"><code>[prior]</code><a class="headerlink" href="#prior" title="Permanent link">¤</a></h2>
-<p>Each entry maps a parameter name to a prior specification. The parameter name becomes the column name in the output samples.</p>
+<p>Each entry maps a parameter name to a prior specification.
+The parameter name becomes the column name in the output samples.</p>
 <div class="highlight"><pre><span></span><code><span class="k">[prior]</span>
 <span class="n">M_c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;uniform&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">min</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mf">10.0</span><span class="p">,</span><span class="w"> </span><span class="n">max</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mf">80.0</span><span class="w"> </span><span class="p">}</span>
 <span class="n">iota</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;sine&quot;</span><span class="w"> </span><span class="p">}</span>
@@ -3229,15 +3233,18 @@ Supported PSD formats: <code>.npz</code>, <code>.txt</code>, <code>.dat</code>, 
 <h4 id="sine"><code>sine</code><a class="headerlink" href="#sine" title="Permanent link">¤</a></h4>
 <div class="highlight"><pre><span></span><code><span class="n">param</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;sine&quot;</span><span class="w"> </span><span class="p">}</span>
 </code></pre></div>
-<p>Sine-weighted prior on <span class="arithmatex">\([0, \pi]\)</span>. Standard choice for inclination <code>iota</code>.</p>
+<p>Sine-weighted prior on <span class="arithmatex">\([0, \pi]\)</span>.
+Standard choice for inclination <code>iota</code>.</p>
 <h4 id="cosine"><code>cosine</code><a class="headerlink" href="#cosine" title="Permanent link">¤</a></h4>
 <div class="highlight"><pre><span></span><code><span class="n">param</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;cosine&quot;</span><span class="w"> </span><span class="p">}</span>
 </code></pre></div>
-<p>Cosine-weighted prior on <span class="arithmatex">\([-\pi/2, \pi/2]\)</span>. Standard choice for declination <code>dec</code>.</p>
+<p>Cosine-weighted prior on <span class="arithmatex">\([-\pi/2, \pi/2]\)</span>.
+Standard choice for declination <code>dec</code>.</p>
 <h4 id="power_law"><code>power_law</code><a class="headerlink" href="#power_law" title="Permanent link">¤</a></h4>
 <div class="highlight"><pre><span></span><code><span class="n">param</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;power_law&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">min</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="err">&lt;float&gt;, max = &lt;float&gt;, alpha = &lt;float&gt; }</span>
 </code></pre></div>
-<p>Power-law <span class="arithmatex">\(p(x) \propto x^\alpha\)</span> on [<code>min</code>, <code>max</code>]. Use <code>alpha = 2</code> for a prior uniform in volume on luminosity distance.</p>
+<p>Power-law <span class="arithmatex">\(p(x) \propto x^\alpha\)</span> on [<code>min</code>, <code>max</code>].
+Use <code>alpha = 2</code> for a prior uniform in volume on luminosity distance.</p>
 <h4 id="rayleigh"><code>rayleigh</code><a class="headerlink" href="#rayleigh" title="Permanent link">¤</a></h4>
 <div class="highlight"><pre><span></span><code><span class="n">param</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;rayleigh&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">scale</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="err">&lt;float&gt; }</span>
 </code></pre></div>
@@ -3245,10 +3252,13 @@ Supported PSD formats: <code>.npz</code>, <code>.txt</code>, <code>.dat</code>, 
 <h4 id="uniform_sphere"><code>uniform_sphere</code><a class="headerlink" href="#uniform_sphere" title="Permanent link">¤</a></h4>
 <div class="highlight"><pre><span></span><code><span class="n">spin1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;uniform_sphere&quot;</span><span class="w"> </span><span class="p">}</span>
 </code></pre></div>
-<p>Uniform distribution on the unit sphere. Generates <strong>three</strong> output parameters: <code>{name}_mag</code>, <code>{name}_theta</code>, <code>{name}_phi</code>. Use for 3-D spin vectors.</p>
+<p>Uniform distribution on the unit sphere.
+Generates <strong>three</strong> output parameters: <code>{name}_mag</code>, <code>{name}_theta</code>, <code>{name}_phi</code>.
+Use for 3-D spin vectors.</p>
 <hr />
 <h2 id="sampling"><code>[sampling]</code><a class="headerlink" href="#sampling" title="Permanent link">¤</a></h2>
-<p>Optional section that controls the coordinate system the sampler explores. The CLI auto-infers transforms for all other cases.</p>
+<p>Optional section that controls the coordinate system the sampler explores.
+The CLI auto-infers transforms for all other cases.</p>
 <table>
 <thead>
 <tr>
@@ -3386,7 +3396,8 @@ Supported PSD formats: <code>.npz</code>, <code>.txt</code>, <code>.dat</code>, 
 <p>All fields are optional; when omitted, defaults are chosen adaptively based on the data and prior.</p>
 <hr />
 <h2 id="sampler"><code>[sampler]</code><a class="headerlink" href="#sampler" title="Permanent link">¤</a></h2>
-<p>The <code>type</code> field selects the backend. Each backend has its own set of tuning parameters.</p>
+<p>The <code>type</code> field selects the backend.
+Each backend has its own set of tuning parameters.</p>
 <h3 id="sampler-comparison">Sampler comparison<a class="headerlink" href="#sampler-comparison" title="Permanent link">¤</a></h3>
 <table>
 <thead>
@@ -3689,7 +3700,8 @@ Supported PSD formats: <code>.npz</code>, <code>.txt</code>, <code>.dat</code>, 
 </tbody>
 </table>
 <h3 id="type-blackjax-ns-aw"><code>type = "blackjax-ns-aw"</code><a class="headerlink" href="#type-blackjax-ns-aw" title="Permanent link">¤</a></h3>
-<p>Requires all sampling-space parameters to lie in <span class="arithmatex">\([0, 1]\)</span>. The CLI enforces this automatically.</p>
+<p>Requires all sampling-space parameters to lie in <span class="arithmatex">\([0, 1]\)</span>.
+The CLI enforces this automatically.</p>
 <table>
 <thead>
 <tr>
@@ -3796,7 +3808,7 @@ Supported PSD formats: <code>.npz</code>, <code>.txt</code>, <code>.dat</code>, 
 <tbody>
 <tr>
 <td><code>samples.npz</code></td>
-<td>Posterior samples; keys <code>samples</code> (shape <code>n_samples × n_params</code>) and <code>parameter_names</code></td>
+<td>Posterior samples; one array key per parameter name, plus <code>log_likelihood</code></td>
 </tr>
 <tr>
 <td><code>diagnostics.json</code></td>

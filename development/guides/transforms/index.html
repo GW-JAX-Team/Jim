@@ -2493,7 +2493,8 @@
 <li>The <strong>prior space</strong> is where you define your priors. You are free to use whichever parameterisation is most natural.</li>
 <li>The <strong>sampling space</strong> is where the sampler explores. You can choose a parameterisation that reduces correlations between parameters or reduces multimodality in the posterior.</li>
 </ul>
-<p>Of the three spaces, only the <strong>likelihood space</strong> is fixed — it is determined by what your waveform model expects as input. The <strong>prior space</strong> and <strong>sampling space</strong> are both your choices, and the transforms you need follow from those choices:</p>
+<p>Of the three spaces, only the <strong>likelihood space</strong> is fixed — it is determined by what your waveform model expects as input.
+The <strong>prior space</strong> and <strong>sampling space</strong> are both your choices, and the transforms you need follow from those choices:</p>
 <ul>
 <li><strong>Likelihood transforms</strong> bridge the gap from your prior space to the likelihood space required by the waveform model.</li>
 <li><strong>Sample transforms</strong> bridge the gap from your prior space to the sampling space you want the sampler to explore.</li>
@@ -2507,7 +2508,8 @@
 <li><code>MassRatioToSymmetricMassRatioTransform</code> (<code>q → eta</code>) belongs in <code>sample_transforms</code>.</li>
 </ul>
 <h2 id="likelihood-transforms">Likelihood Transforms<a class="headerlink" href="#likelihood-transforms" title="Permanent link">¤</a></h2>
-<p>Likelihood transforms map from the <strong>prior space</strong> to the <strong>likelihood space</strong>. They are applied just before the waveform model is called, so they handle whatever parameter conversions the waveform model requires.</p>
+<p>Likelihood transforms map from the <strong>prior space</strong> to the <strong>likelihood space</strong>.
+They are applied just before the waveform model is called, so they handle whatever parameter conversions the waveform model requires.</p>
 <p>Likelihood transforms do <strong>not</strong> need to be invertible.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.single_event.transforms</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">MassRatioToSymmetricMassRatioTransform</span><span class="p">,</span>
@@ -2523,7 +2525,8 @@
 <span class="p">]</span>
 </code></pre></div>
 <h2 id="sample-transforms">Sample Transforms<a class="headerlink" href="#sample-transforms" title="Permanent link">¤</a></h2>
-<p>Sample transforms map from the <strong>prior space</strong> to the <strong>sampling space</strong>. Jim applies them to prior samples to obtain the initial positions in sampling space, and applies their inverses to proposed sampling-space points when evaluating the prior.</p>
+<p>Sample transforms map from the <strong>prior space</strong> to the <strong>sampling space</strong>.
+Jim applies them to prior samples to obtain the initial positions in sampling space, and applies their inverses to proposed sampling-space points when evaluating the prior.</p>
 <p>Sample transforms <strong>must be bijective</strong> (invertible), because Jim needs both forward and inverse directions.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.single_event.transforms</span><span class="w"> </span><span class="kn">import</span> <span class="n">SkyFrameToDetectorFrameSkyPositionTransform</span>
 
@@ -2702,7 +2705,8 @@ The <code>sample_transforms</code> must map every parameter from its physical su
 <span class="p">]</span>
 </code></pre></div>
 <h3 id="gaussian-priors">Gaussian priors<a class="headerlink" href="#gaussian-priors" title="Permanent link">¤</a></h3>
-<p>For parameters with a Gaussian prior, use the reversed <code>GaussianTransform</code>.  The forward direction maps <code>u ∈ (0, 1)</code> to <code>x = mu + sigma * ndtri(u)</code> (probit function); the reverse direction is the normal CDF <code>x → ndtr((x - mu) / sigma) ∈ (0, 1)</code>:</p>
+<p>For parameters with a Gaussian prior, use the reversed <code>GaussianTransform</code>.
+The forward direction maps <code>u ∈ (0, 1)</code> to <code>x = mu + sigma * ndtri(u)</code> (probit function); the reverse direction is the normal CDF <code>x → ndtr((x - mu) / sigma) ∈ (0, 1)</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.transforms</span><span class="w"> </span><span class="kn">import</span> <span class="n">GaussianTransform</span><span class="p">,</span> <span class="n">reverse_bijective_transform</span>
 
 <span class="n">sample_transforms</span> <span class="o">+=</span> <span class="p">[</span>
@@ -2728,7 +2732,9 @@ The <code>sample_transforms</code> must map every parameter from its physical su
     <span class="n">likelihood_transforms</span><span class="o">=</span><span class="n">likelihood_transforms</span><span class="p">,</span>
 <span class="p">)</span>
 </code></pre></div>
-<p>Either list can be empty. If <code>sample_transforms=[]</code>, the sampler operates directly in the prior space. If <code>likelihood_transforms=[]</code>, the waveform is called with the prior parameters unchanged.</p>
+<p>Either list can be empty.
+If <code>sample_transforms=[]</code>, the sampler operates directly in the prior space.
+If <code>likelihood_transforms=[]</code>, the waveform is called with the prior parameters unchanged.</p>
 
 
 

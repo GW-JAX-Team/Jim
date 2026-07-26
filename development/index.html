@@ -2212,17 +2212,21 @@
 
 <h1 id="jim">Jim 🚬<a class="headerlink" href="#jim" title="Permanent link">¤</a></h1>
 <h2 id="a-jax-based-gravitational-wave-inference-toolkit">A JAX-based gravitational-wave inference toolkit<a class="headerlink" href="#a-jax-based-gravitational-wave-inference-toolkit" title="Permanent link">¤</a></h2>
-<p>Jim is a JAX-based toolkit for Bayesian parameter estimation of gravitational-wave sources. It pairs differentiable waveform models from <a href="https://github.com/GW-JAX-Team/ripple">ripple</a> with GPU-accelerated JAX-based samplers, enabling massively parallel inference.</p>
+<p>Jim is a JAX-based toolkit for Bayesian parameter estimation of gravitational-wave sources.
+It pairs differentiable waveform models from <a href="https://github.com/GW-JAX-Team/ripple">ripple</a> with GPU-accelerated JAX-based samplers, enabling massively parallel inference.</p>
 <p><strong>Supported samplers:</strong></p>
 <ul>
 <li><a href="https://github.com/GW-JAX-Team/flowMC">flowMC</a> — normalizing-flow-enhanced MCMC with optional parallel tempering.</li>
 <li><a href="https://github.com/mrosep/blackjax_ns_gw">BlackJAX NS AW</a> — nested sampling described in <a href="https://arxiv.org/abs/2509.04336">Prathaban et al. 2025 (arXiv:2509.04336)</a>.</li>
 <li><a href="https://github.com/blackjax-devs/blackjax">BlackJAX NSS</a> — nested slice sampling.</li>
+<li><a href="https://github.com/blackjax-devs/blackjax">BlackJAX SwiG</a> — nested Slice within Gibbs with waveform-cache reuse across parameter blocks.</li>
 <li><a href="https://github.com/blackjax-devs/blackjax">BlackJAX SMC</a> — sequential Monte Carlo with optional adaptive tempering and persistent sampling.</li>
 </ul>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>Jim has not yet reached v1.0.0 and the API may change. Use at your own risk. Consider pinning to a specific version if you need API stability.</p>
+<p>Jim has not yet reached v1.0.0 and the API may change.
+Use at your own risk.
+Consider pinning to a specific version if you need API stability.</p>
 </div>
 <h2 id="documentation">Documentation<a class="headerlink" href="#documentation" title="Permanent link">¤</a></h2>
 <ul>

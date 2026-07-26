@@ -2550,7 +2550,8 @@
 
 
 <h1 id="analysing-gw150914-with-the-cli">Analysing GW150914 with the CLI<a class="headerlink" href="#analysing-gw150914-with-the-cli" title="Permanent link">¤</a></h1>
-<p>This tutorial walks through a complete parameter-estimation run on GW150914 — the first gravitational-wave detection — using the <code>jim-run</code> command. By the end you will have a posterior sample file and know how to inspect the results.</p>
+<p>This tutorial walks through a complete parameter-estimation run on GW150914 — the first gravitational-wave detection — using the <code>jim-run</code> command.
+By the end you will have a posterior sample file and know how to inspect the results.</p>
 <h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">¤</a></h2>
 <ul>
 <li>Jim installed: <code>pip install jimgw</code> (or <code>uv sync</code> in the repository)</li>
@@ -2560,12 +2561,14 @@
 <h2 id="1-generate-a-template-config">1. Generate a template config<a class="headerlink" href="#1-generate-a-template-config" title="Permanent link">¤</a></h2>
 <div class="highlight"><pre><span></span><code>jim-run<span class="w"> </span>--init<span class="w"> </span>gw150914.toml
 </code></pre></div>
-<p>This writes a GW150914-style template config to <code>gw150914.toml</code> and exits. Open it in any text editor — the sections below explain each piece.</p>
+<p>This writes a GW150914-style template config to <code>gw150914.toml</code> and exits.
+Open it in any text editor — the sections below explain each piece.</p>
 <h2 id="2-walk-through-the-config">2. Walk through the config<a class="headerlink" href="#2-walk-through-the-config" title="Permanent link">¤</a></h2>
 <h3 id="seed">Seed<a class="headerlink" href="#seed" title="Permanent link">¤</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">seed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
 </code></pre></div>
-<p>JAX random seed. Change this to run independent realisations.</p>
+<p>JAX random seed.
+Change this to run independent realisations.</p>
 <h3 id="data"><code>[data]</code><a class="headerlink" href="#data" title="Permanent link">¤</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">[data]</span>
 <span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;gwosc&quot;</span>
@@ -2606,7 +2609,8 @@
 <span class="n">ra</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;uniform&quot;</span><span class="p">,</span><span class="w">   </span><span class="n">min</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mf">0.0</span><span class="p">,</span><span class="w">   </span><span class="n">max</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mf">6.283185307179586</span><span class="w"> </span><span class="p">}</span>
 <span class="n">dec</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;cosine&quot;</span><span class="w"> </span><span class="p">}</span>
 </code></pre></div>
-<p>Each line names a parameter and specifies its prior distribution. Key choices for GW150914:</p>
+<p>Each line names a parameter and specifies its prior distribution.
+Key choices for GW150914:</p>
 <table>
 <thead>
 <tr>
@@ -2669,7 +2673,8 @@
 <span class="n">f_min</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">20.0</span>
 <span class="n">f_max</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1024.0</span>
 </code></pre></div>
-<p>The frequency band for the matched-filter likelihood. 20–1024 Hz is standard for stellar-mass BBH with LIGO O1 data.</p>
+<p>The frequency band for the matched-filter likelihood.
+20–1024 Hz is standard for stellar-mass BBH with LIGO O1 data.</p>
 <h3 id="sampler"><code>[sampler]</code><a class="headerlink" href="#sampler" title="Permanent link">¤</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">[sampler]</span>
 <span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;flowmc&quot;</span>
@@ -2681,7 +2686,8 @@
 <span class="n">n_NFproposal_batch_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">100</span>
 <span class="n">global_thinning</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">100</span>
 </code></pre></div>
-<p><code>flowmc</code> is a normalizing-flow-enhanced MCMC sampler. For a quick test (minutes instead of hours), reduce to:</p>
+<p><code>flowmc</code> is a normalizing-flow-enhanced MCMC sampler.
+For a quick test (minutes instead of hours), reduce to:</p>
 <div class="highlight"><pre><span></span><code><span class="n">n_chains</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">100</span>
 <span class="n">n_global_steps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">100</span>
 <span class="n">n_production_loops</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span>
@@ -2691,11 +2697,13 @@
 <span class="n">dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;output/GW150914&quot;</span>
 <span class="n">save_corner</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
 </code></pre></div>
-<p>Results are written to <code>output/GW150914/</code>. Set <code>save_corner = true</code> to automatically generate a corner plot (requires the <code>corner</code> package).</p>
+<p>Results are written to <code>output/GW150914/</code>.
+Set <code>save_corner = true</code> to automatically generate a corner plot (requires the <code>corner</code> package).</p>
 <h2 id="3-run-the-analysis">3. Run the analysis<a class="headerlink" href="#3-run-the-analysis" title="Permanent link">¤</a></h2>
 <div class="highlight"><pre><span></span><code>jim-run<span class="w"> </span>gw150914.toml
 </code></pre></div>
-<p>Use <code>-v</code> for verbose (DEBUG-level) logging. On a modern GPU the production settings finish in roughly 30–60 minutes; the quick-test settings complete in a few minutes.</p>
+<p>Use <code>-v</code> for verbose (DEBUG-level) logging.
+On a modern GPU the production settings finish in roughly 30–60 minutes; the quick-test settings complete in a few minutes.</p>
 <p>Expected console output:</p>
 <div class="highlight"><pre><span></span><code>INFO | jimgw.cli | Loaded config from gw150914.toml
 INFO | jimgw.cli | seed: 0
@@ -2731,7 +2739,10 @@ INFO | jimgw.cli | Sampling complete.
 <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;corner.png&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">150</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="reproduce-the-run">Reproduce the run<a class="headerlink" href="#reproduce-the-run" title="Permanent link">¤</a></h3>
-<p><code>config.final.toml</code> records the exact resolved configuration (including any defaults that were applied). To reproduce the run, pass it directly to <code>jim-run</code>. Because <code>config.final.toml</code> retains the original <code>output.dir</code>, the run will abort if that directory already exists and <code>output.overwrite</code> is not set. Before re-running, either change <code>output.dir</code> to a new path or add <code>output.overwrite = true</code>:</p>
+<p><code>config.final.toml</code> records the exact resolved configuration (including any defaults that were applied).
+To reproduce the run, pass it directly to <code>jim-run</code>.
+Because <code>config.final.toml</code> retains the original <code>output.dir</code>, the run will abort if that directory already exists and <code>output.overwrite</code> is not set.
+Before re-running, either change <code>output.dir</code> to a new path or add <code>output.overwrite = true</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># in config.final.toml — pick one:</span>
 <span class="k">[output]</span>
 <span class="n">dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;output/GW150914_repro&quot;</span><span class="w">   </span><span class="c1"># write to a fresh directory</span>

@@ -2462,10 +2462,13 @@
 
 
 <h1 id="prior">Prior<a class="headerlink" href="#prior" title="Permanent link">¤</a></h1>
-<p>Jim priors are built by composing individual prior components with <code>CombinePrior</code>, which joins them into a joint prior. Each component can cover one or more parameters.</p>
+<p>Jim priors are built by composing individual prior components with <code>CombinePrior</code>, which joins them into a joint prior.
+Each component can cover one or more parameters.</p>
 <div class="admonition note">
 <p class="admonition-title">Sampler prior requirements</p>
-<p>Some samplers impose extra constraints on the prior. BlackJAX NS AW requires a uniform prior on the unit hypercube; BlackJAX NSS and SMC require a normalised prior. See the <a href="../samplers/">Samplers guide</a> before choosing a backend.</p>
+<p>Some samplers impose extra constraints on the prior.
+BlackJAX NS AW requires a uniform prior on the unit hypercube; BlackJAX NSS and SMC require a normalised prior.
+See the <a href="../samplers/">Samplers guide</a> before choosing a backend.</p>
 </div>
 <h2 id="combineprior">CombinePrior<a class="headerlink" href="#combineprior" title="Permanent link">¤</a></h2>
 <p><code>CombinePrior</code> takes a list of priors and treats them as independent:</p>
@@ -2502,15 +2505,18 @@
 <p><code>xmin</code> must be positive.</p>
 </div>
 <h3 id="sineprior">SinePrior<a class="headerlink" href="#sineprior" title="Permanent link">¤</a></h3>
-<p><span class="arithmatex">\(p(\theta) \propto \sin(\theta)\)</span> over <span class="arithmatex">\(\lbrack 0, \pi \rbrack\)</span>. Commonly used for inclination:</p>
+<p><span class="arithmatex">\(p(\theta) \propto \sin(\theta)\)</span> over <span class="arithmatex">\(\lbrack 0, \pi \rbrack\)</span>.
+Commonly used for inclination:</p>
 <div class="highlight"><pre><span></span><code><span class="n">SinePrior</span><span class="p">([</span><span class="s2">&quot;iota&quot;</span><span class="p">])</span>
 </code></pre></div>
 <h3 id="cosineprior">CosinePrior<a class="headerlink" href="#cosineprior" title="Permanent link">¤</a></h3>
-<p><span class="arithmatex">\(p(\delta) \propto \cos(\delta)\)</span> over <span class="arithmatex">\(\lbrack -\pi/2, \pi/2 \rbrack\)</span>. Commonly used for declination:</p>
+<p><span class="arithmatex">\(p(\delta) \propto \cos(\delta)\)</span> over <span class="arithmatex">\(\lbrack -\pi/2, \pi/2 \rbrack\)</span>.
+Commonly used for declination:</p>
 <div class="highlight"><pre><span></span><code><span class="n">CosinePrior</span><span class="p">([</span><span class="s2">&quot;dec&quot;</span><span class="p">])</span>
 </code></pre></div>
 <h3 id="uniformsphereprior">UniformSpherePrior<a class="headerlink" href="#uniformsphereprior" title="Permanent link">¤</a></h3>
-<p>Uniform prior on the surface of a unit sphere, parameterised by magnitude, polar angle, and azimuthal angle. Useful for spin vectors:</p>
+<p>Uniform prior on the surface of a unit sphere, parameterised by magnitude, polar angle, and azimuthal angle.
+Useful for spin vectors:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.prior</span><span class="w"> </span><span class="kn">import</span> <span class="n">UniformSpherePrior</span>
 
 <span class="n">UniformSpherePrior</span><span class="p">([</span><span class="s2">&quot;s1&quot;</span><span class="p">])</span>  <span class="c1"># creates s1_mag, s1_theta, s1_phi</span>
@@ -2530,10 +2536,15 @@
 <h2 id="constraints">Constraints<a class="headerlink" href="#constraints" title="Permanent link">¤</a></h2>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>When custom constraints are applied, the resulting prior is generally <strong>not normalised</strong>. flowMC tolerates this because it never needs the normalisation constant. However, BlackJAX NS AW, NSS, and SMC compute Bayesian evidence and therefore require a normalised prior. If you know your constrained prior is normalised, override <code>is_normalized</code> to return <code>True</code>. Jim enforces this at construction time and will raise a <code>ValueError</code> if <code>is_normalized</code> is <code>False</code> for those backends.</p>
+<p>When custom constraints are applied, the resulting prior is generally <strong>not normalised</strong>.
+flowMC tolerates this because it never needs the normalisation constant.
+However, BlackJAX NS AW, NSS, and SMC compute Bayesian evidence and therefore require a normalised prior.
+If you know your constrained prior is normalised, override <code>is_normalized</code> to return <code>True</code>.
+Jim enforces this at construction time and will raise a <code>ValueError</code> if <code>is_normalized</code> is <code>False</code> for those backends.</p>
 </div>
 <h3 id="single-parameter-bounds-with-boundedmixin">Single-parameter bounds with BoundedMixin<a class="headerlink" href="#single-parameter-bounds-with-boundedmixin" title="Permanent link">¤</a></h3>
-<p><code>BoundedMixin</code> enforces hard bounds on a single parameter: the log-probability is set to <span class="arithmatex">\(-\infty\)</span> for any sample outside <code>[xmin, xmax]</code>. You can use it to add bounds to your own priors by subclassing <code>BoundedMixin</code> before the base prior class:</p>
+<p><code>BoundedMixin</code> enforces hard bounds on a single parameter: the log-probability is set to <span class="arithmatex">\(-\infty\)</span> for any sample outside <code>[xmin, xmax]</code>.
+You can use it to add bounds to your own priors by subclassing <code>BoundedMixin</code> before the base prior class:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.prior</span><span class="w"> </span><span class="kn">import</span> <span class="n">BoundedMixin</span><span class="p">,</span> <span class="n">GaussianPrior</span>
 
 <span class="k">class</span><span class="w"> </span><span class="nc">BoundedGaussianPrior</span><span class="p">(</span><span class="n">BoundedMixin</span><span class="p">,</span> <span class="n">GaussianPrior</span><span class="p">):</span>
@@ -2547,7 +2558,8 @@
 </code></pre></div>
 <p>The <code>BoundedMixin</code> must appear <strong>before</strong> the base prior class in the inheritance list so that its <code>log_prob</code> override is resolved first.</p>
 <h3 id="multi-parameter-constraints">Multi-parameter constraints<a class="headerlink" href="#multi-parameter-constraints" title="Permanent link">¤</a></h3>
-<p>For constraints that span multiple parameters, subclass <code>CombinePrior</code> and override <code>log_prob</code> to add a <span class="arithmatex">\(0 / {-\infty}\)</span> penalty. For example, to enforce <span class="arithmatex">\(m_1 &gt; m_2\)</span>:</p>
+<p>For constraints that span multiple parameters, subclass <code>CombinePrior</code> and override <code>log_prob</code> to add a <span class="arithmatex">\(0 / {-\infty}\)</span> penalty.
+For example, to enforce <span class="arithmatex">\(m_1 &gt; m_2\)</span>:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.prior</span><span class="w"> </span><span class="kn">import</span> <span class="n">CombinePrior</span><span class="p">,</span> <span class="n">UniformPrior</span>
 

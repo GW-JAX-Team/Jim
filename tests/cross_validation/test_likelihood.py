@@ -215,7 +215,8 @@ def ripple_pv2_bilby_source(
     import jax.numpy as jnp
     import numpy as np
     from bilby.gw.conversion import bilby_to_lalsimulation_spins as b2lal
-    from ripplegw.waveforms.IMRPhenomPv2 import gen_IMRPhenomPv2_hphc
+
+    from jimgw.core.single_event.waveform import RippleIMRPhenomPv2
 
     # bilby's relative-binning likelihood sets waveform_arguments['fiducial']:
     #   1 → computing the fiducial waveform  → return full frequency grid array
@@ -255,13 +256,23 @@ def ripple_pv2_bilby_source(
         phase=phase,
     )
 
-    theta = jnp.array(
-        [M_c, eta, s1x, s1y, s1z, s2x, s2y, s2z, luminosity_distance, 0.0, phase, iota]
-    )
+    params = {
+        "M_c": M_c,
+        "eta": eta,
+        "s1_x": s1x,
+        "s1_y": s1y,
+        "s1_z": s1z,
+        "s2_x": s2x,
+        "s2_y": s2y,
+        "s2_z": s2z,
+        "d_L": luminosity_distance,
+        "phase_c": phase,
+        "iota": iota,
+    }
     f_jax = jnp.array(eval_freqs, dtype=jnp.float64)
-    hp, hc = gen_IMRPhenomPv2_hphc(f_jax, theta, F_REF)
-    hp_arr = np.array(hp, dtype=complex)
-    hc_arr = np.array(hc, dtype=complex)
+    strain = RippleIMRPhenomPv2(f_ref=F_REF)(f_jax, params)
+    hp_arr = np.array(strain["p"], dtype=complex)
+    hc_arr = np.array(strain["c"], dtype=complex)
     # Replace NaN/Inf (e.g. at f=0 Hz) with 0; GW waveforms vanish at DC.
     hp_arr[~np.isfinite(hp_arr)] = 0.0
     hc_arr[~np.isfinite(hc_arr)] = 0.0

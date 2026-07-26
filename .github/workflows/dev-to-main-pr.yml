@@ -1,0 +1,57 @@
+name: Scheduled dev -> main PR
+
+# Opens a PR merging jim-dev into main on the last Thursday of each month.
+# Cron can't express "last Thursday" directly, so this runs every Thursday
+# and the gate step below skips all but the final one in the month.
+
+on:
+  schedule:
+    - cron: "0 9 * * 4"  # every Thursday, 09:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  open-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if today is the last Thursday of the month
+        id: gate
+        run: |
+          today=$(date -u +%-d)
+          next_week=$(date -u -d "+7 days" +%-d)
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "$next_week" -le "$today" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.gate.outputs.run == 'true'
+        with:
+          fetch-depth: 0
+
+      - name: Open PR from jim-dev to main
+        if: steps.gate.outputs.run == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          existing=$(gh pr list --repo "$GITHUB_REPOSITORY" --base main --head jim-dev --state open --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            echo "PR #$existing already open from jim-dev to main; nothing to do."
+            exit 0
+          fi
+
+          if [ -z "$(git log origin/main..origin/jim-dev --oneline)" ]; then
+            echo "jim-dev has no commits ahead of main; nothing to merge."
+            exit 0
+          fi
+
+          gh pr create \
+            --repo "$GITHUB_REPOSITORY" \
+            --base main \
+            --head jim-dev \
+            --title "Scheduled sync: jim-dev -> main ($(date -u +'%B %Y'))" \
+            --body "Automated monthly pull request merging \`jim-dev\` into \`main\`."

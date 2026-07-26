@@ -11,19 +11,9 @@ import jax
 import jax.numpy as jnp
 import pytest
 
-from tests.utils import assert_all_finite, check_bilby_available, common_keys_allclose
+from tests.utils import assert_all_finite, common_keys_allclose
 
-# Check if bilby is available before running tests
-try:
-    check_bilby_available()
-    BILBY_AVAILABLE = True
-except ImportError:
-    BILBY_AVAILABLE = False
-
-pytestmark = pytest.mark.skipif(
-    not BILBY_AVAILABLE,
-    reason="bilby required for cross-validation tests",
-)
+pytest.importorskip("bilby")
 
 
 class TestSpinAnglesToCartesianSpinTransformBilby:

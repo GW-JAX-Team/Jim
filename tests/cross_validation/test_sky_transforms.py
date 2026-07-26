@@ -18,21 +18,10 @@ import numpy as np
 import pytest
 from itertools import combinations
 
-from tests.utils import assert_all_finite, check_bilby_available
+from tests.utils import assert_all_finite
 
-# Check if bilby is available before running tests
-try:
-    check_bilby_available()
-    import bilby_cython  # noqa: F401
-
-    BILBY_AVAILABLE = True
-except ImportError:
-    BILBY_AVAILABLE = False
-
-pytestmark = pytest.mark.skipif(
-    not BILBY_AVAILABLE,
-    reason="bilby required for cross-validation tests",
-)
+pytest.importorskip("bilby")
+pytest.importorskip("bilby_cython")
 
 N_SAMPLES = 1000
 

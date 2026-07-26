@@ -28,20 +28,7 @@ import numpy as np
 import pytest
 from pathlib import Path
 
-from tests.utils import check_bilby_available
-
-try:
-    check_bilby_available()
-    import bilby
-
-    BILBY_AVAILABLE = True
-except ImportError:
-    BILBY_AVAILABLE = False
-
-pytestmark = pytest.mark.skipif(
-    not BILBY_AVAILABLE,
-    reason="bilby required for cross-validation tests",
-)
+bilby = pytest.importorskip("bilby")
 
 FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
 

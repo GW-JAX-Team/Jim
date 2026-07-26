@@ -2206,6 +2206,13 @@
 <a id="jimgw.core.single_event.waveform"></a>
     <div class="doc doc-contents first">
 
+        <p>Ripple waveform models, exposed under jim's historical <code>Ripple*</code> names.</p>
+<p>ripplegw's only construction path is the name-based registry
+<code>ripplegw.waveform(name, **config)</code> -- concrete classes (<code>IMRPhenomD</code>,
+<code>TaylorF2</code>, ...) are intentionally not exposed at its top level. These are
+thin <code>functools.partial</code> bindings onto that registry, so the rest of jim can
+keep constructing models as <code>RippleIMRPhenomD(f_ref=20.0)</code>.</p>
+
 
 
 

@@ -1,5 +1,6 @@
 ci:
   autoupdate_branch: jim-dev
+  autoupdate_schedule: quarterly
   skip: [uv-lock, pyright, ty]
 
 repos:

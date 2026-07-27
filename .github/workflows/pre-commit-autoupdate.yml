@@ -17,16 +17,18 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.x"
+      - uses: astral-sh/setup-uv@v3
       - run: pip install pre-commit
       - run: pre-commit autoupdate
-      - name: Commit if hooks changed
+      - run: uv lock --upgrade
+      - name: Commit if hooks or dependencies changed
         run: |
           if git diff --quiet; then
-            echo "All hooks up to date"
+            echo "All hooks and dependencies up to date"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add .pre-commit-config.yaml
-          git commit -m "[pre-commit] autoupdate hook versions"
+          git add .pre-commit-config.yaml uv.lock
+          git commit -m "[pre-commit] autoupdate hooks and lock file"
           git push || exit 1

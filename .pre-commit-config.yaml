@@ -19,7 +19,7 @@ repos:
         files: src/
 
   - repo: https://github.com/astral-sh/ty-pre-commit
-    rev: v0.0.63
+    rev: v0.0.64
     hooks:
       - id: ty
         args: ["--no-sync"]

@@ -1021,8 +1021,8 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         # ------------------------------------------------------------------
         # Normalize the search space using the prior sample statistics so
         # that every dimension has unit variance before CMA-ES sees it.
-        # CMA-ES then operates with std_init=1 (default) in a space where
-        # each parameter already lives on a comparable scale.
+        # CMA-ES then operates with std_init=1e-3 in a space where each
+        # parameter already lives on a comparable scale.
         # ------------------------------------------------------------------
         n_init = max(optimizer_popsize, 1000)
         init_samples = prior.sample(jax.random.key(0), n_init)
@@ -1049,7 +1049,7 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         _log_likelihood_vmap = jax.vmap(_log_likelihood)
 
         # ------------------------------------------------------------------
-        # Set up CMA-ES in normalized space: init_mean=0, std_init=1
+        # Set up CMA-ES in normalized space: init_mean=0, std_init=1e-3
         # ------------------------------------------------------------------
         es = CMA_ES(population_size=optimizer_popsize, solution=jnp.zeros(n_dim))
         es_params = replace(es.default_params, std_init=1e-3)

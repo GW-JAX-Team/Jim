@@ -14,10 +14,12 @@ See [`cli/README.md`](cli/README.md) for details.
 
 ## Python scripts
 
-Standalone scripts that use the programmatic API directly. Run with:
+Standalone scripts that use the programmatic API directly.
+Run with:
 
 ```bash
 python GW150914_flowMC.py
 ```
 
-These scripts require Jim and its dependencies to be installed. Each script fetches data from GWOSC on first run, so an internet connection is needed.
+These scripts require Jim and its dependencies to be installed.
+Each script fetches data from GWOSC on first run, so an internet connection is needed.

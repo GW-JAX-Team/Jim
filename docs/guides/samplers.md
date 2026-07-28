@@ -51,7 +51,8 @@ Key parameters:
 - `n_training_loops` / `n_production_loops` — how many rounds of training (flow updates) and production (sample collection) to run.
 - `n_local_steps` / `n_global_steps` — local MCMC steps and flow-proposal steps per loop.
 - `local_kernel` — MCMC kernel for local steps; one of `"MALA"` (default), `"HMC"`, or `"GRW"`.
-- `parallel_tempering` — parallel tempering settings; disabled by default. Enable with `parallel_tempering=True` (uses defaults), a plain dict of settings such as `{"n_temperatures": 8}`, or a `ParallelTemperingConfig` instance.
+- `parallel_tempering` — parallel tempering settings; disabled by default.
+  Enable with `parallel_tempering=True` (uses defaults), a plain dict of settings such as `{"n_temperatures": 8}`, or a `ParallelTemperingConfig` instance.
 
 **Repository:** [GW-JAX-Team/flowMC](https://github.com/GW-JAX-Team/flowMC)
 
@@ -88,10 +89,16 @@ Key parameters:
 
 - `n_particles` — particle ensemble size.
 - `n_mcmc_steps_per_dim` — MCMC steps per dimension at each temperature step.
-- `target_ess_fraction` — target ESS as a fraction of `n_particles` (default `0.9`). The algorithm advances the temperature when the fraction of effectively contributing particles hits this threshold.  Values in `(0, 1]` are valid when `persistent_sampling=False`; persistent sampling may exceed `1.0` because particles are recycled across steps.  Only used with adaptive temperature selection (no effect with a fixed `temperature_ladder`).
-- `target_ess` — target ESS as an absolute particle count. `target_ess_fraction` and `target_ess` are mutually exclusive; set one or the other, not both. When `persistent_sampling=False`, must be `<= n_particles`.
+- `target_ess_fraction` — target ESS as a fraction of `n_particles` (default `0.9`).
+  The algorithm advances the temperature when the fraction of effectively contributing particles hits this threshold.
+  Values in `(0, 1]` are valid when `persistent_sampling=False`; persistent sampling may exceed `1.0` because particles are recycled across steps.
+  Only used with adaptive temperature selection (no effect with a fixed `temperature_ladder`).
+- `target_ess` — target ESS as an absolute particle count.
+  `target_ess_fraction` and `target_ess` are mutually exclusive; set one or the other, not both.
+  When `persistent_sampling=False`, must be `<= n_particles`.
 - `persistent_sampling` — whether to retain particles from all temperature steps (default `True`).
-- `temperature_ladder` — explicit temperature schedule. If given, the sampler advances through this fixed ladder and ignores `target_ess_fraction` and `target_ess`.
+- `temperature_ladder` — explicit temperature schedule.
+  If given, the sampler advances through this fixed ladder and ignores `target_ess_fraction` and `target_ess`.
 
 **Repository:** [blackjax-devs/blackjax](https://github.com/blackjax-devs/blackjax)
 
@@ -172,8 +179,10 @@ Key parameters:
 - `n_delete_frac` — fraction of live points replaced per iteration.
 - `num_inner_steps_per_dim` — slice-sampler steps per dimension per dead point; increase for strongly correlated posteriors.
 - `n_devices` — number of local devices used to shard the live points and
-  replacement chains. Both `n_live` and `int(n_live * n_delete_frac)` must be
-  divisible by this value. The default `1` uses the unsharded kernel.
+  replacement chains.
+  Both `n_live` and `int(n_live * n_delete_frac)` must be
+  divisible by this value.
+  The default `1` uses the unsharded kernel.
 
 **Repository:** [blackjax-devs/blackjax](https://github.com/blackjax-devs/blackjax)
 
@@ -226,7 +235,8 @@ Key parameters:
 - `num_inner_steps_per_dim` — random-direction slice steps per block dimension.
 - `num_gibbs_sweeps` — complete block sweeps per particle replacement.
 - `n_devices` — number of local devices used to shard the live points and
-  replacement chains. The waveform cache remains local to each replacement
+  replacement chains.
+  The waveform cache remains local to each replacement
   chain; only live-point state participates in collectives.
 
 !!! tip "Sharding without a GPU/TPU cluster"
@@ -394,9 +404,11 @@ diag["log_Z"]                     # float      — final log Bayesian evidence
 Subclass `Sampler`, implement three methods and the `sampler_name` property, and register it:
 
 - `sampler_name` — a human-readable backend name used in status and checkpoint logs.
-- `_sample(rng_key, initial_position)` — run the sampler and store results. The base class wraps this in `sample()`, which also records `sampling_time`.
+- `_sample(rng_key, initial_position)` — run the sampler and store results.
+  The base class wraps this in `sample()`, which also records `sampling_time`.
 - `get_samples()` — return a dict with `"samples"` and `"log_likelihood"` keys.
-- `_get_diagnostics()` — return a plain dict with diagnostic information. The base class wraps this in `get_diagnostics()`, which injects `sampling_time`.
+- `_get_diagnostics()` — return a plain dict with diagnostic information.
+  The base class wraps this in `get_diagnostics()`, which injects `sampling_time`.
 
 ```python
 from typing import Any, Literal, Optional

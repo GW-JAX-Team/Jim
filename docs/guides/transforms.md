@@ -8,9 +8,12 @@ flowchart LR
     PS --> ST[Sample Transforms] --> SS[Sampling Space]
 ```
 
-- The **likelihood space** is fixed by your waveform model. For example, ripple waveforms expect `(M_c, eta, s1_z, s2_z, ...)`.
-- The **prior space** is where you define your priors. You are free to use whichever parameterisation is most natural.
-- The **sampling space** is where the sampler explores. You can choose a parameterisation that reduces correlations between parameters or reduces multimodality in the posterior.
+- The **likelihood space** is fixed by your waveform model.
+  For example, ripple waveforms expect `(M_c, eta, s1_z, s2_z, ...)`.
+- The **prior space** is where you define your priors.
+  You are free to use whichever parameterisation is most natural.
+- The **sampling space** is where the sampler explores.
+  You can choose a parameterisation that reduces correlations between parameters or reduces multimodality in the posterior.
 
 Of the three spaces, only the **likelihood space** is fixed — it is determined by what your waveform model expects as input.
 The **prior space** and **sampling space** are both your choices, and the transforms you need follow from those choices:

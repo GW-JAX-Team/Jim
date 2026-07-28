@@ -1,6 +1,7 @@
 # Test Fixtures
 
-This directory contains cached data fixtures for unit tests. These fixtures are pre-generated from GWOSC data to speed up tests and avoid repeated network calls.
+This directory contains cached data fixtures for unit tests.
+These fixtures are pre-generated from GWOSC data to speed up tests and avoid repeated network calls.
 
 ## Fixture Files
 
@@ -24,7 +25,8 @@ This will fetch fresh data from GWOSC and save it using the `Data.to_file()` and
 
 ## File Format
 
-All fixtures are stored in NumPy's `.npz` format using `jnp.savez()`. They contain:
+All fixtures are stored in NumPy's `.npz` format using `jnp.savez()`.
+They contain:
 
 **Strain files:**
 

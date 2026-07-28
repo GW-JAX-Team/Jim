@@ -65,9 +65,13 @@ likelihood = TransientLikelihoodFD(
 
 Marginalising over these parameters reduces the effective dimensionality of the problem and can significantly speed up sampling.
 
-- `time_marginalization` — marginalises over `t_c` within the range set by `tc_range` (default `(-0.1, 0.1)`). Pass `{}` to use the default range, or `{"tc_range": (lo, hi)}` for a custom range.
-- `phase_marginalization` — marginalises over `phase_c`. Pass `True`, `{}`, or a `PhaseMargConfig()` instance.
-- `distance_marginalization` — marginalises over `d_L`. Pass a dict with `distance_prior` (a 1-D prior over luminosity distance) and optionally `n_dist_points` and `ref_dist`. Unlike the other two options, `True` is **not** supported and will raise a `ValueError` because `distance_prior` has no default; always pass `{"distance_prior": ...}`.
+- `time_marginalization` — marginalises over `t_c` within the range set by `tc_range` (default `(-0.1, 0.1)`).
+  Pass `{}` to use the default range, or `{"tc_range": (lo, hi)}` for a custom range.
+- `phase_marginalization` — marginalises over `phase_c`.
+  Pass `True`, `{}`, or a `PhaseMargConfig()` instance.
+- `distance_marginalization` — marginalises over `d_L`.
+  Pass a dict with `distance_prior` (a 1-D prior over luminosity distance) and optionally `n_dist_points` and `ref_dist`.
+  Unlike the other two options, `True` is **not** supported and will raise a `ValueError` because `distance_prior` has no default; always pass `{"distance_prior": ...}`.
 
 ### Fixing Parameters
 

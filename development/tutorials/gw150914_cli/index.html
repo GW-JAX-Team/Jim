@@ -2580,9 +2580,11 @@ Change this to run independent realisations.</p>
 </code></pre></div>
 <ul>
 <li><code>type = "gwosc"</code> — fetches strain and PSD from the public GWOSC archive automatically.</li>
-<li><code>detectors</code> — the detectors to include. <code>H1</code> is LIGO Hanford, <code>L1</code> is LIGO Livingston.</li>
+<li><code>detectors</code> — the detectors to include.
+  <code>H1</code> is LIGO Hanford, <code>L1</code> is LIGO Livingston.</li>
 <li><code>trigger_time</code> — GPS time of the event (1126259462.4 s for GW150914).</li>
-<li><code>duration</code> — analysis segment length in seconds. The strain window runs from <code>trigger_time - duration + post_trigger_duration</code> to <code>trigger_time + post_trigger_duration</code>.</li>
+<li><code>duration</code> — analysis segment length in seconds.
+  The strain window runs from <code>trigger_time - duration + post_trigger_duration</code> to <code>trigger_time + post_trigger_duration</code>.</li>
 <li><code>post_trigger_duration</code> — seconds after the trigger kept in the analysis window (2 s is standard for stellar-mass BBH).</li>
 <li><code>psd_duration</code> — length of the off-source segment used to estimate the PSD (1024 s is recommended to resolve low-frequency features).</li>
 </ul>
@@ -2592,7 +2594,8 @@ Change this to run independent realisations.</p>
 <span class="n">f_ref</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">20.0</span>
 </code></pre></div>
 <ul>
-<li><code>approximant</code> — which ripple waveform model to use. <code>IMRPhenomXAS</code> is a fast, accurate aligned-spin BBH model.</li>
+<li><code>approximant</code> — which ripple waveform model to use.
+  <code>IMRPhenomXAS</code> is a fast, accurate aligned-spin BBH model.</li>
 <li><code>f_ref</code> — reference frequency in Hz at which spin magnitudes and angles are defined (20 Hz is conventional for BBH).</li>
 </ul>
 <h3 id="prior"><code>[prior]</code><a class="headerlink" href="#prior" title="Permanent link">¤</a></h3>
@@ -2755,8 +2758,10 @@ Before re-running, either change <code>output.dir</code> to a new path or add <c
 <h2 id="5-next-steps">5. Next steps<a class="headerlink" href="#5-next-steps" title="Permanent link">¤</a></h2>
 <ul>
 <li><strong>Switch to a nested sampler</strong> — change <code>[sampler]</code> to <code>type = "blackjax-ns-aw"</code> or <code>type = "blackjax-nss"</code> to obtain a log-evidence estimate.</li>
-<li><strong>Try an injection</strong> — change <code>[data]</code> to <code>type = "injection"</code> with <code>injection_parameters</code> to validate recovery on a known signal. See the <a href="../../guides/cli/">CLI Config Reference</a> for the full injection syntax.</li>
-<li><strong>Enable heterodyning</strong> — add a <code>[likelihood.heterodyne]</code> block for a 10–100× likelihood speedup. See the <a href="../../guides/cli/">CLI Config Reference</a>.</li>
+<li><strong>Try an injection</strong> — change <code>[data]</code> to <code>type = "injection"</code> with <code>injection_parameters</code> to validate recovery on a known signal.
+  See the <a href="../../guides/cli/">CLI Config Reference</a> for the full injection syntax.</li>
+<li><strong>Enable heterodyning</strong> — add a <code>[likelihood.heterodyne]</code> block for a 10–100× likelihood speedup.
+  See the <a href="../../guides/cli/">CLI Config Reference</a>.</li>
 <li><strong>Full config reference</strong> — <a href="../../guides/cli/">CLI Config Reference</a> documents every available field and default.</li>
 </ul>
 

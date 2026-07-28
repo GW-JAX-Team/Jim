@@ -2503,7 +2503,8 @@ You select one by passing a typed config object to <code>Jim</code>.</p>
 <li><code>n_training_loops</code> / <code>n_production_loops</code> — how many rounds of training (flow updates) and production (sample collection) to run.</li>
 <li><code>n_local_steps</code> / <code>n_global_steps</code> — local MCMC steps and flow-proposal steps per loop.</li>
 <li><code>local_kernel</code> — MCMC kernel for local steps; one of <code>"MALA"</code> (default), <code>"HMC"</code>, or <code>"GRW"</code>.</li>
-<li><code>parallel_tempering</code> — parallel tempering settings; disabled by default. Enable with <code>parallel_tempering=True</code> (uses defaults), a plain dict of settings such as <code>{"n_temperatures": 8}</code>, or a <code>ParallelTemperingConfig</code> instance.</li>
+<li><code>parallel_tempering</code> — parallel tempering settings; disabled by default.
+  Enable with <code>parallel_tempering=True</code> (uses defaults), a plain dict of settings such as <code>{"n_temperatures": 8}</code>, or a <code>ParallelTemperingConfig</code> instance.</li>
 </ul>
 <p><strong>Repository:</strong> <a href="https://github.com/GW-JAX-Team/flowMC">GW-JAX-Team/flowMC</a></p>
 <p><strong>References:</strong> Wong, K. W. K., Gabrié, M., Foreman-Mackey, D., <em>"flowMC: Normalizing flow enhanced sampling package for probabilistic inference in JAX"</em>, <a href="https://arxiv.org/abs/2211.06397">arXiv:2211.06397</a>, JOSS 8 (83) 5021 (2023).
@@ -2534,10 +2535,16 @@ Jim raises a <code>ValueError</code> at construction if this condition is not me
 <ul>
 <li><code>n_particles</code> — particle ensemble size.</li>
 <li><code>n_mcmc_steps_per_dim</code> — MCMC steps per dimension at each temperature step.</li>
-<li><code>target_ess_fraction</code> — target ESS as a fraction of <code>n_particles</code> (default <code>0.9</code>). The algorithm advances the temperature when the fraction of effectively contributing particles hits this threshold.  Values in <code>(0, 1]</code> are valid when <code>persistent_sampling=False</code>; persistent sampling may exceed <code>1.0</code> because particles are recycled across steps.  Only used with adaptive temperature selection (no effect with a fixed <code>temperature_ladder</code>).</li>
-<li><code>target_ess</code> — target ESS as an absolute particle count. <code>target_ess_fraction</code> and <code>target_ess</code> are mutually exclusive; set one or the other, not both. When <code>persistent_sampling=False</code>, must be <code>&lt;= n_particles</code>.</li>
+<li><code>target_ess_fraction</code> — target ESS as a fraction of <code>n_particles</code> (default <code>0.9</code>).
+  The algorithm advances the temperature when the fraction of effectively contributing particles hits this threshold.
+  Values in <code>(0, 1]</code> are valid when <code>persistent_sampling=False</code>; persistent sampling may exceed <code>1.0</code> because particles are recycled across steps.
+  Only used with adaptive temperature selection (no effect with a fixed <code>temperature_ladder</code>).</li>
+<li><code>target_ess</code> — target ESS as an absolute particle count.
+  <code>target_ess_fraction</code> and <code>target_ess</code> are mutually exclusive; set one or the other, not both.
+  When <code>persistent_sampling=False</code>, must be <code>&lt;= n_particles</code>.</li>
 <li><code>persistent_sampling</code> — whether to retain particles from all temperature steps (default <code>True</code>).</li>
-<li><code>temperature_ladder</code> — explicit temperature schedule. If given, the sampler advances through this fixed ladder and ignores <code>target_ess_fraction</code> and <code>target_ess</code>.</li>
+<li><code>temperature_ladder</code> — explicit temperature schedule.
+  If given, the sampler advances through this fixed ladder and ignores <code>target_ess_fraction</code> and <code>target_ess</code>.</li>
 </ul>
 <p><strong>Repository:</strong> <a href="https://github.com/blackjax-devs/blackjax">blackjax-devs/blackjax</a></p>
 <hr />
@@ -2608,8 +2615,10 @@ Jim raises a <code>ValueError</code> at construction if this condition is not me
 <li><code>n_delete_frac</code> — fraction of live points replaced per iteration.</li>
 <li><code>num_inner_steps_per_dim</code> — slice-sampler steps per dimension per dead point; increase for strongly correlated posteriors.</li>
 <li><code>n_devices</code> — number of local devices used to shard the live points and
-  replacement chains. Both <code>n_live</code> and <code>int(n_live * n_delete_frac)</code> must be
-  divisible by this value. The default <code>1</code> uses the unsharded kernel.</li>
+  replacement chains.
+  Both <code>n_live</code> and <code>int(n_live * n_delete_frac)</code> must be
+  divisible by this value.
+  The default <code>1</code> uses the unsharded kernel.</li>
 </ul>
 <p><strong>Repository:</strong> <a href="https://github.com/blackjax-devs/blackjax">blackjax-devs/blackjax</a></p>
 <p><strong>References:</strong> Yallup, D., Prathaban, M., Alvey, J., Handley, W., <em>"Parallel Nested Slice Sampling for Gravitational Wave Parameter Estimation"</em>, <a href="https://arxiv.org/abs/2509.24949">arXiv:2509.24949</a> (Sep 2025).
@@ -2654,7 +2663,8 @@ Parameters that are analytically marginalised must not appear in the blocks — 
 <li><code>num_inner_steps_per_dim</code> — random-direction slice steps per block dimension.</li>
 <li><code>num_gibbs_sweeps</code> — complete block sweeps per particle replacement.</li>
 <li><code>n_devices</code> — number of local devices used to shard the live points and
-  replacement chains. The waveform cache remains local to each replacement
+  replacement chains.
+  The waveform cache remains local to each replacement
   chain; only live-point state participates in collectives.</li>
 </ul>
 <div class="admonition tip">
@@ -2804,9 +2814,11 @@ It requires familiarity with JAX and the Jim sampler internals.</p>
 <p>Subclass <code>Sampler</code>, implement three methods and the <code>sampler_name</code> property, and register it:</p>
 <ul>
 <li><code>sampler_name</code> — a human-readable backend name used in status and checkpoint logs.</li>
-<li><code>_sample(rng_key, initial_position)</code> — run the sampler and store results. The base class wraps this in <code>sample()</code>, which also records <code>sampling_time</code>.</li>
+<li><code>_sample(rng_key, initial_position)</code> — run the sampler and store results.
+  The base class wraps this in <code>sample()</code>, which also records <code>sampling_time</code>.</li>
 <li><code>get_samples()</code> — return a dict with <code>"samples"</code> and <code>"log_likelihood"</code> keys.</li>
-<li><code>_get_diagnostics()</code> — return a plain dict with diagnostic information. The base class wraps this in <code>get_diagnostics()</code>, which injects <code>sampling_time</code>.</li>
+<li><code>_get_diagnostics()</code> — return a plain dict with diagnostic information.
+  The base class wraps this in <code>get_diagnostics()</code>, which injects <code>sampling_time</code>.</li>
 </ul>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Optional</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>

@@ -2489,9 +2489,12 @@
     PS[Prior Space] --&gt; LT[Likelihood Transforms] --&gt; LS[Likelihood Space]
     PS --&gt; ST[Sample Transforms] --&gt; SS[Sampling Space]</code></pre>
 <ul>
-<li>The <strong>likelihood space</strong> is fixed by your waveform model. For example, ripple waveforms expect <code>(M_c, eta, s1_z, s2_z, ...)</code>.</li>
-<li>The <strong>prior space</strong> is where you define your priors. You are free to use whichever parameterisation is most natural.</li>
-<li>The <strong>sampling space</strong> is where the sampler explores. You can choose a parameterisation that reduces correlations between parameters or reduces multimodality in the posterior.</li>
+<li>The <strong>likelihood space</strong> is fixed by your waveform model.
+  For example, ripple waveforms expect <code>(M_c, eta, s1_z, s2_z, ...)</code>.</li>
+<li>The <strong>prior space</strong> is where you define your priors.
+  You are free to use whichever parameterisation is most natural.</li>
+<li>The <strong>sampling space</strong> is where the sampler explores.
+  You can choose a parameterisation that reduces correlations between parameters or reduces multimodality in the posterior.</li>
 </ul>
 <p>Of the three spaces, only the <strong>likelihood space</strong> is fixed — it is determined by what your waveform model expects as input.
 The <strong>prior space</strong> and <strong>sampling space</strong> are both your choices, and the transforms you need follow from those choices:</p>

@@ -2536,9 +2536,13 @@ Each is activated by passing a typed config object or a plain dict shorthand:</p
 </code></pre></div>
 <p>Marginalising over these parameters reduces the effective dimensionality of the problem and can significantly speed up sampling.</p>
 <ul>
-<li><code>time_marginalization</code> — marginalises over <code>t_c</code> within the range set by <code>tc_range</code> (default <code>(-0.1, 0.1)</code>). Pass <code>{}</code> to use the default range, or <code>{"tc_range": (lo, hi)}</code> for a custom range.</li>
-<li><code>phase_marginalization</code> — marginalises over <code>phase_c</code>. Pass <code>True</code>, <code>{}</code>, or a <code>PhaseMargConfig()</code> instance.</li>
-<li><code>distance_marginalization</code> — marginalises over <code>d_L</code>. Pass a dict with <code>distance_prior</code> (a 1-D prior over luminosity distance) and optionally <code>n_dist_points</code> and <code>ref_dist</code>. Unlike the other two options, <code>True</code> is <strong>not</strong> supported and will raise a <code>ValueError</code> because <code>distance_prior</code> has no default; always pass <code>{"distance_prior": ...}</code>.</li>
+<li><code>time_marginalization</code> — marginalises over <code>t_c</code> within the range set by <code>tc_range</code> (default <code>(-0.1, 0.1)</code>).
+  Pass <code>{}</code> to use the default range, or <code>{"tc_range": (lo, hi)}</code> for a custom range.</li>
+<li><code>phase_marginalization</code> — marginalises over <code>phase_c</code>.
+  Pass <code>True</code>, <code>{}</code>, or a <code>PhaseMargConfig()</code> instance.</li>
+<li><code>distance_marginalization</code> — marginalises over <code>d_L</code>.
+  Pass a dict with <code>distance_prior</code> (a 1-D prior over luminosity distance) and optionally <code>n_dist_points</code> and <code>ref_dist</code>.
+  Unlike the other two options, <code>True</code> is <strong>not</strong> supported and will raise a <code>ValueError</code> because <code>distance_prior</code> has no default; always pass <code>{"distance_prior": ...}</code>.</li>
 </ul>
 <h3 id="fixing-parameters">Fixing Parameters<a class="headerlink" href="#fixing-parameters" title="Permanent link">¤</a></h3>
 <p>To fix some parameters at known values (e.g. for testing or when marginalising externally), pass them via <code>fixed_parameters</code>:</p>

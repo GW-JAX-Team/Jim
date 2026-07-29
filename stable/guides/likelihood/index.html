@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="zensical-0.0.46">
+      <meta name="generator" content="zensical-0.0.51">
     
     
       
@@ -36,7 +36,7 @@
       
         
       
-      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.19d3147f.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.62c9b9cc.min.css">
       
         
           
@@ -1476,6 +1476,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/jimgw/core/single_event/blocked_likelihood/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  blocked_likelihood
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/jimgw/core/single_event/data/" class="md-nav__link">
         
   
@@ -2020,6 +2047,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/jimgw/samplers/blackjax/sharding/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  sharding
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/jimgw/samplers/blackjax/smc/" class="md-nav__link">
         
   
@@ -2028,6 +2082,33 @@
     
   
   smc
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/jimgw/samplers/blackjax/swig/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  swig
 
     
   </span>
@@ -2385,7 +2466,8 @@
 <h1 id="likelihood">Likelihood<a class="headerlink" href="#likelihood" title="Permanent link">¤</a></h1>
 <p>The likelihood connects your detector data with a waveform model and scores how well a set of source parameters explains the observed strain.</p>
 <h2 id="waveform-model">Waveform Model<a class="headerlink" href="#waveform-model" title="Permanent link">¤</a></h2>
-<p>Jim uses <a href="https://github.com/GW-JAX-Team/ripple">ripple</a> waveform models, which are JAX-native and fully differentiable. Import any available model from <code>jimgw.core.single_event.waveform</code>:</p>
+<p>Jim uses <a href="https://github.com/GW-JAX-Team/ripple">ripple</a> waveform models, which are JAX-native and fully differentiable.
+Import any available model from <code>jimgw.core.single_event.waveform</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.single_event.waveform</span><span class="w"> </span><span class="kn">import</span> <span class="n">RippleIMRPhenomD</span>
 
 <span class="n">waveform</span> <span class="o">=</span> <span class="n">RippleIMRPhenomD</span><span class="p">(</span><span class="n">f_ref</span><span class="o">=</span><span class="mf">20.0</span><span class="p">)</span>
@@ -2435,7 +2517,8 @@
 </tbody>
 </table>
 <h3 id="analytic-marginalisation">Analytic Marginalisation<a class="headerlink" href="#analytic-marginalisation" title="Permanent link">¤</a></h3>
-<p>The likelihood supports analytic marginalisation over coalescence time, phase, and/or luminosity distance. Each is activated by passing a typed config object or a plain dict shorthand:</p>
+<p>The likelihood supports analytic marginalisation over coalescence time, phase, and/or luminosity distance.
+Each is activated by passing a typed config object or a plain dict shorthand:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.prior</span><span class="w"> </span><span class="kn">import</span> <span class="n">PowerLawPrior</span>
 
 <span class="n">distance_prior</span> <span class="o">=</span> <span class="n">PowerLawPrior</span><span class="p">(</span><span class="n">xmin</span><span class="o">=</span><span class="mf">100.0</span><span class="p">,</span> <span class="n">xmax</span><span class="o">=</span><span class="mf">5000.0</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">parameter_names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;d_L&quot;</span><span class="p">])</span>
@@ -2453,9 +2536,13 @@
 </code></pre></div>
 <p>Marginalising over these parameters reduces the effective dimensionality of the problem and can significantly speed up sampling.</p>
 <ul>
-<li><code>time_marginalization</code> — marginalises over <code>t_c</code> within the range set by <code>tc_range</code> (default <code>(-0.1, 0.1)</code>). Pass <code>{}</code> to use the default range, or <code>{"tc_range": (lo, hi)}</code> for a custom range.</li>
-<li><code>phase_marginalization</code> — marginalises over <code>phase_c</code>. Pass <code>True</code>, <code>{}</code>, or a <code>PhaseMargConfig()</code> instance.</li>
-<li><code>distance_marginalization</code> — marginalises over <code>d_L</code>. Pass a dict with <code>distance_prior</code> (a 1-D prior over luminosity distance) and optionally <code>n_dist_points</code> and <code>ref_dist</code>. Unlike the other two options, <code>True</code> is <strong>not</strong> supported and will raise a <code>ValueError</code> because <code>distance_prior</code> has no default; always pass <code>{"distance_prior": ...}</code>.</li>
+<li><code>time_marginalization</code> — marginalises over <code>t_c</code> within the range set by <code>tc_range</code> (default <code>(-0.1, 0.1)</code>).
+  Pass <code>{}</code> to use the default range, or <code>{"tc_range": (lo, hi)}</code> for a custom range.</li>
+<li><code>phase_marginalization</code> — marginalises over <code>phase_c</code>.
+  Pass <code>True</code>, <code>{}</code>, or a <code>PhaseMargConfig()</code> instance.</li>
+<li><code>distance_marginalization</code> — marginalises over <code>d_L</code>.
+  Pass a dict with <code>distance_prior</code> (a 1-D prior over luminosity distance) and optionally <code>n_dist_points</code> and <code>ref_dist</code>.
+  Unlike the other two options, <code>True</code> is <strong>not</strong> supported and will raise a <code>ValueError</code> because <code>distance_prior</code> has no default; always pass <code>{"distance_prior": ...}</code>.</li>
 </ul>
 <h3 id="fixing-parameters">Fixing Parameters<a class="headerlink" href="#fixing-parameters" title="Permanent link">¤</a></h3>
 <p>To fix some parameters at known values (e.g. for testing or when marginalising externally), pass them via <code>fixed_parameters</code>:</p>
@@ -2474,10 +2561,15 @@
 </code></pre></div>
 <p>These values are automatically merged with the sampled parameters at evaluation time.</p>
 <h4 id="derived-fixed-parameters-callables">Derived fixed parameters (callables)<a class="headerlink" href="#derived-fixed-parameters-callables" title="Permanent link">¤</a></h4>
-<p>Sometimes the value you want to fix is not a constant but depends on other sampled parameters. A common example: you want to fix the detector arrival time <code>t_det</code> rather than the geocentric coalescence time <code>t_c</code>. The two are related by</p>
+<p>Sometimes the value you want to fix is not a constant but depends on other sampled parameters.
+A common example: you want to fix the detector arrival time <code>t_det</code> rather than the geocentric coalescence time <code>t_c</code>.
+The two are related by</p>
 <div class="arithmatex">\[t_c = t_{\text{det}} - \Delta t(\text{ra}, \text{dec})\]</div>
-<p>so <code>t_c</code> depends on sky location, which is sampled. Passing a plain number for <code>"t_c"</code> would not capture this.</p>
-<p>For this case every value in <code>fixed_parameters</code> may also be a <strong>callable</strong> <code>f(params) -&gt; value</code>. The callable receives the full parameter dict at evaluation time and must return either a scalar or a full dict. When a dict is returned, Jim extracts only the value for the key being fixed.</p>
+<p>so <code>t_c</code> depends on sky location, which is sampled.
+Passing a plain number for <code>"t_c"</code> would not capture this.</p>
+<p>For this case every value in <code>fixed_parameters</code> may also be a <strong>callable</strong> <code>f(params) -&gt; value</code>.
+The callable receives the full parameter dict at evaluation time and must return either a scalar or a full dict.
+When a dict is returned, Jim extracts only the value for the key being fixed.</p>
 <p>The cleanest way to express this is to reuse the same transform you already define for Jim's likelihood-transform pipeline and pass its <code>backward</code> method directly:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.single_event.transforms</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">GeocentricArrivalTimeToDetectorArrivalTimeTransform</span><span class="p">,</span>
@@ -2511,9 +2603,11 @@
     <span class="p">},</span>
 <span class="p">)</span>
 </code></pre></div>
-<p>Both forms are <code>jax.jit</code>-compatible. Callables are evaluated in <strong>insertion order</strong>, so later entries in <code>fixed_parameters</code> can read values written by earlier ones.</p>
+<p>Both forms are <code>jax.jit</code>-compatible.
+Callables are evaluated in <strong>insertion order</strong>, so later entries in <code>fixed_parameters</code> can read values written by earlier ones.</p>
 <h2 id="fast-likelihoods">Fast Likelihoods<a class="headerlink" href="#fast-likelihoods" title="Permanent link">¤</a></h2>
-<p><code>HeterodynedTransientLikelihoodFD</code> and <code>MultibandedTransientLikelihoodFD</code> are both approximations that trade exactness for speed. They are suitable when the full likelihood is computationally expensive (e.g., long duration signals) and the signal is well-approximated by the underlying assumptions of the method.</p>
+<p><code>HeterodynedTransientLikelihoodFD</code> and <code>MultibandedTransientLikelihoodFD</code> are both approximations that trade exactness for speed.
+They are suitable when the full likelihood is computationally expensive (e.g., long duration signals) and the signal is well-approximated by the underlying assumptions of the method.</p>
 <table>
 <thead>
 <tr>
@@ -2572,9 +2666,11 @@ It requires a set of <em>reference parameters</em> around which the binning is c
     <span class="n">likelihood_transforms</span><span class="o">=</span><span class="p">[</span><span class="n">MassRatioToSymmetricMassRatioTransform</span><span class="p">],</span>
     <span class="n">optimizer_popsize</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span>
     <span class="n">optimizer_n_steps</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="n">optimizer_target</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># optional log-likelihood value to stop early at</span>
 <span class="p">)</span>
 </code></pre></div>
-<p>The optimiser runs <code>evosax.CMA_ES</code> with a JAX-native ask/tell loop, so the waveform evaluations are fully batched and JIT-compiled on CPU/GPU.</p>
+<p>The optimiser runs <code>evosax.CMA_ES</code> with a JAX-native ask/tell loop, so the waveform evaluations are fully batched and JIT-compiled on CPU/GPU.
+It stops once <code>optimizer_n_steps</code> generations have run or the best log-likelihood found reaches <code>optimizer_target</code>, whichever comes first; leave <code>optimizer_target</code> unset to always run the full <code>optimizer_n_steps</code>.</p>
 <h3 id="multibandedtransientlikelihoodfd">MultibandedTransientLikelihoodFD<a class="headerlink" href="#multibandedtransientlikelihoodfd" title="Permanent link">¤</a></h3>
 <p><code>MultibandedTransientLikelihoodFD</code> implements the multi-banding method.</p>
 <p>Pass a <code>prior</code> to let the constructor infer <code>reference_chirp_mass</code>, <code>time_offset</code>, and <code>delta_f_end</code> automatically:</p>
@@ -2599,7 +2695,8 @@ It requires a set of <em>reference parameters</em> around which the binning is c
     <span class="n">reference_chirp_mass</span><span class="o">=</span><span class="mf">1.2</span><span class="p">,</span>
 <span class="p">)</span>
 </code></pre></div>
-<p><strong>Choosing <code>reference_chirp_mass</code>:</strong> use the <strong>minimum</strong> of your chirp-mass prior. A lower chirp mass means a longer signal and finer frequency resolution; setting the reference to the prior minimum ensures the bands are correct for all systems in the prior.</p>
+<p><strong>Choosing <code>reference_chirp_mass</code>:</strong> use the <strong>minimum</strong> of your chirp-mass prior.
+A lower chirp mass means a longer signal and finer frequency resolution; setting the reference to the prior minimum ensures the bands are correct for all systems in the prior.</p>
 
 
 
@@ -2660,7 +2757,7 @@ It requires a set of <em>reference parameters</em> around which the binning is c
       <script id="__config" type="application/json">{"annotate":null,"base":"../..","features":["content.code.copy","navigation.instant","navigation.tabs","navigation.top","toc.follow","header.autohide"],"search":"../../assets/javascripts/workers/search.b6b7e04f.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":{"default":"stable","provider":"mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.ee611ef6.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7f30b55.min.js"></script>
       
         <script src="../../javascripts/mathjax.js"></script>
       

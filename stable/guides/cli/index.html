@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="zensical-0.0.46">
+      <meta name="generator" content="zensical-0.0.51">
     
     
       
@@ -36,7 +36,7 @@
       
         
       
-      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.19d3147f.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.62c9b9cc.min.css">
       
         
           
@@ -1118,6 +1118,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#type-blackjax-swig" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>type = "blackjax-swig"</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#type-blackjax-ns-aw" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1697,6 +1708,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/jimgw/core/single_event/blocked_likelihood/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  blocked_likelihood
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/jimgw/core/single_event/data/" class="md-nav__link">
         
   
@@ -2241,6 +2279,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/jimgw/samplers/blackjax/sharding/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  sharding
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/jimgw/samplers/blackjax/smc/" class="md-nav__link">
         
   
@@ -2249,6 +2314,33 @@
     
   
   smc
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/jimgw/samplers/blackjax/swig/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  swig
 
     
   </span>
@@ -2763,6 +2855,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#type-blackjax-swig" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>type = "blackjax-swig"</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#type-blackjax-ns-aw" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -2825,7 +2928,8 @@
 
 
 <h1 id="cli-config-reference">CLI Config Reference<a class="headerlink" href="#cli-config-reference" title="Permanent link">¤</a></h1>
-<p><code>jim-run</code> is driven entirely by a single TOML file. This page documents every section, field, and default value.</p>
+<p><code>jim-run</code> is driven entirely by a single TOML file.
+This page documents every section, field, and default value.</p>
 <h2 id="cli-flags">CLI flags<a class="headerlink" href="#cli-flags" title="Permanent link">¤</a></h2>
 <div class="highlight"><pre><span></span><code>jim-run<span class="w"> </span><span class="o">[</span>CONFIG<span class="o">]</span><span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
 </code></pre></div>
@@ -2877,7 +2981,8 @@
 </table>
 <hr />
 <h2 id="data"><code>[data]</code><a class="headerlink" href="#data" title="Permanent link">¤</a></h2>
-<p>Selects where strain and PSD data come from. The <code>type</code> field is required and determines which other fields are valid.</p>
+<p>Selects where strain and PSD data come from.
+The <code>type</code> field is required and determines which other fields are valid.</p>
 <h3 id="type-gwosc-fetch-from-gwosc"><code>type = "gwosc"</code> — fetch from GWOSC<a class="headerlink" href="#type-gwosc-fetch-from-gwosc" title="Permanent link">¤</a></h3>
 <p>Fetches public LIGO/Virgo/KAGRA strain and PSD from the Gravitational-Wave Open Science Center.</p>
 <table>
@@ -2994,7 +3099,8 @@
 <span class="n">dec</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="mf">-1.21</span>
 </code></pre></div>
 <h3 id="type-file-load-from-local-files"><code>type = "file"</code> — load from local files<a class="headerlink" href="#type-file-load-from-local-files" title="Permanent link">¤</a></h3>
-<p>Loads strain and PSD from local files. Useful for offline or CI use.</p>
+<p>Loads strain and PSD from local files.
+Useful for offline or CI use.</p>
 <p>Supported strain formats: <code>.npz</code>, <code>.gwf</code> / <code>.gwf.gz</code>, <code>.hdf5</code> / <code>.h5</code>, <code>.csv</code>.
 Supported PSD formats: <code>.npz</code>, <code>.txt</code>, <code>.dat</code>, <code>.csv</code>.</p>
 <table>
@@ -3109,7 +3215,8 @@ Supported PSD formats: <code>.npz</code>, <code>.txt</code>, <code>.dat</code>, 
 </table>
 <hr />
 <h2 id="prior"><code>[prior]</code><a class="headerlink" href="#prior" title="Permanent link">¤</a></h2>
-<p>Each entry maps a parameter name to a prior specification. The parameter name becomes the column name in the output samples.</p>
+<p>Each entry maps a parameter name to a prior specification.
+The parameter name becomes the column name in the output samples.</p>
 <div class="highlight"><pre><span></span><code><span class="k">[prior]</span>
 <span class="n">M_c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;uniform&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">min</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mf">10.0</span><span class="p">,</span><span class="w"> </span><span class="n">max</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mf">80.0</span><span class="w"> </span><span class="p">}</span>
 <span class="n">iota</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;sine&quot;</span><span class="w"> </span><span class="p">}</span>
@@ -3126,15 +3233,18 @@ Supported PSD formats: <code>.npz</code>, <code>.txt</code>, <code>.dat</code>, 
 <h4 id="sine"><code>sine</code><a class="headerlink" href="#sine" title="Permanent link">¤</a></h4>
 <div class="highlight"><pre><span></span><code><span class="n">param</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;sine&quot;</span><span class="w"> </span><span class="p">}</span>
 </code></pre></div>
-<p>Sine-weighted prior on <span class="arithmatex">\([0, \pi]\)</span>. Standard choice for inclination <code>iota</code>.</p>
+<p>Sine-weighted prior on <span class="arithmatex">\([0, \pi]\)</span>.
+Standard choice for inclination <code>iota</code>.</p>
 <h4 id="cosine"><code>cosine</code><a class="headerlink" href="#cosine" title="Permanent link">¤</a></h4>
 <div class="highlight"><pre><span></span><code><span class="n">param</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;cosine&quot;</span><span class="w"> </span><span class="p">}</span>
 </code></pre></div>
-<p>Cosine-weighted prior on <span class="arithmatex">\([-\pi/2, \pi/2]\)</span>. Standard choice for declination <code>dec</code>.</p>
+<p>Cosine-weighted prior on <span class="arithmatex">\([-\pi/2, \pi/2]\)</span>.
+Standard choice for declination <code>dec</code>.</p>
 <h4 id="power_law"><code>power_law</code><a class="headerlink" href="#power_law" title="Permanent link">¤</a></h4>
 <div class="highlight"><pre><span></span><code><span class="n">param</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;power_law&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">min</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="err">&lt;float&gt;, max = &lt;float&gt;, alpha = &lt;float&gt; }</span>
 </code></pre></div>
-<p>Power-law <span class="arithmatex">\(p(x) \propto x^\alpha\)</span> on [<code>min</code>, <code>max</code>]. Use <code>alpha = 2</code> for a prior uniform in volume on luminosity distance.</p>
+<p>Power-law <span class="arithmatex">\(p(x) \propto x^\alpha\)</span> on [<code>min</code>, <code>max</code>].
+Use <code>alpha = 2</code> for a prior uniform in volume on luminosity distance.</p>
 <h4 id="rayleigh"><code>rayleigh</code><a class="headerlink" href="#rayleigh" title="Permanent link">¤</a></h4>
 <div class="highlight"><pre><span></span><code><span class="n">param</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;rayleigh&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">scale</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="err">&lt;float&gt; }</span>
 </code></pre></div>
@@ -3142,10 +3252,13 @@ Supported PSD formats: <code>.npz</code>, <code>.txt</code>, <code>.dat</code>, 
 <h4 id="uniform_sphere"><code>uniform_sphere</code><a class="headerlink" href="#uniform_sphere" title="Permanent link">¤</a></h4>
 <div class="highlight"><pre><span></span><code><span class="n">spin1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;uniform_sphere&quot;</span><span class="w"> </span><span class="p">}</span>
 </code></pre></div>
-<p>Uniform distribution on the unit sphere. Generates <strong>three</strong> output parameters: <code>{name}_mag</code>, <code>{name}_theta</code>, <code>{name}_phi</code>. Use for 3-D spin vectors.</p>
+<p>Uniform distribution on the unit sphere.
+Generates <strong>three</strong> output parameters: <code>{name}_mag</code>, <code>{name}_theta</code>, <code>{name}_phi</code>.
+Use for 3-D spin vectors.</p>
 <hr />
 <h2 id="sampling"><code>[sampling]</code><a class="headerlink" href="#sampling" title="Permanent link">¤</a></h2>
-<p>Optional section that controls the coordinate system the sampler explores. The CLI auto-infers transforms for all other cases.</p>
+<p>Optional section that controls the coordinate system the sampler explores.
+The CLI auto-infers transforms for all other cases.</p>
 <table>
 <thead>
 <tr>
@@ -3247,12 +3360,15 @@ Supported PSD formats: <code>.npz</code>, <code>.txt</code>, <code>.dat</code>, 
 <h3 id="likelihoodheterodyne"><code>[likelihood.heterodyne]</code><a class="headerlink" href="#likelihoodheterodyne" title="Permanent link">¤</a></h3>
 <p>Enables <code>HeterodynedTransientLikelihoodFD</code> (relative binning).</p>
 <div class="highlight"><pre><span></span><code><span class="k">[likelihood.heterodyne]</span>
-<span class="n">n_bins</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1000</span>
+<span class="c1"># Binning: specify at most one of the two options below.</span>
+<span class="c1"># epsilon = 0.5  # max phase change per bin in rad (default when neither is set)</span>
+<span class="c1"># n_bins = 60    # fixed bin count (mutually exclusive with epsilon)</span>
 
 <span class="k">[likelihood.heterodyne.reference_parameters]</span>
 <span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;optimizer&quot;</span><span class="w">   </span><span class="c1"># &quot;optimizer&quot; | &quot;provided&quot; | &quot;injection&quot;</span>
 <span class="n">popsize</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">500</span>
 <span class="n">n_steps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1000</span>
+<span class="c1"># target = -1234.5    # optional log-likelihood value to stop the search early at</span>
 </code></pre></div>
 <table>
 <thead>
@@ -3281,7 +3397,8 @@ Supported PSD formats: <code>.npz</code>, <code>.txt</code>, <code>.dat</code>, 
 <p>All fields are optional; when omitted, defaults are chosen adaptively based on the data and prior.</p>
 <hr />
 <h2 id="sampler"><code>[sampler]</code><a class="headerlink" href="#sampler" title="Permanent link">¤</a></h2>
-<p>The <code>type</code> field selects the backend. Each backend has its own set of tuning parameters.</p>
+<p>The <code>type</code> field selects the backend.
+Each backend has its own set of tuning parameters.</p>
 <h3 id="sampler-comparison">Sampler comparison<a class="headerlink" href="#sampler-comparison" title="Permanent link">¤</a></h3>
 <table>
 <thead>
@@ -3289,7 +3406,6 @@ Supported PSD formats: <code>.npz</code>, <code>.txt</code>, <code>.dat</code>, 
 <th><code>type</code></th>
 <th>Algorithm</th>
 <th>Evidence</th>
-<th>Extra install</th>
 </tr>
 </thead>
 <tbody>
@@ -3297,25 +3413,26 @@ Supported PSD formats: <code>.npz</code>, <code>.txt</code>, <code>.dat</code>, 
 <td><code>flowmc</code></td>
 <td>Normalizing-flow MCMC</td>
 <td>No</td>
-<td>No</td>
 </tr>
 <tr>
 <td><code>blackjax-smc</code></td>
 <td>Sequential Monte Carlo</td>
 <td>Yes</td>
-<td>No</td>
 </tr>
 <tr>
 <td><code>blackjax-nss</code></td>
 <td>Nested slice sampling</td>
 <td>Yes</td>
-<td><code>uv sync --group nested-sampling</code></td>
+</tr>
+<tr>
+<td><code>blackjax-swig</code></td>
+<td>Nested Slice within Gibbs with waveform caching</td>
+<td>Yes</td>
 </tr>
 <tr>
 <td><code>blackjax-ns-aw</code></td>
 <td>Nested sampling (acceptance-walk)</td>
 <td>Yes</td>
-<td><code>uv sync --group nested-sampling</code></td>
 </tr>
 </tbody>
 </table>
@@ -3500,6 +3617,78 @@ Supported PSD formats: <code>.npz</code>, <code>.txt</code>, <code>.dat</code>, 
 <td>Stop when the remaining log-evidence contribution falls below this</td>
 </tr>
 <tr>
+<td><code>n_devices</code></td>
+<td><code>1</code></td>
+<td>Number of local devices used to shard live points; <code>n_live</code> and <code>n_delete</code> must be divisible by it</td>
+</tr>
+<tr>
+<td><code>checkpoint_dir</code></td>
+<td><code>{output.dir}/</code></td>
+<td>Directory for <code>checkpoint.pkl</code>; set by the CLI automatically</td>
+</tr>
+<tr>
+<td><code>checkpoint_interval</code></td>
+<td><code>600.0</code></td>
+<td>Seconds between checkpoint writes; <code>0</code> disables checkpointing</td>
+</tr>
+</tbody>
+</table>
+<h3 id="type-blackjax-swig"><code>type = "blackjax-swig"</code><a class="headerlink" href="#type-blackjax-swig" title="Permanent link">¤</a></h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>blocks</code></td>
+<td>required</td>
+<td>Ordered lists of sampling-space parameter names</td>
+</tr>
+<tr>
+<td><code>n_live</code></td>
+<td><code>500</code></td>
+<td>Number of live points</td>
+</tr>
+<tr>
+<td><code>n_delete_frac</code></td>
+<td><code>0.125</code></td>
+<td>Fraction of live points replaced per iteration</td>
+</tr>
+<tr>
+<td><code>num_inner_steps_per_dim</code></td>
+<td><code>1</code></td>
+<td>Slice steps per dimension within each block</td>
+</tr>
+<tr>
+<td><code>num_gibbs_sweeps</code></td>
+<td><code>2</code></td>
+<td>Complete block sweeps per replacement</td>
+</tr>
+<tr>
+<td><code>max_steps</code></td>
+<td><code>10</code></td>
+<td>Maximum stepping-out expansions per slice</td>
+</tr>
+<tr>
+<td><code>max_shrinkage</code></td>
+<td><code>100</code></td>
+<td>Maximum shrinkage evaluations per slice</td>
+</tr>
+<tr>
+<td><code>termination_dlogz</code></td>
+<td><code>0.1</code></td>
+<td>Stop when the remaining evidence contribution falls below this</td>
+</tr>
+<tr>
+<td><code>n_devices</code></td>
+<td><code>1</code></td>
+<td>Number of local devices used to shard live points; <code>n_live</code> and <code>n_delete</code> must be divisible by it</td>
+</tr>
+<tr>
 <td><code>checkpoint_dir</code></td>
 <td><code>{output.dir}/</code></td>
 <td>Directory for <code>checkpoint.pkl</code>; set by the CLI automatically</td>
@@ -3512,7 +3701,8 @@ Supported PSD formats: <code>.npz</code>, <code>.txt</code>, <code>.dat</code>, 
 </tbody>
 </table>
 <h3 id="type-blackjax-ns-aw"><code>type = "blackjax-ns-aw"</code><a class="headerlink" href="#type-blackjax-ns-aw" title="Permanent link">¤</a></h3>
-<p>Requires all sampling-space parameters to lie in <span class="arithmatex">\([0, 1]\)</span>. The CLI enforces this automatically.</p>
+<p>Requires all sampling-space parameters to lie in <span class="arithmatex">\([0, 1]\)</span>.
+The CLI enforces this automatically.</p>
 <table>
 <thead>
 <tr>
@@ -3619,7 +3809,7 @@ Supported PSD formats: <code>.npz</code>, <code>.txt</code>, <code>.dat</code>, 
 <tbody>
 <tr>
 <td><code>samples.npz</code></td>
-<td>Posterior samples; keys <code>samples</code> (shape <code>n_samples × n_params</code>) and <code>parameter_names</code></td>
+<td>Posterior samples; one array key per parameter name, plus <code>log_likelihood</code></td>
 </tr>
 <tr>
 <td><code>diagnostics.json</code></td>
@@ -3699,7 +3889,7 @@ Supported PSD formats: <code>.npz</code>, <code>.txt</code>, <code>.dat</code>, 
       <script id="__config" type="application/json">{"annotate":null,"base":"../..","features":["content.code.copy","navigation.instant","navigation.tabs","navigation.top","toc.follow","header.autohide"],"search":"../../assets/javascripts/workers/search.b6b7e04f.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":{"default":"stable","provider":"mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.ee611ef6.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7f30b55.min.js"></script>
       
         <script src="../../javascripts/mathjax.js"></script>
       

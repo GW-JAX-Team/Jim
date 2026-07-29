@@ -21,7 +21,7 @@ from jimgw.core.prior import (
 from jimgw.core.single_event.detector import get_H1, get_L1, get_V1
 from jimgw.core.single_event.likelihood import MultibandedTransientLikelihoodFD
 from jimgw.core.single_event.data import Data
-from jimgw.core.single_event.waveform import IMRPhenomXAS_NRTidalv3
+from jimgw.core.single_event.waveform import RippleIMRPhenomXAS_NRTidalv3
 from jimgw.core.single_event.transforms import (
     SkyFrameToDetectorFrameSkyPositionTransform,
     MassRatioToSymmetricMassRatioTransform,
@@ -60,7 +60,7 @@ for ifo in ifos:
 
 # --- Waveform model ---
 
-waveform = IMRPhenomXAS_NRTidalv3(f_ref=20)
+waveform = RippleIMRPhenomXAS_NRTidalv3(f_ref=20)
 
 # --- Prior ---
 

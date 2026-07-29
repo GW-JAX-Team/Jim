@@ -2,6 +2,8 @@
 
 from collections.abc import Sequence
 
+from ripplegw.interfaces import DistanceScaledWaveform
+
 from jimgw.core.single_event.likelihood import SingleEventLikelihood
 from jimgw.core.transforms import (
     BijectiveTransform,
@@ -88,8 +90,9 @@ def _infer_waveform_sampling_dependencies(
                 dependencies[name] = input_dependencies.copy()
 
     waveform_sampling_dependencies: set[str] = set()
+    waveform_caches_distance = isinstance(likelihood.waveform, DistanceScaledWaveform)
     for parameter_name in likelihood.waveform.parameter_names:
-        if parameter_name == "d_L":
+        if parameter_name == "d_L" and waveform_caches_distance:
             # Cached polarizations factor out inverse-distance amplitude.
             continue
         if parameter_name in likelihood.fixed_parameters:

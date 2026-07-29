@@ -451,7 +451,7 @@ class TestJimPriorLikelihoodConsistencyChecks:
             def _evaluate(self, params) -> Float:
                 return 0.0
 
-            def generate_waveform(self, params):
+            def _generate_waveform(self, params):
                 return {}
 
             def _evaluate_from_waveform(self, params, waveform_cache) -> Float:

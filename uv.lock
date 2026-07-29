@@ -925,7 +925,7 @@ wheels = [
 
 [[package]]
 name = "flowmc"
-version = "0.6.1"
+version = "0.6.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "diffrax" },
@@ -936,9 +936,9 @@ dependencies = [
     { name = "optax" },
     { name = "tqdm" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/3a/3e/79ee470c40bd3ae596f17934a62aa3cd8003a7ebe778df87889915ad448a/flowmc-0.6.1.tar.gz", hash = "sha256:e63eaad9ca676af554d0a6545cde3c00f1eb6ab923ce1487fdfcae19a0267828", size = 2829572, upload-time = "2026-06-26T17:44:37.77Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/22/fa/d6a1bbec5dde5ddb2fb652699d8800684fa091c0cad19dcf1d656a12a77e/flowmc-0.6.2.tar.gz", hash = "sha256:ef8821b6a52286a67b2f716a297ae61ee9d0b8e33269be95514c22c9e6891d89", size = 2834532, upload-time = "2026-07-29T09:58:24.783Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8c/f5/6207853e96ffad01c036b5009db8d5b094868574fa25c74739eaa6d1b7c4/flowmc-0.6.1-py3-none-any.whl", hash = "sha256:8a50e995c3ce86432cc0a8671ac40a70901f0939854beca2b33357d3fcb4b6e0", size = 92878, upload-time = "2026-06-26T17:44:36.369Z" },
+    { url = "https://files.pythonhosted.org/packages/b1/01/a6dc628bca9115a09e14112406e8b9d23071dd614ce6452610ea73999149/flowmc-0.6.2-py3-none-any.whl", hash = "sha256:6582d5fd32c1cd27f4daf78a1040d1bb7aab94f0fb4bde34d723cbc6ca3db8c5", size = 93733, upload-time = "2026-07-29T09:58:23.301Z" },
 ]
 
 [[package]]
@@ -1593,7 +1593,7 @@ requires-dist = [
     { name = "numpy", specifier = ">=1.26" },
     { name = "pydantic", specifier = ">=2" },
     { name = "requests", specifier = ">=2.32.3" },
-    { name = "ripplegw", specifier = ">=0.2.1" },
+    { name = "ripplegw", specifier = ">=0.3.0" },
     { name = "scipy", specifier = ">=1.17.1" },
     { name = "tomli-w", specifier = ">=1.0" },
     { name = "typer", specifier = ">=0.12" },
@@ -3533,16 +3533,16 @@ wheels = [
 
 [[package]]
 name = "ripplegw"
-version = "0.2.1"
+version = "0.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jax", version = "0.10.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "jax", version = "0.11.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "jaxtyping" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/2e/ec/e6f6a67c5af1f1ba7f227d73377a1b7ef51441c9ee35fb584b2836a0cc58/ripplegw-0.2.1.tar.gz", hash = "sha256:37cd84f30be7a8cf71a6229a1e198d33976ac77c12d79fb06fdbba962e2fd429", size = 473283, upload-time = "2026-06-26T17:48:46.753Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ee/4b/0497feefa9e502e717be8ac797a401eac2c9eb916bc682d98aeef3a97d91/ripplegw-0.3.0.tar.gz", hash = "sha256:9e2a415a94bf4aaa3d90a2426298cda4c0c1feaaecd8468745dcabc54abfb3d2", size = 479776, upload-time = "2026-07-29T10:33:36.347Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d2/7e/e41edb149a71d7b6a978acf7d333ccee9c09d629e5d1f28c125ee8d68eda/ripplegw-0.2.1-py3-none-any.whl", hash = "sha256:d653bcf1158d49d9213df0a646e32f0c842ff1cecf23966da2a96cf3415671e2", size = 184577, upload-time = "2026-06-26T17:48:45.406Z" },
+    { url = "https://files.pythonhosted.org/packages/b8/cb/b9573f0ceae67274946ab633060053d7509d0d2f833f5f306aa593c13d4b/ripplegw-0.3.0-py3-none-any.whl", hash = "sha256:2aa86258b3b1714a92602d02c5edb58e7305b73bcd4136f5121345414cb7e302", size = 224968, upload-time = "2026-07-29T10:33:34.881Z" },
 ]
 
 [[package]]

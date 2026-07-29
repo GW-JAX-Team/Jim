@@ -9,7 +9,7 @@ import jax.numpy as jnp
 from evosax.algorithms import CMA_ES
 from jax.scipy.special import logsumexp
 from jaxtyping import Array, Complex, Float
-from ripplegw.interfaces import Waveform
+from ripplegw.interfaces import DistanceScaledWaveform, Waveform
 from scipy.interpolate import interp1d
 
 from jimgw.core.base import LikelihoodBase
@@ -115,10 +115,9 @@ class SingleEventLikelihood(LikelihoodBase):
         params: dict[str, Float],
     ) -> dict[str, Complex[Array, " n_freq"]]:
         """Generate sky-frame polarizations normalized to ``d_L = 1`` when possible."""
-        waveform_params = params.copy()
-        if "d_L" in getattr(self.waveform, "parameter_names", ()):
-            waveform_params["d_L"] = 1.0
-        return self.waveform(frequencies, waveform_params)
+        if isinstance(self.waveform, DistanceScaledWaveform):
+            return self.waveform.at_unit_distance(frequencies, params)
+        return self.waveform(frequencies, params)
 
     def _apply_distance_scaling(
         self,
@@ -126,7 +125,7 @@ class SingleEventLikelihood(LikelihoodBase):
         params: dict[str, Float],
     ) -> dict[str, Complex[Array, " n_freq"]]:
         """Apply the physical inverse-distance scaling to cached polarizations."""
-        if "d_L" not in getattr(self.waveform, "parameter_names", ()):
+        if not isinstance(self.waveform, DistanceScaledWaveform):
             return polarizations
         distance_scale = 1.0 / params["d_L"]
         return {
@@ -148,9 +147,13 @@ class SingleEventLikelihood(LikelihoodBase):
         apply_fixed_parameters(prepared_params, self.fixed_parameters)
         return prepared_params
 
-    @abstractmethod
     def generate_waveform(self, params: dict[str, Float]) -> Any:
         """Generate a reusable, distance-normalized waveform cache."""
+        return self._generate_waveform(self._prepare_parameters(params))
+
+    @abstractmethod
+    def _generate_waveform(self, params: dict[str, Float]) -> Any:
+        """Build the waveform cache from already-prepared parameters."""
         raise NotImplementedError("Subclasses must implement this method.")
 
     def evaluate_from_waveform(
@@ -337,7 +340,7 @@ class TransientLikelihoodFD(SingleEventLikelihood):
         if distance_marginalization is not None:
             self._init_distance_marginalization(distance_marginalization)
 
-    def generate_waveform(
+    def _generate_waveform(
         self, params: dict[str, Float]
     ) -> dict[str, Complex[Array, " n_freq"]]:
         """Generate reusable sky-frame waveform polarizations.
@@ -346,8 +349,7 @@ class TransientLikelihoodFD(SingleEventLikelihood):
         cache when ``d_L`` changes. Other effective waveform inputs must remain
         unchanged.
         """
-        prepared = self._prepare_parameters(params)
-        return self._generate_distance_normalized_waveforms(self.frequencies, prepared)
+        return self._generate_distance_normalized_waveforms(self.frequencies, params)
 
     def _evaluate(self, params: dict[str, Float]) -> FloatScalar:
         waveform_sky = self.waveform(self.frequencies, params)
@@ -782,17 +784,16 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
                 masked_freq_grid,
             )
 
-    def generate_waveform(
+    def _generate_waveform(
         self, params: dict[str, Float]
     ) -> dict[str, dict[str, Complex[Array, " n_bins"]]]:
         """Generate distance-normalized bin-edge polarizations for cache reuse."""
-        prepared = self._prepare_parameters(params)
         return {
             "low": self._generate_distance_normalized_waveforms(
-                self.freq_grid_low, prepared
+                self.freq_grid_low, params
             ),
             "high": self._generate_distance_normalized_waveforms(
-                self.freq_grid_high, prepared
+                self.freq_grid_high, params
             ),
         }
 
@@ -1243,13 +1244,12 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
 
         logger.info("Multi-banding setup complete with %d bands", self.n_bands)
 
-    def generate_waveform(
+    def _generate_waveform(
         self, params: dict[str, Float]
     ) -> dict[str, Complex[Array, " n_freq"]]:
         """Generate distance-normalized polarizations at multiband frequencies."""
-        prepared = self._prepare_parameters(params)
         return self._generate_distance_normalized_waveforms(
-            self.unique_frequencies, prepared
+            self.unique_frequencies, params
         )
 
     def _evaluate(self, params: dict[str, Float]) -> FloatScalar:

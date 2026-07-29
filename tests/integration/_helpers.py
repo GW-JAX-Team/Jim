@@ -66,7 +66,7 @@ class _GaussianWaveformCacheLikelihood(SingleEventLikelihood):
     def _evaluate(self, params: dict) -> float:
         return _gaussian_log_likelihood(params["x"], params["y"])
 
-    def generate_waveform(self, params: dict) -> dict:
+    def _generate_waveform(self, params: dict) -> dict:
         return {"x": params["x"]}
 
     def _evaluate_from_waveform(self, params: dict, waveform_cache: dict) -> float:

@@ -2,7 +2,8 @@
 
 This guide covers the different ways to get gravitational-wave data into Jim.
 
-All detector data in Jim lives inside `Detector` objects. Jim ships with convenience constructors for common detectors — LIGO Hanford (`get_H1`), LIGO Livingston (`get_L1`), Virgo (`get_V1`), Einstein Telescope (`get_ET`), and Cosmic Explorer (`get_CE`):
+All detector data in Jim lives inside `Detector` objects.
+Jim ships with convenience constructors for common detectors — LIGO Hanford (`get_H1`), LIGO Livingston (`get_L1`), Virgo (`get_V1`), Einstein Telescope (`get_ET`), and Cosmic Explorer (`get_CE`):
 
 ```python
 from jimgw.core.single_event.detector import get_H1, get_L1, get_V1
@@ -56,7 +57,8 @@ H1.set_data(data)
 
 #### GWF / LAL frame file (`.gwf`)
 
-Pass a channel name via the `channel` argument. If omitted, a set of common LIGO/Virgo channel names is tried automatically:
+Pass a channel name via the `channel` argument.
+If omitted, a set of common LIGO/Virgo channel names is tried automatically:
 
 ```python
 # Explicit channel (recommended)
@@ -86,7 +88,8 @@ H1.set_data(data)
 
 ### Construct from Frequency-Domain Arrays
 
-Use `Data.from_fd()` when you already have frequency-domain strain (e.g. from your own pipeline). The frequency array must form a valid rfft grid:
+Use `Data.from_fd()` when you already have frequency-domain strain (e.g. from your own pipeline).
+The frequency array must form a valid rfft grid:
 
 ```python
 import jax.numpy as jnp
@@ -102,7 +105,36 @@ H1.set_data(data)
 ```
 
 !!! warning
-    The frequency array **must** come from `jnp.fft.rfftfreq`. Internally, `from_fd` reconstructs the full rfft grid and asserts it matches yours exactly. `jnp.linspace` produces floating-point values via a different arithmetic path, so the equality check will fail even for a nominally identical grid.
+    The frequency array **must** come from `jnp.fft.rfftfreq`.
+    Internally, `from_fd` reconstructs the full rfft grid and asserts it matches yours exactly.
+    `jnp.linspace` produces floating-point values via a different arithmetic path, so the equality check will fail even for a nominally identical grid.
+
+## Time-domain windowing
+
+Time-domain data is multiplied by a Tukey window before its Fourier transform.
+This applies only to time-domain inputs: configure the window immediately after creating or loading the data, before starting frequency-domain analysis.
+Once frequency-domain data have been materialized, `set_tukey_window()` raises an error.
+`Data.from_fd()` is already frequency-domain data and cannot be re-windowed.
+
+The default taper has a 0.4-second roll-off on each side.
+For a segment of duration \(T\), `roll_off` must be between 0 and \(T / 2\); equivalently, `alpha` must be between 0 and 1.
+The two parameterizations cannot be provided together.
+Consequently, the default requires a segment at least 0.8 seconds long.
+
+For a segment of duration \(T\), the Tukey shape parameter is:
+
+\[
+\alpha = \frac{2\,t_{\mathrm{rolloff}}}{T},
+\]
+
+For a time-domain `Data` object, set a different roll-off time or provide the Tukey shape parameter directly:
+
+```python
+time_data = Data.from_file("path/to/data.npz")
+# Choose one parameterization:
+time_data.set_tukey_window(roll_off=0.2)  # seconds on each side
+# time_data.set_tukey_window(alpha=0.1)   # direct scipy Tukey parameter
+```
 
 ## PSD
 
@@ -122,7 +154,8 @@ There are two ways to load a PSD from a local file, depending on how much contro
 
 #### One-liner: `load_and_set_psd`
 
-`load_and_set_psd` is a convenience method that loads and sets the PSD in a single call. It supports all the same formats as `PowerSpectrum.from_file` (`.npz`, `.txt`, `.dat`, `.csv`):
+`load_and_set_psd` is a convenience method that loads and sets the PSD in a single call.
+It supports all the same formats as `PowerSpectrum.from_file` (`.npz`, `.txt`, `.dat`, `.csv`):
 
 ```python
 # PSD file — any supported format (values in Hz^{-1})
@@ -134,7 +167,8 @@ H1.load_and_set_psd(asd_file="path/to/asd.npz")
 
 #### Explicit: `PowerSpectrum.from_file` + `set_psd`
 
-For full control, or when your file is not a plain text file, use `PowerSpectrum.from_file`. Supported formats:
+For full control, or when your file is not a plain text file, use `PowerSpectrum.from_file`.
+Supported formats:
 
 | Format | Extensions | Notes |
 | --- | --- | --- |
@@ -174,7 +208,8 @@ H1.set_psd(PowerSpectrum(psd_values, frequencies))
 
 ## Injecting a Simulated Signal
 
-For testing and validation, you can inject a waveform directly into a detector. Set the PSD and frequency bounds first, then call `inject_signal`.
+For testing and validation, you can inject a waveform directly into a detector.
+Set the PSD and frequency bounds first, then call `inject_signal`.
 
 ```python
 import jax

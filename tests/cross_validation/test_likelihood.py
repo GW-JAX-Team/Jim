@@ -23,25 +23,13 @@ import os
 
 os.environ["JAX_PLATFORMS"] = "cpu"
 
+from pathlib import Path
+
 import jax.numpy as jnp
 import numpy as np
 import pytest
-from pathlib import Path
 
-from tests.utils import check_bilby_available
-
-try:
-    check_bilby_available()
-    import bilby
-
-    BILBY_AVAILABLE = True
-except ImportError:
-    BILBY_AVAILABLE = False
-
-pytestmark = pytest.mark.skipif(
-    not BILBY_AVAILABLE,
-    reason="bilby required for cross-validation tests",
-)
+bilby = pytest.importorskip("bilby")
 
 FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
 
@@ -128,8 +116,8 @@ def bilby_to_jim_params(bilby_params: dict) -> dict:
 
 def load_jim_detectors():
     """Load H1 and L1 with GW150914 fixture data and PSD."""
-    from jimgw.core.single_event.detector import get_H1, get_L1
     from jimgw.core.single_event.data import Data, PowerSpectrum
+    from jimgw.core.single_event.detector import get_H1, get_L1
 
     ifos = [get_H1(), get_L1()]
     for ifo in ifos:
@@ -226,8 +214,9 @@ def ripple_pv2_bilby_source(
     """
     import jax.numpy as jnp
     import numpy as np
-    from ripplegw.waveforms.IMRPhenomPv2 import gen_IMRPhenomPv2_hphc
     from bilby.gw.conversion import bilby_to_lalsimulation_spins as b2lal
+
+    from jimgw.core.single_event.waveform import RippleIMRPhenomPv2
 
     # bilby's relative-binning likelihood sets waveform_arguments['fiducial']:
     #   1 → computing the fiducial waveform  → return full frequency grid array
@@ -267,13 +256,23 @@ def ripple_pv2_bilby_source(
         phase=phase,
     )
 
-    theta = jnp.array(
-        [M_c, eta, s1x, s1y, s1z, s2x, s2y, s2z, luminosity_distance, 0.0, phase, iota]
-    )
+    params = {
+        "M_c": M_c,
+        "eta": eta,
+        "s1_x": s1x,
+        "s1_y": s1y,
+        "s1_z": s1z,
+        "s2_x": s2x,
+        "s2_y": s2y,
+        "s2_z": s2z,
+        "d_L": luminosity_distance,
+        "phase_c": phase,
+        "iota": iota,
+    }
     f_jax = jnp.array(eval_freqs, dtype=jnp.float64)
-    hp, hc = gen_IMRPhenomPv2_hphc(f_jax, theta, F_REF)
-    hp_arr = np.array(hp, dtype=complex)
-    hc_arr = np.array(hc, dtype=complex)
+    strain = RippleIMRPhenomPv2(f_ref=F_REF)(f_jax, params)
+    hp_arr = np.array(strain["p"], dtype=complex)
+    hc_arr = np.array(strain["c"], dtype=complex)
     # Replace NaN/Inf (e.g. at f=0 Hz) with 0; GW waveforms vanish at DC.
     hp_arr[~np.isfinite(hp_arr)] = 0.0
     hc_arr[~np.isfinite(hc_arr)] = 0.0
@@ -476,8 +475,8 @@ class TestTransientLikelihoodFD:
         Jim uses direct logsumexp over a fine distance grid;
         bilby uses a 2-D spline look-up table.
         """
-        from jimgw.core.single_event.likelihood import TransientLikelihoodFD
         from jimgw.core.prior import PowerLawPrior
+        from jimgw.core.single_event.likelihood import TransientLikelihoodFD
 
         dist_min, dist_max = 100.0, 2000.0
 
@@ -536,8 +535,8 @@ class TestTransientLikelihoodFD:
         Uses phase=0 for parameter conversion so that jim's forced ``phase_c=0`` remains
         consistent with the cartesian spin components.
         """
-        from jimgw.core.single_event.likelihood import TransientLikelihoodFD
         from jimgw.core.prior import PowerLawPrior
+        from jimgw.core.single_event.likelihood import TransientLikelihoodFD
 
         dist_min, dist_max = 100.0, 2000.0
 
@@ -676,9 +675,8 @@ class TestHeterodynedTransientLikelihoodFD:
         jim_ref_params = setup["jim_params"].copy()
         bilby_ref_params = setup["bilby_params"].copy()
 
-        # Initialize bilby first with its default epsilon so we can read back
-        # the number of bins it chose, then initialize Jim with the same count
-        # for an apples-to-apples comparison.
+        # Pin epsilon=0.5 in both implementations so the bin count is
+        # identical and the comparison is not sensitive to default changes.
         bilby_likelihood = (
             bilby.gw.likelihood.RelativeBinningGravitationalWaveTransient(
                 interferometers=setup["bilby_ifos"],
@@ -686,9 +684,9 @@ class TestHeterodynedTransientLikelihoodFD:
                     setup["duration"], setup["sampling_frequency"]
                 ),
                 fiducial_parameters=bilby_ref_params,
+                epsilon=0.5,
             )
         )
-        n_bins = bilby_likelihood.number_of_bins
 
         jim_likelihood = HeterodynedTransientLikelihoodFD(
             detectors=setup["jim_ifos"],
@@ -696,7 +694,7 @@ class TestHeterodynedTransientLikelihoodFD:
             f_min=F_MIN,
             f_max=F_MAX,
             trigger_time=GPS,
-            n_bins=n_bins,
+            epsilon=0.5,
             reference_parameters=jim_ref_params,
         )
 
@@ -736,9 +734,8 @@ class TestHeterodynedTransientLikelihoodFD:
             minimum=0.0, maximum=2 * np.pi, boundary="periodic", name="phase"
         )
 
-        # Initialize bilby first with its default epsilon so we can read back
-        # the number of bins it chose, then initialize Jim with the same count
-        # for an apples-to-apples comparison.
+        # Pin epsilon=0.5 in both implementations so the bin count is
+        # identical and the comparison is not sensitive to default changes.
         bilby_likelihood = (
             bilby.gw.likelihood.RelativeBinningGravitationalWaveTransient(
                 interferometers=setup["bilby_ifos"],
@@ -748,9 +745,9 @@ class TestHeterodynedTransientLikelihoodFD:
                 fiducial_parameters=bilby_ref_params,
                 phase_marginalization=True,
                 priors=priors,
+                epsilon=0.5,
             )
         )
-        n_bins = bilby_likelihood.number_of_bins
 
         jim_likelihood = HeterodynedTransientLikelihoodFD(
             detectors=setup["jim_ifos"],
@@ -758,7 +755,7 @@ class TestHeterodynedTransientLikelihoodFD:
             f_min=F_MIN,
             f_max=F_MAX,
             trigger_time=GPS,
-            n_bins=n_bins,
+            epsilon=0.5,
             reference_parameters=jim_ref_params,
             phase_marginalization=True,
         )

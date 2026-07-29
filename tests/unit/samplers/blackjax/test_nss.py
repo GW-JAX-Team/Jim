@@ -2,24 +2,25 @@
 
 from __future__ import annotations
 
+import pickle
+from pathlib import Path
+
 import jax
 import numpy as np
-import pickle
 import pytest
-from pathlib import Path
 
 blackjax = pytest.importorskip("blackjax")
 
-from jimgw.core.prior import CombinePrior, UniformPrior  # noqa: E402
-from jimgw.samplers.blackjax.nss import BlackJAXNSSSampler  # noqa: E402
-from jimgw.samplers.config import BlackJAXNSSConfig  # noqa: E402
+from jimgw.core.prior import CombinePrior, UniformPrior
+from jimgw.samplers.blackjax.nss import BlackJAXNSSSampler
+from jimgw.samplers.config import BlackJAXNSSConfig
 
 _SIGMA = 0.05
 _MU = 0.5
 
 
 class _GaussianLikelihood:
-    def evaluate(self, params: dict) -> float:  # type: ignore[override]
+    def evaluate(self, params: dict) -> float:
         x = params["x"]
         y = params["y"]
         return -0.5 * ((x - _MU) ** 2 + (y - _MU) ** 2) / _SIGMA**2
@@ -72,7 +73,7 @@ def test_nss_get_samples_before_sample_raises():
         sampler.get_samples()
 
 
-def _init_pos(n_live: int, seed: int = 99) -> "jax.Array":
+def _init_pos(n_live: int, seed: int = 99) -> jax.Array:
     return jax.random.uniform(jax.random.key(seed), (n_live, 2))
 
 
@@ -190,7 +191,127 @@ def test_nss_checkpoint_file_created(tmp_path, monkeypatch):
         ckpt = pickle.load(f)
     assert "elapsed_time" in ckpt
     assert ckpt["elapsed_time"] >= 0.0
+    assert ckpt["sampler_name"] == sampler.sampler_name
     ckpt_path.unlink()
+
+
+def test_nss_falls_back_to_fresh_run_on_foreign_checkpoint(tmp_path):
+    """A checkpoint written by a different sampler is treated like a corrupt
+    one: NSS logs a warning and starts fresh rather than raising.
+
+    Unlike flowMC (which validates the checkpoint before entering its resume
+    try/except and so raises), NSS/NS AW/SMC validate *inside* the same
+    try/except that already catches corrupt-checkpoint errors, so a foreign
+    ``sampler_name`` is swallowed the same way.
+    """
+    config = BlackJAXNSSConfig(
+        n_live=20,
+        n_delete_frac=0.5,
+        num_inner_steps_per_dim=5,
+        termination_dlogz=2.0,
+        checkpoint_dir=tmp_path,
+        checkpoint_interval=1e-9,
+    )
+    prior = CombinePrior(
+        [
+            UniformPrior(0.0, 1.0, parameter_names=["x"]),
+            UniformPrior(0.0, 1.0, parameter_names=["y"]),
+        ]
+    )
+    likelihood = _GaussianLikelihood()
+    parameter_names = prior.parameter_names
+
+    def log_prior_fn(arr):
+        return prior.log_prob(dict(zip(parameter_names, arr, strict=True)))
+
+    def log_likelihood_fn(arr):
+        return likelihood.evaluate(dict(zip(parameter_names, arr, strict=True)))
+
+    def log_posterior_fn(arr):
+        return log_prior_fn(arr) + log_likelihood_fn(arr)
+
+    sampler = BlackJAXNSSSampler(
+        n_dims=len(parameter_names),
+        log_prior_fn=log_prior_fn,
+        log_likelihood_fn=log_likelihood_fn,
+        log_posterior_fn=log_posterior_fn,
+        config=config,
+    )
+    ckpt_path = tmp_path / "checkpoint.pkl"
+    with open(ckpt_path, "wb") as f:
+        pickle.dump({"sampler_name": "BlackJAX SwiG"}, f)
+
+    sampler.sample(jax.random.key(0), _init_pos(20))
+    result = sampler.get_samples()
+    assert "samples" in result
+
+
+def test_nss_checkpoint_failure_restores_caller_rng_key(tmp_path):
+    """A checkpoint that fails *after* its rng_key is read falls back to the
+    caller-supplied key, not the partially-loaded checkpoint's key.
+    """
+    prior = CombinePrior(
+        [
+            UniformPrior(0.0, 1.0, parameter_names=["x"]),
+            UniformPrior(0.0, 1.0, parameter_names=["y"]),
+        ]
+    )
+    likelihood = _GaussianLikelihood()
+    parameter_names = prior.parameter_names
+
+    def _make(checkpoint_dir=None):
+        config = BlackJAXNSSConfig(
+            n_live=20,
+            n_delete_frac=0.5,
+            num_inner_steps_per_dim=5,
+            termination_dlogz=0.5,
+            checkpoint_dir=checkpoint_dir,
+            checkpoint_interval=1e-9 if checkpoint_dir is not None else 0.0,
+        )
+
+        def log_prior_fn(arr):
+            return prior.log_prob(dict(zip(parameter_names, arr, strict=True)))
+
+        def log_likelihood_fn(arr):
+            return likelihood.evaluate(dict(zip(parameter_names, arr, strict=True)))
+
+        def log_posterior_fn(arr):
+            return log_prior_fn(arr) + log_likelihood_fn(arr)
+
+        return BlackJAXNSSSampler(
+            n_dims=len(parameter_names),
+            log_prior_fn=log_prior_fn,
+            log_likelihood_fn=log_likelihood_fn,
+            log_posterior_fn=log_posterior_fn,
+            config=config,
+        )
+
+    caller_key = jax.random.key(7)
+
+    reference = _make(checkpoint_dir=None)
+    reference.sample(caller_key, _init_pos(20))
+    log_z_reference = reference.get_diagnostics()["log_Z"]
+
+    sampler = _make(checkpoint_dir=tmp_path)
+    ckpt_path = tmp_path / "checkpoint.pkl"
+    # Valid enough to pass `_validate_checkpoint` and overwrite `rng_key` with
+    # a decoy key, but missing "n_iter" so loading fails right after.
+    with open(ckpt_path, "wb") as f:
+        pickle.dump(
+            {
+                "sampler_name": sampler.sampler_name,
+                "state": None,
+                "dead": None,
+                "rng_key": jax.random.key(999),
+            },
+            f,
+        )
+
+    sampler.sample(caller_key, _init_pos(20))
+
+    assert sampler.get_diagnostics()["log_Z"] == pytest.approx(
+        log_z_reference, rel=1e-6
+    )
 
 
 def test_nss_resume_gives_same_result(tmp_path, monkeypatch):

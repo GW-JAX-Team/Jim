@@ -12,27 +12,17 @@ import os
 
 os.environ["JAX_PLATFORMS"] = "cpu"
 
+from itertools import combinations
+
 import jax
 import jax.numpy as jnp
 import numpy as np
 import pytest
-from itertools import combinations
 
-from tests.utils import assert_all_finite, check_bilby_available
+from tests.utils import assert_all_finite
 
-# Check if bilby is available before running tests
-try:
-    check_bilby_available()
-    import bilby_cython  # noqa: F401
-
-    BILBY_AVAILABLE = True
-except ImportError:
-    BILBY_AVAILABLE = False
-
-pytestmark = pytest.mark.skipif(
-    not BILBY_AVAILABLE,
-    reason="bilby required for cross-validation tests",
-)
+pytest.importorskip("bilby")
+pytest.importorskip("bilby_cython")
 
 N_SAMPLES = 1000
 
@@ -54,6 +44,7 @@ class TestSkyFrameToDetectorFrameHighLevel:
         """
         from bilby.gw.detector import InterferometerList
         from bilby.gw.utils import zenith_azimuth_to_ra_dec
+
         from jimgw.core.single_event.detector import get_detector_preset
         from jimgw.core.single_event.transforms import (
             SkyFrameToDetectorFrameSkyPositionTransform,
@@ -140,10 +131,11 @@ class TestThetaPhiToRaDec:
 
     def test_theta_phi_to_ra_dec(self):
         """Compare Jim's _theta_phi_to_ra_dec with bilby's implementation."""
+        from bilby.core.utils import theta_phi_to_ra_dec as bilby_theta_phi_to_ra_dec
+
         from jimgw.core.single_event.transform_utils import (
             _theta_phi_to_ra_dec as jim_theta_phi_to_ra_dec,
         )
-        from bilby.core.utils import theta_phi_to_ra_dec as bilby_theta_phi_to_ra_dec
 
         key = jax.random.key(42)
 
@@ -183,14 +175,15 @@ class TestAngleRotation:
 
     def test_angle_rotation(self):
         """Compare Jim's angle_rotation with bilby_cython's zenith_azimuth_to_theta_phi."""
+        from bilby_cython.geometry import rotation_matrix_from_delta
+        from bilby_cython.geometry import (
+            zenith_azimuth_to_theta_phi as bilby_angle_rotation,
+        )
+
         from jimgw.core.single_event.transform_utils import (
             angle_rotation as jim_angle_rotation,
         )
         from jimgw.core.single_event.transform_utils import euler_rotation
-        from bilby_cython.geometry import (
-            zenith_azimuth_to_theta_phi as bilby_angle_rotation,
-        )
-        from bilby_cython.geometry import rotation_matrix_from_delta
 
         tol_diff_theta = 0
         tol_diff_phi = 0
@@ -236,6 +229,7 @@ class TestDeltaX:
     def test_delta_x(self):
         """Compare Jim's detector vertex differences with bilby's."""
         from bilby.gw.detector import InterferometerList
+
         from jimgw.core.single_event.detector import get_detector_preset
 
         detector_preset = get_detector_preset()
@@ -259,10 +253,11 @@ class TestGMST:
 
     def test_gmst(self):
         """Compare Jim's GMST with bilby_cython's implementation."""
+        from bilby_cython.time import greenwich_mean_sidereal_time
+
         from jimgw.core.single_event.time_utils import (
             greenwich_mean_sidereal_time as jim_gmst,
         )
-        from bilby_cython.time import greenwich_mean_sidereal_time
 
         tol_diff = 0
         gps_times = jax.random.uniform(
@@ -284,14 +279,15 @@ class TestFullTransform:
 
     def test_full_sky_transform(self):
         """Compare Jim's full sky transform with bilby's zenith_azimuth_to_ra_dec."""
-        from jimgw.core.single_event.transforms import (
-            SkyFrameToDetectorFrameSkyPositionTransform,
-        )
-        from jimgw.core.single_event.detector import get_detector_preset
+        from bilby.gw.detector import InterferometerList
         from bilby.gw.utils import (
             zenith_azimuth_to_ra_dec as bilby_zenith_azimuth_to_ra_dec,
         )
-        from bilby.gw.detector import InterferometerList
+
+        from jimgw.core.single_event.detector import get_detector_preset
+        from jimgw.core.single_event.transforms import (
+            SkyFrameToDetectorFrameSkyPositionTransform,
+        )
 
         key = jax.random.key(42)
         gps_time = 1126259642.413
@@ -313,7 +309,7 @@ class TestFullTransform:
             jim_transform = SkyFrameToDetectorFrameSkyPositionTransform(
                 trigger_time=gps_time, ifos=jim_ifos
             )
-            jim_outputs = jim_transform.backward(dict(zenith=zenith, azimuth=azimuth))
+            jim_outputs = jim_transform.backward({"zenith": zenith, "azimuth": azimuth})
             bilby_ra, bilby_dec = bilby_zenith_azimuth_to_ra_dec(
                 zenith[0], azimuth[0], gps_time, bilby_ifos
             )

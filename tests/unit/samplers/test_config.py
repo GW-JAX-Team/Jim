@@ -6,9 +6,11 @@ import pytest
 from pydantic import ValidationError
 
 from jimgw.samplers.config import (
+    BaseSamplerConfig,
     BlackJAXNSAWConfig,
     BlackJAXNSSConfig,
     BlackJAXSMCConfig,
+    BlackJAXSwiGConfig,
     FlowMCConfig,
     GRWConfig,
     HMCConfig,
@@ -46,6 +48,64 @@ def test_sampler_config_union_from_dict():
     cfg4 = ta.validate_python({"type": "blackjax-smc"})
     assert isinstance(cfg4, BlackJAXSMCConfig)
 
+    cfg5 = ta.validate_python({"type": "blackjax-swig", "blocks": [["x"], ["y"]]})
+    assert isinstance(cfg5, BlackJAXSwiGConfig)
+
+
+def test_swig_blocks_must_be_nonempty_and_unique():
+    with pytest.raises(ValidationError, match="at least one"):
+        BlackJAXSwiGConfig(blocks=[])
+    with pytest.raises(ValidationError, match="empty"):
+        BlackJAXSwiGConfig(blocks=[["x"], []])
+    with pytest.raises(ValidationError, match="multiple blocks"):
+        BlackJAXSwiGConfig(blocks=[["x"], ["x"]])
+
+
+def test_swig_sampling_defaults():
+    config = BlackJAXSwiGConfig(blocks=[["x"]])
+    assert config.num_gibbs_sweeps == 2
+    assert config.termination_dlogz == pytest.approx(0.1)
+    assert config.n_devices == 1
+
+
+def test_sampler_configs_do_not_advertise_cache_capabilities():
+    assert not hasattr(FlowMCConfig(), "cache_blocks")
+    assert not hasattr(BlackJAXSwiGConfig(blocks=[["x"]]), "cache_blocks")
+
+
+@pytest.mark.parametrize(
+    ("config_cls", "config_kwargs"),
+    [
+        (BlackJAXNSAWConfig, {}),
+        (BlackJAXNSSConfig, {}),
+        (BlackJAXSwiGConfig, {"blocks": [["x"]]}),
+    ],
+)
+@pytest.mark.parametrize("termination_dlogz", [0.0, -1.0])
+def test_nested_sampling_termination_dlogz_must_be_positive(
+    config_cls, config_kwargs, termination_dlogz
+):
+    with pytest.raises(ValidationError, match="greater than 0"):
+        config_cls(**config_kwargs, termination_dlogz=termination_dlogz)
+
+
+@pytest.mark.parametrize("config_cls", [BlackJAXNSSConfig, BlackJAXSwiGConfig])
+def test_nested_sampler_sharding_requires_divisible_particle_counts(config_cls):
+    kwargs = {"blocks": [["x"]]} if config_cls is BlackJAXSwiGConfig else {}
+    with pytest.raises(ValidationError, match="n_live must be divisible by n_devices"):
+        config_cls(n_live=10, n_delete_frac=0.4, n_devices=4, **kwargs)
+    with pytest.raises(
+        ValidationError, match="n_delete must be divisible by n_devices"
+    ):
+        config_cls(n_live=12, n_delete_frac=0.25, n_devices=2, **kwargs)
+
+
+@pytest.mark.parametrize("config_cls", [BlackJAXNSSConfig, BlackJAXSwiGConfig])
+def test_nested_sampler_sharding_requires_positive_device_count(config_cls):
+    kwargs = {"blocks": [["x"]]} if config_cls is BlackJAXSwiGConfig else {}
+    with pytest.raises(ValidationError, match="greater than or equal to 1"):
+        config_cls(n_devices=0, **kwargs)
+
 
 def test_extra_fields_forbidden():
     with pytest.raises(ValidationError):
@@ -62,8 +122,13 @@ def test_n_delete_frac_validator():
 
 
 def test_base_config_extra_fields_forbidden():
-    with pytest.raises(Exception):
-        FlowMCConfig(unknown_field=True)
+    with pytest.raises(ValidationError):
+        BaseSamplerConfig[str](type="test", unknown_field=True)
+
+
+def test_base_config_requires_sampler_type():
+    with pytest.raises(ValidationError, match="type"):
+        BaseSamplerConfig[str]()
 
 
 # ---------------------------------------------------------------------------

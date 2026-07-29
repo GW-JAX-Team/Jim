@@ -1,32 +1,33 @@
-from typing import Sequence
+from collections.abc import Sequence
+
 import jax.numpy as jnp
 from beartype import beartype as typechecker
-from jaxtyping import Float, Array, jaxtyped
-from jimgw.typing import FloatScalar
+from jaxtyping import Array, Float, jaxtyped
 
 from jimgw.core.single_event.detector import GroundBased2G
-from jimgw.core.transforms import (
-    ConditionalBijectiveTransform,
-    BijectiveTransform,
-    reverse_bijective_transform,
-)
-from jimgw.core.utils import carte_to_spherical_angles
-from jimgw.core.single_event.transform_utils import (
-    m1_m2_to_Mc_q,
-    Mc_q_to_m1_m2,
-    m1_m2_to_Mc_eta,
-    Mc_eta_to_m1_m2,
-    q_to_eta,
-    eta_to_q,
-    ra_dec_to_zenith_azimuth,
-    zenith_azimuth_to_ra_dec,
-    euler_rotation,
-    spin_angles_to_cartesian_spin,
-    cartesian_spin_to_spin_angles,
-)
 from jimgw.core.single_event.time_utils import (
     greenwich_mean_sidereal_time as compute_gmst,
 )
+from jimgw.core.single_event.transform_utils import (
+    Mc_eta_to_m1_m2,
+    Mc_q_to_m1_m2,
+    cartesian_spin_to_spin_angles,
+    eta_to_q,
+    euler_rotation,
+    m1_m2_to_Mc_eta,
+    m1_m2_to_Mc_q,
+    q_to_eta,
+    ra_dec_to_zenith_azimuth,
+    spin_angles_to_cartesian_spin,
+    zenith_azimuth_to_ra_dec,
+)
+from jimgw.core.transforms import (
+    BijectiveTransform,
+    ConditionalBijectiveTransform,
+    reverse_bijective_transform,
+)
+from jimgw.core.utils import carte_to_spherical_angles
+from jimgw.typing import FloatScalar
 
 # Move these to constants.
 HR_TO_RAD = 2 * jnp.pi / 24

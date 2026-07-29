@@ -1,23 +1,24 @@
+from itertools import combinations
+
 import jax
 import jax.numpy as jnp
 import numpy as np
-from itertools import combinations
 
+from jimgw.core.single_event.detector import get_detector_preset
 from jimgw.core.single_event.transforms import (
-    DistanceToSNRWeightedDistanceTransform,
-    SphereSpinToCartesianSpinTransform,
-    SpinAnglesToCartesianSpinTransform,
-    SkyFrameToDetectorFrameSkyPositionTransform,
-    GeocentricArrivalTimeToDetectorArrivalTimeTransform,
-    GeocentricArrivalPhaseToDetectorArrivalPhaseTransform,
-    ComponentMassesToChirpMassMassRatioTransform,
-    ComponentMassesToChirpMassSymmetricMassRatioTransform,
-    MassRatioToSymmetricMassRatioTransform,
     ChirpMassMassRatioToComponentMassesTransform,
     ChirpMassSymmetricMassRatioToComponentMassesTransform,
+    ComponentMassesToChirpMassMassRatioTransform,
+    ComponentMassesToChirpMassSymmetricMassRatioTransform,
+    DistanceToSNRWeightedDistanceTransform,
+    GeocentricArrivalPhaseToDetectorArrivalPhaseTransform,
+    GeocentricArrivalTimeToDetectorArrivalTimeTransform,
+    MassRatioToSymmetricMassRatioTransform,
+    SkyFrameToDetectorFrameSkyPositionTransform,
+    SphereSpinToCartesianSpinTransform,
+    SpinAnglesToCartesianSpinTransform,
     SymmetricMassRatioToMassRatioTransform,
 )
-from jimgw.core.single_event.detector import get_detector_preset
 from tests.utils import assert_all_finite, common_keys_allclose
 
 detector_preset = get_detector_preset()
@@ -475,7 +476,7 @@ class TestSkyFrameToDetectorFrameSkyPositionTransform:
             "ra": jax.random.uniform(subkeys[0], (1,), minval=0, maxval=2 * jnp.pi)[0],
             "dec": jax.random.uniform(subkeys[1], (1,), minval=0, maxval=jnp.pi)[0],
         }
-        class_args = dict(trigger_time=1126259642.4, ifos=[H1, L1])
+        class_args = {"trigger_time": 1126259642.4, "ifos": [H1, L1]}
 
         jit_transform = jax.jit(
             lambda data: SkyFrameToDetectorFrameSkyPositionTransform(
@@ -502,7 +503,7 @@ class TestSkyFrameToDetectorFrameSkyPositionTransform:
                 subkeys[1], (1,), minval=0, maxval=2 * jnp.pi
             )[0],
         }
-        class_args = dict(trigger_time=1126259642.4, ifos=[H1, L1])
+        class_args = {"trigger_time": 1126259642.4, "ifos": [H1, L1]}
 
         jit_inverse_transform = jax.jit(
             lambda data: SkyFrameToDetectorFrameSkyPositionTransform(
@@ -597,7 +598,7 @@ class TestGeocentricArrivalTimeToDetectorArrivalTimeTransform:
             "dec": -0.5,
         }
 
-        class_args = dict(trigger_time=gps_time, ifo=H1)
+        class_args = {"trigger_time": gps_time, "ifo": H1}
 
         jit_transform = jax.jit(
             lambda data: GeocentricArrivalTimeToDetectorArrivalTimeTransform(
@@ -624,7 +625,7 @@ class TestGeocentricArrivalTimeToDetectorArrivalTimeTransform:
             "dec": 0.3,
         }
 
-        class_args = dict(trigger_time=gps_time, ifo=L1)
+        class_args = {"trigger_time": gps_time, "ifo": L1}
 
         jit_inverse_transform = jax.jit(
             lambda data: GeocentricArrivalTimeToDetectorArrivalTimeTransform(
@@ -754,7 +755,7 @@ class TestGeocentricArrivalPhaseToDetectorArrivalPhaseTransform:
             "iota": 2.5,
         }
 
-        class_args = dict(trigger_time=gps_time, ifo=H1)
+        class_args = {"trigger_time": gps_time, "ifo": H1}
 
         jit_transform = jax.jit(
             lambda data: GeocentricArrivalPhaseToDetectorArrivalPhaseTransform(
@@ -783,7 +784,7 @@ class TestGeocentricArrivalPhaseToDetectorArrivalPhaseTransform:
             "iota": 1.5,
         }
 
-        class_args = dict(trigger_time=gps_time, ifo=L1)
+        class_args = {"trigger_time": gps_time, "ifo": L1}
 
         jit_inverse_transform = jax.jit(
             lambda data: GeocentricArrivalPhaseToDetectorArrivalPhaseTransform(

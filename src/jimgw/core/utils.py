@@ -109,3 +109,10 @@ def carte_to_spherical_angles(
         jnp.atan2(y, x),
     )
     return theta, phi
+
+
+def round_up_to_power_of_two(n: int) -> int:
+    """Round up to the nearest power of two."""
+    if n <= 0:
+        return 1
+    return 1 << (n - 1).bit_length()

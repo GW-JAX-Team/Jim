@@ -9,9 +9,10 @@ There is the new `jax_datetime` package, but it does not compute the year and mo
 See: https://github.com/google/jax-datetime/
 """
 
-from jax import config
 import jax.numpy as jnp
+from jax import config
 from jaxtyping import Array, Bool, Int
+
 from jimgw.typing import FloatLike, FloatScalar, IntScalar
 
 if not config.read("jax_enable_x64"):

@@ -1,26 +1,51 @@
+from typing import cast
+
 import jax
 import jax.numpy as jnp
 import pytest
-import scipy.stats as stats
+from scipy import stats
 
+from jimgw.core.base import LikelihoodBase
 from jimgw.core.jim import Jim
 from jimgw.core.prior import (
+    BoundedMixin,
+    CombinePrior,
+    CosinePrior,
+    GaussianPrior,
     LogisticDistribution,
+    PowerLawPrior,
     Prior,
+    RayleighPrior,
+    SequentialTransformPrior,
+    SinePrior,
     StandardNormalDistribution,
     UniformDistribution,
     UniformPrior,
-    SinePrior,
-    CosinePrior,
     UniformSpherePrior,
-    PowerLawPrior,
-    GaussianPrior,
-    RayleighPrior,
-    BoundedMixin,
-    SequentialTransformPrior,
+    find_specific_prior,
 )
-from jimgw.samplers.config import BlackJAXNSSConfig, BlackJAXSMCConfig
+from jimgw.samplers.config import (
+    BlackJAXNSSConfig,
+    BlackJAXSMCConfig,
+)
 from tests.utils import assert_all_finite, assert_all_in_range
+
+
+class TestPriorLookup:
+    def test_finds_component_prior_in_nested_combine_prior(self):
+        mc_prior = UniformPrior(10.0, 30.0, ["M_c"])
+        tc_prior = UniformPrior(-0.1, 0.1, ["t_c"])
+        prior = CombinePrior([CombinePrior([mc_prior]), tc_prior])
+
+        assert find_specific_prior(prior, "M_c") is mc_prior
+        assert find_specific_prior(prior, "t_c") is tc_prior
+
+    def test_finds_gaussian_component_and_returns_none_when_absent(self):
+        mc_prior = GaussianPrior(20.0, 1.0, ["M_c"])
+        prior = CombinePrior([mc_prior])
+
+        assert find_specific_prior(prior, "M_c") is mc_prior
+        assert find_specific_prior(prior, "t_c") is None
 
 
 class TestUnivariatePrior:
@@ -365,32 +390,38 @@ class TestOther:
         """A custom Prior subclass without is_normalized override returns False."""
 
         class MyPrior(Prior):
-            def log_prob(self, z):  # noqa: ARG002
+            def log_prob(self, z):
                 return jnp.array(0.0)
 
-            def sample(self, rng_key, n_samples):  # noqa: ARG002
+            def sample(self, rng_key, n_samples):
                 return {"x": jnp.zeros(n_samples)}
 
         assert MyPrior(("x",)).is_normalized is False
 
     def test_unnormalized_prior_raises_for_evidence_samplers(self):
-        """Jim raises ValueError at construction when an unnormalized prior is paired with NSS or SMC."""
+        """Jim rejects unnormalized priors for evidence-computing samplers."""
 
         class MyPrior(Prior):
-            def log_prob(self, z):  # noqa: ARG002
+            def log_prob(self, z):
                 return jnp.array(0.0)
 
-            def sample(self, rng_key, n_samples):  # noqa: ARG002
+            def sample(self, rng_key, n_samples):
                 return {"x": jnp.zeros(n_samples)}
 
         class MockLikelihood:
-            def evaluate(self, params):  # noqa: ARG002
+            def evaluate(self, params):
                 return jnp.array(0.0)
 
         prior = MyPrior(("x",))
         lh = MockLikelihood()
 
-        with pytest.raises(ValueError, match="normalized prior"):
-            Jim(likelihood=lh, prior=prior, sampler_config=BlackJAXNSSConfig())  # type: ignore[arg-type]
-        with pytest.raises(ValueError, match="normalized prior"):
-            Jim(likelihood=lh, prior=prior, sampler_config=BlackJAXSMCConfig())  # type: ignore[arg-type]
+        for sampler_config in (
+            BlackJAXNSSConfig(),
+            BlackJAXSMCConfig(),
+        ):
+            with pytest.raises(ValueError, match="normalized prior"):
+                Jim(
+                    likelihood=cast(LikelihoodBase, lh),
+                    prior=prior,
+                    sampler_config=sampler_config,
+                )

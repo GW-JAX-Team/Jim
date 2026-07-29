@@ -4,19 +4,23 @@
 
 [![docs](https://img.shields.io/badge/docs-online-blue)](https://gw-jax-team.github.io/Jim/) [![license](https://img.shields.io/badge/License-MIT-blue)](https://github.com/GW-JAX-Team/Jim/blob/main/LICENSE) [![coverage](https://img.shields.io/coveralls/github/GW-JAX-Team/Jim/main)](https://coveralls.io/github/GW-JAX-Team/Jim?branch=main) [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/GW-JAX-Team/Jim/main.svg)](https://results.pre-commit.ci/latest/github/GW-JAX-Team/Jim/main)
 
-Jim is a JAX-based toolkit for Bayesian parameter estimation of gravitational-wave sources. It pairs differentiable waveform models from [ripple](https://github.com/GW-JAX-Team/ripple) with GPU-accelerated JAX-based samplers, enabling massively parallel inference.
+Jim is a JAX-based toolkit for Bayesian parameter estimation of gravitational-wave sources.
+It pairs differentiable waveform models from [ripple](https://github.com/GW-JAX-Team/ripple) with GPU-accelerated JAX-based samplers, enabling massively parallel inference.
 
 **Supported samplers:**
 
 - [flowMC](https://github.com/GW-JAX-Team/flowMC) — normalizing-flow-enhanced MCMC with optional parallel tempering.
-- [BlackJAX NS-AW](https://github.com/mrosep/blackjax_ns_gw) — nested sampling described in [Prathaban et al. 2025 (arXiv:2509.04336)](https://arxiv.org/abs/2509.04336).
-- [BlackJAX NSS](https://github.com/handley-lab/blackjax) — nested slice sampling.
+- [BlackJAX NS AW](https://github.com/mrosep/blackjax_ns_gw) — nested sampling described in [Prathaban et al. 2025 (arXiv:2509.04336)](https://arxiv.org/abs/2509.04336).
+- [BlackJAX NSS](https://github.com/blackjax-devs/blackjax) — nested slice sampling.
+- [BlackJAX SwiG](https://github.com/blackjax-devs/blackjax) — nested Slice within Gibbs with waveform-cache reuse across parameter blocks.
 - [BlackJAX SMC](https://github.com/blackjax-devs/blackjax) — sequential Monte Carlo with optional adaptive tempering and persistent sampling.
 
 For a quick introduction, see the [Quick Start guide](https://gw-jax-team.github.io/Jim/stable/quickstart/).
 
 > [!WARNING]
-> Jim has not yet reached v1.0.0 and the API may change. Use at your own risk. Consider pinning to a specific version if you need API stability.
+> Jim has not yet reached v1.0.0 and the API may change.
+> Use at your own risk.
+> Consider pinning to a specific version if you need API stability.
 
 ## Installation
 
@@ -43,7 +47,8 @@ cd Jim
 pip install -e .
 ```
 
-We recommend using [uv](https://docs.astral.sh/uv/) to manage your Python environment. After cloning the repository, run `uv sync` to create a virtual environment with all dependencies installed.
+We recommend using [uv](https://docs.astral.sh/uv/) to manage your Python environment.
+After cloning the repository, run `uv sync` to create a virtual environment with all dependencies installed.
 
 ## Origins
 

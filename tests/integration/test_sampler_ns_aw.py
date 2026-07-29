@@ -1,4 +1,4 @@
-"""Integration test: BlackJAX NS-AW sampler end-to-end with a 2-D Gaussian."""
+"""Integration test: BlackJAX NS AW sampler end-to-end with a 2-D Gaussian."""
 
 from __future__ import annotations
 
@@ -9,9 +9,8 @@ pytestmark = pytest.mark.integration
 
 blackjax = pytest.importorskip("blackjax")
 
-from jimgw.samplers.config import BlackJAXNSAWConfig  # noqa: E402
-
-from tests.integration._helpers import make_gaussian_jim  # noqa: E402
+from jimgw.samplers.config import BlackJAXNSAWConfig
+from tests.integration._helpers import make_gaussian_jim
 
 
 @pytest.fixture(scope="module")

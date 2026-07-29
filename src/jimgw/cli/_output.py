@@ -5,7 +5,7 @@ from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import Optional
 
-import corner  # type: ignore[import]
+import corner
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import numpy as np
@@ -13,7 +13,7 @@ import tomli_w
 
 from jimgw.cli._transforms import to_likelihood_space
 from jimgw.core.single_event.detector import GroundBased2G
-from jimgw.core.transforms import NtoMTransform
+from jimgw.core.transforms import BijectiveTransform, NtoMTransform
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +36,7 @@ def write_outputs(jim, cfg) -> None:
     # Samples
     samples = jim.get_samples(n_samples=cfg.output.n_samples)
     samples_path = out_dir / "samples.npz"
+    # NumPy's stubs do not model dynamically named arrays unpacked as kwargs.
     np.savez(samples_path, **{k: np.asarray(v) for k, v in samples.items()})  # type: ignore[call-overload]
     logger.info(
         "Saved %d samples to %s", next(iter(samples.values())).shape[0], samples_path
@@ -55,6 +56,7 @@ def write_outputs(jim, cfg) -> None:
 
     if array_diag:
         diag_npz = out_dir / "diagnostics.npz"
+        # NumPy's stubs do not model dynamically named arrays unpacked as kwargs.
         np.savez(diag_npz, **{k: np.asarray(v) for k, v in array_diag.items()})  # type: ignore[call-overload]
         logger.info("Saved array diagnostics to %s", diag_npz)
 
@@ -117,8 +119,8 @@ def _injection_truths_in_prior_space(
     for transform in reversed(likelihood_transforms):
         # All currently supported likelihood transforms have a backward method
         # but this may not always be the case.
-        if hasattr(transform, "backward"):
-            p = transform.backward(p)  # type: ignore[attr-defined]
+        if isinstance(transform, BijectiveTransform):
+            p = transform.backward(p)
         else:
             logger.warning(
                 "Likelihood transform %s does not have a backward method — "
@@ -133,9 +135,9 @@ def _injection_truths_in_prior_space(
         named: dict = {k: jnp.float64(v) for k, v in result.items()}
         for transform in jim.sample_transforms:
             named = transform.forward(named)
-        arr = jnp.array([named[k] for k in jim.parameter_names])
+        arr = jnp.array([named[k] for k in jim.sampling_parameter_names])
         result["log_likelihood"] = float(jim._log_likelihood_fn(arr))
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 - output generation must not fail a run
         logger.warning("Could not compute injection log-likelihood: %s", exc)
 
     return result

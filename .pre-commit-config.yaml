@@ -1,26 +1,35 @@
 ci:
   autoupdate_branch: jim-dev
-  skip: [uv-lock, pyright]
+  autoupdate_schedule: quarterly
+  skip: [uv-lock, pyright, ty]
 
 repos:
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.11.19
+    rev: 0.11.32
     hooks:
       - id: uv-lock
         args: ["--upgrade"]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.16
+    rev: v0.16.0
     hooks:
       - id: ruff-check
         args: ["--fix"]
         files: src/
       - id: ruff-format
         files: src/
-  
-  - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.410
+
+  - repo: https://github.com/astral-sh/ty-pre-commit
+    rev: v0.0.64
     hooks:
-    - id: pyright
-      files: src/
-      additional_dependencies: ["astropy>=7.0.1", "beartype>=0.19.0", "evosax>=0.2.0", "flowMC>=0.6.1", "gwpy>=3.0.12", "jax>=0.8.2", "jaxtyping>=0.3.3", pytest, "ripplegw>=0.2.1", typing_extensions, "blackjax@git+https://github.com/GW-JAX-Team/blackjax.git@jim", "pydantic>=2", "anesthetic>=2", "tomli-w>=1.0", "typer>=0.12"]
+      - id: ty
+        args: ["--no-sync"]
+  
+  - repo: local
+    hooks:
+      - id: pyright
+        name: pyright
+        entry: uv run pyright
+        language: system
+        files: src/
+        require_serial: true

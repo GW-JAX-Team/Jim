@@ -16,50 +16,58 @@ from typing import NamedTuple, cast
 import jax
 import jax.flatten_util
 import jax.numpy as jnp
-
 from blackjax.base import SamplingAlgorithm
-from blackjax.types import ArrayLikeTree
+from blackjax.ns.adaptive import (
+    AdaptiveNSState,
+)
+from blackjax.ns.adaptive import (
+    build_kernel as build_adaptive_kernel,
+)
+from blackjax.ns.adaptive import (
+    init as adaptive_init,
+)
 from blackjax.ns.base import (
     NSState,
     StateWithLogLikelihood,
-    delete_fn as default_delete_fn,
     init_state_strategy,
 )
-from blackjax.ns.adaptive import (
-    AdaptiveNSState,
-    build_kernel as build_adaptive_kernel,
-    init as adaptive_init,
+from blackjax.ns.base import (
+    delete_fn as default_delete_fn,
 )
+from blackjax.types import ArrayLikeTree
+from jaxtyping import Array, Bool, Float, Key
+
+from jimgw.typing import FloatScalar, IntScalar
 
 
 class DEInfo(NamedTuple):
-    is_accepted: jax.Array
-    evals: jax.Array
-    likelihood_evals: jax.Array
+    is_accepted: Bool[Array, ""]
+    evals: IntScalar
+    likelihood_evals: IntScalar
 
 
 class DEWalkInfo(NamedTuple):
-    n_accept: jax.Array
-    walks_completed: jax.Array
-    n_likelihood_evals: jax.Array
-    total_proposals: jax.Array
+    n_accept: IntScalar
+    walks_completed: IntScalar
+    n_likelihood_evals: IntScalar
+    total_proposals: IntScalar
 
 
 class DEKernelParams(NamedTuple):
     live_points: ArrayLikeTree
-    loglikelihoods: jax.Array
+    loglikelihoods: Float[Array, " n_live"]
     mix: float
-    scale: jax.Array
-    num_walks: jax.Array
-    walks_float: jax.Array
-    n_accept_total: jax.Array
-    n_likelihood_evals_total: jax.Array
+    scale: FloatScalar
+    num_walks: IntScalar
+    walks_float: FloatScalar
+    n_accept_total: IntScalar
+    n_likelihood_evals_total: IntScalar
 
 
 def _de_one_step(
-    rng_key: jax.Array,
+    rng_key: Key,
     state: StateWithLogLikelihood,
-    loglikelihood_0: jax.Array,
+    loglikelihood_0: FloatScalar,
     logprior_fn,
     loglikelihood_fn,
     params: DEKernelParams,
@@ -68,7 +76,7 @@ def _de_one_step(
     max_proposals: int = 1000,
 ):
     def body_fun(carry):
-        is_valid, key, pos, logp, count = carry
+        _is_valid, key, _pos, _logp, count = carry
         key_a, key_b, key_mix, key_gamma, new_key = jax.random.split(key, 5)
 
         _, top_indices = jax.lax.top_k(params.loglikelihoods, num_survivors)
@@ -127,9 +135,9 @@ def _de_one_step(
 
 
 def _de_walk(
-    rng_key: jax.Array,
+    rng_key: Key,
     state: StateWithLogLikelihood,
-    loglikelihood_0: jax.Array,
+    loglikelihood_0: FloatScalar,
     logprior_fn,
     loglikelihood_fn,
     params: DEKernelParams,
@@ -211,7 +219,7 @@ def _update_bilby_walks(
     max_mcmc: int,
     n_delete: int,
 ) -> DEKernelParams:
-    prev_params = ns_state.inner_kernel_params["params"]  # type: ignore[attr-defined]  # blackjax fork stubs
+    prev_params = ns_state.inner_kernel_params["params"]  # type: ignore[attr-defined]  # blackjax stubs
     is_uninitialized = prev_params.n_accept_total < 0
 
     default_walks_float = jnp.array(100.0, dtype=jnp.float32)
@@ -219,7 +227,7 @@ def _update_bilby_walks(
     default_current_walks = jnp.array(100, dtype=jnp.int32)
 
     walks_float = cast(
-        jax.Array,
+        FloatScalar,
         jnp.where(
             is_uninitialized,
             default_walks_float,
@@ -227,7 +235,7 @@ def _update_bilby_walks(
         ),
     )
     n_accept_total = cast(
-        jax.Array,
+        IntScalar,
         jnp.where(
             is_uninitialized,
             default_n_accept_total,
@@ -235,7 +243,7 @@ def _update_bilby_walks(
         ),
     )
     current_walks = cast(
-        jax.Array,
+        IntScalar,
         jnp.where(
             is_uninitialized,
             default_current_walks,
@@ -243,7 +251,7 @@ def _update_bilby_walks(
         ),
     )
 
-    leaves = cast(list[jax.Array], jax.tree_util.tree_leaves(ns_state.particles))
+    leaves = jax.tree_util.tree_leaves(ns_state.particles)
     nlive = leaves[0].shape[0]
     og_delay = nlive // 10 - 1
     delay = jnp.maximum(og_delay // n_delete, 1)
@@ -254,7 +262,7 @@ def _update_bilby_walks(
     )
     new_walks_float = (walks_float * delay + n_target / accept_prob) / (delay + 1)
     new_walks_float = cast(
-        jax.Array, jnp.where(n_accept_total == 0, walks_float, new_walks_float)
+        FloatScalar, jnp.where(n_accept_total == 0, walks_float, new_walks_float)
     )
     num_walks_int = jnp.minimum(jnp.ceil(new_walks_float).astype(jnp.int32), max_mcmc)
 
@@ -318,7 +326,8 @@ def bilby_adaptive_de_sampler(
         loglikelihoods = particles.loglikelihood
         weights = (loglikelihoods > loglikelihood_0).astype(jnp.float32)
         weights = cast(
-            jax.Array, jnp.where(weights.sum() > 0.0, weights, jnp.ones_like(weights))
+            Float[Array, " n_live"],
+            jnp.where(weights.sum() > 0.0, weights, jnp.ones_like(weights)),
         )
         start_idx = jax.random.choice(
             choice_key,
@@ -346,7 +355,7 @@ def bilby_adaptive_de_sampler(
 
         return jax.vmap(single)(sub_keys, start_states)
 
-    base_kernel_step = build_adaptive_kernel(delete_fn, inner_kernel, update_fn)  # type: ignore[arg-type]  # blackjax fork stubs
+    base_kernel_step = build_adaptive_kernel(delete_fn, inner_kernel, update_fn)  # type: ignore[arg-type]  # blackjax stubs
 
     def init_fn(particles):
         # Use lax.map instead of vmap to bound peak memory during init.
@@ -388,4 +397,4 @@ def bilby_adaptive_de_sampler(
     def step_fn(rng_key, state: AdaptiveNSState):
         return base_kernel_step(rng_key, state)
 
-    return SamplingAlgorithm(init_fn, step_fn)  # type: ignore[arg-type]  # blackjax fork stubs
+    return SamplingAlgorithm(init_fn, step_fn)  # type: ignore[arg-type]  # blackjax stubs

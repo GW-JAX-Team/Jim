@@ -6,8 +6,10 @@ import pytest
 from pydantic import ValidationError
 
 from jimgw.cli._config import (
+    CLIOptimizerRefParams,
     CosineSpec,
     FileDataConfig,
+    GaussianSpec,
     GWOSCDataConfig,
     InjectionDataConfig,
     PipelineConfig,
@@ -16,7 +18,6 @@ from jimgw.cli._config import (
     RayleighSpec,
     SineSpec,
     UniformSpec,
-    GaussianSpec,
     WaveformConfig,
 )
 
@@ -186,7 +187,7 @@ def test_file_config_from_toml():
     assert isinstance(cfg.data, FileDataConfig)
     assert cfg.data.trigger_time == 1126259462.4
     assert len(cfg.prior.root) == 11
-    assert cfg.sampler.type == "flowmc"  # type: ignore[union-attr]
+    assert cfg.sampler.type == "flowmc"
 
 
 def test_sampling_config_defaults():
@@ -202,6 +203,18 @@ def test_likelihood_config_values():
     assert cfg.likelihood.phase_marginalization is False
     assert cfg.likelihood.time_marginalization is None
     assert cfg.likelihood.distance_marginalization is None
+
+
+def test_optimizer_ref_params_target_defaults_to_none():
+    cfg = CLIOptimizerRefParams.model_validate({})
+    assert cfg.popsize == 500
+    assert cfg.n_steps == 1000
+    assert cfg.target is None
+
+
+def test_optimizer_ref_params_target_parses():
+    cfg = CLIOptimizerRefParams.model_validate({"target": -1234.5})
+    assert cfg.target == -1234.5
 
 
 def test_waveform_config_f_ref_default():
@@ -345,7 +358,7 @@ def test_incomplete_detector_sky_rejected():
 
 
 # ---------------------------------------------------------------------------
-# NS-AW sampler prior constraints
+# NS AW sampler prior constraints
 # ---------------------------------------------------------------------------
 
 
@@ -375,5 +388,38 @@ def test_ns_aw_non_uniform_t_det_rejected():
                     "t_det": {"type": "gaussian", "loc": 0.0, "scale": 0.05},
                 },
                 "sampler": {"type": "blackjax-ns-aw"},
+            }
+        )
+
+
+# ---------------------------------------------------------------------------
+# SwiG sampler config
+# ---------------------------------------------------------------------------
+
+
+def test_swig_sampler_parses_from_toml():
+    from jimgw.samplers.config import BlackJAXSwiGConfig
+
+    cfg = PipelineConfig.model_validate(
+        {
+            **_MINIMAL_RAW,
+            "sampler": {
+                "type": "blackjax-swig",
+                "blocks": [["M_c"], ["q"]],
+                "n_live": 4,
+                "n_delete_frac": 0.5,
+            },
+        }
+    )
+    assert isinstance(cfg.sampler, BlackJAXSwiGConfig)
+    assert cfg.sampler.blocks == [["M_c"], ["q"]]
+
+
+def test_swig_sampler_requires_blocks():
+    with pytest.raises(ValidationError, match="blocks"):
+        PipelineConfig.model_validate(
+            {
+                **_MINIMAL_RAW,
+                "sampler": {"type": "blackjax-swig"},
             }
         )

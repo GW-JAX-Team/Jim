@@ -20,18 +20,16 @@ from pydantic import (
     model_validator,
 )
 
-# SamplerConfig is safe to import here — samplers/config.py only uses numpy.
-from jimgw.samplers.config import SamplerConfig
-
-
 from jimgw.cli._utils import (
-    CARTESIAN_SPIN_PARAMS as _CARTESIAN_SPIN_PARAMS,
-    DETECTOR_SKY_PARAMS as _DETECTOR_SKY_PARAMS,
-    EQUATORIAL_SKY_PARAMS as _EQUATORIAL_SKY_PARAMS,
-    J_FRAME_SPIN_PARAMS as _J_FRAME_SPIN_PARAMS,
-    SUPPORTED_DETECTORS as _SUPPORTED_DETECTORS,
+    CARTESIAN_SPIN_PARAMS,
+    DETECTOR_SKY_PARAMS,
+    EQUATORIAL_SKY_PARAMS,
+    J_FRAME_SPIN_PARAMS,
+    SUPPORTED_DETECTORS,
 )
 
+# SamplerConfig is safe to import here — samplers/config.py only uses numpy.
+from jimgw.samplers.config import SamplerConfig
 
 # ---------------------------------------------------------------------------
 # Data section
@@ -48,11 +46,11 @@ class _DataBase(BaseModel):
     def _check_detectors(cls, v: list[str]) -> list[str]:
         if not v:
             raise ValueError("data.detectors must be a non-empty list")
-        unknown = [d for d in v if d not in _SUPPORTED_DETECTORS]
+        unknown = [d for d in v if d not in SUPPORTED_DETECTORS]
         if unknown:
             raise ValueError(
                 f"Unknown detector name(s): {unknown}. "
-                f"Supported: {sorted(_SUPPORTED_DETECTORS)}"
+                f"Supported: {sorted(SUPPORTED_DETECTORS)}"
             )
         if len(v) != len(set(v)):
             duplicates = [d for d in set(v) if v.count(d) > 1]
@@ -64,17 +62,17 @@ class GWOSCDataConfig(_DataBase):
     """Fetch strain and PSD from GWOSC."""
 
     type: Literal["gwosc"] = "gwosc"
-    duration: float
+    duration: float = Field(gt=0.0)
     post_trigger_duration: float = 2.0
-    psd_duration: float
+    psd_duration: float = Field(gt=0.0)
 
 
 class InjectionDataConfig(_DataBase):
     """Synthetic injection into design-sensitivity noise."""
 
     type: Literal["injection"] = "injection"
-    duration: float
-    sampling_frequency: float
+    duration: float = Field(gt=0.0)
+    sampling_frequency: float = Field(gt=0.0)
     injection_parameters: dict[str, float]
     zero_noise: bool = False
 
@@ -139,7 +137,7 @@ Approximant = Literal[
 class WaveformConfig(BaseModel):
     model_config = {"extra": "forbid"}
     approximant: Approximant
-    f_ref: float = 20.0
+    f_ref: float = Field(default=20.0, gt=0.0)
 
 
 # ---------------------------------------------------------------------------
@@ -307,8 +305,8 @@ class CLIDistanceMargConfig(BaseModel):
 
     model_config = {"extra": "forbid"}
     distance_prior: PriorConfig
-    n_dist_points: int = 10000
-    ref_dist: Optional[float] = None
+    n_dist_points: int = Field(default=10000, ge=2)
+    ref_dist: Optional[float] = Field(default=None, gt=0.0)
 
     @model_validator(mode="after")
     def _check_single_distance_param(self) -> "CLIDistanceMargConfig":
@@ -324,8 +322,9 @@ class CLIOptimizerRefParams(BaseModel):
 
     model_config = {"extra": "forbid"}
     type: Literal["optimizer"] = "optimizer"
-    popsize: int = 500
-    n_steps: int = 1000
+    popsize: int = Field(default=500, ge=1)
+    n_steps: int = Field(default=1000, ge=1)
+    target: Optional[float] = None
 
 
 class CLIProvidedRefParams(BaseModel):
@@ -363,10 +362,15 @@ class CLIHeterodynedConfig(BaseModel):
     - ``type = "provided"``: explicit likelihood-space values (skips CMA-ES).
     - ``type = "injection"``: use ``data.injection_parameters`` (injection
       runs only).
+
+    Binning is controlled by at most one of ``epsilon`` or ``n_bins``
+    (mutually exclusive).  When neither is set, ``epsilon=0.5`` (rad per
+    bin) is used as the default.
     """
 
     model_config = {"extra": "forbid"}
-    n_bins: int = 1000
+    n_bins: Optional[int] = Field(default=None, ge=1)
+    epsilon: Optional[float] = Field(default=None, gt=0.0)
     reference_parameters: HeterodynedRefParams = Field(
         default_factory=CLIOptimizerRefParams
     )
@@ -385,19 +389,19 @@ class CLIMultibandedConfig(BaseModel):
     """
 
     model_config = {"extra": "forbid"}
-    reference_chirp_mass: Optional[float] = None
-    highest_mode: int = 2
-    accuracy_factor: float = 5.0
-    time_offset: Optional[float] = None
-    delta_f_end: Optional[float] = None
-    max_banding_frequency: Optional[float] = None
-    min_banding_duration: float = 0.0
+    reference_chirp_mass: Optional[float] = Field(default=None, gt=0.0)
+    highest_mode: int = Field(default=2, ge=1)
+    accuracy_factor: float = Field(default=5.0, gt=0.0)
+    time_offset: Optional[float] = Field(default=None, ge=0.0)
+    delta_f_end: Optional[float] = Field(default=None, gt=0.0)
+    max_banding_frequency: Optional[float] = Field(default=None, gt=0.0)
+    min_banding_duration: float = Field(default=0.0, ge=0.0)
 
 
 class LikelihoodConfig(BaseModel):
     model_config = {"extra": "forbid"}
-    f_min: float
-    f_max: float
+    f_min: float = Field(gt=0.0)
+    f_max: float = Field(gt=0.0)
     fixed_parameters: dict[str, float] = Field(default_factory=dict)
     phase_marginalization: bool = False
     time_marginalization: Optional[CLITimeMargConfig] = None
@@ -444,7 +448,7 @@ class OutputConfig(BaseModel):
     dir: Path
     save_corner: bool = False
     n_samples: int = Field(
-        default=10000, description="Number of posterior samples to save. 0 = all."
+        default=10000, ge=0, description="Number of posterior samples to save. 0 = all."
     )
     overwrite: bool = False
     corner_parameters: Optional[list[str]] = None
@@ -478,13 +482,13 @@ class PipelineConfig(BaseModel):
                 "'geocentric'. Use 't_c' in injection_parameters, or set "
                 "time_frame to 'detector' or a specific detector name."
             )
-        if inj & _DETECTOR_SKY_PARAMS and self.sampling.sky_frame != "detector":
+        if inj & DETECTOR_SKY_PARAMS and self.sampling.sky_frame != "detector":
             raise ValueError(
                 "injection_parameters uses detector-frame sky position "
                 "('azimuth'/'zenith') but [sampling].sky_frame != 'detector'. "
                 "Use 'ra'/'dec' in injection_parameters, or set sky_frame = 'detector'."
             )
-        if inj & _J_FRAME_SPIN_PARAMS and "phase_c" not in inj:
+        if inj & J_FRAME_SPIN_PARAMS and "phase_c" not in inj:
             raise ValueError(
                 "injection_parameters uses J-frame spin angles but 'phase_c' is missing. "
                 "SpinAnglesToCartesianSpinTransform requires 'phase_c' as a conditioning "
@@ -496,13 +500,13 @@ class PipelineConfig(BaseModel):
     def _validate_spin_parametrization(self) -> "PipelineConfig":
         prior_keys = frozenset(self.prior.root.keys())
 
-        has_j_frame = bool(prior_keys & _J_FRAME_SPIN_PARAMS)
+        has_j_frame = bool(prior_keys & J_FRAME_SPIN_PARAMS)
         has_sphere_spin = any(
             isinstance(self.prior.root.get(label), UniformSphereSpec)
             or all(f"{label}_{s}" in prior_keys for s in ("mag", "theta", "phi"))
             for label in ("s1", "s2")
         )
-        has_cartesian_spin = bool(prior_keys & _CARTESIAN_SPIN_PARAMS)
+        has_cartesian_spin = bool(prior_keys & CARTESIAN_SPIN_PARAMS)
 
         if sum([has_j_frame, has_sphere_spin, has_cartesian_spin]) > 1:
             raise ValueError(
@@ -516,7 +520,7 @@ class PipelineConfig(BaseModel):
                 raise ValueError(
                     "J-frame spin angles produce 'iota' — 'iota' must not also appear in [prior]."
                 )
-            missing_j = _J_FRAME_SPIN_PARAMS - prior_keys
+            missing_j = J_FRAME_SPIN_PARAMS - prior_keys
             if missing_j:
                 raise ValueError(
                     "J-frame spin parametrization requires all 7 parameters; "
@@ -535,16 +539,16 @@ class PipelineConfig(BaseModel):
     def _validate_sky_time_parametrization(self) -> "PipelineConfig":
         prior_keys = frozenset(self.prior.root.keys())
 
-        equatorial_present = prior_keys & _EQUATORIAL_SKY_PARAMS
-        if equatorial_present and not (_EQUATORIAL_SKY_PARAMS <= prior_keys):
-            missing = _EQUATORIAL_SKY_PARAMS - prior_keys
+        equatorial_present = prior_keys & EQUATORIAL_SKY_PARAMS
+        if equatorial_present and not (EQUATORIAL_SKY_PARAMS <= prior_keys):
+            missing = EQUATORIAL_SKY_PARAMS - prior_keys
             raise ValueError(
                 f"[prior] must contain both 'ra' and 'dec' together; "
                 f"missing: {sorted(missing)}"
             )
-        detector_present = prior_keys & _DETECTOR_SKY_PARAMS
-        if detector_present and not (_DETECTOR_SKY_PARAMS <= prior_keys):
-            missing = _DETECTOR_SKY_PARAMS - prior_keys
+        detector_present = prior_keys & DETECTOR_SKY_PARAMS
+        if detector_present and not (DETECTOR_SKY_PARAMS <= prior_keys):
+            missing = DETECTOR_SKY_PARAMS - prior_keys
             raise ValueError(
                 f"[prior] must contain both 'azimuth' and 'zenith' together; "
                 f"missing: {sorted(missing)}"
@@ -582,16 +586,18 @@ class PipelineConfig(BaseModel):
 
     @model_validator(mode="after")
     def _validate_sampling_ifo_consistency(self) -> "PipelineConfig":
-        if self.sampling.time_frame not in ("detector", "geocentric"):
-            if self.sampling.time_frame not in self.data.detectors:
-                raise ValueError(
-                    f"[sampling] time_frame={self.sampling.time_frame!r} is not in "
-                    f"data.detectors {self.data.detectors}"
-                )
+        if (
+            self.sampling.time_frame not in ("detector", "geocentric")
+            and self.sampling.time_frame not in self.data.detectors
+        ):
+            raise ValueError(
+                f"[sampling] time_frame={self.sampling.time_frame!r} is not in "
+                f"data.detectors {self.data.detectors}"
+            )
 
         prior_keys = frozenset(self.prior.root.keys())
         has_sky_params = bool(
-            prior_keys & (_EQUATORIAL_SKY_PARAMS | _DETECTOR_SKY_PARAMS)
+            prior_keys & (EQUATORIAL_SKY_PARAMS | DETECTOR_SKY_PARAMS)
         )
         if (
             has_sky_params
@@ -616,7 +622,7 @@ class PipelineConfig(BaseModel):
             self.prior.root["t_det"], UniformSpec
         ):
             raise ValueError(
-                "NS-AW sampler: the 't_det' prior must be 'uniform' for automatic "
+                "NS AW sampler: the 't_det' prior must be 'uniform' for automatic "
                 "conversion to 't_c'. Either use a uniform t_det prior or replace "
                 "'t_det' with 't_c' in [prior]."
             )
@@ -627,7 +633,7 @@ class PipelineConfig(BaseModel):
             and not isinstance(self.prior.root["t_c"], UniformSpec)
         ):
             raise ValueError(
-                "NS-AW sampler: the 't_c' prior must be 'uniform' for automatic "
+                "NS AW sampler: the 't_c' prior must be 'uniform' for automatic "
                 "conversion to 't_det'. Either use a uniform t_c prior, set "
                 "[sampling] time_frame = 'geocentric' to sample t_c directly, or "
                 "replace 't_c' with 't_det' in [prior]."

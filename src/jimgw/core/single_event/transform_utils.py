@@ -16,11 +16,10 @@ Three sections, each self-contained:
 
 import jax.numpy as jnp
 from jaxtyping import Array, Float
-from jimgw.typing import FloatLike, FloatScalar
 
 from jimgw.core.constants import MTSUN
-from jimgw.core.utils import safe_arctan2, carte_to_spherical_angles
-
+from jimgw.core.utils import carte_to_spherical_angles, safe_arctan2
+from jimgw.typing import FloatLike, FloatScalar
 
 # =============================================================================
 # Mass-parameter conversions

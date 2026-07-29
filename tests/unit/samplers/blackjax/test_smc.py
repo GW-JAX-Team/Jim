@@ -2,30 +2,34 @@
 
 from __future__ import annotations
 
+import pickle
+from pathlib import Path
+from typing import Optional
+
 import jax
 import numpy as np
-import pickle
 import pytest
-from pathlib import Path
 
 blackjax = pytest.importorskip("blackjax")
 
-from jimgw.core.prior import CombinePrior, UniformPrior  # noqa: E402
-from jimgw.samplers.blackjax.smc import BlackJAXSMCSampler  # noqa: E402
-from jimgw.samplers.config import BlackJAXSMCConfig  # noqa: E402
+from jimgw.core.prior import CombinePrior, UniformPrior
+from jimgw.samplers.blackjax.smc import BlackJAXSMCSampler
+from jimgw.samplers.config import BlackJAXSMCConfig
 
 _SIGMA = 0.1
 _MU = 0.5
 
 
 class _GaussianLikelihood:
-    def evaluate(self, params: dict) -> float:  # type: ignore[override]
+    def evaluate(self, params: dict) -> float:
         x = params["x"]
         y = params["y"]
         return -0.5 * ((x - _MU) ** 2 + (y - _MU) ** 2) / _SIGMA**2
 
 
-def _make_sampler(n_particles: int = 200) -> BlackJAXSMCSampler:
+def _make_sampler(
+    n_particles: int = 200, config: Optional[BlackJAXSMCConfig] = None
+) -> BlackJAXSMCSampler:
     prior = CombinePrior(
         [
             UniformPrior(0.0, 1.0, parameter_names=["x"]),
@@ -33,14 +37,15 @@ def _make_sampler(n_particles: int = 200) -> BlackJAXSMCSampler:
         ]
     )
     likelihood = _GaussianLikelihood()
-    config = BlackJAXSMCConfig(
-        n_particles=n_particles,
-        n_mcmc_steps_per_dim=5,
-        target_ess=50,
-        initial_cov_scale=0.5,
-        target_acceptance_rate=0.234,
-        scale_adaptation_gain=3.0,
-    )
+    if config is None:
+        config = BlackJAXSMCConfig(
+            n_particles=n_particles,
+            n_mcmc_steps_per_dim=5,
+            target_ess=50,
+            initial_cov_scale=0.5,
+            target_acceptance_rate=0.234,
+            scale_adaptation_gain=3.0,
+        )
     parameter_names = prior.parameter_names  # ("x", "y")
 
     def log_prior_fn(arr):
@@ -74,7 +79,7 @@ def test_smc_get_samples_before_sample_raises():
         sampler.get_samples()
 
 
-def _init_pos(n: int, seed: int = 99) -> "jax.Array":
+def _init_pos(n: int, seed: int = 99) -> jax.Array:
     return jax.random.uniform(jax.random.key(seed), (n, 2))
 
 
@@ -327,10 +332,45 @@ def test_smc_checkpoint_file_created(tmp_path, monkeypatch):
         ckpt = pickle.load(f)
     assert "elapsed_time" in ckpt
     assert ckpt["elapsed_time"] >= 0.0
+    assert ckpt["sampler_name"] == sampler.sampler_name
+    assert ckpt["mode"] == sampler.mode
 
     # Now let a clean run delete it.
     ckpt_path.unlink()
     assert not ckpt_path.exists()
+
+
+@pytest.mark.parametrize(
+    ("persistent_sampling", "temperature_ladder", "expected_mode"),
+    [
+        (True, None, "ap"),
+        (True, [0.0, 1.0], "fp"),
+        (False, None, "at"),
+        (False, [0.0, 1.0], "ft"),
+    ],
+)
+def test_smc_mode_is_derived_from_config(
+    persistent_sampling, temperature_ladder, expected_mode
+):
+    sampler = _make_sampler(
+        config=BlackJAXSMCConfig(
+            n_particles=200,
+            persistent_sampling=persistent_sampling,
+            temperature_ladder=temperature_ladder,
+        )
+    )
+    assert sampler.mode == expected_mode
+
+
+def test_smc_checkpoint_validation_checks_mode():
+    sampler = _make_sampler()
+    sampler._validate_checkpoint(
+        {"sampler_name": sampler.sampler_name, "mode": sampler.mode}
+    )
+    with pytest.raises(ValueError, match="different SMC mode"):
+        sampler._validate_checkpoint(
+            {"sampler_name": sampler.sampler_name, "mode": "fp"}
+        )
 
 
 def test_smc_resume_gives_same_result(tmp_path, monkeypatch):
@@ -399,6 +439,78 @@ def test_smc_resume_gives_same_result(tmp_path, monkeypatch):
 
     assert s_c.get_diagnostics()["log_Z"] == pytest.approx(log_z_a, rel=1e-6)
     assert not (tmp_path / "checkpoint.pkl").exists(), "Checkpoint was not cleaned up"
+
+
+def test_smc_checkpoint_failure_restores_caller_rng_key(tmp_path):
+    """A checkpoint that fails *after* its rng_key is read (mode AP, the
+    default) falls back to the caller-supplied key, not the partially-loaded
+    checkpoint's key. The same fallback pattern is shared verbatim across all
+    four SMC modes.
+    """
+    prior = CombinePrior(
+        [
+            UniformPrior(0.0, 1.0, parameter_names=["x"]),
+            UniformPrior(0.0, 1.0, parameter_names=["y"]),
+        ]
+    )
+    likelihood = _GaussianLikelihood()
+    parameter_names = prior.parameter_names
+
+    def _make(checkpoint_dir=None):
+        config = BlackJAXSMCConfig(
+            n_particles=200,
+            n_mcmc_steps_per_dim=5,
+            target_ess=50,
+            initial_cov_scale=0.5,
+            target_acceptance_rate=0.234,
+            scale_adaptation_gain=3.0,
+            checkpoint_dir=checkpoint_dir,
+            checkpoint_interval=1e-9 if checkpoint_dir is not None else 0.0,
+        )
+
+        def log_prior_fn(arr):
+            return prior.log_prob(dict(zip(parameter_names, arr, strict=True)))
+
+        def log_likelihood_fn(arr):
+            return likelihood.evaluate(dict(zip(parameter_names, arr, strict=True)))
+
+        def log_posterior_fn(arr):
+            return log_prior_fn(arr) + log_likelihood_fn(arr)
+
+        return BlackJAXSMCSampler(
+            n_dims=len(parameter_names),
+            log_prior_fn=log_prior_fn,
+            log_likelihood_fn=log_likelihood_fn,
+            log_posterior_fn=log_posterior_fn,
+            config=config,
+        )
+
+    caller_key = jax.random.key(7)
+
+    reference = _make(checkpoint_dir=None)
+    reference.sample(caller_key, _init_pos(200))
+    log_z_reference = reference.get_diagnostics()["log_Z"]
+
+    sampler = _make(checkpoint_dir=tmp_path)
+    ckpt_path = tmp_path / "checkpoint.pkl"
+    # Valid enough to pass `_validate_checkpoint` and overwrite `rng_key` with
+    # a decoy key, but missing "n_iter" so loading fails right after.
+    with open(ckpt_path, "wb") as f:
+        pickle.dump(
+            {
+                "sampler_name": sampler.sampler_name,
+                "mode": sampler.mode,
+                "state": None,
+                "rng_key": jax.random.key(999),
+            },
+            f,
+        )
+
+    sampler.sample(caller_key, _init_pos(200))
+
+    assert sampler.get_diagnostics()["log_Z"] == pytest.approx(
+        log_z_reference, rel=1e-6
+    )
 
 
 def _make_sampler_batched(

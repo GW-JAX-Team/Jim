@@ -1,16 +1,15 @@
 """Tests for the sampler registry and build_sampler factory."""
 
-import sys
-
 import pytest
 
-from jimgw.core.prior import CombinePrior, UniformPrior  # type: ignore[attr-defined]
+from jimgw.core.prior import CombinePrior, UniformPrior
 from jimgw.samplers import build_sampler
+from jimgw.samplers.blackjax.swig import BlackJAXSwiGSampler
 from jimgw.samplers.config import (
-    BlackJAXNSAWConfig,
+    BlackJAXSwiGConfig,
     FlowMCConfig,
 )
-from jimgw.samplers.flowmc import FlowMCSampler  # type: ignore[import]
+from jimgw.samplers.flowmc import FlowMCSampler
 
 
 def _make_prior():
@@ -61,11 +60,44 @@ def test_build_sampler_returns_flowmc():
     assert isinstance(sampler, FlowMCSampler)
 
 
+def test_build_sampler_forwards_backend_specific_arguments(monkeypatch):
+    from jimgw.samplers import _REGISTRY
+
+    prior = _make_prior()
+    lp, ll, lpost = _make_callables(prior)
+    cfg = FlowMCConfig(
+        n_chains=10,
+        n_local_steps=2,
+        n_global_steps=2,
+        global_thinning=1,
+        n_training_loops=1,
+        n_production_loops=1,
+        n_epochs=1,
+        parallel_tempering=None,
+    )
+    received_kwargs = {}
+
+    def builder(**kwargs):
+        received_kwargs.update(kwargs)
+        return FlowMCSampler(**kwargs)
+
+    monkeypatch.setitem(_REGISTRY, "flowmc", lambda: builder)
+    sampler = build_sampler(
+        cfg,
+        n_dims=1,
+        log_prior_fn=lp,
+        log_likelihood_fn=ll,
+        log_posterior_fn=lpost,
+    )
+    assert isinstance(sampler, FlowMCSampler)
+    assert received_kwargs["config"] is cfg
+
+
 def test_build_sampler_unknown_type_raises():
     from jimgw.samplers.config import BaseSamplerConfig
 
-    class _FakeConfig(BaseSamplerConfig):
-        type: str = "not-a-real-type"  # type: ignore[assignment]
+    class _FakeConfig(BaseSamplerConfig[str]):
+        type: str = "not-a-real-type"
 
     prior = _make_prior()
     lp, ll, lpost = _make_callables(prior)
@@ -80,16 +112,12 @@ def test_build_sampler_unknown_type_raises():
         )
 
 
-def test_build_sampler_blackjax_raises_import_error_when_missing(monkeypatch):
-    """When blackjax is not installed, requesting a BlackJAX sampler should raise ImportError."""
-    monkeypatch.setitem(sys.modules, "blackjax", None)  # type: ignore[arg-type]
-
+def test_build_sampler_requires_cache_callbacks():
     prior = _make_prior()
     lp, ll, lpost = _make_callables(prior)
-    cfg = BlackJAXNSAWConfig()
-    with pytest.raises((ImportError, KeyError)):
+    with pytest.raises(ValueError, match="requires cache callbacks"):
         build_sampler(
-            cfg,
+            BlackJAXSwiGConfig(blocks=[["x"]]),
             n_dims=1,
             log_prior_fn=lp,
             log_likelihood_fn=ll,
@@ -97,10 +125,50 @@ def test_build_sampler_blackjax_raises_import_error_when_missing(monkeypatch):
         )
 
 
-def test_registry_has_all_four_types():
+def test_build_sampler_returns_cache_aware_sampler():
+    prior = _make_prior()
+    lp, ll, lpost = _make_callables(prior)
+
+    def build_cache(position):
+        return position
+
+    def log_likelihood_from_cache_fn(position, cache):
+        del cache
+        return ll(position)
+
+    sampler = build_sampler(
+        BlackJAXSwiGConfig(blocks=[["x"]]),
+        n_dims=1,
+        log_prior_fn=lp,
+        log_likelihood_fn=ll,
+        log_posterior_fn=lpost,
+        rebuild_required_by_block={(0,): True},
+        build_cache=build_cache,
+        log_likelihood_from_cache_fn=log_likelihood_from_cache_fn,
+    )
+    assert isinstance(sampler, BlackJAXSwiGSampler)
+
+
+def test_build_sampler_rejects_backend_specific_arguments_for_flowmc():
+    prior = _make_prior()
+    lp, ll, lpost = _make_callables(prior)
+
+    with pytest.raises(TypeError, match="unexpected keyword argument 'build_cache'"):
+        build_sampler(
+            FlowMCConfig(),
+            n_dims=1,
+            log_prior_fn=lp,
+            log_likelihood_fn=ll,
+            log_posterior_fn=lpost,
+            build_cache=lambda position: position,
+        )
+
+
+def test_registry_has_black_box_sampler_types():
     from jimgw.samplers import _REGISTRY
 
     assert "flowmc" in _REGISTRY
     assert "blackjax-ns-aw" in _REGISTRY
     assert "blackjax-nss" in _REGISTRY
     assert "blackjax-smc" in _REGISTRY
+    assert "blackjax-swig" in _REGISTRY

@@ -2,7 +2,7 @@ import logging
 import tomllib
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
-from typing import Optional
+from typing import Annotated, Optional
 
 import typer
 from pydantic import ValidationError
@@ -70,16 +70,20 @@ save_corner = false
 
 @app.command()
 def run(
-    config: Optional[Path] = typer.Argument(None, help="Path to the TOML config file."),
-    init: Optional[Path] = typer.Option(
-        None,
-        "--init",
-        help="Write a minimal GW150914-style template config to PATH and exit.",
-        metavar="PATH",
-    ),
-    verbose: bool = typer.Option(
-        False, "--verbose", "-v", help="Enable verbose logging."
-    ),
+    config: Annotated[
+        Optional[Path], typer.Argument(help="Path to the TOML config file.")
+    ] = None,
+    init: Annotated[
+        Optional[Path],
+        typer.Option(
+            "--init",
+            help="Write a minimal GW150914-style template config to PATH and exit.",
+            metavar="PATH",
+        ),
+    ] = None,
+    verbose: Annotated[
+        bool, typer.Option("--verbose", "-v", help="Enable verbose logging.")
+    ] = False,
 ) -> None:
     """Run a jimgw parameter-estimation pipeline from CONFIG."""
     level = logging.DEBUG if verbose else logging.INFO
@@ -168,7 +172,7 @@ def run(
         time_frame=cfg.sampling.time_frame,
     )
 
-    # NS-AW requires all sampling-space parameters in [0, 1].
+    # NS AW requires all sampling-space parameters in [0, 1].
     # Must run before build_prior so the built prior and
     # prior_params already reflect the substitution.
     if cfg.sampler.type == "blackjax-ns-aw":

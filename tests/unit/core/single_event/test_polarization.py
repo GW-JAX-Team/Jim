@@ -3,7 +3,7 @@
 import jax.numpy as jnp
 import pytest
 
-from jimgw.core.single_event.polarization import Polarization, KNOWN_POLS
+from jimgw.core.single_event.polarization import KNOWN_POLS, Polarization
 from tests.utils import assert_all_finite
 
 

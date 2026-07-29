@@ -1,24 +1,30 @@
+import logging
+from pathlib import Path
+
 import jax
 import jax.numpy as jnp
 import pytest
-from pathlib import Path
+
+from jimgw.core.constants import EARTH_RADIUS_LIGHT_S
+from jimgw.core.jim import Jim
+from jimgw.core.prior import CombinePrior, GaussianPrior, PowerLawPrior, UniformPrior
+from jimgw.core.single_event.data import Data, PowerSpectrum
+from jimgw.core.single_event.detector import get_H1, get_L1
 from jimgw.core.single_event.likelihood import (
-    ZeroLikelihood,
-    TransientLikelihoodFD,
     HeterodynedTransientLikelihoodFD,
     MultibandedTransientLikelihoodFD,
-)
-from jimgw.core.single_event.detector import get_H1, get_L1
-from jimgw.core.single_event.waveform import RippleIMRPhenomD
-from jimgw.core.single_event.data import Data, PowerSpectrum
-from jimgw.core.single_event.transforms import (
-    GeocentricArrivalTimeToDetectorArrivalTimeTransform,
-    MassRatioToSymmetricMassRatioTransform,
+    TransientLikelihoodFD,
+    ZeroLikelihood,
 )
 from jimgw.core.single_event.time_utils import (
     greenwich_mean_sidereal_time as compute_gmst,
 )
-from jimgw.core.prior import CombinePrior, PowerLawPrior, UniformPrior
+from jimgw.core.single_event.transforms import (
+    GeocentricArrivalTimeToDetectorArrivalTimeTransform,
+    MassRatioToSymmetricMassRatioTransform,
+)
+from jimgw.core.single_event.waveform import RippleIMRPhenomD
+from jimgw.samplers.config import BlackJAXSwiGConfig
 from tests.utils import assert_all_finite, common_keys_allclose
 
 FIXTURES_DIR = Path(__file__).parent.parent.parent.parent / "fixtures"
@@ -55,6 +61,26 @@ def example_params():
         "dec": -1.2108,
         "psi": 0.0,
     }
+
+
+def _waveform_cache_prior() -> CombinePrior:
+    bounds = {
+        "M_c": (20.0, 40.0),
+        "q": (0.5, 1.0),
+        "s1_z": (-0.05, 0.05),
+        "s2_z": (-0.05, 0.05),
+        "iota": (0.1, 3.0),
+        "ra": (0.0, 2.0 * jnp.pi),
+        "dec": (-1.5, 1.5),
+        "psi": (0.0, jnp.pi),
+        "t_c": (-0.05, 0.05),
+    }
+    return CombinePrior(
+        [
+            UniformPrior(lo, hi, parameter_names=[name])
+            for name, (lo, hi) in bounds.items()
+        ]
+    )
 
 
 class TestZeroLikelihood:
@@ -112,6 +138,200 @@ class TestTransientLikelihoodFD:
         assert likelihood.frequencies[-1] == fmax
         assert likelihood.trigger_time == gps
         assert hasattr(likelihood, "gmst")
+
+    def test_cached_waveform_matches_full_evaluation(self, detectors_and_waveform):
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        likelihood = TransientLikelihoodFD(
+            detectors=ifos,
+            waveform=waveform,
+            f_min=fmin,
+            f_max=fmax,
+            trigger_time=gps,
+        )
+        params = example_params()
+        cache = likelihood.generate_waveform(params)
+        assert jnp.allclose(
+            likelihood.evaluate(params),
+            likelihood.evaluate_from_waveform(params, cache),
+        )
+
+    def test_cached_waveform_restores_physical_distance_scaling(
+        self, detectors_and_waveform
+    ):
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        likelihood = TransientLikelihoodFD(
+            detectors=ifos,
+            waveform=waveform,
+            f_min=fmin,
+            f_max=fmax,
+            trigger_time=gps,
+        )
+        params = example_params()
+        cache = likelihood.generate_waveform(params)
+        physical_waveform = waveform(
+            likelihood.frequencies, likelihood._prepare_parameters(params)
+        )
+
+        for polarization, strain in physical_waveform.items():
+            assert jnp.allclose(cache[polarization] / params["d_L"], strain)
+
+    def test_cached_waveform_supports_cache_reusing_changes(
+        self, detectors_and_waveform
+    ):
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        likelihood = TransientLikelihoodFD(
+            detectors=ifos,
+            waveform=waveform,
+            f_min=fmin,
+            f_max=fmax,
+            trigger_time=gps,
+            phase_marginalization=True,
+        )
+        params = example_params()
+        cache = likelihood.generate_waveform(params)
+        moved = {
+            **params,
+            "d_L": params["d_L"] * 1.2,
+            "ra": params["ra"] + 0.1,
+            "psi": 0.2,
+            "t_c": 0.01,
+        }
+        assert jnp.allclose(
+            likelihood.evaluate(moved),
+            likelihood.evaluate_from_waveform(moved, cache),
+        )
+
+    def test_evaluate_bypasses_waveform_cache_machinery(
+        self, detectors_and_waveform, monkeypatch
+    ):
+        # evaluate() must generate the waveform directly at the true d_L; the
+        # waveform-cache machinery (unit-distance normalization when supported,
+        # rescaling on the way out) is reserved for the SwiG cache path
+        # (generate_waveform()/evaluate_from_waveform()) and must not add
+        # overhead to every other sampler's likelihood calls.
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        likelihood = TransientLikelihoodFD(
+            detectors=ifos, waveform=waveform, f_min=fmin, f_max=fmax, trigger_time=gps
+        )
+
+        def _unexpected(*args, **kwargs):
+            raise AssertionError("evaluate() must not use the waveform-cache machinery")
+
+        monkeypatch.setattr(likelihood, "_waveform_sky_for_cache", _unexpected)
+        monkeypatch.setattr(likelihood, "_waveform_sky_from_cache", _unexpected)
+
+        assert jnp.isfinite(likelihood.evaluate(example_params()))
+
+    def test_waveform_cache_infers_blocks_after_transform_and_marginalization(
+        self, detectors_and_waveform
+    ):
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        likelihood = TransientLikelihoodFD(
+            detectors=ifos,
+            waveform=waveform,
+            f_min=fmin,
+            f_max=fmax,
+            trigger_time=gps,
+            phase_marginalization=True,
+            distance_marginalization={"distance_prior": self.make_d_L_prior()},
+        )
+        blocks = [
+            ["M_c", "q"],
+            ["s1_z", "s2_z"],
+            ["iota"],
+            ["ra", "dec"],
+            ["psi"],
+            ["t_c"],
+        ]
+        jim = Jim(
+            likelihood,
+            _waveform_cache_prior(),
+            BlackJAXSwiGConfig(blocks=blocks, n_live=8, n_delete_frac=0.25),
+            likelihood_transforms=[MassRatioToSymmetricMassRatioTransform],
+            periodic=[],
+        )
+        assert jim.sampler._rebuild_required_by_block == {
+            (0, 1): True,
+            (2, 3): True,
+            (4,): True,
+            (5, 6): False,
+            (7,): False,
+            (8,): False,
+        }
+
+    def test_waveform_cache_distance_block_reuses_cache_with_time_marginalization(
+        self, detectors_and_waveform
+    ):
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        likelihood = TransientLikelihoodFD(
+            detectors=ifos,
+            waveform=waveform,
+            f_min=fmin,
+            f_max=fmax,
+            trigger_time=gps,
+            phase_marginalization=True,
+            time_marginalization={"tc_range": (-0.03, 0.03)},
+        )
+        prior = CombinePrior(
+            [
+                base_prior
+                for base_prior in _waveform_cache_prior().base_prior
+                if base_prior.parameter_names != ("t_c",)
+            ]
+            + [UniformPrior(100.0, 1000.0, parameter_names=["d_L"])]
+        )
+        blocks = [
+            ["M_c", "q"],
+            ["s1_z", "s2_z"],
+            ["iota"],
+            ["d_L"],
+            ["ra", "dec"],
+            ["psi"],
+        ]
+        jim = Jim(
+            likelihood,
+            prior,
+            BlackJAXSwiGConfig(blocks=blocks, n_live=8, n_delete_frac=0.25),
+            likelihood_transforms=[MassRatioToSymmetricMassRatioTransform],
+        )
+        assert jim.sampler._rebuild_required_by_block == {
+            (0, 1): True,
+            (2, 3): True,
+            (4,): True,
+            (8,): False,
+            (5, 6): False,
+            (7,): False,
+        }
+
+    def test_waveform_cache_rejects_non_sampling_parameter_in_blocks(
+        self, detectors_and_waveform
+    ):
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        likelihood = TransientLikelihoodFD(
+            detectors=ifos,
+            waveform=waveform,
+            f_min=fmin,
+            f_max=fmax,
+            trigger_time=gps,
+            phase_marginalization=True,
+            distance_marginalization={"distance_prior": self.make_d_L_prior()},
+        )
+        blocks = [
+            ["M_c", "q"],
+            ["s1_z", "s2_z"],
+            ["iota"],
+            ["ra", "dec"],
+            ["psi"],
+            ["t_c"],
+            ["d_L"],
+        ]
+        with pytest.raises(ValueError, match="d_L.*not sampling parameters"):
+            Jim(
+                likelihood,
+                _waveform_cache_prior(),
+                BlackJAXSwiGConfig(blocks=blocks, n_live=8, n_delete_frac=0.25),
+                likelihood_transforms=[MassRatioToSymmetricMassRatioTransform],
+            )
 
     def test_uninitialized_data_raises(self):
         gps = 1126259462.4
@@ -526,6 +746,7 @@ class TestTransientLikelihoodFD:
 
     def test_dist_marg_no_prior_raises(self):
         from pydantic import ValidationError
+
         from jimgw.core.single_event.likelihood import DistanceMargConfig
 
         with pytest.raises(ValidationError):
@@ -564,7 +785,7 @@ class TestTransientLikelihoodFD:
 
     def test_dist_marg_n_dist_points_raises(self, detectors_and_waveform):
         ifos, waveform, fmin, fmax, gps = detectors_and_waveform
-        with pytest.raises(ValueError, match="n_dist_points must be at least 2"):
+        with pytest.raises(ValueError, match="greater than or equal to 2"):
             TransientLikelihoodFD(
                 detectors=ifos,
                 waveform=waveform,
@@ -579,7 +800,7 @@ class TestTransientLikelihoodFD:
 
     def test_dist_marg_negative_ref_dist_raises(self, detectors_and_waveform):
         ifos, waveform, fmin, fmax, gps = detectors_and_waveform
-        with pytest.raises(ValueError, match="ref_dist must be > 0"):
+        with pytest.raises(ValueError, match="greater than 0"):
             TransientLikelihoodFD(
                 detectors=ifos,
                 waveform=waveform,
@@ -1036,14 +1257,13 @@ class TestHeterodynedTransientLikelihoodFD:
             reference_parameters=example_params(),
         )
         assert hasattr(likelihood, "freq_grid_low")
-        assert hasattr(likelihood, "freq_grid_center")
+        assert hasattr(likelihood, "freq_grid_high")
+        assert hasattr(likelihood, "bin_widths")
         for det in ifos:
-            assert det.name in likelihood.A0_array
-            assert det.name in likelihood.A1_array
-            assert det.name in likelihood.B0_array
-            assert det.name in likelihood.B1_array
-            assert det.name in likelihood.waveform_low_ref
-            assert det.name in likelihood.waveform_center_ref
+            for attr in ("summary_data", "waveform_low_ref", "waveform_high_ref"):
+                obj = getattr(likelihood, attr)
+                assert det.name in obj
+                assert jnp.isfinite(obj[det.name]).all()
 
     def test_no_reference_params_and_no_prior_raises(self, detectors_and_waveform):
         ifos, waveform, fmin, fmax, gps = detectors_and_waveform
@@ -1071,6 +1291,113 @@ class TestHeterodynedTransientLikelihoodFD:
             likelihood.evaluate(params), jax.jit(likelihood.evaluate)(params)
         )
 
+    def test_cached_waveform_matches_full_evaluation(self, detectors_and_waveform):
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        likelihood = HeterodynedTransientLikelihoodFD(
+            detectors=ifos,
+            waveform=waveform,
+            f_min=fmin,
+            f_max=fmax,
+            trigger_time=gps,
+            n_bins=32,
+            reference_parameters=example_params(),
+        )
+        params = example_params()
+        cache = likelihood.generate_waveform(params)
+        assert jnp.allclose(
+            likelihood.evaluate_from_waveform(params, cache),
+            likelihood.evaluate(params),
+        )
+
+    def test_cached_waveform_supports_cache_reusing_changes(
+        self, detectors_and_waveform
+    ):
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        likelihood = HeterodynedTransientLikelihoodFD(
+            detectors=ifos,
+            waveform=waveform,
+            f_min=fmin,
+            f_max=fmax,
+            trigger_time=gps,
+            n_bins=32,
+            reference_parameters=example_params(),
+        )
+        params = example_params()
+        cache = likelihood.generate_waveform(params)
+        projected = {
+            **params,
+            "d_L": params["d_L"] * 1.2,
+            "psi": params["psi"] + 0.1,
+            "t_c": 0.002,
+        }
+        assert jnp.allclose(
+            likelihood.evaluate_from_waveform(projected, cache),
+            likelihood.evaluate(projected),
+        )
+
+    def test_evaluate_bypasses_waveform_cache_machinery(
+        self, detectors_and_waveform, monkeypatch
+    ):
+        # evaluate() must generate the waveform directly at the true d_L; the
+        # waveform-cache machinery (unit-distance normalization when supported,
+        # rescaling on the way out) is reserved for the SwiG cache path
+        # (generate_waveform()/evaluate_from_waveform()) and must not add
+        # overhead to every other sampler's likelihood calls.
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        likelihood = HeterodynedTransientLikelihoodFD(
+            detectors=ifos,
+            waveform=waveform,
+            f_min=fmin,
+            f_max=fmax,
+            trigger_time=gps,
+            n_bins=32,
+            reference_parameters=example_params(),
+        )
+
+        def _unexpected(*args, **kwargs):
+            raise AssertionError("evaluate() must not use the waveform-cache machinery")
+
+        monkeypatch.setattr(likelihood, "_waveform_sky_for_cache", _unexpected)
+        monkeypatch.setattr(likelihood, "_waveform_sky_from_cache", _unexpected)
+
+        assert jnp.isfinite(likelihood.evaluate(example_params()))
+
+    def test_waveform_cache_uses_heterodyned_likelihood(self, detectors_and_waveform):
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        likelihood = HeterodynedTransientLikelihoodFD(
+            detectors=ifos,
+            waveform=waveform,
+            fixed_parameters={"d_L": 400.0},
+            f_min=fmin,
+            f_max=fmax,
+            trigger_time=gps,
+            n_bins=32,
+            reference_parameters=example_params(),
+            phase_marginalization=True,
+        )
+        blocks = [
+            ["M_c", "q"],
+            ["s1_z", "s2_z"],
+            ["iota"],
+            ["ra", "dec"],
+            ["psi"],
+            ["t_c"],
+        ]
+        jim = Jim(
+            likelihood,
+            _waveform_cache_prior(),
+            BlackJAXSwiGConfig(blocks=blocks, n_live=8, n_delete_frac=0.25),
+            likelihood_transforms=[MassRatioToSymmetricMassRatioTransform],
+        )
+        assert jim.sampler._rebuild_required_by_block == {
+            (0, 1): True,
+            (2, 3): True,
+            (4,): True,
+            (5, 6): False,
+            (7,): False,
+            (8,): False,
+        }
+
     def test_evaluate_different_fmin(self, detectors_and_waveform):
         ifos, waveform, fmin, fmax, gps = detectors_and_waveform
         likelihood = HeterodynedTransientLikelihoodFD(
@@ -1081,7 +1408,34 @@ class TestHeterodynedTransientLikelihoodFD:
             trigger_time=gps,
             reference_parameters=example_params(),
         )
+        # Per-detector frequency bounds do not change the reference waveform
+        # support, so the relative-binning grid still starts at the global f_min.
+        assert jnp.isclose(likelihood.freq_grid_low[0], fmin)
         assert jnp.isfinite(likelihood.evaluate(example_params()))
+
+    @pytest.mark.parametrize(
+        ("n_bins", "epsilon", "match"),
+        [
+            (32, 0.5, "mutually exclusive"),
+            (0, None, "positive integer"),
+            (None, 0.0, "positive number"),
+        ],
+    )
+    def test_invalid_binning_parameters_raise(
+        self, detectors_and_waveform, n_bins, epsilon, match
+    ):
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        with pytest.raises(ValueError, match=match):
+            HeterodynedTransientLikelihoodFD(
+                detectors=ifos,
+                waveform=waveform,
+                f_min=fmin,
+                f_max=fmax,
+                trigger_time=gps,
+                n_bins=n_bins,
+                epsilon=epsilon,
+                reference_parameters=example_params(),
+            )
 
     def test_maximize_likelihood(self, detectors_and_waveform):
         ifos, waveform, fmin, fmax, gps = detectors_and_waveform
@@ -1143,6 +1497,116 @@ class TestHeterodynedTransientLikelihoodFD:
         assert jnp.isfinite(likelihood.evaluate(result))
         assert jnp.isclose(float(base.evaluate(result)), ll_injected)
         common_keys_allclose(result, true_params)
+
+    def test_maximize_likelihood_stops_early_at_optimizer_target(
+        self, detectors_and_waveform, caplog
+    ):
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        true_params = example_params()
+        for ifo in ifos:
+            ifo.inject_signal(
+                duration=4.0,
+                sampling_frequency=fmax * 2,
+                trigger_time=gps,
+                waveform_model=waveform,
+                parameters=true_params,
+                f_min=fmin,
+                f_max=fmax,
+                zero_noise=True,
+            )
+        fixed_parameters = {
+            k: v for k, v in true_params.items() if k not in ("M_c", "eta")
+        }
+        # A trivially low target is satisfied by the first generation's best
+        # fitness, so the loop must exit long before optimizer_n_steps.
+        with caplog.at_level(
+            logging.DEBUG, logger="jimgw.core.single_event.likelihood"
+        ):
+            HeterodynedTransientLikelihoodFD(
+                detectors=ifos,
+                waveform=waveform,
+                f_min=fmin,
+                f_max=fmax,
+                trigger_time=gps,
+                fixed_parameters=fixed_parameters,
+                prior=CombinePrior(
+                    [
+                        UniformPrior(25.0, 35.0, parameter_names=["M_c"]),
+                        UniformPrior(0.125, 1.0, parameter_names=["q"]),
+                    ]
+                ),
+                likelihood_transforms=[MassRatioToSymmetricMassRatioTransform],
+                optimizer_popsize=10,
+                optimizer_n_steps=50,
+                optimizer_target=-1e10,
+            )
+        [finished_message] = [
+            record.message
+            for record in caplog.records
+            if "CMA-ES finished after" in record.message
+        ]
+        generations = int(finished_message.split("after ")[1].split(" generations")[0])
+        assert generations < 50
+
+    def test_low_frequency_reference_cutoff_does_not_reindex_summary_data(
+        self, detectors_and_waveform, monkeypatch
+    ):
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        reference_fmin = 80.0
+        requested_n_bins = 32
+
+        def fake_compute_coefficients(likelihood, detector, h_ref, f_bins):
+            freqs = detector.sliced_frequencies
+            freqs_broadcast = freqs[None, :]
+            left_bounds = f_bins[:-1][:, None]
+            right_bounds = f_bins[1:][:, None]
+
+            mask = (freqs_broadcast >= left_bounds) & (freqs_broadcast < right_bounds)
+
+            n_freqs = len(freqs)
+            n_bins = len(f_bins) - 1
+            assert n_freqs > len(f_bins), f"{n_freqs = }, {len(f_bins) = }"
+            assert likelihood.n_bins == n_bins, f"{likelihood.n_bins = }, {n_bins = }"
+            assert n_bins <= requested_n_bins
+            assert freqs[0] == fmin
+            assert f_bins[0] >= reference_fmin
+            assert mask.shape == (n_bins, n_freqs), (
+                f"{mask.shape = }, expected: ({n_bins}, {n_freqs})"
+            )
+            coeffs = jnp.arange(n_bins, dtype=jnp.float64)
+            return jnp.array([coeffs + nn * 100 for nn in range(4)])
+
+        monkeypatch.setattr(
+            HeterodynedTransientLikelihoodFD,
+            "_compute_coefficients",
+            fake_compute_coefficients,
+        )
+
+        def reference_waveform(frequencies, params):
+            waveform_sky = waveform(frequencies, params)
+            mask = frequencies >= reference_fmin
+            return {
+                polarization: jnp.where(mask, strain, jnp.zeros_like(strain))
+                for polarization, strain in waveform_sky.items()
+            }
+
+        likelihood = HeterodynedTransientLikelihoodFD(
+            detectors=ifos,
+            waveform=waveform,
+            reference_waveform=reference_waveform,
+            f_min=fmin,
+            f_max=fmax,
+            trigger_time=gps,
+            n_bins=requested_n_bins,
+            reference_parameters=example_params(),
+        )
+        assert likelihood.n_bins < requested_n_bins
+        assert likelihood.freq_grid_low[0] >= reference_fmin
+
+        expected = jnp.arange(likelihood.n_bins, dtype=jnp.float64)
+        expected_arr = jnp.array([expected + nn * 100 for nn in range(4)])
+        for detector in ifos:
+            assert jnp.array_equal(likelihood.summary_data[detector.name], expected_arr)
 
     # ── Phase marginalization ──────────────────────────────────────────────────
 
@@ -1262,6 +1726,130 @@ class TestHeterodynedTransientLikelihoodFD:
 class TestMultibandedTransientLikelihoodFD:
     # ── Initialization ────────────────────────────────────────────────────────
 
+    def test_infers_banding_parameters_from_prior(self, detectors_and_waveform):
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        mc_prior = UniformPrior(15.0, 30.0, parameter_names=["M_c"])
+        tc_prior = UniformPrior(-0.1, 0.1, parameter_names=["t_c"])
+        prior = CombinePrior([CombinePrior([mc_prior]), tc_prior])
+
+        likelihood = MultibandedTransientLikelihoodFD(
+            detectors=ifos,
+            waveform=waveform,
+            f_min=fmin,
+            f_max=fmax,
+            trigger_time=gps,
+            prior=prior,
+        )
+
+        t_end = min(
+            float(ifo.data.start_time) + float(ifo.data.duration) - gps for ifo in ifos
+        )
+        expected_time_offset = t_end - tc_prior.xmin + EARTH_RADIUS_LIGHT_S
+        expected_delta_f_end = 100.0 / (t_end - tc_prior.xmax - EARTH_RADIUS_LIGHT_S)
+
+        assert likelihood.reference_chirp_mass == mc_prior.xmin
+        assert jnp.isclose(likelihood.time_offset, expected_time_offset)
+        assert jnp.isclose(likelihood.delta_f_end, expected_delta_f_end)
+
+    def test_unbounded_time_prior_uses_defaults(self, detectors_and_waveform):
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        prior = CombinePrior([GaussianPrior(0.0, 1.0, parameter_names=["t_c"])])
+
+        likelihood = MultibandedTransientLikelihoodFD(
+            detectors=ifos,
+            waveform=waveform,
+            f_min=fmin,
+            f_max=fmax,
+            trigger_time=gps,
+            prior=prior,
+            reference_chirp_mass=20.0,
+        )
+
+        assert likelihood.time_offset == 2.12
+        assert likelihood.delta_f_end == 53.0
+
+    @pytest.mark.parametrize(
+        ("prior", "match"),
+        [
+            (None, "Either reference_chirp_mass or a prior"),
+            (
+                CombinePrior([UniformPrior(-0.1, 0.1, parameter_names=["t_c"])]),
+                "no M_c prior found",
+            ),
+            (
+                CombinePrior([GaussianPrior(20.0, 1.0, parameter_names=["M_c"])]),
+                "no M_c prior found",
+            ),
+        ],
+    )
+    def test_missing_reference_chirp_mass_raises(
+        self, detectors_and_waveform, prior, match
+    ):
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        with pytest.raises(ValueError, match=match):
+            MultibandedTransientLikelihoodFD(
+                detectors=ifos,
+                waveform=waveform,
+                f_min=fmin,
+                f_max=fmax,
+                trigger_time=gps,
+                prior=prior,
+            )
+
+    @pytest.mark.parametrize(
+        ("kwargs", "match"),
+        [
+            ({"reference_chirp_mass": 0.0}, "reference_chirp_mass"),
+            ({"highest_mode": 0}, "highest_mode"),
+            ({"accuracy_factor": 0.0}, "accuracy_factor"),
+            ({"time_offset": -1.0}, "time_offset"),
+            ({"delta_f_end": 0.0}, "delta_f_end"),
+            ({"min_banding_duration": -1.0}, "min_banding_duration"),
+            ({"max_banding_frequency": 0.0}, "max_banding_frequency"),
+        ],
+    )
+    def test_invalid_banding_parameters_raise(
+        self, detectors_and_waveform, kwargs, match
+    ):
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        params = {"reference_chirp_mass": 20.0, **kwargs}
+        with pytest.raises(ValueError, match=match):
+            MultibandedTransientLikelihoodFD(
+                detectors=ifos,
+                waveform=waveform,
+                f_min=fmin,
+                f_max=fmax,
+                trigger_time=gps,
+                **params,
+            )
+
+    def test_frequency_band_helpers_create_multiple_bands(self, detectors_and_waveform):
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        likelihood = MultibandedTransientLikelihoodFD(
+            detectors=ifos,
+            waveform=waveform,
+            f_min=fmin,
+            f_max=fmax,
+            trigger_time=gps,
+            reference_chirp_mass=20.0,
+            time_offset=0.0,
+        )
+
+        tau, dtaudf = likelihood._compute_tau_dtaudf(100.0)
+        fnext, dfnext = likelihood._find_starting_frequency(4.0, fmin)
+        no_fnext, no_dfnext = likelihood._find_starting_frequency(
+            4.0, likelihood.max_banding_frequency
+        )
+
+        assert tau > 0
+        assert dtaudf < 0
+        assert fnext is not None
+        assert dfnext is not None
+        assert fmin < fnext < likelihood.max_banding_frequency
+        assert dfnext > 0
+        assert (no_fnext, no_dfnext) == (None, None)
+        assert likelihood.n_bands > 1
+
     def test_initialization(self, detectors_and_waveform):
         ifos, waveform, fmin, fmax, gps = detectors_and_waveform
         likelihood = MultibandedTransientLikelihoodFD(
@@ -1278,6 +1866,8 @@ class TestMultibandedTransientLikelihoodFD:
         assert likelihood.trigger_time == gps
         assert hasattr(likelihood, "gmst")
         assert likelihood.reference_chirp_mass == 20.0
+        assert likelihood.time_offset == 2.12
+        assert likelihood.delta_f_end == 53.0
         assert likelihood.n_bands > 0
 
     def test_band_setup(self, detectors_and_waveform):
@@ -1371,6 +1961,99 @@ class TestMultibandedTransientLikelihoodFD:
             )
 
     # ── Evaluation ────────────────────────────────────────────────────────────
+
+    def test_cached_waveform_matches_direct_evaluation(self, detectors_and_waveform):
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        likelihood = MultibandedTransientLikelihoodFD(
+            detectors=ifos,
+            waveform=waveform,
+            f_min=fmin,
+            f_max=fmax,
+            trigger_time=gps,
+            reference_chirp_mass=20.0,
+        )
+        params = example_params()
+        cache = likelihood.generate_waveform(params)
+
+        assert jnp.allclose(
+            likelihood.evaluate(params),
+            likelihood.evaluate_from_waveform(params, cache),
+        )
+        assert jnp.allclose(
+            likelihood.evaluate_from_waveform(params, cache),
+            jax.jit(likelihood.evaluate_from_waveform)(params, cache),
+        )
+
+        projected = {
+            **params,
+            "d_L": params["d_L"] * 1.2,
+            "psi": params["psi"] + 0.1,
+            "t_c": 0.002,
+        }
+        assert jnp.allclose(
+            likelihood.evaluate(projected),
+            likelihood.evaluate_from_waveform(projected, cache),
+        )
+
+    def test_evaluate_bypasses_waveform_cache_machinery(
+        self, detectors_and_waveform, monkeypatch
+    ):
+        # evaluate() must generate the waveform directly at the true d_L; the
+        # waveform-cache machinery (unit-distance normalization when supported,
+        # rescaling on the way out) is reserved for the SwiG cache path
+        # (generate_waveform()/evaluate_from_waveform()) and must not add
+        # overhead to every other sampler's likelihood calls.
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        likelihood = MultibandedTransientLikelihoodFD(
+            detectors=ifos,
+            waveform=waveform,
+            f_min=fmin,
+            f_max=fmax,
+            trigger_time=gps,
+            reference_chirp_mass=20.0,
+        )
+
+        def _unexpected(*args, **kwargs):
+            raise AssertionError("evaluate() must not use the waveform-cache machinery")
+
+        monkeypatch.setattr(likelihood, "_waveform_sky_for_cache", _unexpected)
+        monkeypatch.setattr(likelihood, "_waveform_sky_from_cache", _unexpected)
+
+        assert jnp.isfinite(likelihood.evaluate(example_params()))
+
+    def test_waveform_cache_uses_multibanded_likelihood(self, detectors_and_waveform):
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        likelihood = MultibandedTransientLikelihoodFD(
+            detectors=ifos,
+            waveform=waveform,
+            fixed_parameters={"d_L": 400.0, "phase_c": 0.0},
+            f_min=fmin,
+            f_max=fmax,
+            trigger_time=gps,
+            reference_chirp_mass=20.0,
+        )
+        blocks = [
+            ["M_c", "q"],
+            ["s1_z", "s2_z"],
+            ["iota"],
+            ["ra", "dec"],
+            ["psi"],
+            ["t_c"],
+        ]
+        jim = Jim(
+            likelihood,
+            _waveform_cache_prior(),
+            BlackJAXSwiGConfig(blocks=blocks, n_live=8, n_delete_frac=0.25),
+            likelihood_transforms=[MassRatioToSymmetricMassRatioTransform],
+        )
+        assert jim.sampler._rebuild_required_by_block == {
+            (0, 1): True,
+            (2, 3): True,
+            (4,): True,
+            (5, 6): False,
+            (7,): False,
+            (8,): False,
+        }
 
     def test_evaluation(self, detectors_and_waveform):
         ifos, waveform, fmin, fmax, gps = detectors_and_waveform

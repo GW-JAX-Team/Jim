@@ -11,19 +11,9 @@ import jax
 import jax.numpy as jnp
 import pytest
 
-from tests.utils import assert_all_finite, check_bilby_available, common_keys_allclose
+from tests.utils import assert_all_finite, common_keys_allclose
 
-# Check if bilby is available before running tests
-try:
-    check_bilby_available()
-    BILBY_AVAILABLE = True
-except ImportError:
-    BILBY_AVAILABLE = False
-
-pytestmark = pytest.mark.skipif(
-    not BILBY_AVAILABLE,
-    reason="bilby required for cross-validation tests",
-)
+pytest.importorskip("bilby")
 
 
 class TestSpinAnglesToCartesianSpinTransformBilby:
@@ -41,6 +31,7 @@ class TestSpinAnglesToCartesianSpinTransformBilby:
         """
         from bilby.gw.conversion import bilby_to_lalsimulation_spins
         from bilby.gw.utils import solar_mass as MSUN_SI
+
         from jimgw.core.single_event.transforms import (
             SpinAnglesToCartesianSpinTransform,
         )
@@ -101,8 +92,7 @@ class TestSpinAnglesToCartesianSpinTransformBilby:
                     }
                 )
             bilby_cartesian = {
-                k: jnp.array([r[k] for r in bilby_results])
-                for k in bilby_results[0].keys()
+                k: jnp.array([r[k] for r in bilby_results]) for k in bilby_results[0]
             }
 
             transform = SpinAnglesToCartesianSpinTransform(freq_ref=f_ref)
@@ -166,8 +156,7 @@ class TestSpinAnglesToCartesianSpinTransformBilby:
                     }
                 )
             reprod_cartesian = {
-                k: jnp.array([r[k] for r in reprod_results])
-                for k in reprod_results[0].keys()
+                k: jnp.array([r[k] for r in reprod_results]) for k in reprod_results[0]
             }
             assert common_keys_allclose(reprod_cartesian, bilby_cartesian), (
                 f"Round-trip (bilby → Jim inverse → bilby) fails at f_ref={f_ref}"

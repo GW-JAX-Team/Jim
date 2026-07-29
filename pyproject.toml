@@ -24,7 +24,7 @@ dependencies = [
     "anesthetic>=2",
     "astropy>=7.0.1",
     "beartype>=0.19.0",
-    "blackjax>=1.4",
+    "blackjax>=1.6",
     "corner>=2.2.3",
     "equinox>=0.11",
     "evosax>=0.2.0",
@@ -36,7 +36,7 @@ dependencies = [
     "numpy>=1.26",
     "pydantic>=2",
     "requests>=2.32.3",
-    "ripplegw>=0.2.1",
+    "ripplegw>=0.3.0",
     "scipy>=1.17.1",
     "tomli-w>=1.0",
     "typer>=0.12",
@@ -70,10 +70,6 @@ doc = [
     "pymdown-extensions",
     "zensical",
 ]
-nested-sampling = [
-    "blackjax",
-]
-
 [project.urls]
 Homepage = "https://github.com/GW-JAX-Team/Jim"
 Documentation = "https://gw-jax-team.github.io/Jim/"
@@ -83,11 +79,6 @@ Changelog = "https://github.com/GW-JAX-Team/Jim/releases"
 
 [tool.uv.sources]
 jimgw = { workspace = true }
-# Pinned to a maintained fork on a dedicated `jim` branch that carries:
-#   - blackjax.ns.{base,adaptive,utils}                                     (NS-AW, NSS)
-#   - blackjax.nss                                                          (NSS)
-# When the NS module land upstream, drop this pin and the nested-sampling group.
-blackjax = { git = "https://github.com/GW-JAX-Team/blackjax.git", branch = "jim" }
 
 [build-system]
 requires = ["hatchling", "hatch-vcs"]
@@ -107,9 +98,27 @@ markers = [
 
 [tool.pyright]
 include = ["src"]
+reportUnnecessaryTypeIgnoreComment = "error"
 
 [tool.ruff.lint]
-ignore = ["F722"]
+ignore = ["F722", "UP007", "UP045"]
+
+[tool.ruff.lint.per-file-ignores]
+# These test modules intentionally retain the conventional GW event spelling.
+"tests/integration/test_GW150914_*.py" = ["N999"]
+
+[tool.ty.src]
+include = ["src"]
+
+[tool.ty.analysis]
+# These libraries expose dynamic APIs or annotation helpers that ty cannot yet model.
+# Pyright remains responsible for checking their richer type information.
+replace-imports-with-any = [
+    "astropy.**",
+    "blackjax.**",
+    "flowMC.**",
+    "jaxtyping.**",
+]
 
 [tool.coverage.report]
 exclude_also = [

@@ -7,11 +7,13 @@ parallel tempering.
 
 import logging
 import pickle
-from typing import Any, Callable, Optional, Type
+from collections.abc import Callable
+from typing import Any, Optional
 
 import jax
 import jax.numpy as jnp
 import numpy as np
+from flowMC.resource.states import State
 from flowMC.resource_strategy_bundle.RQSpline_GRW import RQSpline_GRW_Bundle
 from flowMC.resource_strategy_bundle.RQSpline_GRW_PT import RQSpline_GRW_PT_Bundle
 from flowMC.resource_strategy_bundle.RQSpline_HMC import RQSpline_HMC_Bundle
@@ -20,16 +22,16 @@ from flowMC.resource_strategy_bundle.RQSpline_MALA import RQSpline_MALA_Bundle
 from flowMC.resource_strategy_bundle.RQSpline_MALA_PT import RQSpline_MALA_PT_Bundle
 from flowMC.Sampler import Sampler as FlowMCSamplerBackend
 from jaxtyping import Array, Float, Key
-from jimgw.typing import FloatScalar
 
 from jimgw.samplers.base import Sampler
 from jimgw.samplers.config import FlowMCConfig, GRWConfig, HMCConfig, MALAConfig
+from jimgw.typing import FloatScalar
 
 logger = logging.getLogger(__name__)
 
 
 # Maps (local_kernel, pt_enabled) → bundle class.
-_BUNDLE: dict[tuple[str, bool], Type] = {
+_BUNDLE: dict[tuple[str, bool], type] = {
     ("MALA", False): RQSpline_MALA_Bundle,
     ("MALA", True): RQSpline_MALA_PT_Bundle,
     ("HMC", False): RQSpline_HMC_Bundle,
@@ -37,6 +39,8 @@ _BUNDLE: dict[tuple[str, bool], Type] = {
     ("GRW", False): RQSpline_GRW_Bundle,
     ("GRW", True): RQSpline_GRW_PT_Bundle,
 }
+
+_FLOWMC_CHECKPOINT_METADATA_RESOURCE = "_jimgw_checkpoint_metadata"
 
 
 class FlowMCSampler(Sampler):
@@ -94,15 +98,19 @@ class FlowMCSampler(Sampler):
             order.append("parallel_tempering")
         self._strategy_order_from_config: list[str] = order
 
+    @property
+    def sampler_name(self) -> str:
+        return "flowMC"
+
     # flowMC expects callables with signature (params, data) -> Float.
     def _logpdf_flowmc(
         self, params: Float[Array, " n_dims"], _data: dict
-    ) -> FloatScalar:  # noqa: F722
+    ) -> FloatScalar:
         return self._log_posterior_fn(params)
 
     def _logprior_flowmc(
         self, params: Float[Array, " n_dims"], _data: dict
-    ) -> FloatScalar:  # noqa: F722
+    ) -> FloatScalar:
         return self._log_prior_fn(params)
 
     @property
@@ -113,6 +121,22 @@ class FlowMCSampler(Sampler):
             if order is not None:
                 return order
         return self._strategy_order_from_config
+
+    def _read_checkpoint_sampler_name(self, checkpoint: dict) -> Optional[str]:
+        """Read the sampler tag stored in a flowMC-owned checkpoint."""
+        if "sampler_name" in checkpoint:
+            return super()._read_checkpoint_sampler_name(checkpoint)
+
+        resources = checkpoint.get("resources")
+        if resources is None or _FLOWMC_CHECKPOINT_METADATA_RESOURCE not in resources:
+            raise ValueError("flowMC checkpoint is missing sampler metadata")
+        serialization, metadata = resources[_FLOWMC_CHECKPOINT_METADATA_RESOURCE]
+        if serialization != "pkl" or not isinstance(metadata, State):
+            raise ValueError("flowMC checkpoint has invalid sampler metadata")
+        sampler_name = metadata.data["sampler_name"]
+        if not isinstance(sampler_name, str):
+            raise TypeError("flowMC checkpoint has invalid sampler name")
+        return sampler_name
 
     def _sample(
         self,
@@ -142,34 +166,34 @@ class FlowMCSampler(Sampler):
         ]
 
         # Common kwargs for every bundle.
-        common_kwargs: dict = dict(
-            rng_key=bundle_key,
-            n_chains=config.n_chains,
-            n_dims=self.n_dims,
-            logpdf=self._logpdf_flowmc,
-            n_local_steps=config.n_local_steps,
-            n_global_steps=config.n_global_steps,
-            n_training_loops=config.n_training_loops,
-            n_production_loops=config.n_production_loops,
-            n_epochs=config.n_epochs,
-            periodic=self._periodic_index_dict,
-            rq_spline_hidden_units=config.rq_spline_hidden_units,
-            rq_spline_n_bins=config.rq_spline_n_bins,
-            rq_spline_n_layers=config.rq_spline_n_layers,
-            n_NFproposal_batch_size=config.n_NFproposal_batch_size,
-            learning_rate=config.learning_rate,
-            batch_size=config.batch_size,
-            n_max_examples=config.n_max_examples,
-            history_window=config.history_window,
-            chain_batch_size=config.chain_batch_size,
-            local_thinning=config.local_thinning,
-            global_thinning=config.global_thinning,
-            early_stopping=config.early_stopping,
-            early_stopping_tolerance=config.early_stopping_tolerance,
-            early_stopping_patience=config.early_stopping_patience,
-            early_stopping_min_acceptance=config.early_stopping_min_acceptance,
-            verbose=logging.getLogger("jimgw").isEnabledFor(logging.DEBUG),
-        )
+        common_kwargs: dict = {
+            "rng_key": bundle_key,
+            "n_chains": config.n_chains,
+            "n_dims": self.n_dims,
+            "logpdf": self._logpdf_flowmc,
+            "n_local_steps": config.n_local_steps,
+            "n_global_steps": config.n_global_steps,
+            "n_training_loops": config.n_training_loops,
+            "n_production_loops": config.n_production_loops,
+            "n_epochs": config.n_epochs,
+            "periodic": self._periodic_index_dict,
+            "rq_spline_hidden_units": config.rq_spline_hidden_units,
+            "rq_spline_n_bins": config.rq_spline_n_bins,
+            "rq_spline_n_layers": config.rq_spline_n_layers,
+            "n_NFproposal_batch_size": config.n_NFproposal_batch_size,
+            "learning_rate": config.learning_rate,
+            "batch_size": config.batch_size,
+            "n_max_examples": config.n_max_examples,
+            "history_window": config.history_window,
+            "chain_batch_size": config.chain_batch_size,
+            "local_thinning": config.local_thinning,
+            "global_thinning": config.global_thinning,
+            "early_stopping": config.early_stopping,
+            "early_stopping_tolerance": config.early_stopping_tolerance,
+            "early_stopping_patience": config.early_stopping_patience,
+            "early_stopping_min_acceptance": config.early_stopping_min_acceptance,
+            "verbose": logging.getLogger("jimgw").isEnabledFor(logging.DEBUG),
+        }
 
         # Kernel-specific kwargs. isinstance checks narrow the type after Pydantic coercion.
         if config.local_kernel == "MALA":
@@ -207,6 +231,10 @@ class FlowMCSampler(Sampler):
             outdir=_outdir,
             checkpoint_interval=config.checkpoint_interval,
         )
+        if config.checkpoint_interval > 0:
+            self._flowmc_sampler.resources[_FLOWMC_CHECKPOINT_METADATA_RESOURCE] = (
+                State({"sampler_name": self.sampler_name}, name="JimCheckpointMetadata")
+            )
 
         # Skip initial_position validation when resuming from an existing checkpoint.
         _ckpt_path = (
@@ -221,7 +249,9 @@ class FlowMCSampler(Sampler):
         )
         if _resuming and _ckpt_path is not None:
             with open(_ckpt_path, "rb") as _f:
-                self._prev_elapsed = float(pickle.load(_f)["elapsed_time"])
+                checkpoint = pickle.load(_f)
+            self._validate_checkpoint(checkpoint)
+            self._prev_elapsed = float(checkpoint["elapsed_time"])
         initial_position = jnp.asarray(initial_position)
         if not _resuming:
             if initial_position.ndim == 1:

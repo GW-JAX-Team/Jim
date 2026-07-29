@@ -4,27 +4,24 @@ import logging
 import pickle
 import shutil
 import time
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any, Optional
 
 import jax
 import jax.numpy as jnp
 import numpy as np
-from jaxtyping import Array, Float, Key
 from anesthetic.samples import NestedSamples
-import blackjax
 from blackjax.ns.adaptive import AdaptiveNSState
 from blackjax.ns.base import NSInfo
 from blackjax.ns.utils import finalise
+from jaxtyping import Array, Float, Key
 
 from jimgw.samplers.base import Sampler
 from jimgw.samplers.blackjax._acceptance_walk_kernel import bilby_adaptive_de_sampler
-from jimgw.samplers.blackjax._imports import require_nested_sampling
 from jimgw.samplers.config import BlackJAXNSAWConfig
 from jimgw.samplers.periodic import to_unit_cube_stepper
 
 logger = logging.getLogger(__name__)
-
-require_nested_sampling(blackjax)
 
 
 class BlackJAXNSAWSampler(Sampler):
@@ -87,6 +84,10 @@ class BlackJAXNSAWSampler(Sampler):
         self._stepper_fn = to_unit_cube_stepper(periodic, n_dims)
         self._validate_unit_cube_prior(log_prior_fn)
 
+    @property
+    def sampler_name(self) -> str:
+        return "BlackJAX NS AW"
+
     def _validate_unit_cube_prior(self, log_prior_fn: Callable) -> None:
         """Raise ValueError if log_prior_fn is not the normalized uniform on [0, 1]^n_dims."""
         n = self.n_dims
@@ -117,7 +118,7 @@ class BlackJAXNSAWSampler(Sampler):
         rng_key: Key,
         initial_position: Float[Array, "n_live n_dims"],
     ) -> None:
-        """Run the BlackJAX NS-AW sampler.
+        """Run the BlackJAX NS AW sampler.
 
         If ``config.checkpoint_dir`` is set, a ``checkpoint.pkl`` is written
         atomically after each nested-sampling iteration (subject to
@@ -171,16 +172,19 @@ class BlackJAXNSAWSampler(Sampler):
             and config.checkpoint_interval > 0
             and ckpt_path.exists()
         ):
+            _initial_rng_key = rng_key
             try:
                 with open(ckpt_path, "rb") as _f:
                     _ckpt = pickle.load(_f)
+                self._validate_checkpoint(_ckpt)
                 state = _ckpt["state"]
                 dead = _ckpt["dead"]
                 rng_key = _ckpt["rng_key"]
                 n_iter = _ckpt["n_iter"]
                 self._prev_elapsed = float(_ckpt["elapsed_time"])
                 logger.info(
-                    "NS-AW: resumed from checkpoint at n_iter=%d (%s)",
+                    "%s: resumed from checkpoint at n_iter=%d (%s)",
+                    self.sampler_name,
                     n_iter,
                     ckpt_path,
                 )
@@ -188,22 +192,25 @@ class BlackJAXNSAWSampler(Sampler):
                 OSError,
                 EOFError,
                 KeyError,
+                TypeError,
                 ValueError,
                 pickle.UnpicklingError,
             ) as _e:
                 logger.warning(
-                    "NS-AW: corrupt checkpoint at %s (%s) — starting fresh.",
+                    "%s: incompatible or corrupt checkpoint at %s (%s) — starting fresh.",
+                    self.sampler_name,
                     ckpt_path,
                     _e,
                 )
+                rng_key = _initial_rng_key
                 state = nested_sampler.init(
                     _validated_initial_particles(initial_position)
-                )  # type: ignore[call-arg]  # blackjax fork API
+                )  # type: ignore[call-arg]  # blackjax API
                 dead = []
                 n_iter = 0
                 self._prev_elapsed = 0.0
         else:
-            state = nested_sampler.init(_validated_initial_particles(initial_position))  # type: ignore[call-arg]  # blackjax fork API
+            state = nested_sampler.init(_validated_initial_particles(initial_position))  # type: ignore[call-arg]  # blackjax API
             dead = []
             n_iter = 0
 
@@ -230,10 +237,11 @@ class BlackJAXNSAWSampler(Sampler):
                         "dead": dead,
                         "rng_key": rng_key,
                         "n_iter": n_iter,
+                        "sampler_name": self.sampler_name,
                         "elapsed_time": self._prev_elapsed
                         + (time.perf_counter() - _method_t0),
                     },
-                    "NS-AW",
+                    self.sampler_name,
                 )
 
         self._final_state = finalise(state, dead)
@@ -276,7 +284,7 @@ class BlackJAXNSAWSampler(Sampler):
         return {"samples": samples, "log_likelihood": log_L}
 
     def _get_diagnostics(self) -> dict[str, Any]:
-        """Return NS-AW run diagnostics.
+        """Return NS AW run diagnostics.
 
         Returns a dict with the following keys:
 

@@ -1,24 +1,24 @@
+from abc import abstractmethod
 from dataclasses import field
-from typing import Optional
+from typing import Optional, cast
 
+import equinox as eqx
 import jax
 import jax.numpy as jnp
-from jax.scipy.special import logit
 from beartype import beartype as typechecker
+from jax.scipy.special import logit
 from jaxtyping import Array, Float, Key, jaxtyped
-from jimgw.typing import FloatScalar
-from abc import abstractmethod
-import equinox as eqx
 
 from jimgw.core.transforms import (
     BijectiveTransform,
-    ScaleTransform,
-    OffsetTransform,
     CosineTransform,
+    OffsetTransform,
     PowerLawTransform,
     RayleighTransform,
+    ScaleTransform,
     reverse_bijective_transform,
 )
+from jimgw.typing import FloatScalar
 
 
 class Prior(eqx.Module):
@@ -47,6 +47,15 @@ class Prior(eqx.Module):
         Jim will raise at construction time if this returns False for those backends.
         """
         return False
+
+    def get_bounds(self) -> Optional[tuple[float, float]]:
+        """Return scalar bounds when this prior exposes ``xmin`` and ``xmax``."""
+        try:
+            xmin = getattr(self, "xmin")  # noqa: B009
+            xmax = getattr(self, "xmax")  # noqa: B009
+            return float(xmin), float(xmax)
+        except (AttributeError, TypeError, ValueError):
+            return None
 
     def __init__(self, parameter_names: list[str]):
         """
@@ -372,8 +381,9 @@ class BoundedMixin:
         return False
 
     def log_prob(self, z: dict[str, Float]) -> FloatScalar:
-        x = z[self.parameter_names[0]]  # type: ignore[attr-defined]
-        base_log_prob = super().log_prob(z)  # type: ignore[misc]
+        prior = cast(Prior, self)
+        x = z[prior.parameter_names[0]]
+        base_log_prob = cast(Prior, super()).log_prob(z)
         return jnp.where(
             jnp.logical_and(x >= self.xmin, x <= self.xmax),
             base_log_prob,
@@ -726,3 +736,23 @@ class PowerLawPrior(SequentialTransformPrior):
                 ),
             ],
         )
+
+
+# Module-level prior utilities
+def find_specific_prior(prior: Prior, parameter_name: str) -> Optional[Prior]:
+    """Return the component prior that governs ``parameter_name``.
+
+    ``CombinePrior`` only groups independent component priors, so the search
+    descends through it. Other prior objects, including transformed analytical
+    priors such as :class:`UniformPrior` and :class:`GaussianPrior`, are
+    returned as the component that defines their public parameter names.
+    """
+    if parameter_name not in prior.parameter_names:
+        return None
+    if isinstance(prior, CombinePrior):
+        for component in prior.base_prior:
+            result = find_specific_prior(component, parameter_name)
+            if result is not None:
+                return result
+        return None
+    return prior

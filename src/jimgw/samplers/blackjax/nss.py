@@ -4,32 +4,43 @@ import logging
 import pickle
 import shutil
 import time
+from collections.abc import Callable
 from functools import partial
-from typing import Any, Callable, Optional
+from typing import Any, Optional
 
 import jax
 import jax.numpy as jnp
 import numpy as np
 from anesthetic.samples import NestedSamples
+from blackjax import SamplingAlgorithm, nss
+from blackjax.mcmc.slice import build_kernel as build_slice_kernel
+from blackjax.mcmc.slice import stepping_out
+from blackjax.ns.adaptive import AdaptiveNSState
+from blackjax.ns.adaptive import init as _ns_adaptive_init
+from blackjax.ns.base import NSInfo
+from blackjax.ns.base import init_state_strategy as _init_state_strategy
+from blackjax.ns.nss import (
+    live_covariance,
+    sample_direction_from_covariance,
+    slice_constrained_step,
+)
+from blackjax.ns.utils import finalise
+from jax.sharding import Mesh, NamedSharding
+from jax.sharding import PartitionSpec as P
 from jaxtyping import Array, Float, Key
 
-import blackjax
-from blackjax.ns.adaptive import AdaptiveNSState, init as _ns_adaptive_init
-from blackjax.ns.base import NSInfo, init_state_strategy as _init_state_strategy
-from blackjax.ns.nss import update_inner_kernel_params as _update_inner_kernel_params
-from blackjax.ns.utils import finalise
 from jimgw.samplers.base import Sampler
-from jimgw.samplers.blackjax._imports import (
-    require_nested_sampling,
-    require_nss,
+from jimgw.samplers.blackjax.sharding import (
+    _LIVE_AXIS,
+    build_sharded_from_mcmc_kernel,
+    make_live_mesh,
+    place_key,
+    place_state,
 )
 from jimgw.samplers.config import BlackJAXNSSConfig
-from jimgw.samplers.periodic import to_prior_space_stepper
+from jimgw.samplers.periodic import to_prior_space_proposal
 
 logger = logging.getLogger(__name__)
-
-require_nested_sampling(blackjax)
-require_nss(blackjax)
 
 
 class BlackJAXNSSSampler(Sampler):
@@ -55,7 +66,7 @@ class BlackJAXNSSSampler(Sampler):
     """
 
     _config: BlackJAXNSSConfig
-    _stepper_fn: Callable
+    _proposal: Callable
     _final_state: NSInfo
     _nested_samples: NestedSamples
     _n_iterations: int
@@ -79,7 +90,56 @@ class BlackJAXNSSSampler(Sampler):
             log_posterior_fn=log_posterior_fn,
             config=config,
         )
-        self._stepper_fn = to_prior_space_stepper(periodic, n_dims)
+        self._proposal = to_prior_space_proposal(
+            periodic, n_dims, sample_direction_from_covariance
+        )
+
+    @property
+    def sampler_name(self) -> str:
+        return "BlackJAX NSS"
+
+    @property
+    def _update_inner_kernel_params_fn(self) -> Callable:
+        return live_covariance
+
+    def _build_nested_sampler(self, n_delete: int, mesh: Optional[Mesh] = None):
+        config = self._config
+        num_inner_steps = config.num_inner_steps_per_dim * self.n_dims
+        if mesh is not None:
+            init_state_fn = partial(
+                _init_state_strategy,
+                logprior_fn=self._log_prior_fn,
+                loglikelihood_fn=self._log_likelihood_fn,
+            )
+            slice_kernel = build_slice_kernel(
+                interval=stepping_out,
+                max_expansions=10,
+                max_shrinkage=100,
+            )
+            constrained_step = slice_constrained_step(
+                init_state_fn, slice_kernel, self._proposal
+            )
+            kernel = build_sharded_from_mcmc_kernel(
+                constrained_step,
+                n_inner_steps=num_inner_steps,
+                update_inner_kernel_params_fn=self._update_inner_kernel_params_fn,
+                n_delete=n_delete,
+                mesh=mesh,
+            )
+            # `nested_sampler.init` is never called (state init happens in
+            # `_batched_nss_init`); BlackJAX still requires SamplingAlgorithm.init
+            # to type as returning a State.
+            return SamplingAlgorithm(
+                lambda position, rng_key=None: position,  # type: ignore[return-value]
+                kernel,
+            )
+        return nss(
+            logprior_fn=self._log_prior_fn,
+            loglikelihood_fn=self._log_likelihood_fn,
+            num_delete=n_delete,
+            num_inner_steps=num_inner_steps,
+            proposal=self._proposal,
+        )
 
     def _sample(
         self,
@@ -106,7 +166,7 @@ class BlackJAXNSSSampler(Sampler):
         config = self._config
         n_live = config.n_live
         n_delete = int(n_live * config.n_delete_frac)
-        num_inner_steps = config.num_inner_steps_per_dim * self.n_dims
+        mesh = make_live_mesh(config.n_devices, n_live, n_delete)
         ckpt_path = (
             config.checkpoint_dir / "checkpoint.pkl"
             if config.checkpoint_dir is not None
@@ -124,13 +184,7 @@ class BlackJAXNSSSampler(Sampler):
                 )
             return arr
 
-        nested_sampler = blackjax.nss(
-            logprior_fn=self._log_prior_fn,
-            loglikelihood_fn=self._log_likelihood_fn,
-            num_delete=n_delete,
-            num_inner_steps=num_inner_steps,
-            stepper_fn=self._stepper_fn,
-        )
+        nested_sampler = self._build_nested_sampler(n_delete, mesh)
 
         # Bypass BlackJAX's jax.vmap(init_state_fn) to avoid peak-memory OOM.
         # A full vmap over all live particles materialises O(n_live) concurrent
@@ -144,14 +198,20 @@ class BlackJAXNSSSampler(Sampler):
         )
 
         def _batched_nss_init(positions):
+            if mesh is not None:
+                positions = jax.device_put(
+                    positions, NamedSharding(mesh, P(_LIVE_AXIS))
+                )
+
             def _batched_fn(pos):
                 return jax.lax.map(_single_init_fn, pos, batch_size=n_delete)
 
-            return _ns_adaptive_init(
+            state = _ns_adaptive_init(
                 positions,
                 init_state_fn=_batched_fn,
-                update_inner_kernel_params_fn=_update_inner_kernel_params,
+                update_inner_kernel_params_fn=self._update_inner_kernel_params_fn,
             )
+            return place_state(state, mesh) if mesh is not None else state
 
         # Resume from checkpoint if one exists.
         if (
@@ -159,29 +219,40 @@ class BlackJAXNSSSampler(Sampler):
             and config.checkpoint_interval > 0
             and ckpt_path.exists()
         ):
+            _initial_rng_key = rng_key
             try:
                 with open(ckpt_path, "rb") as _f:
                     _ckpt = pickle.load(_f)
+                self._validate_checkpoint(_ckpt)
                 state = _ckpt["state"]
                 dead = _ckpt["dead"]
                 rng_key = _ckpt["rng_key"]
+                if mesh is not None:
+                    state = place_state(state, mesh)
+                    rng_key = place_key(rng_key, mesh)
                 n_iter = _ckpt["n_iter"]
                 self._prev_elapsed = float(_ckpt["elapsed_time"])
                 logger.info(
-                    "NSS: resumed from checkpoint at n_iter=%d (%s)", n_iter, ckpt_path
+                    "%s: resumed from checkpoint at n_iter=%d (%s)",
+                    self.sampler_name,
+                    n_iter,
+                    ckpt_path,
                 )
             except (
                 OSError,
                 EOFError,
                 KeyError,
+                TypeError,
                 ValueError,
                 pickle.UnpicklingError,
             ) as _e:
                 logger.warning(
-                    "NSS: corrupt checkpoint at %s (%s) — starting fresh.",
+                    "%s: incompatible or corrupt checkpoint at %s (%s) — starting fresh.",
+                    self.sampler_name,
                     ckpt_path,
                     _e,
                 )
+                rng_key = _initial_rng_key
                 state = _batched_nss_init(
                     _validated_initial_particles(initial_position)
                 )
@@ -192,6 +263,9 @@ class BlackJAXNSSSampler(Sampler):
             state = _batched_nss_init(_validated_initial_particles(initial_position))
             dead = []
             n_iter = 0
+
+        if mesh is not None:
+            rng_key = place_key(rng_key, mesh)
 
         def _terminate(state: AdaptiveNSState) -> bool:
             dlogz = jnp.logaddexp(0, state.integrator.logZ_live - state.integrator.logZ)
@@ -212,17 +286,19 @@ class BlackJAXNSSSampler(Sampler):
             ):
                 _last_ckpt_t = config.write_checkpoint(
                     {
-                        "state": state,
-                        "dead": dead,
-                        "rng_key": rng_key,
+                        "state": jax.device_get(state),
+                        "dead": jax.device_get(dead),
+                        "rng_key": jax.device_get(rng_key),
                         "n_iter": n_iter,
+                        "sampler_name": self.sampler_name,
                         "elapsed_time": self._prev_elapsed
                         + (time.perf_counter() - _method_t0),
                     },
-                    "NSS",
+                    self.sampler_name,
                 )
 
-        self._final_state = finalise(state, dead)  # type: ignore[arg-type]  # AdaptiveNSState structurally satisfies NSState (.particles field)
+        final_state = finalise(state, dead)  # type: ignore[arg-type]  # AdaptiveNSState structurally satisfies NSState (.particles field)
+        self._final_state = jax.device_get(final_state)
         self._n_iterations = n_iter
 
         # Build anesthetic NestedSamples for use in get_samples() and get_diagnostics().
@@ -281,7 +357,7 @@ class BlackJAXNSSSampler(Sampler):
         ui: Any = (
             self._final_state.update_info
         )  # SliceInfo — blackjax stubs type this as base NamedTuple
-        total_steps = int(jnp.sum(ui.num_steps))
+        total_steps = int(jnp.sum(ui.num_expansions))
         total_shrink = int(jnp.sum(ui.num_shrink))
 
         log_Z = np.asarray(self._nested_samples.logZ()).item()
@@ -290,7 +366,7 @@ class BlackJAXNSSSampler(Sampler):
         return {
             "n_likelihood_evaluations": total_steps + total_shrink,
             "n_iterations": self._n_iterations,
-            "n_stepping_out_history": np.asarray(ui.num_steps),
+            "n_stepping_out_history": np.asarray(ui.num_expansions),
             "n_shrinking_history": np.asarray(ui.num_shrink),
             "n_likelihood_evaluations_stepping_out": total_steps,
             "n_likelihood_evaluations_shrinking": total_shrink,

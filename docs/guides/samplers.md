@@ -11,12 +11,13 @@ samples = jim.get_samples()  # dict[str, np.ndarray] keyed by parameter name
 
 ## Sampler overview
 
-| Sampler | Algorithm | Evidence | Extra install | Prior constraint |
-| --- | --- | --- | --- | --- |
-| [flowMC](#flowmc) | normalizing-flow-enhanced MCMC | No | No | None |
-| [NS-AW](#blackjax-ns-aw) | Nested sampling (bilby/dynesty-style acceptance-walk) | Yes | Yes (`nested-sampling`) | Uniform prior; unit-cube sampling space |
-| [NSS](#blackjax-nss) | Nested slice sampling | Yes | Yes (`nested-sampling`) | Normalised prior |
-| [SMC](#blackjax-smc) | Sequential Monte Carlo | Yes | No | Normalised prior |
+| Sampler | Algorithm | Evidence | Prior constraint |
+| --- | --- | --- | --- |
+| [flowMC](#flowmc) | normalizing-flow-enhanced MCMC | No | None |
+| [NS AW](#blackjax-ns-aw) | Nested sampling (bilby/dynesty-style acceptance-walk) | Yes | Uniform prior; unit-cube sampling space |
+| [NSS](#blackjax-nss) | Nested slice sampling | Yes | Normalised prior |
+| [SwiG](#blackjax-swig) | Nested Slice within Gibbs with waveform caching | Yes | Normalised prior |
+| [SMC](#blackjax-smc) | Sequential Monte Carlo | Yes | Normalised prior |
 
 ---
 
@@ -50,11 +51,13 @@ Key parameters:
 - `n_training_loops` / `n_production_loops` — how many rounds of training (flow updates) and production (sample collection) to run.
 - `n_local_steps` / `n_global_steps` — local MCMC steps and flow-proposal steps per loop.
 - `local_kernel` — MCMC kernel for local steps; one of `"MALA"` (default), `"HMC"`, or `"GRW"`.
-- `parallel_tempering` — parallel tempering settings; disabled by default. Enable with `parallel_tempering=True` (uses defaults), a plain dict of settings such as `{"n_temperatures": 8}`, or a `ParallelTemperingConfig` instance.
+- `parallel_tempering` — parallel tempering settings; disabled by default.
+  Enable with `parallel_tempering=True` (uses defaults), a plain dict of settings such as `{"n_temperatures": 8}`, or a `ParallelTemperingConfig` instance.
 
 **Repository:** [GW-JAX-Team/flowMC](https://github.com/GW-JAX-Team/flowMC)
 
-**References:** Wong, K. W. K., Gabrié, M., Foreman-Mackey, D., *"flowMC: Normalizing flow enhanced sampling package for probabilistic inference in JAX"*, [arXiv:2211.06397](https://arxiv.org/abs/2211.06397), JOSS 8 (83) 5021 (2023). Wong, K. W. K., Isi, M., Edwards, T. D. P., *"Fast Gravitational-wave Parameter Estimation without Compromises"*, [arXiv:2302.05333](https://arxiv.org/abs/2302.05333), ApJ 958 129 (2023).
+**References:** Wong, K. W. K., Gabrié, M., Foreman-Mackey, D., *"flowMC: Normalizing flow enhanced sampling package for probabilistic inference in JAX"*, [arXiv:2211.06397](https://arxiv.org/abs/2211.06397), JOSS 8 (83) 5021 (2023).
+Wong, K. W. K., Isi, M., Edwards, T. D. P., *"Fast Gravitational-wave Parameter Estimation without Compromises"*, [arXiv:2302.05333](https://arxiv.org/abs/2302.05333), ApJ 958 129 (2023).
 
 ---
 
@@ -62,7 +65,10 @@ Key parameters:
 
 Sequential Monte Carlo (SMC) maintains a population of particles and gradually shifts them from the prior toward the posterior through a sequence of intermediate temperature steps.
 
-> **Normalised-prior requirement** — SMC computes a Bayesian evidence estimate and therefore requires a normalised prior. All built-in Jim priors are normalised. If you add custom constraints, check whether the resulting distribution is still normalised; if so, override `is_normalized` to return `True`. Jim raises a `ValueError` at construction if this condition is not met.
+> **Normalised-prior requirement** — SMC computes a Bayesian evidence estimate and therefore requires a normalised prior.
+> All built-in Jim priors are normalised.
+> If you add custom constraints, check whether the resulting distribution is still normalised; if so, override `is_normalized` to return `True`.
+> Jim raises a `ValueError` at construction if this condition is not met.
 
 ```python
 from jimgw.samplers.config import BlackJAXSMCConfig
@@ -83,35 +89,27 @@ Key parameters:
 
 - `n_particles` — particle ensemble size.
 - `n_mcmc_steps_per_dim` — MCMC steps per dimension at each temperature step.
-- `target_ess_fraction` — target ESS as a fraction of `n_particles` (default `0.9`). The algorithm advances the temperature when the fraction of effectively contributing particles hits this threshold.  Values in `(0, 1]` are valid when `persistent_sampling=False`; persistent sampling may exceed `1.0` because particles are recycled across steps.  Only used with adaptive temperature selection (no effect with a fixed `temperature_ladder`).
-- `target_ess` — target ESS as an absolute particle count. `target_ess_fraction` and `target_ess` are mutually exclusive; set one or the other, not both. When `persistent_sampling=False`, must be `<= n_particles`.
+- `target_ess_fraction` — target ESS as a fraction of `n_particles` (default `0.9`).
+  The algorithm advances the temperature when the fraction of effectively contributing particles hits this threshold.
+  Values in `(0, 1]` are valid when `persistent_sampling=False`; persistent sampling may exceed `1.0` because particles are recycled across steps.
+  Only used with adaptive temperature selection (no effect with a fixed `temperature_ladder`).
+- `target_ess` — target ESS as an absolute particle count.
+  `target_ess_fraction` and `target_ess` are mutually exclusive; set one or the other, not both.
+  When `persistent_sampling=False`, must be `<= n_particles`.
 - `persistent_sampling` — whether to retain particles from all temperature steps (default `True`).
-- `temperature_ladder` — explicit temperature schedule. If given, the sampler advances through this fixed ladder and ignores `target_ess_fraction` and `target_ess`.
+- `temperature_ladder` — explicit temperature schedule.
+  If given, the sampler advances through this fixed ladder and ignores `target_ess_fraction` and `target_ess`.
 
 **Repository:** [blackjax-devs/blackjax](https://github.com/blackjax-devs/blackjax)
 
 ---
 
-## BlackJAX nested samplers
-
-The two BlackJAX nested-sampling backends require additional dependencies.
-They need a maintained fork of BlackJAX; install it with:
-
-```bash
-uv sync --group nested-sampling
-```
-
-This pulls in:
-
-- **blackjax** — pinned to the `GW-JAX-Team/blackjax@jim` branch, which carries the BlackJAX nested-sampling module.
-
----
-
-### BlackJAX NS-AW
+### BlackJAX NS AW
 
 Nested sampling with a bilby/dynesty-style adaptive differential-evolution acceptance-walk inner kernel.
 
-> **Unit-cube requirement** — this sampler works in the unit hypercube `[0, 1]^n_dims`.  All parameters must be mapped into `[0, 1]` via sample transforms, which the CLI constructs automatically.
+> **Unit-cube requirement** — this sampler works in the unit hypercube `[0, 1]^n_dims`.
+> All parameters must be mapped into `[0, 1]` via sample transforms, which the CLI constructs automatically.
 
 ```python
 from jimgw.samplers.config import BlackJAXNSAWConfig
@@ -148,9 +146,12 @@ Key parameters:
 ### BlackJAX NSS
 
 Nested sampling with a slice-sampling inner kernel.
-Unlike NS-AW, it does not require a unit-cube prior and works in any bounded sampling space.
+Unlike NS AW, it does not require a unit-cube prior and works in any bounded sampling space.
 
-> **Normalised-prior requirement** — NSS computes a Bayesian evidence estimate and therefore requires a normalised prior. All built-in Jim priors are normalised. If you add custom constraints, check whether the resulting distribution is still normalised; if so, override `is_normalized` to return `True`. Jim raises a `ValueError` at construction if this condition is not met.
+> **Normalised-prior requirement** — NSS computes a Bayesian evidence estimate and therefore requires a normalised prior.
+> All built-in Jim priors are normalised.
+> If you add custom constraints, check whether the resulting distribution is still normalised; if so, override `is_normalized` to return `True`.
+> Jim raises a `ValueError` at construction if this condition is not met.
 
 ```python
 from jimgw.samplers.config import BlackJAXNSSConfig
@@ -163,6 +164,7 @@ jim = Jim(
         n_delete_frac=0.5,
         num_inner_steps_per_dim=20,
         termination_dlogz=0.1,
+        n_devices=1,
     ),
     sample_transforms=sample_transforms,
     likelihood_transforms=likelihood_transforms,
@@ -176,10 +178,71 @@ Key parameters:
 - `n_live` — number of live points.
 - `n_delete_frac` — fraction of live points replaced per iteration.
 - `num_inner_steps_per_dim` — slice-sampler steps per dimension per dead point; increase for strongly correlated posteriors.
+- `n_devices` — number of local devices used to shard the live points and
+  replacement chains.
+  Both `n_live` and `int(n_live * n_delete_frac)` must be
+  divisible by this value.
+  The default `1` uses the unsharded kernel.
 
-**Repository:** [handley-lab/blackjax](https://github.com/handley-lab/blackjax)
+**Repository:** [blackjax-devs/blackjax](https://github.com/blackjax-devs/blackjax)
 
-**References:** Yallup, D., Prathaban, M., Alvey, J., Handley, W., *"Parallel Nested Slice Sampling for Gravitational Wave Parameter Estimation"*, [arXiv:2509.24949](https://arxiv.org/abs/2509.24949) (Sep 2025). Yallup, D., Kroupa, N., Handley, W., *"Nested Slice Sampling"*, [OpenReview](https://openreview.net/forum?id=ekbkMSuPo4) (2025).
+**References:** Yallup, D., Prathaban, M., Alvey, J., Handley, W., *"Parallel Nested Slice Sampling for Gravitational Wave Parameter Estimation"*, [arXiv:2509.24949](https://arxiv.org/abs/2509.24949) (Sep 2025).
+Yallup, D., Kroupa, N., Handley, W., *"Nested Slice Sampling"*, [OpenReview](https://openreview.net/forum?id=ekbkMSuPo4) (2025).
+
+---
+
+### BlackJAX SwiG
+
+Nested Slice within Gibbs (SwiG) applies covariance-shaped slice updates to named parameter blocks.
+With `TransientLikelihoodFD`, `HeterodynedTransientLikelihoodFD`, or `MultibandedTransientLikelihoodFD`, the likelihood provides a cache of generated waveform polarizations to the sampler.
+Blocks that affect waveform inputs refresh that cache, while detector-projection-only blocks reuse it.
+When the waveform model supports analytic distance scaling, luminosity distance is also factored out, so a `d_L` block reuses the cache; otherwise a `d_L` block refreshes it like any other waveform dependency.
+The likelihood determines the remaining dependencies after sample transforms, likelihood transforms, fixed parameters, and analytic marginalisation have been applied.
+
+```python
+from jimgw.samplers.config import BlackJAXSwiGConfig
+
+jim = Jim(
+    likelihood,
+    prior,
+    sampler_config=BlackJAXSwiGConfig(
+        blocks=[
+            ["M_c", "q", "lambda_1", "lambda_2"],
+            ["s1_z", "s2_z"],
+            ["iota"],
+            ["ra", "dec"],
+            ["psi"],
+            ["t_c"],
+        ],
+        n_live=512,
+        n_delete_frac=0.125,
+        num_inner_steps_per_dim=1,
+        num_gibbs_sweeps=2,
+        n_devices=1,
+    ),
+    likelihood_transforms=likelihood_transforms,
+)
+```
+
+The cache-capable likelihood requires blocks to form an exact partition of the sampling parameters.
+A block that contains any waveform dependency refreshes the cache, so mixed blocks are safe but may be less efficient.
+Parameters that are analytically marginalised must not appear in the blocks — for example, the `["t_c"]` block above assumes `time_marginalization` is disabled; see [`examples/GW170817_SwiG.py`](https://github.com/GW-JAX-Team/Jim/blob/main/examples/GW170817_SwiG.py) for a run with time and phase marginalisation enabled, where the `t_c` and `phase_c` blocks are dropped entirely.
+
+Key parameters:
+
+- `blocks` — ordered sampling-space parameter blocks for each Gibbs sweep.
+- `n_live` / `n_delete_frac` — live-set size and replacement fraction, matching NSS.
+- `num_inner_steps_per_dim` — random-direction slice steps per block dimension.
+- `num_gibbs_sweeps` — complete block sweeps per particle replacement.
+- `n_devices` — number of local devices used to shard the live points and
+  replacement chains.
+  The waveform cache remains local to each replacement
+  chain; only live-point state participates in collectives.
+
+!!! tip "Sharding without a GPU/TPU cluster"
+    `n_devices` shards across whatever JAX reports as local devices — it does not require accelerators.
+    On a CPU-only host, set `XLA_FLAGS=--xla_force_host_platform_device_count=N` (before JAX initializes; the CPU device count cannot change at runtime) to expose `N` simulated CPU devices and shard across them.
+    See [`examples/GW150914_NSS_sharded.py`](https://github.com/GW-JAX-Team/Jim/blob/main/examples/GW150914_NSS_sharded.py).
 
 ---
 
@@ -220,7 +283,7 @@ jim = Jim(
 jim.sample()  # resumes from ./my_run/checkpoint.pkl
 ```
 
-The same fields work identically for `FlowMCConfig`, `BlackJAXNSAWConfig`, and `BlackJAXNSSConfig`.
+The same fields work identically for `FlowMCConfig`, `BlackJAXNSAWConfig`, `BlackJAXNSSConfig` and `BlackJAXSwiGConfig`.
 
 | Field | Default | Notes |
 | --- | --- | --- |
@@ -228,6 +291,16 @@ The same fields work identically for `FlowMCConfig`, `BlackJAXNSAWConfig`, and `
 | `checkpoint_interval` | `0.0` (disabled) | Minimum seconds between writes. `0` disables checkpointing entirely. |
 
 > **Validation** — setting `checkpoint_interval > 0` without `checkpoint_dir` raises a `ValidationError` at config construction time.
+
+> **Cross-sampler checkpoints** — every checkpoint records which sampler backend wrote it.
+> Pointing a *different* backend at that `checkpoint_dir` (or, for SMC, the same backend in a different mode — persistent/tempered/adaptive) is handled differently depending on the backend you point there:
+>
+> - **flowMC** raises a `ValueError` immediately, before touching any sampler state.
+> - **BlackJAX NS AW / NSS / SwiG / SMC** log a warning ("incompatible or corrupt checkpoint
+>   … — starting fresh") and silently start a new run instead, the same way they handle a
+>   truly corrupt file.
+>
+> If you switch sampler backends or SMC modes between runs, point `checkpoint_dir` at a new, empty directory to avoid silently discarding an existing checkpoint.
 
 When using the [CLI](cli.md), checkpointing is enabled automatically (600 s, writing to `output.dir`).
 Set `checkpoint_interval = 0` in the `[sampler]` block to opt out.
@@ -246,7 +319,7 @@ config = FlowMCConfig(
 )
 ```
 
-BlackJAX NS-AW operates in `[0, 1]` per dimension, so its `periodic` field takes a plain list of parameter names:
+BlackJAX NS AW operates in `[0, 1]` per dimension, so its `periodic` field takes a plain list of parameter names:
 
 ```python
 config = BlackJAXNSAWConfig(
@@ -270,7 +343,7 @@ samples["log_likelihood"]  # np.ndarray — per-sample log-likelihood
 
 Each backend's `get_samples()` returns equally-weighted posterior samples:
 
-- **NS-AW / NSS**: uses anesthetic's `posterior_points()` to resample the dead-point collection to equal-weight samples.
+- **NS AW / NSS**: uses anesthetic's `posterior_points()` to resample the dead-point collection to equal-weight samples.
 - **SMC (persistent)**: resamples all-temperature particles weighted by the persistent-sampling weights.
 - **SMC (non-persistent)**: returns all final-temperature particles.
 - **flowMC**: returns all production samples across all chains.
@@ -305,7 +378,7 @@ diag["acceptance_training_global"]      # np.ndarray — global acceptance rate 
 diag["acceptance_production_local"]     # np.ndarray — local acceptance rate per production loop
 diag["acceptance_production_global"]    # np.ndarray — global acceptance rate per production loop
 
-# NS-AW and NSS — also include evidence estimate
+# NS AW and NSS — also include evidence estimate
 diag["n_iterations"]              # int   — number of nested-sampling steps
 diag["log_Z"]                     # float — log Bayesian evidence
 diag["log_Z_error"]               # float — standard deviation from 100 bootstrap samples
@@ -325,13 +398,17 @@ diag["log_Z"]                     # float      — final log Bayesian evidence
 
 ## Writing your own sampler
 
-> This section is for advanced users who want to integrate a custom sampling backend with Jim.  It requires familiarity with JAX and the Jim sampler internals.
+> This section is for advanced users who want to integrate a custom sampling backend with Jim.
+> It requires familiarity with JAX and the Jim sampler internals.
 
-Subclass `Sampler`, implement three methods, and register it:
+Subclass `Sampler`, implement three methods and the `sampler_name` property, and register it:
 
-- `_sample(rng_key, initial_position)` — run the sampler and store results. The base class wraps this in `sample()`, which also records `sampling_time`.
+- `sampler_name` — a human-readable backend name used in status and checkpoint logs.
+- `_sample(rng_key, initial_position)` — run the sampler and store results.
+  The base class wraps this in `sample()`, which also records `sampling_time`.
 - `get_samples()` — return a dict with `"samples"` and `"log_likelihood"` keys.
-- `_get_diagnostics()` — return a plain dict with diagnostic information. The base class wraps this in `get_diagnostics()`, which injects `sampling_time`.
+- `_get_diagnostics()` — return a plain dict with diagnostic information.
+  The base class wraps this in `get_diagnostics()`, which injects `sampling_time`.
 
 ```python
 from typing import Any, Literal, Optional
@@ -348,6 +425,10 @@ class MyConfig(BaseSamplerConfig):
 
 class MySampler(Sampler):
     _config: MyConfig
+
+    @property
+    def sampler_name(self) -> str:
+        return "My sampler"
 
     def __init__(self, *, n_dims, log_prior_fn, log_likelihood_fn,
                  log_posterior_fn, config: Optional[MyConfig] = None,

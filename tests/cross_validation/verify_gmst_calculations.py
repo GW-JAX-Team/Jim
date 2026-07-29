@@ -18,8 +18,10 @@ Requires:
     - bilby
 """
 
+import sys
 import time
 from calendar import timegm
+
 import jax
 import jax.numpy as jnp
 import numpy as np
@@ -29,22 +31,27 @@ from tests.utils import check_bilby_available
 # Check if bilby and LAL are available
 try:
     check_bilby_available()
-    from lal import GPSToUTC, GreenwichMeanSiderealTime as LAL_gmst
     from bilby_cython.time import (
         gps_time_to_utc,
+    )
+    from bilby_cython.time import (
         greenwich_mean_sidereal_time as bilby_gmst,
     )
+    from lal import GPSToUTC
+    from lal import GreenwichMeanSiderealTime as LAL_gmst
 
     BILBY_AVAILABLE = True
 except ImportError as e:
     print(f"Error: {e}")
     print("This script requires bilby.")
-    exit(1)
+    sys.exit(1)
 
 jax.config.update("jax_platforms", "cpu")
 
 from jimgw.core.single_event.time_utils import (
     gps_to_utc_date,
+)
+from jimgw.core.single_event.time_utils import (
     greenwich_mean_sidereal_time as jim_gmst,
 )
 

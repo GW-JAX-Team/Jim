@@ -2810,6 +2810,24 @@ when finding reference parameters automatically.  Defaults to 500.</p>
           </tr>
           <tr class="doc-section-item">
             <td>
+                <code>optimizer_target</code>
+            </td>
+            <td>
+                  <code><span title="typing.Optional">Optional</span>[<span title="float">float</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional log-likelihood value at which the CMA-ES
+search stops early, before <code>optimizer_n_steps</code> is reached.
+Defaults to None (always run the full <code>optimizer_n_steps</code>).</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
                 <code>reference_parameters</code>
             </td>
             <td>
@@ -2916,7 +2934,7 @@ object, a plain dict <code>{}</code>, or <code>True</code> (shorthand for <code>
       </thead>
       <tbody>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;maximize_likelihood&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;prior&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Prior&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;likelihood_transforms&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;NtoMTransform&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;optimizer_popsize&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;500&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;optimizer_n_steps&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.core.single_event.likelihood.HeterodynedTransientLikelihoodFD.maximize_likelihood">maximize_likelihood</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;maximize_likelihood&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;prior&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Prior&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;likelihood_transforms&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;NtoMTransform&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;optimizer_popsize&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;500&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;optimizer_n_steps&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;optimizer_target&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Optional&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;None&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.core.single_event.likelihood.HeterodynedTransientLikelihoodFD.maximize_likelihood">maximize_likelihood</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Find the maximum-likelihood parameters using CMA-ES.</p>
@@ -2946,7 +2964,7 @@ object, a plain dict <code>{}</code>, or <code>True</code> (shorthand for <code>
 
 
 <h4 id="jimgw.core.single_event.likelihood.HeterodynedTransientLikelihoodFD.maximize_likelihood" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">maximize_likelihood</span><span class="p">(</span><span class="n">prior</span><span class="p">:</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">likelihood_transforms</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">NtoMTransform</span><span class="p">],</span> <span class="n">optimizer_popsize</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">500</span><span class="p">,</span> <span class="n">optimizer_n_steps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">maximize_likelihood</span><span class="p">(</span><span class="n">prior</span><span class="p">:</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">likelihood_transforms</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">NtoMTransform</span><span class="p">],</span> <span class="n">optimizer_popsize</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">500</span><span class="p">,</span> <span class="n">optimizer_n_steps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span> <span class="n">optimizer_target</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span></code>
 
 <a href="#jimgw.core.single_event.likelihood.HeterodynedTransientLikelihoodFD.maximize_likelihood" class="headerlink" title="Permanent link">¤</a></h4>
 
@@ -2957,7 +2975,9 @@ object, a plain dict <code>{}</code>, or <code>True</code> (shorthand for <code>
 <p>Uses <code>evosax.CMA_ES</code> (Covariance Matrix Adaptation Evolution
 Strategy) to search the full parameter space.  The initial mean is
 drawn from the prior and the entire ask/tell loop is compiled with
-<code>jax.lax.scan</code> for speed.</p>
+<code>jax.lax.while_loop</code> for speed, stopping once <code>optimizer_n_steps</code>
+generations have run or <code>optimizer_target</code> has been reached,
+whichever comes first.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3030,12 +3050,31 @@ Defaults to 500.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Number of CMA-ES generations.
+                <p>Maximum number of CMA-ES generations.
 Defaults to 1000.</p>
               </div>
             </td>
             <td>
                   <code>1000</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>optimizer_target</code>
+            </td>
+            <td>
+                  <code><span title="typing.Optional">Optional</span>[<span title="float">float</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional log-likelihood value (same scale as
+<code>evaluate</code>) at which to stop early, before
+<code>optimizer_n_steps</code> is reached. Defaults to None, which
+always runs the full <code>optimizer_n_steps</code> generations.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
             </td>
           </tr>
       </tbody>

@@ -19,11 +19,13 @@ from jimgw.core.transforms import (
 def _fake_likelihood(
     waveform_parameter_names: tuple[str, ...],
     fixed_parameters: dict | None = None,
+    waveform_caches_distance: bool = False,
 ) -> SimpleNamespace:
     """Minimal duck-typed stand-in exposing only what the module reads."""
     return SimpleNamespace(
         waveform=SimpleNamespace(parameter_names=waveform_parameter_names),
         fixed_parameters=fixed_parameters or {},
+        waveform_caches_distance=waveform_caches_distance,
     )
 
 
@@ -96,11 +98,13 @@ class TestInferWaveformSamplingDependencies:
         )
         assert deps == {"y", "z"}
 
-    def test_d_l_is_always_skipped(self):
+    def test_d_l_is_skipped_when_waveform_caches_distance(self):
         # d_L amplitude is factored out of the cache, so it must never be
         # reported as a waveform dependency even when it is itself a
         # sampling-space parameter with an identity dependency.
-        likelihood = _fake_likelihood(waveform_parameter_names=("d_L", "a"))
+        likelihood = _fake_likelihood(
+            waveform_parameter_names=("d_L", "a"), waveform_caches_distance=True
+        )
         deps = _infer_waveform_sampling_dependencies(
             likelihood,
             parameter_names=("d_L", "a"),
@@ -108,6 +112,20 @@ class TestInferWaveformSamplingDependencies:
             likelihood_transforms=[],
         )
         assert deps == {"a"}
+
+    def test_d_l_is_a_dependency_when_waveform_does_not_cache_distance(self):
+        # Without analytic distance scaling, the cache is a full evaluation at
+        # the given d_L, so d_L is a dependency like any other parameter.
+        likelihood = _fake_likelihood(
+            waveform_parameter_names=("d_L", "a"), waveform_caches_distance=False
+        )
+        deps = _infer_waveform_sampling_dependencies(
+            likelihood,
+            parameter_names=("d_L", "a"),
+            sample_transforms=[],
+            likelihood_transforms=[],
+        )
+        assert deps == {"d_L", "a"}
 
     def test_constant_fixed_parameter_contributes_nothing(self):
         likelihood = _fake_likelihood(

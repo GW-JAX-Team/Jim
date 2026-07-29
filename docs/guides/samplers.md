@@ -196,7 +196,7 @@ Yallup, D., Kroupa, N., Handley, W., *"Nested Slice Sampling"*, [OpenReview](htt
 Nested Slice within Gibbs (SwiG) applies covariance-shaped slice updates to named parameter blocks.
 With `TransientLikelihoodFD`, `HeterodynedTransientLikelihoodFD`, or `MultibandedTransientLikelihoodFD`, the likelihood provides a cache of generated waveform polarizations to the sampler.
 Blocks that affect waveform inputs refresh that cache, while detector-projection-only blocks reuse it.
-Luminosity distance is also factored out analytically, so a `d_L` block reuses the cache.
+When the waveform model supports analytic distance scaling, luminosity distance is also factored out, so a `d_L` block reuses the cache; otherwise a `d_L` block refreshes it like any other waveform dependency.
 The likelihood determines the remaining dependencies after sample transforms, likelihood transforms, fixed parameters, and analytic marginalisation have been applied.
 
 ```python

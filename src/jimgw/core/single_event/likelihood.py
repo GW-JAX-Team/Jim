@@ -109,30 +109,6 @@ class SingleEventLikelihood(LikelihoodBase):
             detector_frequencies.append(detector.sliced_frequencies)
         return detector_frequencies
 
-    def _generate_distance_normalized_waveforms(
-        self,
-        frequencies: Float[Array, " n_freq"],
-        params: dict[str, Float],
-    ) -> dict[str, Complex[Array, " n_freq"]]:
-        """Generate sky-frame polarizations normalized to ``d_L = 1`` when possible."""
-        if isinstance(self.waveform, DistanceScaledWaveform):
-            return self.waveform.at_unit_distance(frequencies, params)
-        return self.waveform(frequencies, params)
-
-    def _apply_distance_scaling(
-        self,
-        polarizations: dict[str, Complex[Array, " n_freq"]],
-        params: dict[str, Float],
-    ) -> dict[str, Complex[Array, " n_freq"]]:
-        """Apply the physical inverse-distance scaling to cached polarizations."""
-        if not isinstance(self.waveform, DistanceScaledWaveform):
-            return polarizations
-        distance_scale = 1.0 / params["d_L"]
-        return {
-            polarization: strain * distance_scale
-            for polarization, strain in polarizations.items()
-        }
-
     def _prepare_parameters(self, params: dict[str, Float]) -> dict[str, Float]:
         """Add event metadata, marginalization defaults, and fixed parameters."""
         prepared_params = params.copy()
@@ -147,8 +123,39 @@ class SingleEventLikelihood(LikelihoodBase):
         apply_fixed_parameters(prepared_params, self.fixed_parameters)
         return prepared_params
 
+    # --- direct evaluation ---
+
+    def evaluate(self, params: dict[str, Float]) -> FloatScalar:
+        """Prepare parameters and evaluate the likelihood.
+
+        Constants are injected directly; callables receive the current params
+        dict and may return a scalar or a dict (the matching key is extracted).
+        Callables are applied in insertion order.
+        """
+        return self._evaluate(self._prepare_parameters(params))
+
+    @abstractmethod
+    def _evaluate(self, params: dict[str, Float]) -> FloatScalar:
+        """Core likelihood evaluation method to be implemented by subclasses."""
+        raise NotImplementedError("Subclasses must implement this method.")
+
+    # --- waveform-cache evaluation ---
+
     def generate_waveform(self, params: dict[str, Float]) -> Any:
-        """Generate a reusable, distance-normalized waveform cache."""
+        """Generate a reusable waveform cache.
+
+        Evaluated at unit distance when ``waveform_caches_distance`` is True,
+        so ``d_L`` is not a cache dependency; otherwise ``d_L`` is a
+        dependency like any other waveform parameter. Every other effective
+        waveform input is always a dependency, regardless of distance support.
+
+        Args:
+            params (dict[str, Float]): Source parameters to build the cache from.
+
+        Returns:
+            Any: An opaque cache understood by this likelihood's
+                `evaluate_from_waveform`.
+        """
         return self._generate_waveform(self._prepare_parameters(params))
 
     @abstractmethod
@@ -166,20 +173,6 @@ class SingleEventLikelihood(LikelihoodBase):
             self._prepare_parameters(params), waveform_cache
         )
 
-    def evaluate(self, params: dict[str, Float]) -> FloatScalar:
-        """Prepare parameters and evaluate the likelihood.
-
-        Constants are injected directly; callables receive the current params
-        dict and may return a scalar or a dict (the matching key is extracted).
-        Callables are applied in insertion order.
-        """
-        return self._evaluate(self._prepare_parameters(params))
-
-    @abstractmethod
-    def _evaluate(self, params: dict[str, Float]) -> FloatScalar:
-        """Core likelihood evaluation method to be implemented by subclasses."""
-        raise NotImplementedError("Subclasses must implement this method.")
-
     @abstractmethod
     def _evaluate_from_waveform(
         self,
@@ -188,6 +181,56 @@ class SingleEventLikelihood(LikelihoodBase):
     ) -> FloatScalar:
         """Evaluate the likelihood from a generated waveform cache."""
         raise NotImplementedError("Subclasses must implement this method.")
+
+    # --- cache machinery (distance-scaling optimization) ---
+
+    @property
+    def waveform_caches_distance(self) -> bool:
+        """Whether a waveform cache can be reused across ``d_L`` changes.
+
+        Derived from the waveform's type by default, so subclasses may
+        override it to control the behavior directly. Consumed by the
+        waveform-cache block-dependency inference (see
+        ``jimgw.core.single_event.blocked_likelihood``): when True, ``d_L``
+        is excluded from the cache's dependency set, so a ``d_L``-only
+        proposal block reuses the cache instead of rebuilding it.
+        """
+        return isinstance(self.waveform, DistanceScaledWaveform)
+
+    def _waveform_sky_for_cache(
+        self,
+        frequencies: Float[Array, " n_freq"],
+        params: dict[str, Float],
+    ) -> dict[str, Complex[Array, " n_freq"]]:
+        """Evaluate sky-frame polarizations for a waveform cache.
+
+        Evaluated at ``d_L = 1`` when ``waveform_caches_distance`` is True, so
+        ``d_L`` is not a cache dependency; otherwise ``d_L`` is a dependency
+        like any other waveform parameter.
+        """
+        # Not using `waveform_caches_distance` for passing type checks
+        if isinstance(self.waveform, DistanceScaledWaveform):
+            return self.waveform.at_unit_distance(frequencies, params)
+        return self.waveform(frequencies, params)
+
+    def _waveform_sky_from_cache(
+        self,
+        cached_polarizations: dict[str, Complex[Array, " n_freq"]],
+        params: dict[str, Float],
+    ) -> dict[str, Complex[Array, " n_freq"]]:
+        """Recover physical-distance polarizations from a cache entry.
+
+        Rescales by ``1 / d_L`` when ``waveform_caches_distance`` is True;
+        otherwise returns the cache unchanged, since ``d_L`` was already
+        baked in by ``_waveform_sky_for_cache``.
+        """
+        if not self.waveform_caches_distance:
+            return cached_polarizations
+        distance_scale = 1.0 / params["d_L"]
+        return {
+            polarization: strain * distance_scale
+            for polarization, strain in cached_polarizations.items()
+        }
 
 
 class ZeroLikelihood(LikelihoodBase):
@@ -340,20 +383,24 @@ class TransientLikelihoodFD(SingleEventLikelihood):
         if distance_marginalization is not None:
             self._init_distance_marginalization(distance_marginalization)
 
+    # --- direct evaluation ---
+
+    def _evaluate(self, params: dict[str, Float]) -> FloatScalar:
+        waveform_sky = self.waveform(self.frequencies, params)
+        return self._likelihood(params, waveform_sky)
+
+    # --- waveform-cache evaluation ---
+
     def _generate_waveform(
         self, params: dict[str, Float]
     ) -> dict[str, Complex[Array, " n_freq"]]:
         """Generate reusable sky-frame waveform polarizations.
 
-        Distance amplitude is factored out, so the returned PyTree is a valid
-        cache when ``d_L`` changes. Other effective waveform inputs must remain
-        unchanged.
+        Evaluated at unit distance when ``waveform_caches_distance`` is True,
+        so ``d_L`` is not a cache dependency; otherwise ``d_L`` is a
+        dependency like any other waveform parameter.
         """
-        return self._generate_distance_normalized_waveforms(self.frequencies, params)
-
-    def _evaluate(self, params: dict[str, Float]) -> FloatScalar:
-        waveform_sky = self.waveform(self.frequencies, params)
-        return self._likelihood(params, waveform_sky)
+        return self._waveform_sky_for_cache(self.frequencies, params)
 
     def _evaluate_from_waveform(
         self,
@@ -361,8 +408,10 @@ class TransientLikelihoodFD(SingleEventLikelihood):
         waveform_cache: dict[str, Complex[Array, " n_freq"]],
     ) -> FloatScalar:
         """Core likelihood evaluation from a pre-generated waveform cache."""
-        waveform_sky = self._apply_distance_scaling(waveform_cache, params)
+        waveform_sky = self._waveform_sky_from_cache(waveform_cache, params)
         return self._likelihood(params, waveform_sky)
+
+    # --- shared likelihood core ---
 
     def _likelihood(
         self,
@@ -784,23 +833,28 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
                 masked_freq_grid,
             )
 
-    def _generate_waveform(
-        self, params: dict[str, Float]
-    ) -> dict[str, dict[str, Complex[Array, " n_bins"]]]:
-        """Generate distance-normalized bin-edge polarizations for cache reuse."""
-        return {
-            "low": self._generate_distance_normalized_waveforms(
-                self.freq_grid_low, params
-            ),
-            "high": self._generate_distance_normalized_waveforms(
-                self.freq_grid_high, params
-            ),
-        }
+    # --- direct evaluation ---
 
     def _evaluate(self, params: dict[str, Float]) -> FloatScalar:
         waveform_sky_low = self.waveform(self.freq_grid_low, params)
         waveform_sky_high = self.waveform(self.freq_grid_high, params)
         return self._likelihood(params, waveform_sky_low, waveform_sky_high)
+
+    # --- waveform-cache evaluation ---
+
+    def _generate_waveform(
+        self, params: dict[str, Float]
+    ) -> dict[str, dict[str, Complex[Array, " n_bins"]]]:
+        """Generate bin-edge polarizations for cache reuse.
+
+        Evaluated at unit distance when ``waveform_caches_distance`` is True,
+        so ``d_L`` is not a cache dependency; otherwise ``d_L`` is a
+        dependency like any other waveform parameter.
+        """
+        return {
+            "low": self._waveform_sky_for_cache(self.freq_grid_low, params),
+            "high": self._waveform_sky_for_cache(self.freq_grid_high, params),
+        }
 
     def _evaluate_from_waveform(
         self,
@@ -808,9 +862,13 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         waveform_cache: dict[str, dict[str, Complex[Array, " n_bins"]]],
     ) -> FloatScalar:
         """Core likelihood evaluation from a pre-generated waveform cache."""
-        waveform_sky_low = self._apply_distance_scaling(waveform_cache["low"], params)
-        waveform_sky_high = self._apply_distance_scaling(waveform_cache["high"], params)
+        waveform_sky_low = self._waveform_sky_from_cache(waveform_cache["low"], params)
+        waveform_sky_high = self._waveform_sky_from_cache(
+            waveform_cache["high"], params
+        )
         return self._likelihood(params, waveform_sky_low, waveform_sky_high)
+
+    # --- shared likelihood core ---
 
     def _likelihood(
         self,
@@ -858,6 +916,8 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
             log_likelihood += log_i0(jnp.absolute(complex_d_inner_h))
 
         return log_likelihood
+
+    # --- relative-binning setup helpers ---
 
     def _make_binning_scheme(
         self,
@@ -975,6 +1035,8 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         )
 
         return 4 / detector.duration * summary_data
+
+    # --- reference-parameter optimization ---
 
     def maximize_likelihood(
         self,
@@ -1100,6 +1162,9 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         return named_params
 
 
+# ---------------------------------------------------------------------------
+# Multi-banded likelihood
+# ---------------------------------------------------------------------------
 class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
     """Multi-banded likelihood for gravitational wave transient events.
 
@@ -1244,17 +1309,24 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
 
         logger.info("Multi-banding setup complete with %d bands", self.n_bands)
 
-    def _generate_waveform(
-        self, params: dict[str, Float]
-    ) -> dict[str, Complex[Array, " n_freq"]]:
-        """Generate distance-normalized polarizations at multiband frequencies."""
-        return self._generate_distance_normalized_waveforms(
-            self.unique_frequencies, params
-        )
+    # --- direct evaluation ---
 
     def _evaluate(self, params: dict[str, Float]) -> FloatScalar:
         waveform_sky = self.waveform(self.unique_frequencies, params)
         return self._likelihood(params, waveform_sky)
+
+    # --- waveform-cache evaluation ---
+
+    def _generate_waveform(
+        self, params: dict[str, Float]
+    ) -> dict[str, Complex[Array, " n_freq"]]:
+        """Generate polarizations at multiband frequencies for cache reuse.
+
+        Evaluated at unit distance when ``waveform_caches_distance`` is True,
+        so ``d_L`` is not a cache dependency; otherwise ``d_L`` is a
+        dependency like any other waveform parameter.
+        """
+        return self._waveform_sky_for_cache(self.unique_frequencies, params)
 
     def _evaluate_from_waveform(
         self,
@@ -1262,8 +1334,10 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
         waveform_cache: dict[str, Complex[Array, " n_freq"]],
     ) -> FloatScalar:
         """Core likelihood evaluation from a pre-generated waveform cache."""
-        waveform_sky = self._apply_distance_scaling(waveform_cache, params)
+        waveform_sky = self._waveform_sky_from_cache(waveform_cache, params)
         return self._likelihood(params, waveform_sky)
+
+    # --- shared likelihood core ---
 
     def _likelihood(
         self,
@@ -1289,7 +1363,7 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
 
         return log_likelihood
 
-    # ── Prior-inference and validation helpers ────────────────────────────────
+    # --- prior-inference and validation helpers ---
 
     def _resolve_reference_chirp_mass(
         self,
@@ -1410,7 +1484,7 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
                 f"max_banding_frequency must be > 0, got {max_banding_frequency}"
             )
 
-    # ── Band structure ────────────────────────────────────────────────────────
+    # --- band structure ---
 
     @property
     def n_bands(self) -> int:

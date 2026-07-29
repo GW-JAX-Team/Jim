@@ -283,6 +283,7 @@ Enables `HeterodynedTransientLikelihoodFD` (relative binning).
 type = "optimizer"   # "optimizer" | "provided" | "injection"
 popsize = 500
 n_steps = 1000
+# target = -1234.5    # optional log-likelihood value to stop the search early at
 ```
 
 | `reference_parameters.type` | Description |

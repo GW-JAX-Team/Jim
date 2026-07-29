@@ -664,6 +664,9 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         optimizer_popsize: Population size for the CMA-ES optimizer used
             when finding reference parameters automatically.  Defaults to 500.
         optimizer_n_steps: Maximum number of CMA-ES generations.  Defaults to 1000.
+        optimizer_target: Optional log-likelihood value at which the CMA-ES
+            search stops early, before ``optimizer_n_steps`` is reached.
+            Defaults to None (always run the full ``optimizer_n_steps``).
         reference_parameters: Pre-computed reference parameters (dict).  If
             supplied, the optimizer is skipped entirely.
         reference_waveform: Optional waveform instance used to compute the
@@ -700,6 +703,7 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         epsilon: Optional[float] = None,
         optimizer_popsize: int = 500,
         optimizer_n_steps: int = 1000,
+        optimizer_target: Optional[float] = None,
         reference_parameters: Optional[dict] = None,
         reference_waveform: Optional[Waveform] = None,
         prior: Optional[Prior] = None,
@@ -766,6 +770,7 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
                 likelihood_transforms=likelihood_transforms,
                 optimizer_popsize=optimizer_popsize,
                 optimizer_n_steps=optimizer_n_steps,
+                optimizer_target=optimizer_target,
             )
             self.reference_parameters = {
                 key: float(value) for key, value in reference_parameters.items()
@@ -1044,13 +1049,16 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         likelihood_transforms: list[NtoMTransform],
         optimizer_popsize: int = 500,
         optimizer_n_steps: int = 1000,
+        optimizer_target: Optional[float] = None,
     ):
         """Find the maximum-likelihood parameters using CMA-ES.
 
         Uses ``evosax.CMA_ES`` (Covariance Matrix Adaptation Evolution
         Strategy) to search the full parameter space.  The initial mean is
         drawn from the prior and the entire ask/tell loop is compiled with
-        ``jax.lax.scan`` for speed.
+        ``jax.lax.while_loop`` for speed, stopping once ``optimizer_n_steps``
+        generations have run or ``optimizer_target`` has been reached,
+        whichever comes first.
 
         Args:
             prior: Prior used to seed the initial CMA-ES mean.
@@ -1058,8 +1066,12 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
                 likelihood parameters.
             optimizer_popsize: Population size for CMA-ES.
                 Defaults to 500.
-            optimizer_n_steps: Number of CMA-ES generations.
+            optimizer_n_steps: Maximum number of CMA-ES generations.
                 Defaults to 1000.
+            optimizer_target: Optional log-likelihood value (same scale as
+                `evaluate`) at which to stop early, before
+                ``optimizer_n_steps`` is reached. Defaults to None, which
+                always runs the full ``optimizer_n_steps`` generations.
         """
         parameter_names = list(prior.parameter_names)
         n_dim = len(parameter_names)
@@ -1122,9 +1134,22 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         logger.info(
             f"Running evosax CMA-ES: "
             f"{n_dim}D, popsize={optimizer_popsize}, n_steps={optimizer_n_steps}"
+            + (
+                f", optimizer_target={optimizer_target}"
+                if optimizer_target is not None
+                else ""
+            )
         )
 
-        def _step(carry, _):
+        target_fitness = -jnp.inf if optimizer_target is None else -optimizer_target
+
+        def _cond(carry):
+            state, _ = carry
+            return (state.generation_counter < optimizer_n_steps) & (
+                state.best_fitness > target_fitness
+            )
+
+        def _step(carry):
             state, key = carry
             key, key_ask, key_tell = jax.random.split(key, 3)
             population, state = es.ask(key_ask, state, es_params)
@@ -1138,16 +1163,14 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
                 jnp.isfinite(fitness), fitness, jnp.finfo(jnp.float64).max
             )
             state, _ = es.tell(key_tell, population, fitness, state, es_params)
-            return (state, key), None
+            return (state, key)
 
-        (state, _), _ = jax.lax.scan(
-            _step, (state, key), None, length=optimizer_n_steps
-        )
+        state, _ = jax.lax.while_loop(_cond, _step, (state, key))
 
         best_fitness = float(state.best_fitness)
         logger.debug(
-            f"CMA-ES finished after {optimizer_n_steps} generations, "
-            f"best_fitness={best_fitness:.4f}"
+            f"CMA-ES finished after {int(state.generation_counter)} generations "
+            f"(limit {optimizer_n_steps}), best_fitness={best_fitness:.4f}"
         )
         best_z = state.best_solution
 

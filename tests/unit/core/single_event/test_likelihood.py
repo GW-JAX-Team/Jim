@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 import jax
@@ -1496,6 +1497,56 @@ class TestHeterodynedTransientLikelihoodFD:
         assert jnp.isfinite(likelihood.evaluate(result))
         assert jnp.isclose(float(base.evaluate(result)), ll_injected)
         common_keys_allclose(result, true_params)
+
+    def test_maximize_likelihood_stops_early_at_optimizer_target(
+        self, detectors_and_waveform, caplog
+    ):
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        true_params = example_params()
+        for ifo in ifos:
+            ifo.inject_signal(
+                duration=4.0,
+                sampling_frequency=fmax * 2,
+                trigger_time=gps,
+                waveform_model=waveform,
+                parameters=true_params,
+                f_min=fmin,
+                f_max=fmax,
+                zero_noise=True,
+            )
+        fixed_parameters = {
+            k: v for k, v in true_params.items() if k not in ("M_c", "eta")
+        }
+        # A trivially low target is satisfied by the first generation's best
+        # fitness, so the loop must exit long before optimizer_n_steps.
+        with caplog.at_level(
+            logging.DEBUG, logger="jimgw.core.single_event.likelihood"
+        ):
+            HeterodynedTransientLikelihoodFD(
+                detectors=ifos,
+                waveform=waveform,
+                f_min=fmin,
+                f_max=fmax,
+                trigger_time=gps,
+                fixed_parameters=fixed_parameters,
+                prior=CombinePrior(
+                    [
+                        UniformPrior(25.0, 35.0, parameter_names=["M_c"]),
+                        UniformPrior(0.125, 1.0, parameter_names=["q"]),
+                    ]
+                ),
+                likelihood_transforms=[MassRatioToSymmetricMassRatioTransform],
+                optimizer_popsize=10,
+                optimizer_n_steps=50,
+                optimizer_target=-1e10,
+            )
+        [finished_message] = [
+            record.message
+            for record in caplog.records
+            if "CMA-ES finished after" in record.message
+        ]
+        generations = int(finished_message.split("after ")[1].split(" generations")[0])
+        assert generations < 50
 
     def test_low_frequency_reference_cutoff_does_not_reindex_summary_data(
         self, detectors_and_waveform, monkeypatch

@@ -209,10 +209,12 @@ likelihood = HeterodynedTransientLikelihoodFD(
     likelihood_transforms=[MassRatioToSymmetricMassRatioTransform],
     optimizer_popsize=500,
     optimizer_n_steps=1000,
+    optimizer_target=None,  # optional log-likelihood value to stop early at
 )
 ```
 
 The optimiser runs `evosax.CMA_ES` with a JAX-native ask/tell loop, so the waveform evaluations are fully batched and JIT-compiled on CPU/GPU.
+It stops once `optimizer_n_steps` generations have run or the best log-likelihood found reaches `optimizer_target`, whichever comes first; leave `optimizer_target` unset to always run the full `optimizer_n_steps`.
 
 ### MultibandedTransientLikelihoodFD
 

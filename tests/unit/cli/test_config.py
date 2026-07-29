@@ -6,6 +6,7 @@ import pytest
 from pydantic import ValidationError
 
 from jimgw.cli._config import (
+    CLIOptimizerRefParams,
     CosineSpec,
     FileDataConfig,
     GaussianSpec,
@@ -202,6 +203,18 @@ def test_likelihood_config_values():
     assert cfg.likelihood.phase_marginalization is False
     assert cfg.likelihood.time_marginalization is None
     assert cfg.likelihood.distance_marginalization is None
+
+
+def test_optimizer_ref_params_target_defaults_to_none():
+    cfg = CLIOptimizerRefParams.model_validate({})
+    assert cfg.popsize == 500
+    assert cfg.n_steps == 1000
+    assert cfg.target is None
+
+
+def test_optimizer_ref_params_target_parses():
+    cfg = CLIOptimizerRefParams.model_validate({"target": -1234.5})
+    assert cfg.target == -1234.5
 
 
 def test_waveform_config_f_ref_default():

@@ -68,10 +68,12 @@ def build_likelihood(
         reference_params: Optional[dict] = None
         optimizer_popsize = 500
         optimizer_n_steps = 1000
+        optimizer_target: Optional[float] = None
 
         if isinstance(ref_cfg, CLIOptimizerRefParams):
             optimizer_popsize = ref_cfg.popsize
             optimizer_n_steps = ref_cfg.n_steps
+            optimizer_target = ref_cfg.target
             # Phase-marginalised heterodyned likelihood with the optimizer: the
             # optimizer needs phase_c in the prior to search over it, but the
             # user should not have to (and must not) include it themselves since
@@ -117,6 +119,7 @@ def build_likelihood(
             epsilon=cfg.heterodyne.epsilon,
             optimizer_popsize=optimizer_popsize,
             optimizer_n_steps=optimizer_n_steps,
+            optimizer_target=optimizer_target,
             prior=prior,
             likelihood_transforms=likelihood_transforms,
             phase_marginalization=phase_marg,

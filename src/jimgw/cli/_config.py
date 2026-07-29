@@ -324,6 +324,7 @@ class CLIOptimizerRefParams(BaseModel):
     type: Literal["optimizer"] = "optimizer"
     popsize: int = Field(default=500, ge=1)
     n_steps: int = Field(default=1000, ge=1)
+    target: Optional[float] = None
 
 
 class CLIProvidedRefParams(BaseModel):

@@ -61,6 +61,9 @@
         <loc>https://gw-jax-team.github.io/Jim/latest/api/jimgw/core/prior/</loc>
       </url>
       <url>
+        <loc>https://gw-jax-team.github.io/Jim/latest/api/jimgw/core/single_event/blocked_likelihood/</loc>
+      </url>
+      <url>
         <loc>https://gw-jax-team.github.io/Jim/latest/api/jimgw/core/single_event/data/</loc>
       </url>
       <url>
@@ -109,7 +112,13 @@
         <loc>https://gw-jax-team.github.io/Jim/latest/api/jimgw/samplers/blackjax/nss/</loc>
       </url>
       <url>
+        <loc>https://gw-jax-team.github.io/Jim/latest/api/jimgw/samplers/blackjax/sharding/</loc>
+      </url>
+      <url>
         <loc>https://gw-jax-team.github.io/Jim/latest/api/jimgw/samplers/blackjax/smc/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/latest/api/jimgw/samplers/blackjax/swig/</loc>
       </url>
       <url>
         <loc>https://gw-jax-team.github.io/Jim/latest/api/jimgw/samplers/config/</loc>

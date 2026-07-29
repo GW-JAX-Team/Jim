@@ -18,14 +18,14 @@
         <link rel="prev" href="../jim/">
       
       
-        <link rel="next" href="../single_event/data/">
+        <link rel="next" href="../single_event/blocked_likelihood/">
       
       
         
       
       
       <link rel="icon" href="../../../../assets/images/favicon.png">
-      <meta name="generator" content="zensical-0.0.46">
+      <meta name="generator" content="zensical-0.0.51">
     
     
       
@@ -36,7 +36,7 @@
       
         
       
-      <link rel="stylesheet" href="../../../../assets/stylesheets/modern/main.19d3147f.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/modern/main.62c9b9cc.min.css">
       
         
           
@@ -1545,6 +1545,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#jimgw.core.prior.Prior.get_bounds" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        get_bounds
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#jimgw.core.prior.Prior.log_prob" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1766,6 +1777,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#jimgw.core.prior.find_specific_prior" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        find_specific_prior
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1822,6 +1844,33 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../single_event/blocked_likelihood/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  blocked_likelihood
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -2374,6 +2423,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../samplers/blackjax/sharding/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  sharding
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../samplers/blackjax/smc/" class="md-nav__link">
         
   
@@ -2382,6 +2458,33 @@
     
   
   smc
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../samplers/blackjax/swig/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  swig
 
     
   </span>
@@ -2843,6 +2946,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#jimgw.core.prior.Prior.get_bounds" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        get_bounds
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#jimgw.core.prior.Prior.log_prob" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -3064,6 +3178,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#jimgw.core.prior.find_specific_prior" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        find_specific_prior
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3097,6 +3222,27 @@
 
 
 
+
+
+<p><span class="doc-section-title">Functions:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;find_specific_prior&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;prior&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Prior&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;parameter_name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Optional&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Prior&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.core.prior.find_specific_prior">find_specific_prior</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Return the component prior that governs <code>parameter_name</code>.</p>
+                </div>
+              </td>
+            </tr>
+      </tbody>
+    </table>
 
 
 
@@ -4410,6 +4556,14 @@ bookkeeping for parameter names and transforms.</p>
               </td>
             </tr>
             <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;get_bounds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Optional&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;tuple&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]]&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.core.prior.Prior.get_bounds">get_bounds</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Return scalar bounds when this prior exposes <code>xmin</code> and <code>xmax</code>.</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
               <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;log_prob&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;z&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;dict&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;FloatScalar&lt;/span&gt;&lt;/code&gt;
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
@@ -4681,6 +4835,24 @@ Jim will raise at construction time if this returns False for those backends.</p
           </tr>
       </tbody>
     </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="jimgw.core.prior.Prior.get_bounds" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">get_bounds</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span></code>
+
+<a href="#jimgw.core.prior.Prior.get_bounds" class="headerlink" title="Permanent link">¤</a></h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Return scalar bounds when this prior exposes <code>xmin</code> and <code>xmax</code>.</p>
 
 
     </div>
@@ -6056,6 +6228,28 @@ Expands to <code>&lt;name&gt;_mag</code>, <code>&lt;name&gt;_theta</code>, <code
 </div>
 
 
+<div class="doc doc-object doc-function">
+
+
+<h3 id="jimgw.core.prior.find_specific_prior" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">find_specific_prior</span><span class="p">(</span><span class="n">prior</span><span class="p">:</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">parameter_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Prior</span><span class="p">]</span></code>
+
+<a href="#jimgw.core.prior.find_specific_prior" class="headerlink" title="Permanent link">¤</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Return the component prior that governs <code>parameter_name</code>.</p>
+<p><code>CombinePrior</code> only groups independent component priors, so the search
+descends through it. Other prior objects, including transformed analytical
+priors such as :class:<code>UniformPrior</code> and :class:<code>GaussianPrior</code>, are
+returned as the component that defines their public parameter names.</p>
+
+
+    </div>
+
+</div>
+
 
 
   </div>
@@ -6123,7 +6317,7 @@ Expands to <code>&lt;name&gt;_mag</code>, <code>&lt;name&gt;_theta</code>, <code
       <script id="__config" type="application/json">{"annotate":null,"base":"../../../..","features":["content.code.copy","navigation.instant","navigation.tabs","navigation.top","toc.follow","header.autohide"],"search":"../../../../assets/javascripts/workers/search.b6b7e04f.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":{"default":"stable","provider":"mike"}}</script>
     
     
-      <script src="../../../../assets/javascripts/bundle.ee611ef6.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.d7f30b55.min.js"></script>
       
         <script src="../../../../javascripts/mathjax.js"></script>
       

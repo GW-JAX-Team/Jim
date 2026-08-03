@@ -4,6 +4,7 @@ on:
   push:
     branches: [main, jim-dev]
     tags: ['v*']
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}
@@ -14,13 +15,18 @@ permissions:
 
 jobs:
   deploy:
+    if: >-
+      github.event_name != 'workflow_dispatch' ||
+      github.ref == 'refs/heads/main' ||
+      github.ref == 'refs/heads/jim-dev' ||
+      startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - uses: astral-sh/setup-uv@v7
+      - uses: astral-sh/setup-uv@v9.0.0
         with:
           enable-cache: true
 
@@ -42,9 +48,11 @@ jobs:
           fi
 
       - name: Convert notebooks to Markdown
+        shell: bash
         run: |
+          shopt -s nullglob
           for nb in docs/tutorials/*.ipynb; do
-            [ -f "$nb" ] && uv run jupyter nbconvert --to markdown "$nb"
+            uv run jupyter nbconvert --to markdown "$nb" --output-dir docs/tutorials/
           done
 
       - name: Generate API stubs and versioned config

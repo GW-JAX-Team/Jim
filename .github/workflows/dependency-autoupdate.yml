@@ -1,0 +1,89 @@
+name: Scheduled dependency autoupdate
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"  # 7am CET (UTC+1, winter) / 8am CEST (UTC+2, summer)
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  autoupdate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: jim-dev
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.x"
+      - uses: astral-sh/setup-uv@v9.0.0
+      - run: pip install pre-commit
+      - run: pre-commit autoupdate
+      - run: uv lock --upgrade
+      - name: Bump pinned GitHub Actions to their latest major version
+        shell: bash
+        run: |
+          set -euo pipefail
+          for f in .github/workflows/*.yml; do
+            while IFS= read -r ref; do
+              name="${ref%@*}"
+              current="${ref##*@}"
+              mapfile -t tags < <(
+                git ls-remote --tags --refs "https://github.com/${name}.git" 2>/dev/null \
+                  | awk '{sub("^refs/tags/", "", $2); print $2}' \
+                  | grep -E '^v[0-9]+(\.[0-9]+){0,2}$' || true
+              )
+              if [ "${#tags[@]}" -eq 0 ]; then
+                echo "Warning: could not determine the latest major version for ${name}; leaving ${current} unchanged."
+                continue
+              fi
+
+              newest_major=$(printf '%s\n' "${tags[@]}" \
+                | sed -E 's/^v([0-9]+).*/\1/' \
+                | sort -n \
+                | tail -n 1)
+              bare_tag="v${newest_major}"
+              latest_dotted=$(printf '%s\n' "${tags[@]}" \
+                | grep -E "^v${newest_major}\\.[0-9]+(\\.[0-9]+)?$" \
+                | sort -V \
+                | tail -n 1 || true)
+              if [[ "$current" =~ ^v[0-9]+$ ]] && printf '%s\n' "${tags[@]}" | grep -Fxq "$bare_tag"; then
+                newest="$bare_tag"
+              elif [ -n "$latest_dotted" ]; then
+                newest="$latest_dotted"
+              else
+                newest="$bare_tag"
+              fi
+
+              if [ "$newest" != "$current" ]; then
+                OLD="${name}@${current}" NEW="${name}@${newest}" \
+                  perl -pi -e 's/\Q$ENV{OLD}\E/$ENV{NEW}/g' "$f"
+              fi
+            done < <(grep -Eho '[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+@v[0-9]+(\.[0-9]+){0,2}' "$f" | sort -u || true)
+          done
+      - name: Commit if hooks, lockfile, or Action pins changed
+        id: commit_update
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then
+            echo "All hooks and dependencies up to date"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .pre-commit-config.yaml uv.lock .github/workflows/*.yml
+          git commit -m "[pre-commit] autoupdate hooks, lock file, and pinned Action versions"
+          git push
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+      - name: Trigger CI on jim-dev
+        if: success() && steps.commit_update.outputs.changed == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run CI.yml --ref jim-dev

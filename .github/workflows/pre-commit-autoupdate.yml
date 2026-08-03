@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      actions: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -32,3 +33,7 @@ jobs:
           git add .pre-commit-config.yaml uv.lock
           git commit -m "[pre-commit] autoupdate hooks and lock file"
           git push || exit 1
+      - name: Trigger CI on jim-dev
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run CI.yml --ref jim-dev

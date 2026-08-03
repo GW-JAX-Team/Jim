@@ -87,7 +87,7 @@ build-backend = "hatchling.build"
 [tool.hatch.version]
 source = "vcs"
 fallback-version = "0.0.0"
-raw-options = { local_scheme = "no-local-version" }
+raw-options = { local_scheme = "no-local-version", version_scheme = "semver-pep440-release-branch" }
 
 [tool.pytest.ini_options]
 pythonpath = ["."]

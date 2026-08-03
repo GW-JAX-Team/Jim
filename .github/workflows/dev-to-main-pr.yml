@@ -6,7 +6,7 @@ name: Scheduled dev -> main PR
 
 on:
   schedule:
-    - cron: "0 9 * * 4"  # every Thursday, 09:00 UTC
+    - cron: "0 4 * * 4"  # every Thursday, 04:00 UTC
   workflow_dispatch:
 
 permissions:

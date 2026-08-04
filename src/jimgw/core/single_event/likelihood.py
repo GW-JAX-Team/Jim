@@ -333,7 +333,9 @@ class TransientLikelihoodFD(SingleEventLikelihood):
         self.df = _frequencies[0][1] - _frequencies[0][0]
         self.frequencies = jnp.unique(jnp.concatenate(_frequencies))
         self.frequency_masks = [
-            jnp.isin(self.frequencies, detector.sliced_frequencies)
+            jnp.isin(
+                self.frequencies, detector.sliced_frequencies, method="binary_search"
+            )
             for detector in detectors
         ]
 
@@ -735,7 +737,9 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         self.df = _frequencies[0][1] - _frequencies[0][0]
         self.frequencies = jnp.unique(jnp.concatenate(_frequencies))
         self.frequency_masks = [
-            jnp.isin(self.frequencies, detector.sliced_frequencies)
+            jnp.isin(
+                self.frequencies, detector.sliced_frequencies, method="binary_search"
+            )
             for detector in detectors
         ]
 

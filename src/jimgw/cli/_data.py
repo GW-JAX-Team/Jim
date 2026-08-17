@@ -35,7 +35,7 @@ def build_data(
     for name in data_cfg.detectors:
         val = preset[name]
         if isinstance(val, list):
-            ifos.extend(val)  # ty: ignore[invalid-argument-type]
+            ifos.extend(val)
         else:
             ifos.append(val)
 

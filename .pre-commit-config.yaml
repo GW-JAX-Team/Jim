@@ -5,7 +5,7 @@ ci:
 
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.16.2
+    rev: v0.16.3
     hooks:
       - id: ruff-check
         args: ["--fix"]
@@ -14,7 +14,7 @@ repos:
         files: src/
 
   - repo: https://github.com/astral-sh/ty-pre-commit
-    rev: v0.0.69
+    rev: v0.0.72
     hooks:
       - id: ty
         args: ["--no-sync"]

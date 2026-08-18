@@ -26,48 +26,7 @@ jobs:
       - run: pip install pre-commit
       - run: pre-commit autoupdate
       - run: uv lock --upgrade
-      - name: Bump pinned GitHub Actions to their latest major version
-        shell: bash
-        run: |
-          set -euo pipefail
-          for f in .github/workflows/*.yml; do
-            while IFS= read -r ref; do
-              name="${ref%@*}"
-              current="${ref##*@}"
-              mapfile -t tags < <(
-                git ls-remote --tags --refs "https://github.com/${name}.git" 2>/dev/null \
-                  | awk '{sub("^refs/tags/", "", $2); print $2}' \
-                  | grep -E '^v[0-9]+(\.[0-9]+){0,2}$' || true
-              )
-              if [ "${#tags[@]}" -eq 0 ]; then
-                echo "Warning: could not determine the latest major version for ${name}; leaving ${current} unchanged."
-                continue
-              fi
-
-              newest_major=$(printf '%s\n' "${tags[@]}" \
-                | sed -E 's/^v([0-9]+).*/\1/' \
-                | sort -n \
-                | tail -n 1)
-              bare_tag="v${newest_major}"
-              latest_dotted=$(printf '%s\n' "${tags[@]}" \
-                | grep -E "^v${newest_major}\\.[0-9]+(\\.[0-9]+)?$" \
-                | sort -V \
-                | tail -n 1 || true)
-              if [[ "$current" =~ ^v[0-9]+$ ]] && printf '%s\n' "${tags[@]}" | grep -Fxq "$bare_tag"; then
-                newest="$bare_tag"
-              elif [ -n "$latest_dotted" ]; then
-                newest="$latest_dotted"
-              else
-                newest="$bare_tag"
-              fi
-
-              if [ "$newest" != "$current" ]; then
-                OLD="${name}@${current}" NEW="${name}@${newest}" \
-                  perl -pi -e 's/\Q$ENV{OLD}\E/$ENV{NEW}/g' "$f"
-              fi
-            done < <(grep -Eho '[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+@v[0-9]+(\.[0-9]+){0,2}' "$f" | sort -u || true)
-          done
-      - name: Commit if hooks, lockfile, or Action pins changed
+      - name: Commit if hooks or lockfile changed
         id: commit_update
         run: |
           set -euo pipefail
@@ -78,8 +37,8 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add .pre-commit-config.yaml uv.lock .github/workflows/*.yml
-          git commit -m "[pre-commit] autoupdate hooks, lock file, and pinned Action versions"
+          git add .pre-commit-config.yaml uv.lock
+          git commit -m "[pre-commit] autoupdate hooks and lock file"
           git push
           echo "changed=true" >> "$GITHUB_OUTPUT"
       - name: Trigger CI on jim-dev

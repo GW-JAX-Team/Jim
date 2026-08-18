@@ -8,6 +8,7 @@ import pytest
 from jimgw.core.constants import EARTH_RADIUS_LIGHT_S
 from jimgw.core.jim import Jim
 from jimgw.core.prior import CombinePrior, GaussianPrior, PowerLawPrior, UniformPrior
+from jimgw.core.single_event import likelihood as likelihood_module
 from jimgw.core.single_event.data import Data, PowerSpectrum
 from jimgw.core.single_event.detector import get_H1, get_L1
 from jimgw.core.single_event.likelihood import (
@@ -1547,6 +1548,70 @@ class TestHeterodynedTransientLikelihoodFD:
         ]
         generations = int(finished_message.split("after ")[1].split(" generations")[0])
         assert generations < 50
+
+    def test_maximize_likelihood_stops_early_on_cma_stall(
+        self, detectors_and_waveform, monkeypatch, caplog
+    ):
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        true_params = example_params()
+        for ifo in ifos:
+            ifo.inject_signal(
+                duration=4.0,
+                sampling_frequency=fmax * 2,
+                trigger_time=gps,
+                waveform_model=waveform,
+                parameters=true_params,
+                f_min=fmin,
+                f_max=fmax,
+                zero_noise=True,
+            )
+        fixed_parameters = {
+            k: v for k, v in true_params.items() if k not in ("M_c", "eta")
+        }
+
+        # Force the CMA-ES stall/convergence branch deterministically,
+        # mirroring how test_maximize_likelihood_stops_early_at_optimizer_target
+        # forces the target-reached branch with an extreme target rather than
+        # relying on real numerical convergence timing (slow/flaky to tune).
+        # Must not fire at generation 0: state.best_solution is still the NaN
+        # fill from es.init before the first real _step runs, so exiting
+        # before any generation completes would surface as a spurious
+        # failure elsewhere rather than testing the stall path.
+        def fake_cma_cond(
+            population, fitness, state, params, restart_state, restart_params
+        ):
+            return state.generation_counter >= 1
+
+        monkeypatch.setattr(likelihood_module, "cma_cond", fake_cma_cond)
+
+        with caplog.at_level(
+            logging.DEBUG, logger="jimgw.core.single_event.likelihood"
+        ):
+            HeterodynedTransientLikelihoodFD(
+                detectors=ifos,
+                waveform=waveform,
+                f_min=fmin,
+                f_max=fmax,
+                trigger_time=gps,
+                fixed_parameters=fixed_parameters,
+                prior=CombinePrior(
+                    [
+                        UniformPrior(25.0, 35.0, parameter_names=["M_c"]),
+                        UniformPrior(0.125, 1.0, parameter_names=["q"]),
+                    ]
+                ),
+                likelihood_transforms=[MassRatioToSymmetricMassRatioTransform],
+                optimizer_popsize=10,
+                optimizer_n_steps=50,
+            )
+        [finished_message] = [
+            record.message
+            for record in caplog.records
+            if "CMA-ES finished after" in record.message
+        ]
+        generations = int(finished_message.split("after ")[1].split(" generations")[0])
+        assert generations == 1
+        assert "stop_reason=stalled" in finished_message
 
     def test_low_frequency_reference_cutoff_does_not_reindex_summary_data(
         self, detectors_and_waveform, monkeypatch

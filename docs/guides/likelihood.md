@@ -214,7 +214,9 @@ likelihood = HeterodynedTransientLikelihoodFD(
 ```
 
 The optimiser runs `evosax.CMA_ES` with a JAX-native ask/tell loop, so the waveform evaluations are fully batched and JIT-compiled on CPU/GPU.
-It stops once `optimizer_n_steps` generations have run or the best log-likelihood found reaches `optimizer_target`, whichever comes first; leave `optimizer_target` unset to always run the full `optimizer_n_steps`.
+It stops once `optimizer_n_steps` generations have run, the best log-likelihood found reaches `optimizer_target`, or CMA-ES's own convergence/stall criterion (evosax's `cma_cond`, using its built-in default tolerances) detects that the search has converged or numerically degenerated — whichever comes first.
+The stall tolerances are not user-configurable.
+Leave `optimizer_target` unset to run up to the full `optimizer_n_steps`; the search may still stop earlier once it stalls.
 
 ### MultibandedTransientLikelihoodFD
 

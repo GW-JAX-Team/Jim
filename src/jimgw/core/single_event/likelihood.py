@@ -7,6 +7,7 @@ from typing import Any, Optional, Union
 import jax
 import jax.numpy as jnp
 from evosax.algorithms import CMA_ES
+from evosax.core.restart import RestartParams, RestartState, cma_cond
 from jax.scipy.special import logsumexp
 from jaxtyping import Array, Complex, Float
 from ripplegw.interfaces import DistanceScaledWaveform, Waveform
@@ -668,7 +669,9 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         optimizer_n_steps: Maximum number of CMA-ES generations.  Defaults to 1000.
         optimizer_target: Optional log-likelihood value at which the CMA-ES
             search stops early, before ``optimizer_n_steps`` is reached.
-            Defaults to None (always run the full ``optimizer_n_steps``).
+            Defaults to None, which runs up to the full
+            ``optimizer_n_steps`` generations; the search may still stop
+            earlier if CMA-ES's convergence/stall criterion fires.
         reference_parameters: Pre-computed reference parameters (dict).  If
             supplied, the optimizer is skipped entirely.
         reference_waveform: Optional waveform instance used to compute the
@@ -1061,8 +1064,10 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         Strategy) to search the full parameter space.  The initial mean is
         drawn from the prior and the entire ask/tell loop is compiled with
         ``jax.lax.while_loop`` for speed, stopping once ``optimizer_n_steps``
-        generations have run or ``optimizer_target`` has been reached,
-        whichever comes first.
+        generations have run, ``optimizer_target`` has been reached, or
+        evosax's own CMA-ES convergence/stall criterion (``cma_cond``, using
+        its built-in default tolerances) detects that the search has
+        converged or numerically degenerated — whichever comes first.
 
         Args:
             prior: Prior used to seed the initial CMA-ES mean.
@@ -1075,7 +1080,9 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
             optimizer_target: Optional log-likelihood value (same scale as
                 `evaluate`) at which to stop early, before
                 ``optimizer_n_steps`` is reached. Defaults to None, which
-                always runs the full ``optimizer_n_steps`` generations.
+                runs up to the full ``optimizer_n_steps`` generations (the
+                search may still stop earlier if CMA-ES's own
+                convergence/stall criterion fires).
         """
         parameter_names = list(prior.parameter_names)
         n_dim = len(parameter_names)
@@ -1147,10 +1154,26 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
 
         target_fitness = -jnp.inf if optimizer_target is None else -optimizer_target
 
+        stall_params = RestartParams()
+        stall_restart_state = RestartState(restart_counter=0)
+        _unused_fitness = jnp.zeros(1)
+
+        def _cma_stalled(state) -> jax.Array:
+            return cma_cond(
+                None,
+                _unused_fitness,
+                state,
+                es_params,
+                stall_restart_state,
+                stall_params,
+            )
+
         def _cond(carry):
             state, _ = carry
-            return (state.generation_counter < optimizer_n_steps) & (
-                state.best_fitness > target_fitness
+            return (
+                (state.generation_counter < optimizer_n_steps)
+                & (state.best_fitness > target_fitness)
+                & ~_cma_stalled(state)
             )
 
         def _step(carry):
@@ -1172,9 +1195,22 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         state, _ = jax.lax.while_loop(_cond, _step, (state, key))
 
         best_fitness = float(state.best_fitness)
+
+        target_reached = optimizer_target is not None and bool(
+            state.best_fitness <= target_fitness
+        )
+        stalled = bool(_cma_stalled(state))
+        if target_reached:
+            stop_reason = "target_reached"
+        elif stalled:
+            stop_reason = "stalled"
+        else:
+            stop_reason = "max_steps"
+
         logger.debug(
             f"CMA-ES finished after {int(state.generation_counter)} generations "
-            f"(limit {optimizer_n_steps}), best_fitness={best_fitness:.4f}"
+            f"(limit {optimizer_n_steps}), best_fitness={best_fitness:.4f}, "
+            f"stop_reason={stop_reason}"
         )
         best_z = state.best_solution
 

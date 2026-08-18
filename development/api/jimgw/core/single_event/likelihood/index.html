@@ -2819,7 +2819,9 @@ when finding reference parameters automatically.  Defaults to 500.</p>
               <div class="doc-md-description">
                 <p>Optional log-likelihood value at which the CMA-ES
 search stops early, before <code>optimizer_n_steps</code> is reached.
-Defaults to None (always run the full <code>optimizer_n_steps</code>).</p>
+Defaults to None, which runs up to the full
+<code>optimizer_n_steps</code> generations; the search may still stop
+earlier if CMA-ES's convergence/stall criterion fires.</p>
               </div>
             </td>
             <td>
@@ -2976,8 +2978,10 @@ object, a plain dict <code>{}</code>, or <code>True</code> (shorthand for <code>
 Strategy) to search the full parameter space.  The initial mean is
 drawn from the prior and the entire ask/tell loop is compiled with
 <code>jax.lax.while_loop</code> for speed, stopping once <code>optimizer_n_steps</code>
-generations have run or <code>optimizer_target</code> has been reached,
-whichever comes first.</p>
+generations have run, <code>optimizer_target</code> has been reached, or
+evosax's own CMA-ES convergence/stall criterion (<code>cma_cond</code>, using
+its built-in default tolerances) detects that the search has
+converged or numerically degenerated — whichever comes first.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3070,7 +3074,9 @@ Defaults to 1000.</p>
                 <p>Optional log-likelihood value (same scale as
 <code>evaluate</code>) at which to stop early, before
 <code>optimizer_n_steps</code> is reached. Defaults to None, which
-always runs the full <code>optimizer_n_steps</code> generations.</p>
+runs up to the full <code>optimizer_n_steps</code> generations (the
+search may still stop earlier if CMA-ES's own
+convergence/stall criterion fires).</p>
               </div>
             </td>
             <td>

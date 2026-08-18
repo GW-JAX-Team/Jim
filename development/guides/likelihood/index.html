@@ -2670,7 +2670,9 @@ It requires a set of <em>reference parameters</em> around which the binning is c
 <span class="p">)</span>
 </code></pre></div>
 <p>The optimiser runs <code>evosax.CMA_ES</code> with a JAX-native ask/tell loop, so the waveform evaluations are fully batched and JIT-compiled on CPU/GPU.
-It stops once <code>optimizer_n_steps</code> generations have run or the best log-likelihood found reaches <code>optimizer_target</code>, whichever comes first; leave <code>optimizer_target</code> unset to always run the full <code>optimizer_n_steps</code>.</p>
+It stops once <code>optimizer_n_steps</code> generations have run, the best log-likelihood found reaches <code>optimizer_target</code>, or CMA-ES's own convergence/stall criterion (evosax's <code>cma_cond</code>, using its built-in default tolerances) detects that the search has converged or numerically degenerated — whichever comes first.
+The stall tolerances are not user-configurable.
+Leave <code>optimizer_target</code> unset to run up to the full <code>optimizer_n_steps</code>; the search may still stop earlier once it stalls.</p>
 <h3 id="multibandedtransientlikelihoodfd">MultibandedTransientLikelihoodFD<a class="headerlink" href="#multibandedtransientlikelihoodfd" title="Permanent link">¤</a></h3>
 <p><code>MultibandedTransientLikelihoodFD</code> implements the multi-banding method.</p>
 <p>Pass a <code>prior</code> to let the constructor infer <code>reference_chirp_mass</code>, <code>time_offset</code>, and <code>delta_f_end</code> automatically:</p>

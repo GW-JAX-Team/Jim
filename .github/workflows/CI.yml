@@ -30,15 +30,8 @@ jobs:
           enable-cache: true
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
-        run: |
-          uv sync --group test ${{ matrix.test_suite == 'cross-validation' && '--group cross-validation' || '' }}
-          if [[ "${{ github.ref }}" == "refs/heads/jim-dev" || "${{ github.base_ref }}" == "jim-dev" ]]; then
-            uv pip install git+https://github.com/GW-JAX-Team/flowMC.git@flowMC-dev
-            uv pip install git+https://github.com/GW-JAX-Team/ripple.git@ripple-dev
-          elif [[ "${{ github.event_name }}" != "release" ]]; then
-            uv pip install git+https://github.com/GW-JAX-Team/flowMC.git@main
-            uv pip install git+https://github.com/GW-JAX-Team/ripple.git@main
-          fi
+        run: uv sync --group test ${{ matrix.test_suite == 'cross-validation' && '--group cross-validation' || '' }}
+      - uses: ./.github/actions/install-siblings
       - name: Run ${{ matrix.test_suite }} tests
         run: |
           is_main=false
@@ -79,15 +72,8 @@ jobs:
           enable-cache: true
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
-        run: |
-          uv sync --group test
-          if [[ "${{ github.ref }}" == "refs/heads/jim-dev" || "${{ github.base_ref }}" == "jim-dev" ]]; then
-            uv pip install git+https://github.com/GW-JAX-Team/flowMC.git@flowMC-dev
-            uv pip install git+https://github.com/GW-JAX-Team/ripple.git@ripple-dev
-          elif [[ "${{ github.event_name }}" != "release" ]]; then
-            uv pip install git+https://github.com/GW-JAX-Team/flowMC.git@main
-            uv pip install git+https://github.com/GW-JAX-Team/ripple.git@main
-          fi
+        run: uv sync --group test
+      - uses: ./.github/actions/install-siblings
       - name: Run integration tests
         run: |
           cov_flags=""
@@ -142,22 +128,15 @@ jobs:
           enable-cache: true
           python-version: "3.12"
       - name: Install dependencies
-        run: |
-          uv sync --group test
-          if [[ "${{ github.ref }}" == "refs/heads/jim-dev" || "${{ github.base_ref }}" == "jim-dev" ]]; then
-            uv pip install git+https://github.com/GW-JAX-Team/flowMC.git@flowMC-dev
-            uv pip install git+https://github.com/GW-JAX-Team/ripple.git@ripple-dev
-          elif [[ "${{ github.event_name }}" != "release" ]]; then
-            uv pip install git+https://github.com/GW-JAX-Team/flowMC.git@main
-            uv pip install git+https://github.com/GW-JAX-Team/ripple.git@main
-          fi
+        run: uv sync --group test
+      - uses: ./.github/actions/install-siblings
       - name: Run pre-commit (excluding pyright)
         run: SKIP=pyright uv run --no-sync pre-commit run --all-files
       - name: Run pyright
         run: uv run --no-sync pyright src/
 
   publish:
-    needs: [test, integration, pre-commit]
+    needs: [test, pre-commit]
     runs-on: ubuntu-latest
     if: github.event_name == 'release'
     environment:
@@ -180,6 +159,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'release'
     permissions:
+      actions: write
       contents: write
       pull-requests: write
     steps:
@@ -194,8 +174,12 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git fetch origin main
+          before=$(git rev-parse HEAD)
           if git merge --no-edit origin/main; then
             git push origin jim-dev
+            if [ "$(git rev-parse HEAD)" != "$before" ]; then
+              gh workflow run CI.yml --ref jim-dev
+            fi
           else
             git merge --abort
             existing=$(gh pr list --repo "$GITHUB_REPOSITORY" --base jim-dev --head main --state open --json number --jq '.[0].number // empty')

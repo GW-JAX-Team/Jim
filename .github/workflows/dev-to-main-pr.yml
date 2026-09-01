@@ -39,29 +39,26 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          existing=$(gh pr list --repo "$GITHUB_REPOSITORY" --base main --head jim-dev --state open --json number --jq '.[0].number // empty')
-          if [ -n "$existing" ]; then
-            echo "PR #$existing already open from jim-dev to main; nothing to do."
-            exit 0
-          fi
+          pr_url=$(gh pr list --repo "$GITHUB_REPOSITORY" --base main --head jim-dev --state open --json url --jq '.[0].url // empty')
+          if [ -z "$pr_url" ]; then
+            ahead_count=$(git rev-list --count origin/main..origin/jim-dev)
+            if [ "$ahead_count" -eq 0 ]; then
+              echo "jim-dev has no commits ahead of main; nothing to merge."
+              exit 0
+            fi
 
-          ahead_count=$(git rev-list --count origin/main..origin/jim-dev)
-          if [ "$ahead_count" -eq 0 ]; then
-            echo "jim-dev has no commits ahead of main; nothing to merge."
-            exit 0
-          fi
+            if git diff --quiet origin/main...origin/jim-dev; then
+              echo "jim-dev has commits ahead of main but no net diff; nothing to merge."
+              exit 0
+            fi
 
-          if git diff --quiet origin/main...origin/jim-dev; then
-            echo "jim-dev has commits ahead of main but no net diff; nothing to merge."
-            exit 0
+            pr_url=$(gh pr create \
+              --repo "$GITHUB_REPOSITORY" \
+              --base main \
+              --head jim-dev \
+              --title "Scheduled sync: jim-dev -> main ($(date -u +'%B %Y'))" \
+              --body "Automated monthly pull request merging \`jim-dev\` into \`main\`.")
           fi
-
-          pr_url=$(gh pr create \
-            --repo "$GITHUB_REPOSITORY" \
-            --base main \
-            --head jim-dev \
-            --title "Scheduled sync: jim-dev -> main ($(date -u +'%B %Y'))" \
-            --body "Automated monthly pull request merging \`jim-dev\` into \`main\`.")
 
           gh pr comment "$pr_url" \
             --repo "$GITHUB_REPOSITORY" \

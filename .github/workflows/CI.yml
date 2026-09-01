@@ -18,11 +18,12 @@ permissions:
 
 jobs:
   test:
+    name: ${{ matrix.test_suite }} (${{ matrix.python-version }})
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: ["3.11", "3.12", "3.13"]
-        test_suite: [unit, cross-validation]
+        test_suite: [unit, integration, cross-validation]
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v10.0.1
@@ -40,9 +41,12 @@ jobs:
           [[ "${{ matrix.python-version }}" == "3.12" ]] && cov_flags="--cov=jimgw --cov-report="
           case "${{ matrix.test_suite }}" in
             unit) test_path=tests/unit ;;
+            integration) test_path=tests/integration ;;
             cross-validation) test_path=tests/cross_validation ;;
           esac
-          if [[ "$is_main" == "true" ]]; then
+          if [[ "${{ matrix.test_suite }}" == "integration" ]]; then
+            uv run --no-sync pytest $cov_flags "$test_path" -v --tb=short
+          elif [[ "$is_main" == "true" ]]; then
             uv run --no-sync pytest $cov_flags "$test_path" -v --tb=short
           else
             uv run --no-sync pytest -m "not slow" $cov_flags "$test_path"
@@ -59,41 +63,9 @@ jobs:
           if-no-files-found: error
           include-hidden-files: true
 
-  integration:
-    if: github.ref == 'refs/heads/main' || github.base_ref == 'main'
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.11", "3.12", "3.13"]
-    steps:
-      - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10.0.1
-        with:
-          enable-cache: true
-          python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
-        run: uv sync --group test
-      - uses: ./.github/actions/install-siblings
-      - name: Run integration tests
-        run: |
-          cov_flags=""
-          [[ "${{ matrix.python-version }}" == "3.12" ]] && cov_flags="--cov=jimgw --cov-report="
-          uv run --no-sync pytest $cov_flags tests/integration -v --tb=short
-      - name: Prepare coverage data
-        if: matrix.python-version == '3.12'
-        run: mv .coverage .coverage.integration
-      - name: Upload coverage data
-        if: matrix.python-version == '3.12'
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-integration
-          path: .coverage.integration
-          if-no-files-found: error
-          include-hidden-files: true
-
   coverage:
-    needs: [test, integration]
-    if: ${{ always() && needs.test.result == 'success' && (needs.integration.result == 'success' || needs.integration.result == 'skipped') }}
+    needs: [test]
+    if: ${{ always() && needs.test.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -196,7 +168,7 @@ jobs:
           fi
 
   publish-testpypi:
-    needs: [test, integration, pre-commit]
+    needs: [test, pre-commit]
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     environment:

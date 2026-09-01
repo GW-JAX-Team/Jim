@@ -46,7 +46,7 @@ repos:
     hooks:
       - id: pyright
         name: pyright
-        entry: uv run pyright
+        entry: uv run --no-sync pyright
         language: system
         files: src/
         require_serial: true

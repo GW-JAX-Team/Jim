@@ -32,8 +32,9 @@ jobs:
         if: steps.gate.outputs.run == 'true'
         with:
           fetch-depth: 0
+          persist-credentials: false  # only local git reads + gh (GH_TOKEN) are used
 
-      - name: Open PR from jim-dev to main
+      - name: Open PR from jim-dev to main and request CodeRabbit review
         if: steps.gate.outputs.run == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -55,9 +56,13 @@ jobs:
             exit 0
           fi
 
-          gh pr create \
+          pr_url=$(gh pr create \
             --repo "$GITHUB_REPOSITORY" \
             --base main \
             --head jim-dev \
             --title "Scheduled sync: jim-dev -> main ($(date -u +'%B %Y'))" \
-            --body "Automated monthly pull request merging \`jim-dev\` into \`main\`."
+            --body "Automated monthly pull request merging \`jim-dev\` into \`main\`.")
+
+          gh pr comment "$pr_url" \
+            --repo "$GITHUB_REPOSITORY" \
+            --body "@coderabbitai review"

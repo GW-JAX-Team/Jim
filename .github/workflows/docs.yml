@@ -26,12 +26,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: astral-sh/setup-uv@v9.0.0
+      - uses: astral-sh/setup-uv@v10.0.1
         with:
           enable-cache: true
-
-      - name: Set up Python
-        run: uv python install 3.12
+          python-version: "3.12"
 
       - name: Install doc dependencies
         run: uv sync --group doc

@@ -22,16 +22,16 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.11", "3.12", "3.13"]
+        test_suite: [unit, cross-validation]
     steps:
       - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v9.0.0
+      - uses: astral-sh/setup-uv@v10.0.1
         with:
           enable-cache: true
-      - name: Set up Python ${{ matrix.python-version }}
-        run: uv python install ${{ matrix.python-version }}
+          python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
-          uv sync --python ${{ matrix.python-version }} --group test --group cross-validation
+          uv sync --group test ${{ matrix.test_suite == 'cross-validation' && '--group cross-validation' || '' }}
           if [[ "${{ github.ref }}" == "refs/heads/jim-dev" || "${{ github.base_ref }}" == "jim-dev" ]]; then
             uv pip install git+https://github.com/GW-JAX-Team/flowMC.git@flowMC-dev
             uv pip install git+https://github.com/GW-JAX-Team/ripple.git@ripple-dev
@@ -39,19 +39,95 @@ jobs:
             uv pip install git+https://github.com/GW-JAX-Team/flowMC.git@main
             uv pip install git+https://github.com/GW-JAX-Team/ripple.git@main
           fi
-      - name: Run tests
+      - name: Run ${{ matrix.test_suite }} tests
         run: |
           is_main=false
           [[ "${{ github.ref }}" == "refs/heads/main" || "${{ github.base_ref }}" == "main" ]] && is_main=true
           cov_flags=""
-          [[ "${{ matrix.python-version }}" == "3.12" ]] && cov_flags="--cov=jimgw --cov-report=term-missing"
+          [[ "${{ matrix.python-version }}" == "3.12" ]] && cov_flags="--cov=jimgw --cov-report="
+          case "${{ matrix.test_suite }}" in
+            unit) test_path=tests/unit ;;
+            cross-validation) test_path=tests/cross_validation ;;
+          esac
           if [[ "$is_main" == "true" ]]; then
-            uv run --no-sync pytest $cov_flags tests -v --tb=short
+            uv run --no-sync pytest $cov_flags "$test_path" -v --tb=short
           else
-            uv run --no-sync pytest -m "not slow and not integration" $cov_flags tests
+            uv run --no-sync pytest -m "not slow" $cov_flags "$test_path"
           fi
-      - name: Upload coverage to Coveralls
+      - name: Prepare coverage data
         if: matrix.python-version == '3.12'
+        run: mv .coverage ".coverage.${{ matrix.test_suite }}"
+      - name: Upload coverage data
+        if: matrix.python-version == '3.12'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.test_suite }}
+          path: .coverage.${{ matrix.test_suite }}
+          if-no-files-found: error
+          include-hidden-files: true
+
+  integration:
+    if: github.ref == 'refs/heads/main' || github.base_ref == 'main'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.0.1
+        with:
+          enable-cache: true
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          uv sync --group test
+          if [[ "${{ github.ref }}" == "refs/heads/jim-dev" || "${{ github.base_ref }}" == "jim-dev" ]]; then
+            uv pip install git+https://github.com/GW-JAX-Team/flowMC.git@flowMC-dev
+            uv pip install git+https://github.com/GW-JAX-Team/ripple.git@ripple-dev
+          elif [[ "${{ github.event_name }}" != "release" ]]; then
+            uv pip install git+https://github.com/GW-JAX-Team/flowMC.git@main
+            uv pip install git+https://github.com/GW-JAX-Team/ripple.git@main
+          fi
+      - name: Run integration tests
+        run: |
+          cov_flags=""
+          [[ "${{ matrix.python-version }}" == "3.12" ]] && cov_flags="--cov=jimgw --cov-report="
+          uv run --no-sync pytest $cov_flags tests/integration -v --tb=short
+      - name: Prepare coverage data
+        if: matrix.python-version == '3.12'
+        run: mv .coverage .coverage.integration
+      - name: Upload coverage data
+        if: matrix.python-version == '3.12'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-integration
+          path: .coverage.integration
+          if-no-files-found: error
+          include-hidden-files: true
+
+  coverage:
+    needs: [test, integration]
+    if: ${{ always() && needs.test.result == 'success' && (needs.integration.result == 'success' || needs.integration.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.0.1
+        with:
+          enable-cache: true
+          python-version: "3.12"
+      - name: Install coverage dependencies
+        run: uv sync --group test
+      - name: Download coverage data
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+          path: coverage
+          merge-multiple: true
+      - name: Combine coverage data
+        run: |
+          uv run --no-sync coverage combine coverage
+          uv run --no-sync coverage report --show-missing
+      - name: Upload coverage to Coveralls
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
@@ -61,12 +137,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v9.0.0
+      - uses: astral-sh/setup-uv@v10.0.1
         with:
           enable-cache: true
+          python-version: "3.12"
       - name: Install dependencies
         run: |
-          uv sync --python 3.12 --group test
+          uv sync --group test
           if [[ "${{ github.ref }}" == "refs/heads/jim-dev" || "${{ github.base_ref }}" == "jim-dev" ]]; then
             uv pip install git+https://github.com/GW-JAX-Team/flowMC.git@flowMC-dev
             uv pip install git+https://github.com/GW-JAX-Team/ripple.git@ripple-dev
@@ -80,7 +157,7 @@ jobs:
         run: uv run --no-sync pyright src/
 
   publish:
-    needs: [test, pre-commit]
+    needs: [test, integration, pre-commit]
     runs-on: ubuntu-latest
     if: github.event_name == 'release'
     environment:
@@ -90,7 +167,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: astral-sh/setup-uv@v9.0.0
+      - uses: astral-sh/setup-uv@v10.0.1
       - name: Build package
         run: uv build
       - name: Publish to PyPI
@@ -135,7 +212,7 @@ jobs:
           fi
 
   publish-testpypi:
-    needs: [test, pre-commit]
+    needs: [test, integration, pre-commit]
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     environment:
@@ -146,7 +223,7 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: astral-sh/setup-uv@v9.0.0
+      - uses: astral-sh/setup-uv@v10.0.1
       - name: Build package
         run: uv build
       - name: Publish to TestPyPI

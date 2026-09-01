@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="zensical-0.0.55">
+      <meta name="generator" content="zensical-0.0.57">
     
     
       
@@ -36,12 +36,12 @@
       
         
       
-      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.20815dad.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.5da3a30f.min.css">
       
         
           
         
-        <link rel="stylesheet" href="../../assets/stylesheets/modern/palette.dfe2e883.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/modern/palette.812a03bb.min.css">
       
       
 
@@ -2586,8 +2586,8 @@ Jim ships with convenience constructors for common detectors — LIGO Hanford (<
 <p>You can also retrieve all presets at once as a dictionary with <code>get_detector_preset()</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.single_event.detector</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_detector_preset</span>
 
-<span class="n">detectors</span> <span class="o">=</span> <span class="n">get_detector_preset</span><span class="p">()</span>  <span class="c1"># {&quot;H1&quot;: ..., &quot;L1&quot;: ..., &quot;V1&quot;: ..., &quot;ET&quot;: ..., &quot;CE&quot;: ...}</span>
-<span class="n">H1</span> <span class="o">=</span> <span class="n">detectors</span><span class="p">[</span><span class="s2">&quot;H1&quot;</span><span class="p">]</span>
+<span class="n">detectors</span> <span class="o">=</span> <span class="n">get_detector_preset</span><span class="p">()</span>  <span class="c1"># {"H1": ..., "L1": ..., "V1": ..., "ET": ..., "CE": ...}</span>
+<span class="n">H1</span> <span class="o">=</span> <span class="n">detectors</span><span class="p">[</span><span class="s2">"H1"</span><span class="p">]</span>
 </code></pre></div>
 <p>Note that <code>get_ET()</code> returns a <strong>list</strong> of three <code>GroundBased2G</code> objects (one for each of ET's triangular arms), while all others return a single detector.</p>
 <p>Once you have a detector, you need to attach strain data and a PSD to it.</p>
@@ -2599,34 +2599,34 @@ Jim ships with convenience constructors for common detectors — LIGO Hanford (<
 <span class="n">gps_start</span> <span class="o">=</span> <span class="mi">1126259446</span>
 <span class="n">gps_end</span> <span class="o">=</span> <span class="mi">1126259478</span>
 
-<span class="n">data</span> <span class="o">=</span> <span class="n">Data</span><span class="o">.</span><span class="n">from_gwosc</span><span class="p">(</span><span class="s2">&quot;H1&quot;</span><span class="p">,</span> <span class="n">gps_start</span><span class="p">,</span> <span class="n">gps_end</span><span class="p">)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">Data</span><span class="o">.</span><span class="n">from_gwosc</span><span class="p">(</span><span class="s2">"H1"</span><span class="p">,</span> <span class="n">gps_start</span><span class="p">,</span> <span class="n">gps_end</span><span class="p">)</span>
 <span class="n">H1</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="load-from-file">Load from File<a class="headerlink" href="#load-from-file" title="Permanent link">¤</a></h3>
 <p><code>Data.from_file()</code> detects the file format from the extension and dispatches accordingly.</p>
 <h4 id="numpy-archive-npz">NumPy archive (<code>.npz</code>)<a class="headerlink" href="#numpy-archive-npz" title="Permanent link">¤</a></h4>
 <p>The file must contain the keys <code>td</code> (time-domain strain), <code>dt</code> (time step in seconds), and <code>start_time</code> (GPS start time):</p>
-<div class="highlight"><pre><span></span><code><span class="n">data</span> <span class="o">=</span> <span class="n">Data</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;path/to/data.npz&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="n">data</span> <span class="o">=</span> <span class="n">Data</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">"path/to/data.npz"</span><span class="p">)</span>
 <span class="n">H1</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 </code></pre></div>
 <h4 id="gwf-lal-frame-file-gwf">GWF / LAL frame file (<code>.gwf</code>)<a class="headerlink" href="#gwf-lal-frame-file-gwf" title="Permanent link">¤</a></h4>
 <p>Pass a channel name via the <code>channel</code> argument.
 If omitted, a set of common LIGO/Virgo channel names is tried automatically:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Explicit channel (recommended)</span>
-<span class="n">data</span> <span class="o">=</span> <span class="n">Data</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;path/to/data.gwf&quot;</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="s2">&quot;H1:GDS-CALIB_STRAIN&quot;</span><span class="p">)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">Data</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">"path/to/data.gwf"</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="s2">"H1:GDS-CALIB_STRAIN"</span><span class="p">)</span>
 <span class="n">H1</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 
 <span class="c1"># Auto-detect channel from common presets</span>
-<span class="n">data</span> <span class="o">=</span> <span class="n">Data</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;path/to/data.gwf&quot;</span><span class="p">)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">Data</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">"path/to/data.gwf"</span><span class="p">)</span>
 <span class="n">H1</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 </code></pre></div>
 <p>Optional <code>start_time</code> and <code>end_time</code> (GPS seconds) let you trim the segment read from the frame file.</p>
 <h4 id="hdf5-file-hdf5-h5">HDF5 file (<code>.hdf5</code> / <code>.h5</code>)<a class="headerlink" href="#hdf5-file-hdf5-h5" title="Permanent link">¤</a></h4>
-<div class="highlight"><pre><span></span><code><span class="n">data</span> <span class="o">=</span> <span class="n">Data</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;path/to/data.hdf5&quot;</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="s2">&quot;H1:GDS-CALIB_STRAIN&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="n">data</span> <span class="o">=</span> <span class="n">Data</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">"path/to/data.hdf5"</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="s2">"H1:GDS-CALIB_STRAIN"</span><span class="p">)</span>
 <span class="n">H1</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 </code></pre></div>
 <h4 id="csv-file-csv">CSV file (<code>.csv</code>)<a class="headerlink" href="#csv-file-csv" title="Permanent link">¤</a></h4>
-<div class="highlight"><pre><span></span><code><span class="n">data</span> <span class="o">=</span> <span class="n">Data</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;path/to/data.csv&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="n">data</span> <span class="o">=</span> <span class="n">Data</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">"path/to/data.csv"</span><span class="p">)</span>
 <span class="n">H1</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="construct-from-frequency-domain-arrays">Construct from Frequency-Domain Arrays<a class="headerlink" href="#construct-from-frequency-domain-arrays" title="Permanent link">¤</a></h3>
@@ -2663,7 +2663,7 @@ Consequently, the default requires a segment at least 0.8 seconds long.</p>
 \alpha = \frac{2\,t_{\mathrm{rolloff}}}{T},
 \]</div>
 <p>For a time-domain <code>Data</code> object, set a different roll-off time or provide the Tukey shape parameter directly:</p>
-<div class="highlight"><pre><span></span><code><span class="n">time_data</span> <span class="o">=</span> <span class="n">Data</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;path/to/data.npz&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="n">time_data</span> <span class="o">=</span> <span class="n">Data</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">"path/to/data.npz"</span><span class="p">)</span>
 <span class="c1"># Choose one parameterization:</span>
 <span class="n">time_data</span><span class="o">.</span><span class="n">set_tukey_window</span><span class="p">(</span><span class="n">roll_off</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>  <span class="c1"># seconds on each side</span>
 <span class="c1"># time_data.set_tukey_window(alpha=0.1)   # direct scipy Tukey parameter</span>
@@ -2680,10 +2680,10 @@ Consequently, the default requires a segment at least 0.8 seconds long.</p>
 <p><code>load_and_set_psd</code> is a convenience method that loads and sets the PSD in a single call.
 It supports all the same formats as <code>PowerSpectrum.from_file</code> (<code>.npz</code>, <code>.txt</code>, <code>.dat</code>, <code>.csv</code>):</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># PSD file — any supported format (values in Hz^{-1})</span>
-<span class="n">H1</span><span class="o">.</span><span class="n">load_and_set_psd</span><span class="p">(</span><span class="n">psd_file</span><span class="o">=</span><span class="s2">&quot;path/to/psd.txt&quot;</span><span class="p">)</span>
+<span class="n">H1</span><span class="o">.</span><span class="n">load_and_set_psd</span><span class="p">(</span><span class="n">psd_file</span><span class="o">=</span><span class="s2">"path/to/psd.txt"</span><span class="p">)</span>
 
 <span class="c1"># ASD file — any supported format (values in Hz^{-1/2}, squared internally)</span>
-<span class="n">H1</span><span class="o">.</span><span class="n">load_and_set_psd</span><span class="p">(</span><span class="n">asd_file</span><span class="o">=</span><span class="s2">&quot;path/to/asd.npz&quot;</span><span class="p">)</span>
+<span class="n">H1</span><span class="o">.</span><span class="n">load_and_set_psd</span><span class="p">(</span><span class="n">asd_file</span><span class="o">=</span><span class="s2">"path/to/asd.npz"</span><span class="p">)</span>
 </code></pre></div>
 <h4 id="explicit-powerspectrumfrom_file-set_psd">Explicit: <code>PowerSpectrum.from_file</code> + <code>set_psd</code><a class="headerlink" href="#explicit-powerspectrumfrom_file-set_psd" title="Permanent link">¤</a></h4>
 <p>For full control, or when your file is not a plain text file, use <code>PowerSpectrum.from_file</code>.
@@ -2717,16 +2717,16 @@ Supported formats:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.single_event.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">PowerSpectrum</span>
 
 <span class="c1"># From an .npz archive</span>
-<span class="n">H1</span><span class="o">.</span><span class="n">set_psd</span><span class="p">(</span><span class="n">PowerSpectrum</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;path/to/psd.npz&quot;</span><span class="p">))</span>
+<span class="n">H1</span><span class="o">.</span><span class="n">set_psd</span><span class="p">(</span><span class="n">PowerSpectrum</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">"path/to/psd.npz"</span><span class="p">))</span>
 
 <span class="c1"># From a PSD text file (Hz^{-1})</span>
-<span class="n">H1</span><span class="o">.</span><span class="n">set_psd</span><span class="p">(</span><span class="n">PowerSpectrum</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;path/to/psd.txt&quot;</span><span class="p">))</span>
+<span class="n">H1</span><span class="o">.</span><span class="n">set_psd</span><span class="p">(</span><span class="n">PowerSpectrum</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">"path/to/psd.txt"</span><span class="p">))</span>
 
 <span class="c1"># From an ASD text file (Hz^{-1/2}) — pass is_asd=True to square the values</span>
-<span class="n">H1</span><span class="o">.</span><span class="n">set_psd</span><span class="p">(</span><span class="n">PowerSpectrum</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;path/to/asd.txt&quot;</span><span class="p">,</span> <span class="n">is_asd</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+<span class="n">H1</span><span class="o">.</span><span class="n">set_psd</span><span class="p">(</span><span class="n">PowerSpectrum</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">"path/to/asd.txt"</span><span class="p">,</span> <span class="n">is_asd</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
 
 <span class="c1"># From a CSV file</span>
-<span class="n">H1</span><span class="o">.</span><span class="n">set_psd</span><span class="p">(</span><span class="n">PowerSpectrum</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;path/to/psd.csv&quot;</span><span class="p">))</span>
+<span class="n">H1</span><span class="o">.</span><span class="n">set_psd</span><span class="p">(</span><span class="n">PowerSpectrum</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">"path/to/psd.csv"</span><span class="p">))</span>
 </code></pre></div>
 <h3 id="construct-from-arrays">Construct from arrays<a class="headerlink" href="#construct-from-arrays" title="Permanent link">¤</a></h3>
 <p>Use <code>set_psd</code> with a <code>PowerSpectrum</code> object when you already have PSD values and frequencies as arrays:</p>
@@ -2750,11 +2750,11 @@ Set the PSD and frequency bounds first, then call <code>inject_signal</code>.</p
 
 <span class="n">waveform</span> <span class="o">=</span> <span class="n">RippleIMRPhenomD</span><span class="p">(</span><span class="n">f_ref</span><span class="o">=</span><span class="mf">20.0</span><span class="p">)</span>
 <span class="n">injection_params</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;M_c&quot;</span><span class="p">:</span> <span class="mf">28.0</span><span class="p">,</span> <span class="s2">&quot;eta&quot;</span><span class="p">:</span> <span class="mf">0.24</span><span class="p">,</span>
-    <span class="s2">&quot;s1_z&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s2">&quot;s2_z&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
-    <span class="s2">&quot;d_L&quot;</span><span class="p">:</span> <span class="mf">440.0</span><span class="p">,</span> <span class="s2">&quot;t_c&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
-    <span class="s2">&quot;phase_c&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s2">&quot;iota&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
-    <span class="s2">&quot;psi&quot;</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">,</span> <span class="s2">&quot;ra&quot;</span><span class="p">:</span> <span class="mf">1.5</span><span class="p">,</span> <span class="s2">&quot;dec&quot;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span>
+    <span class="s2">"M_c"</span><span class="p">:</span> <span class="mf">28.0</span><span class="p">,</span> <span class="s2">"eta"</span><span class="p">:</span> <span class="mf">0.24</span><span class="p">,</span>
+    <span class="s2">"s1_z"</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s2">"s2_z"</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+    <span class="s2">"d_L"</span><span class="p">:</span> <span class="mf">440.0</span><span class="p">,</span> <span class="s2">"t_c"</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+    <span class="s2">"phase_c"</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s2">"iota"</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+    <span class="s2">"psi"</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">,</span> <span class="s2">"ra"</span><span class="p">:</span> <span class="mf">1.5</span><span class="p">,</span> <span class="s2">"dec"</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span>
 <span class="p">}</span>
 
 <span class="n">H1</span><span class="o">.</span><span class="n">inject_signal</span><span class="p">(</span>
@@ -2829,7 +2829,7 @@ Set the PSD and frequency bounds first, then call <code>inject_signal</code>.</p
       <script id="__config" type="application/json">{"annotate":null,"base":"../..","features":["content.code.copy","navigation.instant","navigation.tabs","navigation.top","toc.follow","header.autohide"],"search":"../../assets/javascripts/workers/search.7d14d953.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":{"default":"stable","provider":"mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.e886cdf1.min.js"></script>
+      <script src="../../assets/javascripts/bundle.49251538.min.js"></script>
       
         <script src="../../javascripts/mathjax.js"></script>
       

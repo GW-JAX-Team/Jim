@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="zensical-0.0.55">
+      <meta name="generator" content="zensical-0.0.57">
     
     
       
@@ -36,12 +36,12 @@
       
         
       
-      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.20815dad.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.5da3a30f.min.css">
       
         
           
         
-        <link rel="stylesheet" href="../../assets/stylesheets/modern/palette.dfe2e883.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/modern/palette.812a03bb.min.css">
       
       
 
@@ -2476,17 +2476,17 @@ See the <a href="../samplers/">Samplers guide</a> before choosing a backend.</p>
 <span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.prior</span><span class="w"> </span><span class="kn">import</span> <span class="n">CombinePrior</span><span class="p">,</span> <span class="n">UniformPrior</span><span class="p">,</span> <span class="n">SinePrior</span><span class="p">,</span> <span class="n">CosinePrior</span><span class="p">,</span> <span class="n">PowerLawPrior</span>
 
 <span class="n">prior</span> <span class="o">=</span> <span class="n">CombinePrior</span><span class="p">([</span>
-    <span class="n">UniformPrior</span><span class="p">(</span><span class="mf">10.0</span><span class="p">,</span> <span class="mf">80.0</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;M_c&quot;</span><span class="p">]),</span>
-    <span class="n">UniformPrior</span><span class="p">(</span><span class="mf">0.125</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;q&quot;</span><span class="p">]),</span>
-    <span class="n">UniformPrior</span><span class="p">(</span><span class="o">-</span><span class="mf">0.99</span><span class="p">,</span> <span class="mf">0.99</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;s1_z&quot;</span><span class="p">]),</span>
-    <span class="n">UniformPrior</span><span class="p">(</span><span class="o">-</span><span class="mf">0.99</span><span class="p">,</span> <span class="mf">0.99</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;s2_z&quot;</span><span class="p">]),</span>
-    <span class="n">PowerLawPrior</span><span class="p">(</span><span class="mf">10.0</span><span class="p">,</span> <span class="mf">2000.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;d_L&quot;</span><span class="p">]),</span>
-    <span class="n">UniformPrior</span><span class="p">(</span><span class="o">-</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;t_c&quot;</span><span class="p">]),</span>
-    <span class="n">UniformPrior</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;phase_c&quot;</span><span class="p">]),</span>
-    <span class="n">SinePrior</span><span class="p">([</span><span class="s2">&quot;iota&quot;</span><span class="p">]),</span>
-    <span class="n">UniformPrior</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;psi&quot;</span><span class="p">]),</span>
-    <span class="n">UniformPrior</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;ra&quot;</span><span class="p">]),</span>
-    <span class="n">CosinePrior</span><span class="p">([</span><span class="s2">&quot;dec&quot;</span><span class="p">]),</span>
+    <span class="n">UniformPrior</span><span class="p">(</span><span class="mf">10.0</span><span class="p">,</span> <span class="mf">80.0</span><span class="p">,</span> <span class="p">[</span><span class="s2">"M_c"</span><span class="p">]),</span>
+    <span class="n">UniformPrior</span><span class="p">(</span><span class="mf">0.125</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="p">[</span><span class="s2">"q"</span><span class="p">]),</span>
+    <span class="n">UniformPrior</span><span class="p">(</span><span class="o">-</span><span class="mf">0.99</span><span class="p">,</span> <span class="mf">0.99</span><span class="p">,</span> <span class="p">[</span><span class="s2">"s1_z"</span><span class="p">]),</span>
+    <span class="n">UniformPrior</span><span class="p">(</span><span class="o">-</span><span class="mf">0.99</span><span class="p">,</span> <span class="mf">0.99</span><span class="p">,</span> <span class="p">[</span><span class="s2">"s2_z"</span><span class="p">]),</span>
+    <span class="n">PowerLawPrior</span><span class="p">(</span><span class="mf">10.0</span><span class="p">,</span> <span class="mf">2000.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="p">[</span><span class="s2">"d_L"</span><span class="p">]),</span>
+    <span class="n">UniformPrior</span><span class="p">(</span><span class="o">-</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="p">[</span><span class="s2">"t_c"</span><span class="p">]),</span>
+    <span class="n">UniformPrior</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="p">[</span><span class="s2">"phase_c"</span><span class="p">]),</span>
+    <span class="n">SinePrior</span><span class="p">([</span><span class="s2">"iota"</span><span class="p">]),</span>
+    <span class="n">UniformPrior</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="p">[</span><span class="s2">"psi"</span><span class="p">]),</span>
+    <span class="n">UniformPrior</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="p">[</span><span class="s2">"ra"</span><span class="p">]),</span>
+    <span class="n">CosinePrior</span><span class="p">([</span><span class="s2">"dec"</span><span class="p">]),</span>
 <span class="p">])</span>
 </code></pre></div>
 <p>The order of parameters in <code>prior.parameter_names</code> follows the order they appear in this list.</p>
@@ -2494,11 +2494,11 @@ See the <a href="../samplers/">Samplers guide</a> before choosing a backend.</p>
 <p>All priors are importable from <code>jimgw.core.prior</code>.</p>
 <h3 id="uniformprior">UniformPrior<a class="headerlink" href="#uniformprior" title="Permanent link">¤</a></h3>
 <p>Flat distribution over <code>[xmin, xmax]</code>:</p>
-<div class="highlight"><pre><span></span><code><span class="n">UniformPrior</span><span class="p">(</span><span class="n">xmin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;parameter_name&quot;</span><span class="p">])</span>
+<div class="highlight"><pre><span></span><code><span class="n">UniformPrior</span><span class="p">(</span><span class="n">xmin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">,</span> <span class="p">[</span><span class="s2">"parameter_name"</span><span class="p">])</span>
 </code></pre></div>
 <h3 id="powerlawprior">PowerLawPrior<a class="headerlink" href="#powerlawprior" title="Permanent link">¤</a></h3>
 <p>Power-law distribution <span class="arithmatex">\(p(x) \propto x^\alpha\)</span> over <code>[xmin, xmax]</code>:</p>
-<div class="highlight"><pre><span></span><code><span class="n">PowerLawPrior</span><span class="p">(</span><span class="n">xmin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;parameter_name&quot;</span><span class="p">])</span>
+<div class="highlight"><pre><span></span><code><span class="n">PowerLawPrior</span><span class="p">(</span><span class="n">xmin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="p">[</span><span class="s2">"parameter_name"</span><span class="p">])</span>
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -2507,31 +2507,31 @@ See the <a href="../samplers/">Samplers guide</a> before choosing a backend.</p>
 <h3 id="sineprior">SinePrior<a class="headerlink" href="#sineprior" title="Permanent link">¤</a></h3>
 <p><span class="arithmatex">\(p(\theta) \propto \sin(\theta)\)</span> over <span class="arithmatex">\(\lbrack 0, \pi \rbrack\)</span>.
 Commonly used for inclination:</p>
-<div class="highlight"><pre><span></span><code><span class="n">SinePrior</span><span class="p">([</span><span class="s2">&quot;iota&quot;</span><span class="p">])</span>
+<div class="highlight"><pre><span></span><code><span class="n">SinePrior</span><span class="p">([</span><span class="s2">"iota"</span><span class="p">])</span>
 </code></pre></div>
 <h3 id="cosineprior">CosinePrior<a class="headerlink" href="#cosineprior" title="Permanent link">¤</a></h3>
 <p><span class="arithmatex">\(p(\delta) \propto \cos(\delta)\)</span> over <span class="arithmatex">\(\lbrack -\pi/2, \pi/2 \rbrack\)</span>.
 Commonly used for declination:</p>
-<div class="highlight"><pre><span></span><code><span class="n">CosinePrior</span><span class="p">([</span><span class="s2">&quot;dec&quot;</span><span class="p">])</span>
+<div class="highlight"><pre><span></span><code><span class="n">CosinePrior</span><span class="p">([</span><span class="s2">"dec"</span><span class="p">])</span>
 </code></pre></div>
 <h3 id="uniformsphereprior">UniformSpherePrior<a class="headerlink" href="#uniformsphereprior" title="Permanent link">¤</a></h3>
 <p>Uniform prior on the surface of a unit sphere, parameterised by magnitude, polar angle, and azimuthal angle.
 Useful for spin vectors:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.prior</span><span class="w"> </span><span class="kn">import</span> <span class="n">UniformSpherePrior</span>
 
-<span class="n">UniformSpherePrior</span><span class="p">([</span><span class="s2">&quot;s1&quot;</span><span class="p">])</span>  <span class="c1"># creates s1_mag, s1_theta, s1_phi</span>
+<span class="n">UniformSpherePrior</span><span class="p">([</span><span class="s2">"s1"</span><span class="p">])</span>  <span class="c1"># creates s1_mag, s1_theta, s1_phi</span>
 </code></pre></div>
 <h3 id="gaussianprior">GaussianPrior<a class="headerlink" href="#gaussianprior" title="Permanent link">¤</a></h3>
 <p>Gaussian distribution with given mean and standard deviation:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.prior</span><span class="w"> </span><span class="kn">import</span> <span class="n">GaussianPrior</span>
 
-<span class="n">GaussianPrior</span><span class="p">(</span><span class="n">mean</span><span class="p">,</span> <span class="n">std</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;parameter_name&quot;</span><span class="p">])</span>
+<span class="n">GaussianPrior</span><span class="p">(</span><span class="n">mean</span><span class="p">,</span> <span class="n">std</span><span class="p">,</span> <span class="p">[</span><span class="s2">"parameter_name"</span><span class="p">])</span>
 </code></pre></div>
 <h3 id="rayleighprior">RayleighPrior<a class="headerlink" href="#rayleighprior" title="Permanent link">¤</a></h3>
 <p>Rayleigh distribution with a given scale:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.prior</span><span class="w"> </span><span class="kn">import</span> <span class="n">RayleighPrior</span>
 
-<span class="n">RayleighPrior</span><span class="p">(</span><span class="n">sigma</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;parameter_name&quot;</span><span class="p">])</span>
+<span class="n">RayleighPrior</span><span class="p">(</span><span class="n">sigma</span><span class="p">,</span> <span class="p">[</span><span class="s2">"parameter_name"</span><span class="p">])</span>
 </code></pre></div>
 <h2 id="constraints">Constraints<a class="headerlink" href="#constraints" title="Permanent link">¤</a></h2>
 <div class="admonition warning">
@@ -2566,12 +2566,12 @@ For example, to enforce <span class="arithmatex">\(m_1 &gt; m_2\)</span>:</p>
 <span class="k">class</span><span class="w"> </span><span class="nc">OrderedMassPrior</span><span class="p">(</span><span class="n">CombinePrior</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">log_prob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">z</span><span class="p">):</span>
         <span class="n">base</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">log_prob</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
-        <span class="n">constraint</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">z</span><span class="p">[</span><span class="s2">&quot;m1&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">z</span><span class="p">[</span><span class="s2">&quot;m2&quot;</span><span class="p">],</span> <span class="mf">0.0</span><span class="p">,</span> <span class="o">-</span><span class="n">jnp</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
+        <span class="n">constraint</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">z</span><span class="p">[</span><span class="s2">"m1"</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">z</span><span class="p">[</span><span class="s2">"m2"</span><span class="p">],</span> <span class="mf">0.0</span><span class="p">,</span> <span class="o">-</span><span class="n">jnp</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">base</span> <span class="o">+</span> <span class="n">constraint</span>
 
 <span class="n">prior</span> <span class="o">=</span> <span class="n">OrderedMassPrior</span><span class="p">([</span>
-    <span class="n">UniformPrior</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">100.0</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;m1&quot;</span><span class="p">]),</span>
-    <span class="n">UniformPrior</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">100.0</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;m2&quot;</span><span class="p">]),</span>
+    <span class="n">UniformPrior</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">100.0</span><span class="p">,</span> <span class="p">[</span><span class="s2">"m1"</span><span class="p">]),</span>
+    <span class="n">UniformPrior</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">100.0</span><span class="p">,</span> <span class="p">[</span><span class="s2">"m2"</span><span class="p">]),</span>
 <span class="p">])</span>
 </code></pre></div>
 
@@ -2634,7 +2634,7 @@ For example, to enforce <span class="arithmatex">\(m_1 &gt; m_2\)</span>:</p>
       <script id="__config" type="application/json">{"annotate":null,"base":"../..","features":["content.code.copy","navigation.instant","navigation.tabs","navigation.top","toc.follow","header.autohide"],"search":"../../assets/javascripts/workers/search.7d14d953.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":{"default":"stable","provider":"mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.e886cdf1.min.js"></script>
+      <script src="../../assets/javascripts/bundle.49251538.min.js"></script>
       
         <script src="../../javascripts/mathjax.js"></script>
       

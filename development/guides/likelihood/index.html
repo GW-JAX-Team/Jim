@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="zensical-0.0.55">
+      <meta name="generator" content="zensical-0.0.57">
     
     
       
@@ -36,12 +36,12 @@
       
         
       
-      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.20815dad.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.5da3a30f.min.css">
       
         
           
         
-        <link rel="stylesheet" href="../../assets/stylesheets/modern/palette.dfe2e883.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/modern/palette.812a03bb.min.css">
       
       
 
@@ -2521,7 +2521,7 @@ Import any available model from <code>jimgw.core.single_event.waveform</code>:</
 Each is activated by passing a typed config object or a plain dict shorthand:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.prior</span><span class="w"> </span><span class="kn">import</span> <span class="n">PowerLawPrior</span>
 
-<span class="n">distance_prior</span> <span class="o">=</span> <span class="n">PowerLawPrior</span><span class="p">(</span><span class="n">xmin</span><span class="o">=</span><span class="mf">100.0</span><span class="p">,</span> <span class="n">xmax</span><span class="o">=</span><span class="mf">5000.0</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">parameter_names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;d_L&quot;</span><span class="p">])</span>
+<span class="n">distance_prior</span> <span class="o">=</span> <span class="n">PowerLawPrior</span><span class="p">(</span><span class="n">xmin</span><span class="o">=</span><span class="mf">100.0</span><span class="p">,</span> <span class="n">xmax</span><span class="o">=</span><span class="mf">5000.0</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">parameter_names</span><span class="o">=</span><span class="p">[</span><span class="s2">"d_L"</span><span class="p">])</span>
 
 <span class="n">likelihood</span> <span class="o">=</span> <span class="n">TransientLikelihoodFD</span><span class="p">(</span>
     <span class="n">detectors</span><span class="o">=</span><span class="p">[</span><span class="n">H1</span><span class="p">,</span> <span class="n">L1</span><span class="p">],</span>
@@ -2529,9 +2529,9 @@ Each is activated by passing a typed config object or a plain dict shorthand:</p
     <span class="n">trigger_time</span><span class="o">=</span><span class="n">gps_time</span><span class="p">,</span>
     <span class="n">f_min</span><span class="o">=</span><span class="mf">20.0</span><span class="p">,</span>
     <span class="n">f_max</span><span class="o">=</span><span class="mf">1024.0</span><span class="p">,</span>
-    <span class="n">time_marginalization</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;tc_range&quot;</span><span class="p">:</span> <span class="p">(</span><span class="o">-</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">)},</span>               <span class="c1"># or time_marginalization=True for default range</span>
+    <span class="n">time_marginalization</span><span class="o">=</span><span class="p">{</span><span class="s2">"tc_range"</span><span class="p">:</span> <span class="p">(</span><span class="o">-</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">)},</span>               <span class="c1"># or time_marginalization=True for default range</span>
     <span class="n">phase_marginalization</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>                                   <span class="c1"># shorthand for PhaseMargConfig()</span>
-    <span class="n">distance_marginalization</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;distance_prior&quot;</span><span class="p">:</span> <span class="n">distance_prior</span><span class="p">},</span>  <span class="c1"># required: distance_prior</span>
+    <span class="n">distance_marginalization</span><span class="o">=</span><span class="p">{</span><span class="s2">"distance_prior"</span><span class="p">:</span> <span class="n">distance_prior</span><span class="p">},</span>  <span class="c1"># required: distance_prior</span>
 <span class="p">)</span>
 </code></pre></div>
 <p>Marginalising over these parameters reduces the effective dimensionality of the problem and can significantly speed up sampling.</p>
@@ -2553,9 +2553,9 @@ Each is activated by passing a typed config object or a plain dict shorthand:</p
     <span class="n">f_min</span><span class="o">=</span><span class="mf">20.0</span><span class="p">,</span>
     <span class="n">f_max</span><span class="o">=</span><span class="mf">1024.0</span><span class="p">,</span>
     <span class="n">fixed_parameters</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">&quot;s1_z&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
-        <span class="s2">&quot;s2_z&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
-        <span class="s2">&quot;iota&quot;</span><span class="p">:</span> <span class="mf">0.4</span><span class="p">,</span>
+        <span class="s2">"s1_z"</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="s2">"s2_z"</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="s2">"iota"</span><span class="p">:</span> <span class="mf">0.4</span><span class="p">,</span>
     <span class="p">},</span>
 <span class="p">)</span>
 </code></pre></div>
@@ -2586,8 +2586,8 @@ When a dict is returned, Jim extracts only the value for the key being fixed.</p
     <span class="n">trigger_time</span><span class="o">=</span><span class="n">gps_time</span><span class="p">,</span>
     <span class="n">f_min</span><span class="o">=</span><span class="mf">20.0</span><span class="p">,</span>
     <span class="n">f_max</span><span class="o">=</span><span class="mf">1024.0</span><span class="p">,</span>
-    <span class="c1"># transform.backward returns a dict; Jim extracts params[&quot;t_c&quot;] automatically</span>
-    <span class="n">fixed_parameters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;t_c&quot;</span><span class="p">:</span> <span class="n">transform</span><span class="o">.</span><span class="n">backward</span><span class="p">},</span>
+    <span class="c1"># transform.backward returns a dict; Jim extracts params["t_c"] automatically</span>
+    <span class="n">fixed_parameters</span><span class="o">=</span><span class="p">{</span><span class="s2">"t_c"</span><span class="p">:</span> <span class="n">transform</span><span class="o">.</span><span class="n">backward</span><span class="p">},</span>
 <span class="p">)</span>
 </code></pre></div>
 <p>Alternatively use a plain lambda:</p>
@@ -2599,7 +2599,7 @@ When a dict is returned, Jim extracts only the value for the key being fixed.</p
 <span class="n">likelihood</span> <span class="o">=</span> <span class="n">TransientLikelihoodFD</span><span class="p">(</span>
     <span class="o">...</span><span class="p">,</span>
     <span class="n">fixed_parameters</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">&quot;t_c&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="n">t_det_value</span> <span class="o">-</span> <span class="n">H1</span><span class="o">.</span><span class="n">delay_from_geocenter</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s2">&quot;ra&quot;</span><span class="p">],</span> <span class="n">p</span><span class="p">[</span><span class="s2">&quot;dec&quot;</span><span class="p">],</span> <span class="n">gmst</span><span class="p">),</span>
+        <span class="s2">"t_c"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="n">t_det_value</span> <span class="o">-</span> <span class="n">H1</span><span class="o">.</span><span class="n">delay_from_geocenter</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s2">"ra"</span><span class="p">],</span> <span class="n">p</span><span class="p">[</span><span class="s2">"dec"</span><span class="p">],</span> <span class="n">gmst</span><span class="p">),</span>
     <span class="p">},</span>
 <span class="p">)</span>
 </code></pre></div>
@@ -2649,11 +2649,11 @@ It requires a set of <em>reference parameters</em> around which the binning is c
 <span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.single_event.transforms</span><span class="w"> </span><span class="kn">import</span> <span class="n">MassRatioToSymmetricMassRatioTransform</span>
 
 <span class="n">prior</span> <span class="o">=</span> <span class="n">CombinePrior</span><span class="p">([</span>
-    <span class="n">UniformPrior</span><span class="p">(</span><span class="mf">10.0</span><span class="p">,</span> <span class="mf">100.0</span><span class="p">,</span> <span class="n">parameter_names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;M_c&quot;</span><span class="p">]),</span>
-    <span class="n">UniformPrior</span><span class="p">(</span><span class="mf">0.125</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span>  <span class="n">parameter_names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;q&quot;</span><span class="p">]),</span>
+    <span class="n">UniformPrior</span><span class="p">(</span><span class="mf">10.0</span><span class="p">,</span> <span class="mf">100.0</span><span class="p">,</span> <span class="n">parameter_names</span><span class="o">=</span><span class="p">[</span><span class="s2">"M_c"</span><span class="p">]),</span>
+    <span class="n">UniformPrior</span><span class="p">(</span><span class="mf">0.125</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span>  <span class="n">parameter_names</span><span class="o">=</span><span class="p">[</span><span class="s2">"q"</span><span class="p">]),</span>
     <span class="o">...</span>
-    <span class="n">UniformPrior</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">jnp</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="n">parameter_names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;ra&quot;</span><span class="p">]),</span>
-    <span class="n">CosinePrior</span><span class="p">(</span><span class="n">parameter_names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;dec&quot;</span><span class="p">]),</span>
+    <span class="n">UniformPrior</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">jnp</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="n">parameter_names</span><span class="o">=</span><span class="p">[</span><span class="s2">"ra"</span><span class="p">]),</span>
+    <span class="n">CosinePrior</span><span class="p">(</span><span class="n">parameter_names</span><span class="o">=</span><span class="p">[</span><span class="s2">"dec"</span><span class="p">]),</span>
 <span class="p">])</span>
 
 <span class="n">likelihood</span> <span class="o">=</span> <span class="n">HeterodynedTransientLikelihoodFD</span><span class="p">(</span>
@@ -2759,7 +2759,7 @@ A lower chirp mass means a longer signal and finer frequency resolution; setting
       <script id="__config" type="application/json">{"annotate":null,"base":"../..","features":["content.code.copy","navigation.instant","navigation.tabs","navigation.top","toc.follow","header.autohide"],"search":"../../assets/javascripts/workers/search.7d14d953.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":{"default":"stable","provider":"mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.e886cdf1.min.js"></script>
+      <script src="../../assets/javascripts/bundle.49251538.min.js"></script>
       
         <script src="../../javascripts/mathjax.js"></script>
       

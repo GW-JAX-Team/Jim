@@ -13,6 +13,7 @@ from jimgw.core.single_event.waveform import (
     RippleIMRPhenomXAS_NRTidalv3,
     RippleIMRPhenomXHM,
     RippleIMRPhenomXP,
+    RippleIMRPhenomXP_NRTidalv3,
     RippleIMRPhenomXPHM,
     RippleSineGaussian,
     RippleTaylorF2,
@@ -30,6 +31,7 @@ _REGISTRY: dict[str, Callable[..., Waveform]] = {
     "IMRPhenomXAS_NRTidalv3": RippleIMRPhenomXAS_NRTidalv3,
     "IMRPhenomXHM": RippleIMRPhenomXHM,
     "IMRPhenomXP": RippleIMRPhenomXP,
+    "IMRPhenomXP_NRTidalv3": RippleIMRPhenomXP_NRTidalv3,
     "IMRPhenomXPHM": RippleIMRPhenomXPHM,
 }
 

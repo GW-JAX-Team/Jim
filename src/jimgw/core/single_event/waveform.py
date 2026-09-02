@@ -20,6 +20,7 @@ RippleIMRPhenomXAS = partial(ripplegw.waveform, "IMRPhenomXAS")
 RippleIMRPhenomXAS_NRTidalv3 = partial(ripplegw.waveform, "IMRPhenomXAS_NRTidalv3")
 RippleIMRPhenomXHM = partial(ripplegw.waveform, "IMRPhenomXHM")
 RippleIMRPhenomXP = partial(ripplegw.waveform, "IMRPhenomXP")
+RippleIMRPhenomXP_NRTidalv3 = partial(ripplegw.waveform, "IMRPhenomXP_NRTidalv3")
 RippleIMRPhenomXPHM = partial(ripplegw.waveform, "IMRPhenomXPHM")
 RippleSineGaussian = partial(ripplegw.waveform, "SineGaussian")
 
@@ -33,6 +34,7 @@ __all__ = [
     "RippleIMRPhenomXHM",
     "RippleIMRPhenomXP",
     "RippleIMRPhenomXPHM",
+    "RippleIMRPhenomXP_NRTidalv3",
     "RippleSineGaussian",
     "RippleTaylorF2",
 ]

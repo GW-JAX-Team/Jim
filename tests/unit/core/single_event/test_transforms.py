@@ -310,6 +310,64 @@ class TestSpinAnglesToCartesianSpinTransform:
         "phase_c",
     )
 
+    def test_forward_transform(self):
+        """
+        Test the forward transformation from spin angles to Cartesian spin components
+        """
+        output, jacobian = SpinAnglesToCartesianSpinTransform(freq_ref=20.0).transform(
+            {
+                "theta_jn": 0.5,
+                "phi_jl": 0.8,
+                "tilt_1": 0.5,
+                "tilt_2": 0.6,
+                "phi_12": 1.2,
+                "a_1": 0.4,
+                "a_2": 0.5,
+                "M_c": 30.0,
+                "q": 0.8,
+                "phase_c": 1.5,
+            }
+        )
+        assert (
+            np.isfinite(output["iota"])
+            & np.isfinite(output["s1_x"])
+            & np.isfinite(output["s1_y"])
+            & np.isfinite(output["s1_z"])
+            & np.isfinite(output["s2_x"])
+            & np.isfinite(output["s2_y"])
+            & np.isfinite(output["s2_z"])
+        )
+        assert_all_finite(jacobian)
+
+    def test_backward_transform(self):
+        """
+        Test the backward transformation from Cartesian to spin angle spin components
+        """
+        output, jacobian = SpinAnglesToCartesianSpinTransform(freq_ref=20.0).inverse(
+            {
+                "iota": 0.5,
+                "s1_x": 0.1,
+                "s1_y": 0.2,
+                "s1_z": 0.3,
+                "s2_x": 0.1,
+                "s2_y": 0.2,
+                "s2_z": 0.3,
+                "M_c": 30.0,
+                "q": 0.8,
+                "phase_c": 1.5,
+            }
+        )
+        assert (
+            np.isfinite(output["theta_jn"])
+            & np.isfinite(output["phi_jl"])
+            & np.isfinite(output["tilt_1"])
+            & np.isfinite(output["tilt_2"])
+            & np.isfinite(output["phi_12"])
+            & np.isfinite(output["a_1"])
+            & np.isfinite(output["a_2"])
+        )
+        assert_all_finite(jacobian)
+
     def test_forward_backward_consistency(self):
         """
         Test that the forward and inverse transformations are consistent
@@ -439,6 +497,38 @@ class TestSpinAnglesToCartesianSpinTransform:
 
 
 class TestSkyFrameToDetectorFrameSkyPositionTransform:
+    def test_forward_transform(self):
+        """
+        Test the forward transformation from sky frame to detector frame sky position
+        """
+        output, jacobian = SkyFrameToDetectorFrameSkyPositionTransform(
+            trigger_time=1126259642.4,
+            ifos=[H1, L1],
+        ).transform(
+            {
+                "ra": 1.0,
+                "dec": 0.5,
+            }
+        )
+        assert np.isfinite(output["zenith"]) & np.isfinite(output["azimuth"])
+        assert_all_finite(jacobian)
+
+    def test_backward_transform(self):
+        """
+        Test the backward transformation from detector frame to sky frame sky position
+        """
+        output, jacobian = SkyFrameToDetectorFrameSkyPositionTransform(
+            trigger_time=1126259642.4,
+            ifos=[H1, L1],
+        ).inverse(
+            {
+                "zenith": 1.0,
+                "azimuth": 2.0,
+            }
+        )
+        assert np.isfinite(output["ra"]) & np.isfinite(output["dec"])
+        assert_all_finite(jacobian)
+
     def test_forward_backward_consistency(self):
         """
         Test that the forward and inverse transformations are consistent

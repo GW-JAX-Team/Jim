@@ -6,7 +6,10 @@ import pytest
 from pydantic import ValidationError
 
 from jimgw.cli._config import (
+    CLIHeterodynedConfig,
+    CLIInjectionRefParams,
     CLIOptimizerRefParams,
+    CLIProvidedRefParams,
     CosineSpec,
     FileDataConfig,
     GaussianSpec,
@@ -18,6 +21,7 @@ from jimgw.cli._config import (
     RayleighSpec,
     SineSpec,
     UniformSpec,
+    UniformSphereSpec,
     WaveformConfig,
 )
 
@@ -141,6 +145,11 @@ def test_prior_spec_power_law():
     assert spec.alpha == 2.0
 
 
+def test_prior_spec_uniform_sphere():
+    cfg = PriorConfig.model_validate({"s1": {"type": "uniform_sphere"}})
+    assert isinstance(cfg.root["s1"], UniformSphereSpec)
+
+
 def test_prior_insertion_order_preserved():
     params = ["d_L", "M_c", "q", "iota", "dec"]
     raw_prior = {
@@ -217,6 +226,26 @@ def test_optimizer_ref_params_target_parses():
     assert cfg.target == -1234.5
 
 
+def test_provided_ref_params_parses():
+    cfg = CLIHeterodynedConfig.model_validate(
+        {
+            "reference_parameters": {
+                "type": "provided",
+                "values": {"M_c": 28.3, "q": 0.85},
+            }
+        }
+    )
+    assert isinstance(cfg.reference_parameters, CLIProvidedRefParams)
+    assert cfg.reference_parameters.values == {"M_c": 28.3, "q": 0.85}
+
+
+def test_injection_ref_params_parses():
+    cfg = CLIHeterodynedConfig.model_validate(
+        {"reference_parameters": {"type": "injection"}}
+    )
+    assert isinstance(cfg.reference_parameters, CLIInjectionRefParams)
+
+
 def test_waveform_config_f_ref_default():
     cfg = WaveformConfig.model_validate({"approximant": "IMRPhenomD"})
     assert cfg.f_ref == 20.0
@@ -279,6 +308,13 @@ def test_power_law_spec_inverted_bounds_rejected():
     with pytest.raises(ValidationError, match="min < max"):
         PriorConfig.model_validate(
             {"d_L": {"type": "power_law", "min": 2000.0, "max": 1.0, "alpha": 2.0}}
+        )
+
+
+def test_power_law_spec_equal_bounds_rejected():
+    with pytest.raises(ValidationError, match="min < max"):
+        PriorConfig.model_validate(
+            {"d_L": {"type": "power_law", "min": 3.0, "max": 3.0, "alpha": 2.0}}
         )
 
 

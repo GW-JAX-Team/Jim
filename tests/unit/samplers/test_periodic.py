@@ -81,6 +81,21 @@ def _mock_init_fn(x, loglikelihood_birth=None):
     return _MockState(position=x)
 
 
+def test_prior_space_proposal_none_periodic():
+    direction = jnp.array([0.1, 0.7, -0.5])
+    proposal_factory = to_prior_space_proposal(
+        None,
+        3,
+        lambda _rng_key, _position, _cov: direction,
+    )
+    pos = jnp.array([0.3, 6.0, 0.9])
+    gen = proposal_factory(_mock_init_fn, 0.0, jnp.eye(3))
+    slice_fn = gen(None, pos, None)
+    new_state, _accepted = slice_fn(1.0)
+    expected = pos + direction
+    assert jnp.allclose(new_state.position, expected)
+
+
 def test_prior_space_proposal_wraps_phase_c():
     """Periodic dims are wrapped after a nonzero proposal move."""
     two_pi = 2 * math.pi

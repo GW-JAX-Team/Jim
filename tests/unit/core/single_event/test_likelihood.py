@@ -1277,6 +1277,76 @@ class TestHeterodynedTransientLikelihoodFD:
                 trigger_time=gps,
             )
 
+    def test_uninitialized_data_raises(self):
+        gps = 1126259462.4
+        ifos = [get_H1(), get_L1()]
+        for ifo in ifos:
+            ifo.set_psd(
+                PowerSpectrum.from_file(
+                    str(FIXTURES_DIR / f"GW150914_psd_{ifo.name}.npz")
+                )
+            )
+        with pytest.raises(ValueError, match="does not have initialized data"):
+            HeterodynedTransientLikelihoodFD(
+                detectors=ifos,
+                waveform=RippleIMRPhenomD(f_ref=20.0),
+                f_min=20.0,
+                f_max=1024.0,
+                trigger_time=gps,
+                reference_parameters=example_params(),
+            )
+
+    def test_partially_initialized_data_raises(self, detectors_and_waveform):
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        extra = get_H1()
+        extra.set_psd(
+            PowerSpectrum.from_file(
+                str(FIXTURES_DIR / f"GW150914_psd_{extra.name}.npz")
+            )
+        )
+        with pytest.raises(ValueError, match=r"H1.*does not have initialized data"):
+            HeterodynedTransientLikelihoodFD(
+                detectors=ifos + [extra],
+                waveform=waveform,
+                f_min=fmin,
+                f_max=fmax,
+                trigger_time=gps,
+                reference_parameters=example_params(),
+            )
+
+    def test_uninitialized_psd_raises(self):
+        gps = 1126259462.4
+        ifos = [get_H1(), get_L1()]
+        for ifo in ifos:
+            ifo.set_data(
+                Data.from_file(str(FIXTURES_DIR / f"GW150914_strain_{ifo.name}.npz"))
+            )
+        with pytest.raises(ValueError, match="does not have initialized PSD"):
+            HeterodynedTransientLikelihoodFD(
+                detectors=ifos,
+                waveform=RippleIMRPhenomD(f_ref=20.0),
+                f_min=20.0,
+                f_max=1024.0,
+                trigger_time=gps,
+                reference_parameters=example_params(),
+            )
+
+    def test_partially_initialized_psd_raises(self, detectors_and_waveform):
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        extra = get_H1()
+        extra.set_data(
+            Data.from_file(str(FIXTURES_DIR / f"GW150914_strain_{extra.name}.npz"))
+        )
+        with pytest.raises(ValueError, match=r"H1.*does not have initialized PSD"):
+            HeterodynedTransientLikelihoodFD(
+                detectors=ifos + [extra],
+                waveform=waveform,
+                f_min=fmin,
+                f_max=fmax,
+                trigger_time=gps,
+                reference_parameters=example_params(),
+            )
+
     def test_evaluate_jit_matches(self, detectors_and_waveform):
         ifos, waveform, fmin, fmax, gps = detectors_and_waveform
         likelihood = HeterodynedTransientLikelihoodFD(
@@ -1413,6 +1483,24 @@ class TestHeterodynedTransientLikelihoodFD:
         # support, so the relative-binning grid still starts at the global f_min.
         assert jnp.isclose(likelihood.freq_grid_low[0], fmin)
         assert jnp.isfinite(likelihood.evaluate(example_params()))
+
+    def test_evaluate_does_not_mutate_params(self, detectors_and_waveform):
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        likelihood = HeterodynedTransientLikelihoodFD(
+            detectors=ifos,
+            waveform=waveform,
+            f_min=fmin,
+            f_max=fmax,
+            trigger_time=gps,
+            reference_parameters=example_params(),
+        )
+        params = example_params()
+        keys_before = set(params.keys())
+        values_before = {k: float(v) for k, v in params.items()}
+        likelihood.evaluate(params)
+        assert set(params.keys()) == keys_before
+        for k, v in values_before.items():
+            assert float(params[k]) == v
 
     @pytest.mark.parametrize(
         ("n_bins", "epsilon", "match"),

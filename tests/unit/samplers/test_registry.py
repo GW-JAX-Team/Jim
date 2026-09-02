@@ -4,8 +4,14 @@ import pytest
 
 from jimgw.core.prior import CombinePrior, UniformPrior
 from jimgw.samplers import build_sampler
+from jimgw.samplers.blackjax.ns_aw import BlackJAXNSAWSampler
+from jimgw.samplers.blackjax.nss import BlackJAXNSSSampler
+from jimgw.samplers.blackjax.smc import BlackJAXSMCSampler
 from jimgw.samplers.blackjax.swig import BlackJAXSwiGSampler
 from jimgw.samplers.config import (
+    BlackJAXNSAWConfig,
+    BlackJAXNSSConfig,
+    BlackJAXSMCConfig,
     BlackJAXSwiGConfig,
     FlowMCConfig,
 )
@@ -58,6 +64,45 @@ def test_build_sampler_returns_flowmc():
         log_posterior_fn=lpost,
     )
     assert isinstance(sampler, FlowMCSampler)
+
+
+def test_build_sampler_returns_blackjax_ns_aw():
+    prior = _make_prior()
+    lp, ll, lpost = _make_callables(prior)
+    sampler = build_sampler(
+        BlackJAXNSAWConfig(),
+        n_dims=1,
+        log_prior_fn=lp,
+        log_likelihood_fn=ll,
+        log_posterior_fn=lpost,
+    )
+    assert isinstance(sampler, BlackJAXNSAWSampler)
+
+
+def test_build_sampler_returns_blackjax_nss():
+    prior = _make_prior()
+    lp, ll, lpost = _make_callables(prior)
+    sampler = build_sampler(
+        BlackJAXNSSConfig(),
+        n_dims=1,
+        log_prior_fn=lp,
+        log_likelihood_fn=ll,
+        log_posterior_fn=lpost,
+    )
+    assert isinstance(sampler, BlackJAXNSSSampler)
+
+
+def test_build_sampler_returns_blackjax_smc():
+    prior = _make_prior()
+    lp, ll, lpost = _make_callables(prior)
+    sampler = build_sampler(
+        BlackJAXSMCConfig(),
+        n_dims=1,
+        log_prior_fn=lp,
+        log_likelihood_fn=ll,
+        log_posterior_fn=lpost,
+    )
+    assert isinstance(sampler, BlackJAXSMCSampler)
 
 
 def test_build_sampler_forwards_backend_specific_arguments(monkeypatch):

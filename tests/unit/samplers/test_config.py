@@ -354,6 +354,10 @@ def test_blackjax_smc_config_has_no_periodic_field():
     assert not hasattr(BlackJAXSMCConfig(), "periodic")
 
 
+def test_blackjax_swig_config_has_no_periodic_field():
+    assert not hasattr(BlackJAXSwiGConfig(blocks=[["x"]]), "periodic")
+
+
 def test_flowmc_config_rejects_periodic_field():
     with pytest.raises(ValidationError):
         FlowMCConfig(periodic={"phase_c": (0.0, 6.28)})

@@ -6,10 +6,12 @@ import numpy as np
 from jimgw.core.transforms import (
     BoundToBound,
     BoundToUnbound,
+    CartesianToPolarTransform,
     CosineTransform,
     GaussianTransform,
     LogitTransform,
     OffsetTransform,
+    PeriodicTransform,
     PowerLawTransform,
     RayleighTransform,
     ScaleTransform,
@@ -146,11 +148,13 @@ class TestBasicTransforms:
         output, log_det = transform.transform(input_data.copy())
         assert np.allclose(output["cos_theta"], jnp.cos(angle))
         assert np.isfinite(log_det)
+        assert np.allclose(log_det, jnp.log(jnp.abs(jnp.sin(angle))))
 
         # Test inverse transformation
         recovered, inv_log_det = transform.inverse(output.copy())
         assert np.allclose(recovered["theta"], angle)
         assert np.isfinite(inv_log_det)
+        assert np.allclose(inv_log_det, -jnp.log(jnp.abs(jnp.sin(angle))))
 
         jit_transform = jax.jit(lambda x: transform.transform(x))
         jit_inverse = jax.jit(lambda x: transform.inverse(x))
@@ -159,11 +163,13 @@ class TestBasicTransforms:
         jitted_output, jitted_log_det = jit_transform(input_data)
         assert np.allclose(jitted_output["cos_theta"], jnp.cos(angle))
         assert np.isfinite(jitted_log_det)
+        assert np.allclose(jitted_log_det, jnp.log(jnp.abs(jnp.sin(angle))))
 
         # Test jitted inverse transformation
         jitted_recovered, jitted_inv_log_det = jit_inverse(jitted_output)
         assert np.allclose(jitted_recovered["theta"], angle)
         assert np.isfinite(jitted_inv_log_det)
+        assert np.allclose(jitted_inv_log_det, -jnp.log(jnp.abs(jnp.sin(angle))))
 
     def test_bound_to_bound(self):
         name_mapping = (["x"], ["x_mapped"])
@@ -292,6 +298,76 @@ class TestBasicTransforms:
         assert np.isfinite(jitted_log_det)
         jitted_recovered, jitted_inv_log_det = jit_inverse(jitted_output)
         assert np.allclose(jitted_recovered["x"], input_data["x"])
+        assert np.isfinite(jitted_inv_log_det)
+
+    def test_cartesian_to_polar_transform(self):
+        transform = CartesianToPolarTransform("s1")
+        x_val = 0.3
+        y_val = 0.4
+        input_data = {"s1_x": x_val, "s1_y": y_val}
+
+        # Test forward transformation
+        output, log_det = transform.transform(input_data.copy())
+        assert np.allclose(output["s1_theta"], jnp.arctan2(y_val, x_val) + jnp.pi)
+        assert np.allclose(output["s1_r"], jnp.hypot(x_val, y_val))
+        assert np.isfinite(log_det)
+
+        # Test inverse transformation
+        recovered, inv_log_det = transform.inverse(output.copy())
+        assert common_keys_allclose(recovered, input_data)
+        assert np.isfinite(inv_log_det)
+
+        jit_transform = jax.jit(lambda x: transform.transform(x))
+        jit_inverse = jax.jit(lambda x: transform.inverse(x))
+
+        # Test jitted forward transformation
+        jitted_output, jitted_log_det = jit_transform(input_data)
+        assert np.allclose(
+            jitted_output["s1_theta"], jnp.arctan2(y_val, x_val) + jnp.pi
+        )
+        assert np.allclose(jitted_output["s1_r"], jnp.hypot(x_val, y_val))
+        assert np.isfinite(jitted_log_det)
+
+        # Test jitted inverse transformation
+        jitted_recovered, jitted_inv_log_det = jit_inverse(jitted_output)
+        assert common_keys_allclose(jitted_recovered, input_data)
+        assert np.isfinite(jitted_inv_log_det)
+
+    def test_periodic_transform(self):
+        name_mapping = (["r", "phi"], ["phi_x", "phi_y"])
+        xmin = 0.0
+        xmax = 2 * jnp.pi
+        transform = PeriodicTransform(name_mapping=name_mapping, xmin=xmin, xmax=xmax)
+        r = 1.3
+        phi = 1.7
+        input_data = {"r": r, "phi": phi}
+        scaling = 2 * jnp.pi / (xmax - xmin)
+        expected_x = r * jnp.cos(scaling * (phi - xmin))
+        expected_y = r * jnp.sin(scaling * (phi - xmin))
+
+        # Test forward transformation
+        output, log_det = transform.transform(input_data.copy())
+        assert np.allclose(output["phi_x"], expected_x)
+        assert np.allclose(output["phi_y"], expected_y)
+        assert np.isfinite(log_det)
+
+        # Test inverse transformation
+        recovered, inv_log_det = transform.inverse(output.copy())
+        assert common_keys_allclose(recovered, input_data)
+        assert np.isfinite(inv_log_det)
+
+        jit_transform = jax.jit(lambda x: transform.transform(x))
+        jit_inverse = jax.jit(lambda x: transform.inverse(x))
+
+        # Test jitted forward transformation
+        jitted_output, jitted_log_det = jit_transform(input_data)
+        assert np.allclose(jitted_output["phi_x"], expected_x)
+        assert np.allclose(jitted_output["phi_y"], expected_y)
+        assert np.isfinite(jitted_log_det)
+
+        # Test jitted inverse transformation
+        jitted_recovered, jitted_inv_log_det = jit_inverse(jitted_output)
+        assert common_keys_allclose(jitted_recovered, input_data)
         assert np.isfinite(jitted_inv_log_det)
 
     def test_rayleigh_transform(self):

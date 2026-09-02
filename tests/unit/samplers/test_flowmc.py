@@ -157,6 +157,12 @@ def test_flowmc_sampler_get_samples_before_sample_raises():
         s.get_samples()
 
 
+def test_flowmc_diagnostics_before_sample_raises():
+    s = _make_sampler()
+    with pytest.raises(RuntimeError, match="before sample"):
+        s.get_diagnostics()
+
+
 @pytest.mark.slow
 def test_flowmc_diagnostics():
     s = _make_sampler()

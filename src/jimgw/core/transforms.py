@@ -707,9 +707,9 @@ class CartesianToPolarTransform(BijectiveTransform):
         }
         self.inverse_transform_func = lambda x: {
             f"{parameter_name}_x": x[f"{parameter_name}_r"]
-            * jnp.cos(x[f"{parameter_name}_theta"]),
+            * jnp.cos(x[f"{parameter_name}_theta"] - jnp.pi),
             f"{parameter_name}_y": x[f"{parameter_name}_r"]
-            * jnp.sin(x[f"{parameter_name}_theta"]),
+            * jnp.sin(x[f"{parameter_name}_theta"] - jnp.pi),
         }
 
 
@@ -754,7 +754,9 @@ class PeriodicTransform(BijectiveTransform):
         }
         self.inverse_transform_func = lambda x: {
             name_mapping[0][1]: self.xmin
-            + (jnp.pi + jnp.arctan2(x[name_mapping[1][1]], x[name_mapping[1][0]]))
+            + jnp.mod(
+                jnp.arctan2(x[name_mapping[1][1]], x[name_mapping[1][0]]), 2 * jnp.pi
+            )
             / scaling,
             name_mapping[0][0]: jnp.sqrt(
                 x[name_mapping[1][0]] ** 2 + x[name_mapping[1][1]] ** 2

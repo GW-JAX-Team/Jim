@@ -13,30 +13,14 @@ caller requests a backend via `build_sampler`.
 from collections.abc import Callable
 from typing import Any, Optional
 
-from jimgw.samplers.base import Sampler
-from jimgw.samplers.config import (
-    BaseSamplerConfig,
-    BlackJAXNSAWConfig,
-    BlackJAXNSSConfig,
-    BlackJAXSMCConfig,
-    BlackJAXSwiGConfig,
-    FlowMCConfig,
-    SamplerConfig,
-)
-
-__all__ = [
-    "BaseSamplerConfig",
-    "BlackJAXNSAWConfig",
-    "BlackJAXNSSConfig",
-    "BlackJAXSMCConfig",
-    "BlackJAXSwiGConfig",
-    "FlowMCConfig",
-    "Sampler",
-    "SamplerConfig",
-    "build_sampler",
-    "register_sampler",
-]
-
+from jimgw.samplers.base import Sampler as Sampler
+from jimgw.samplers.config import BaseSamplerConfig as BaseSamplerConfig
+from jimgw.samplers.config import BlackJAXNSAWConfig as BlackJAXNSAWConfig
+from jimgw.samplers.config import BlackJAXNSSConfig as BlackJAXNSSConfig
+from jimgw.samplers.config import BlackJAXSMCConfig as BlackJAXSMCConfig
+from jimgw.samplers.config import BlackJAXSwiGConfig as BlackJAXSwiGConfig
+from jimgw.samplers.config import FlowMCConfig as FlowMCConfig
+from jimgw.samplers.config import SamplerConfig as SamplerConfig
 
 # Each entry is a zero-arg loader returning a concrete sampler class.
 SamplerBuilder = Callable[..., Sampler]

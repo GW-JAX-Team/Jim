@@ -10,6 +10,8 @@ including under ``jax.jit`` (jim JIT-compiles the likelihood, so every waveform
 must be traceable).
 """
 
+import functools
+
 import jax
 import jax.numpy as jnp
 import pytest
@@ -27,13 +29,13 @@ _SLOW_BINDINGS = frozenset(
     }
 )
 
-# Every ``Ripple*`` binding jim exports, as parametrize cases.
 WAVEFORM_CASES = [
     pytest.param(
         name,
         marks=pytest.mark.slow if name in _SLOW_BINDINGS else [],
     )
-    for name in waveform_module.__all__
+    for name, binding in vars(waveform_module).items()
+    if isinstance(binding, functools.partial)
 ]
 
 # One superset of source parameters; each waveform picks the keys that appear in

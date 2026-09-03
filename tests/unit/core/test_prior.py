@@ -351,6 +351,40 @@ class TestMultivariatePrior:
         log_prob = jax.vmap(p.log_prob)(samples)
         assert_all_finite(log_prob)
 
+        # Check log_prob is correct in the support (theta away from 0/pi where
+        # sin(theta) -> 0 gives log_prob = -inf). The joint density factorizes over
+        # the three independent component priors.
+        mag = jnp.linspace(0.05, 0.95, 1000)
+        theta = jnp.linspace(0.1, jnp.pi - 0.1, 1000)
+        phi = jnp.linspace(0.1, 2 * jnp.pi - 0.1, 1000)
+        grid = p.add_name(jnp.stack([mag, theta, phi]))
+        expected = (
+            -jnp.log(1.0)  # x_mag ~ UniformPrior(0, max_mag=1.0): -log(xmax - xmin)
+            + jnp.log(jnp.sin(theta) / 2.0)  # x_theta ~ SinePrior
+            + (-jnp.log(2 * jnp.pi))  # x_phi ~ UniformPrior(0, 2*pi)
+        )
+        assert jnp.allclose(jax.vmap(p.log_prob)(grid), expected)
+
+        # Check log_prob is -inf outside the support (one coordinate past its bound)
+        x_outside = p.add_name(
+            jnp.stack(
+                [
+                    jnp.array([-0.5, 1.5, 0.5, 0.5]),  # x_mag < 0, x_mag > 1
+                    jnp.array([0.5, 0.5, -0.5, jnp.pi + 0.5]),  # x_theta < 0, > pi
+                    jnp.array([1.0, 1.0, 1.0, 1.0]),
+                ]
+            )
+        )
+        logp_outside = jax.vmap(p.log_prob)(x_outside)
+        assert jnp.all(logp_outside == -jnp.inf)
+        assert not jnp.any(jnp.isnan(logp_outside))
+
+        # Check log_prob is jittable
+        jitted_log_prob = jax.jit(jax.vmap(p.log_prob))
+        jitted_val = jitted_log_prob(grid)
+        assert_all_finite(jitted_val)
+        assert jnp.allclose(jitted_val, jax.vmap(p.log_prob)(grid))
+
 
 class TestOther:
     def test_bounded_mixin(self):

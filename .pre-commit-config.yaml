@@ -1,35 +1,52 @@
 ci:
   autoupdate_branch: jim-dev
   autoupdate_schedule: quarterly
-  skip: [uv-lock, pyright, ty]
+  skip: [pyright, ty]
 
 repos:
-  - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.11.32
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
     hooks:
-      - id: uv-lock
-        args: ["--upgrade"]
+      - id: check-added-large-files
+      - id: check-ast
+      - id: check-case-conflict
+      - id: check-merge-conflict
+      - id: check-toml
+      - id: check-yaml
+      - id: check-json
+      - id: pretty-format-json
+        args: ["--autofix"]
+        exclude: \.ipynb$
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+      - id: debug-statements
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: mixed-line-ending
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.16.0
+    rev: v0.16.5
     hooks:
       - id: ruff-check
         args: ["--fix"]
-        files: src/
+        files: ^(src|tests|docs)/
+        types_or: [python, pyi]
       - id: ruff-format
-        files: src/
+        files: ^(src|tests|docs)/
+        types_or: [python, pyi]
 
   - repo: https://github.com/astral-sh/ty-pre-commit
-    rev: v0.0.64
+    rev: v0.0.75
     hooks:
       - id: ty
         args: ["--no-sync"]
-  
+
   - repo: local
     hooks:
       - id: pyright
         name: pyright
-        entry: uv run pyright
+        entry: uv run --no-sync pyright
         language: system
         files: src/
         require_serial: true

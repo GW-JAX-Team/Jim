@@ -1,0 +1,46 @@
+name: Scheduled dependency autoupdate
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"  # 7am CET (UTC+1, winter) / 8am CEST (UTC+2, summer)
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  autoupdate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: jim-dev
+      - uses: astral-sh/setup-uv@v10.0.1
+        with:
+          python-version: "3.12"
+      - run: uvx pre-commit autoupdate
+      - run: uv lock --upgrade
+      - name: Commit if hooks or lockfile changed
+        id: commit_update
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then
+            echo "All hooks and dependencies up to date"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .pre-commit-config.yaml uv.lock
+          git commit -m "[pre-commit] autoupdate hooks and lock file"
+          git push
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+      - name: Trigger CI on jim-dev
+        if: success() && steps.commit_update.outputs.changed == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run CI.yml --ref jim-dev

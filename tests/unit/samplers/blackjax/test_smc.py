@@ -281,6 +281,57 @@ def test_smc_fp_diagnostics():
     assert diag["log_Z_error"] >= 0.0
 
 
+def test_smc_ft_diagnostics():
+    """FT mode: Kish ESS history returned for a fixed temperature ladder."""
+    n_particles = 200
+    prior = CombinePrior(
+        [
+            UniformPrior(0.0, 1.0, parameter_names=["x"]),
+            UniformPrior(0.0, 1.0, parameter_names=["y"]),
+        ]
+    )
+    likelihood = _GaussianLikelihood()
+    ladder = [0.0, 0.1, 0.3, 0.6, 1.0]
+    config = BlackJAXSMCConfig(
+        n_particles=n_particles,
+        n_mcmc_steps_per_dim=5,
+        temperature_ladder=ladder,
+        persistent_sampling=False,
+    )
+    parameter_names = prior.parameter_names
+
+    def log_prior_fn(arr):
+        named = dict(zip(parameter_names, arr, strict=True))
+        return prior.log_prob(named)
+
+    def log_likelihood_fn(arr):
+        named = dict(zip(parameter_names, arr, strict=True))
+        return likelihood.evaluate(named)
+
+    def log_posterior_fn(arr):
+        return log_prior_fn(arr) + log_likelihood_fn(arr)
+
+    sampler = BlackJAXSMCSampler(
+        n_dims=len(parameter_names),
+        log_prior_fn=log_prior_fn,
+        log_likelihood_fn=log_likelihood_fn,
+        log_posterior_fn=log_posterior_fn,
+        config=config,
+    )
+    sampler.sample(jax.random.key(8), _init_pos(n_particles))
+    diag = sampler.get_diagnostics()
+
+    assert "ess_history" in diag
+    assert len(diag["ess_history"]) == len(ladder) - 1
+    assert np.all(diag["ess_history"] > 0)
+    assert np.all(diag["ess_history"] <= n_particles)
+    assert np.all(np.isfinite(diag["ess_history"]))
+
+    assert "log_Z_error" in diag
+    assert np.isfinite(diag["log_Z_error"])
+    assert diag["log_Z_error"] >= 0.0
+
+
 def test_smc_checkpoint_file_created(tmp_path, monkeypatch):
     """Checkpoint .pkl is written during sampling and cleaned up on success."""
     prior = CombinePrior(

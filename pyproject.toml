@@ -27,7 +27,7 @@ dependencies = [
     "blackjax>=1.6",
     "corner>=2.2.3",
     "equinox>=0.11",
-    "evosax>=0.2.0",
+    "evosax>=0.3.1",
     "flowmc>=0.6.1",
     "gwpy>=3.0.12",
     "jax>=0.8.2",
@@ -36,7 +36,7 @@ dependencies = [
     "numpy>=1.26",
     "pydantic>=2",
     "requests>=2.32.3",
-    "ripplegw>=0.3.0",
+    "ripplegw>=0.4.0",
     "scipy>=1.17.1",
     "tomli-w>=1.0",
     "typer>=0.12",
@@ -87,7 +87,7 @@ build-backend = "hatchling.build"
 [tool.hatch.version]
 source = "vcs"
 fallback-version = "0.0.0"
-raw-options = { local_scheme = "no-local-version" }
+raw-options = { local_scheme = "no-local-version", version_scheme = "semver-pep440-release-branch" }
 
 [tool.pytest.ini_options]
 pythonpath = ["."]

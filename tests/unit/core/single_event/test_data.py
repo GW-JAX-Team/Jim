@@ -220,6 +220,10 @@ class TestPowerSpectrum:
         assert jnp.all(self.psd.frequencies >= self.psd_band[0])
         assert jnp.all(self.psd.frequencies <= self.psd_band[1])
 
+    def test_bool_nonempty(self):
+        """bool(psd) is True when data are present."""
+        assert bool(self.psd)
+
     def test_frequency_slice(self):
         """Slicing the PSD to its own band returns the full array."""
         sliced_psd, freq_slice = self.psd.frequency_slice(*self.psd_band)
@@ -327,6 +331,30 @@ class TestPowerSpectrumFromFile:
         path = str(tmp_path / "psd.xyz")
         with pytest.raises(ValueError, match="Unsupported file format"):
             PowerSpectrum.from_file(path)
+
+
+class TestPowerSpectrumToFile:
+    """Tests for PowerSpectrum.to_file (npz only)."""
+
+    _FREQS = np.array([10.0, 20.0, 30.0])
+    _PSD = np.array([1e-46, 4e-46, 9e-46])
+    _NAME = "H1"
+
+    # -- NPZ ------------------------------------------------------------------
+
+    def test_npz_roundtrip(self, tmp_path: Path):
+        """PowerSpectrum saved as .npz reloads to identical arrays."""
+        path = str(tmp_path / "psd.npz")
+        ps = PowerSpectrum(jnp.array(self._PSD), jnp.array(self._FREQS), self._NAME)
+        ps.to_file(path)
+        ps2 = PowerSpectrum.from_file(path)
+        # a save/load round-trip must recover the arrays exactly (npz is lossless);
+        # default allclose atol=1e-8 would pass on PSD values ~1e-46 no matter what.
+        np.testing.assert_array_equal(np.asarray(ps2.values), np.asarray(ps.values))
+        np.testing.assert_array_equal(
+            np.asarray(ps2.frequencies), np.asarray(ps.frequencies)
+        )
+        assert ps2.name == self._NAME
 
 
 # ---------------------------------------------------------------------------

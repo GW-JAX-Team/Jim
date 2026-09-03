@@ -1,0 +1,15 @@
+name: Install sibling dev packages
+description: Install flowMC and ripple from the matching dev branch (or from main, except on releases).
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        if [[ "${{ github.ref }}" == "refs/heads/jim-dev" || "${{ github.base_ref }}" == "jim-dev" ]]; then
+          uv pip install git+https://github.com/GW-JAX-Team/flowMC.git@flowMC-dev
+          uv pip install git+https://github.com/GW-JAX-Team/ripple.git@ripple-dev
+        elif [[ "${{ github.event_name }}" != "release" ]]; then
+          uv pip install git+https://github.com/GW-JAX-Team/flowMC.git@main
+          uv pip install git+https://github.com/GW-JAX-Team/ripple.git@main
+        fi

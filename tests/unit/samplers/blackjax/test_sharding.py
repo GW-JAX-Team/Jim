@@ -165,3 +165,56 @@ def test_sharded_checkpoint_is_host_backed_and_resumable(tmp_path, monkeypatch):
     resumed.sample(jax.random.key(999), initial)
     assert resumed.get_diagnostics()["n_iterations"] > 0
     assert not checkpoint.exists()
+
+
+@pytest.mark.skipif(
+    not _HAS_FOUR_DEVICES,
+    reason="run with XLA_FLAGS=--xla_force_host_platform_device_count=4",
+)
+def test_swig_sharded_checkpoint_is_host_backed_and_resumable(tmp_path, monkeypatch):
+    config = BlackJAXSwiGConfig(
+        blocks=[["slow"], ["fast"]],
+        n_live=16,
+        n_delete_frac=0.25,
+        num_gibbs_sweeps=1,
+        max_steps=3,
+        max_shrinkage=20,
+        termination_dlogz=2.0,
+        n_devices=4,
+        checkpoint_dir=tmp_path,
+        checkpoint_interval=1e-9,
+    )
+
+    def make_sampler():
+        return BlackJAXSwiGSampler(
+            n_dims=2,
+            log_prior_fn=_log_prior,
+            log_likelihood_fn=_log_likelihood,
+            log_posterior_fn=lambda x: _log_prior(x) + _log_likelihood(x),
+            config=config,
+            rebuild_required_by_block={(0,): True, (1,): False},
+            build_cache=_build_cache,
+            log_likelihood_from_cache_fn=_log_likelihood_from_cache,
+        )
+
+    checkpoint = tmp_path / "checkpoint.pkl"
+    original_unlink = Path.unlink
+    monkeypatch.setattr(
+        Path,
+        "unlink",
+        lambda self, missing_ok=False: (
+            None if self == checkpoint else original_unlink(self, missing_ok=missing_ok)
+        ),
+    )
+    initial = jax.random.uniform(jax.random.key(6), (16, 2))
+    make_sampler().sample(jax.random.key(7), initial)
+    monkeypatch.setattr(Path, "unlink", original_unlink)
+
+    with checkpoint.open("rb") as stream:
+        saved = pickle.load(stream)
+    assert isinstance(saved["state"].particles.position, np.ndarray)
+
+    resumed = make_sampler()
+    resumed.sample(jax.random.key(999), initial)
+    assert resumed.get_diagnostics()["n_iterations"] > 0
+    assert not checkpoint.exists()

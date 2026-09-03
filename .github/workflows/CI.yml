@@ -7,47 +7,85 @@ on:
     branches: [main, jim-dev]
   release:
     types: [published]
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   test:
+    name: ${{ matrix.test_suite }} (${{ matrix.python-version }})
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: ["3.11", "3.12", "3.13"]
+        test_suite: [unit, integration, cross-validation]
     steps:
-      - uses: actions/checkout@v6
-      - uses: astral-sh/setup-uv@v7
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.0.1
         with:
           enable-cache: true
-      - name: Set up Python ${{ matrix.python-version }}
-        run: uv python install ${{ matrix.python-version }}
+          python-version: ${{ matrix.python-version }}
       - name: Install dependencies
-        run: |
-          uv sync --python ${{ matrix.python-version }} --group test --group cross-validation
-          if [[ "${{ github.ref }}" == "refs/heads/jim-dev" || "${{ github.base_ref }}" == "jim-dev" ]]; then
-            uv pip install git+https://github.com/GW-JAX-Team/flowMC.git@flowMC-dev
-            uv pip install git+https://github.com/GW-JAX-Team/ripple.git@ripple-dev
-          elif [[ "${{ github.event_name }}" != "release" ]]; then
-            uv pip install git+https://github.com/GW-JAX-Team/flowMC.git@main
-            uv pip install git+https://github.com/GW-JAX-Team/ripple.git@main
-          fi
-      - name: Run tests
+        run: uv sync --group test ${{ matrix.test_suite == 'cross-validation' && '--group cross-validation' || '' }}
+      - uses: ./.github/actions/install-siblings
+      - name: Run ${{ matrix.test_suite }} tests
         run: |
           is_main=false
           [[ "${{ github.ref }}" == "refs/heads/main" || "${{ github.base_ref }}" == "main" ]] && is_main=true
           cov_flags=""
-          [[ "${{ matrix.python-version }}" == "3.12" ]] && cov_flags="--cov=jimgw --cov-report=term-missing"
-          if [[ "$is_main" == "true" ]]; then
-            uv run --no-sync pytest $cov_flags tests -v --tb=short
+          [[ "${{ matrix.python-version }}" == "3.12" ]] && cov_flags="--cov=jimgw --cov-report="
+          case "${{ matrix.test_suite }}" in
+            unit) test_path=tests/unit ;;
+            integration) test_path=tests/integration ;;
+            cross-validation) test_path=tests/cross_validation ;;
+          esac
+          if [[ "${{ matrix.test_suite }}" == "integration" ]]; then
+            uv run --no-sync pytest $cov_flags "$test_path" -v --tb=short
+          elif [[ "$is_main" == "true" ]]; then
+            uv run --no-sync pytest $cov_flags "$test_path" -v --tb=short
           else
-            uv run --no-sync pytest -m "not slow and not integration" $cov_flags tests
+            uv run --no-sync pytest -m "not slow" $cov_flags "$test_path"
           fi
-      - name: Upload coverage to Coveralls
+      - name: Prepare coverage data
         if: matrix.python-version == '3.12'
+        run: mv .coverage ".coverage.${{ matrix.test_suite }}"
+      - name: Upload coverage data
+        if: matrix.python-version == '3.12'
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-${{ matrix.test_suite }}
+          path: .coverage.${{ matrix.test_suite }}
+          if-no-files-found: error
+          include-hidden-files: true
+
+  coverage:
+    needs: [test]
+    if: ${{ always() && needs.test.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.0.1
+        with:
+          enable-cache: true
+          python-version: "3.12"
+      - name: Install coverage dependencies
+        run: uv sync --group test
+      - name: Download coverage data
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+          path: coverage
+          merge-multiple: true
+      - name: Combine coverage data
+        run: |
+          uv run --no-sync coverage combine coverage
+          uv run --no-sync coverage report --show-missing
+      - name: Upload coverage to Coveralls
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
@@ -56,20 +94,14 @@ jobs:
   pre-commit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: astral-sh/setup-uv@v7
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.0.1
         with:
           enable-cache: true
+          python-version: "3.12"
       - name: Install dependencies
-        run: |
-          uv sync --python 3.12 --group test
-          if [[ "${{ github.ref }}" == "refs/heads/jim-dev" || "${{ github.base_ref }}" == "jim-dev" ]]; then
-            uv pip install git+https://github.com/GW-JAX-Team/flowMC.git@flowMC-dev
-            uv pip install git+https://github.com/GW-JAX-Team/ripple.git@ripple-dev
-          elif [[ "${{ github.event_name }}" != "release" ]]; then
-            uv pip install git+https://github.com/GW-JAX-Team/flowMC.git@main
-            uv pip install git+https://github.com/GW-JAX-Team/ripple.git@main
-          fi
+        run: uv sync --group test
+      - uses: ./.github/actions/install-siblings
       - name: Run pre-commit (excluding pyright)
         run: SKIP=pyright uv run --no-sync pre-commit run --all-files
       - name: Run pyright
@@ -83,10 +115,10 @@ jobs:
       name: pypi
       url: https://pypi.org/project/jimgw/
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: astral-sh/setup-uv@v7
+      - uses: astral-sh/setup-uv@v10.0.1
       - name: Build package
         run: uv build
       - name: Publish to PyPI
@@ -94,24 +126,46 @@ jobs:
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
 
-  tag-dev:
+  merge-main-to-dev:
     needs: [publish]
     runs-on: ubuntu-latest
+    if: github.event_name == 'release'
     permissions:
+      actions: write
       contents: write
+      pull-requests: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: jim-dev
-      - name: Tag jim-dev with next minor dev version
+          fetch-depth: 0
+      - name: Merge main into jim-dev, or open a PR on conflict
         env:
-          TAG_NAME: ${{ github.event.release.tag_name }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          VERSION="${TAG_NAME#v}"
-          IFS='.' read -r major minor patch <<< "$VERSION"
-          NEXT="v${major}.$((minor + 1)).0.dev0"
-          git tag --force "$NEXT"
-          git push --force origin "$NEXT"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          before=$(git rev-parse HEAD)
+          if git merge --no-edit origin/main; then
+            git push origin jim-dev
+            if [ "$(git rev-parse HEAD)" != "$before" ]; then
+              gh workflow run CI.yml --ref jim-dev
+            fi
+          else
+            git merge --abort
+            existing=$(gh pr list --repo "$GITHUB_REPOSITORY" --base jim-dev --head main --state open --json number --jq '.[0].number // empty')
+            if [ -n "$existing" ]; then
+              echo "PR #$existing already open for main -> jim-dev merge."
+            else
+              gh pr create \
+                --repo "$GITHUB_REPOSITORY" \
+                --base jim-dev \
+                --head main \
+                --title "Merge main into jim-dev after release" \
+                --body "Automated merge of main into jim-dev failed due to conflicts. Please resolve manually."
+            fi
+          fi
 
   publish-testpypi:
     needs: [test, pre-commit]
@@ -121,11 +175,11 @@ jobs:
       name: testpypi
       url: https://test.pypi.org/project/jimgw/
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: astral-sh/setup-uv@v7
+      - uses: astral-sh/setup-uv@v10.0.1
       - name: Build package
         run: uv build
       - name: Publish to TestPyPI

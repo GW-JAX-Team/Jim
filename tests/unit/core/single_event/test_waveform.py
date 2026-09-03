@@ -17,8 +17,24 @@ import pytest
 import jimgw.core.single_event.waveform as waveform_module
 from tests.utils import assert_all_finite
 
-# Every ``Ripple*`` binding jim exports.
-WAVEFORM_NAMES = waveform_module.__all__
+_SLOW_BINDINGS = frozenset(
+    {
+        "RippleIMRPhenomXAS_NRTidalv3",
+        "RippleIMRPhenomXHM",
+        "RippleIMRPhenomXP",
+        "RippleIMRPhenomXP_NRTidalv3",
+        "RippleIMRPhenomXPHM",
+    }
+)
+
+# Every ``Ripple*`` binding jim exports, as parametrize cases.
+WAVEFORM_CASES = [
+    pytest.param(
+        name,
+        marks=pytest.mark.slow if name in _SLOW_BINDINGS else [],
+    )
+    for name in waveform_module.__all__
+]
 
 # One superset of source parameters; each waveform picks the keys that appear in
 # its own ``parameter_names``.  Values are physically reasonable for a BNS so the
@@ -65,39 +81,25 @@ def _params_for(waveform):
     return {key: _ALL_PARAMS[key] for key in waveform.parameter_names}
 
 
-@pytest.mark.parametrize("name", WAVEFORM_NAMES)
-def test_waveform_constructs_and_evaluates(name):
-    """Each binding builds and returns a finite, correctly shaped {p, c} dict."""
+@pytest.mark.parametrize("name", WAVEFORM_CASES)
+def test_waveform_binding(name):
+    """Each binding builds, evaluates to a finite {p, c} dict of the right shape,
+    and is JIT-traceable with a result matching the eager call.
+    """
     waveform, grid = _build(name)
     assert callable(waveform)
 
-    h = waveform(grid, _params_for(waveform))
+    params = _params_for(waveform)
+    h = waveform(grid, params)
+    h_jit = jax.jit(lambda g, p: waveform(g, p))(grid, params)
 
     assert set(h) == {"p", "c"}
-    assert h["p"].shape == grid.shape
-    assert h["c"].shape == grid.shape
-    assert jnp.any(jnp.abs(h["p"]) > 0)
-    assert jnp.any(jnp.abs(h["c"]) > 0)
-    assert_all_finite(h["p"])
-    assert_all_finite(h["c"])
-
-
-@pytest.mark.parametrize("name", WAVEFORM_NAMES)
-def test_waveform_jit_compilable(name):
-    """Each binding is JIT-traceable and gives the same result as the eager call."""
-    waveform, grid = _build(name)
-    params = _params_for(waveform)
-
-    @jax.jit
-    def generate(grid, params):
-        return waveform(grid, params)
-
-    h = waveform(grid, params)
-    h_jit = generate(grid, params)
-
     for polarization in ("p", "c"):
+        assert h[polarization].shape == grid.shape
+        assert jnp.any(jnp.abs(h[polarization]) > 0)
+        assert_all_finite(h[polarization])
         assert_all_finite(h_jit[polarization])
-        # scale-aware: strain amplitudes are ~1e-24, far below jnp.allclose's
-        # default atol, so tie the tolerance to the polarization's own magnitude.
+        # strain amplitudes are ~1e-24, far below jnp.allclose's default atol,
+        # so tie the tolerance to the polarization's own magnitude.
         atol = 1e-6 * jnp.max(jnp.abs(h[polarization]))
         assert jnp.allclose(h_jit[polarization], h[polarization], atol=atol, rtol=1e-6)

@@ -77,7 +77,6 @@ def _infer(prior_params, sky_frame="detector", time_frame="detector"):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.slow
 def test_gw150914_default_transforms():
     params = {
         "M_c",
@@ -109,7 +108,6 @@ def test_gw150914_default_transforms():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.slow
 def test_geocentric_sky_no_sky_sample_transform():
     params = {
         "M_c",
@@ -136,7 +134,6 @@ def test_geocentric_sky_no_sky_sample_transform():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.slow
 def test_geocentric_time_no_time_sample_transform():
     params = {
         "M_c",
@@ -163,7 +160,6 @@ def test_geocentric_time_no_time_sample_transform():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.slow
 def test_detector_frame_sky_prior():
     params = {
         "M_c",
@@ -193,7 +189,6 @@ def test_detector_frame_sky_prior():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.slow
 def test_detector_frame_time_prior():
     params = {
         "M_c",
@@ -223,7 +218,6 @@ def test_detector_frame_time_prior():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.slow
 def test_j_frame_spin_angles():
     params = {
         "M_c",
@@ -289,7 +283,6 @@ def test_j_frame_partial_params_rejected():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.slow
 def test_sphere_spin_transform():
     params = {
         "M_c",
@@ -323,7 +316,6 @@ def test_sphere_spin_transform():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.slow
 def test_cartesian_spins_no_transform():
     params = {
         "M_c",

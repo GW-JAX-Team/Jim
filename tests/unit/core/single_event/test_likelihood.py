@@ -2174,6 +2174,7 @@ class TestMultibandedTransientLikelihoodFD:
 
         assert jnp.isfinite(likelihood.evaluate(example_params()))
 
+    @pytest.mark.slow
     def test_waveform_cache_uses_multibanded_likelihood(self, detectors_and_waveform):
         ifos, waveform, fmin, fmax, gps = detectors_and_waveform
         likelihood = MultibandedTransientLikelihoodFD(

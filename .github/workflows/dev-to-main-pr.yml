@@ -38,7 +38,7 @@ jobs:
         id: app-token
         if: steps.gate.outputs.run == 'true'
         with:
-          app-id: ${{ secrets.AUTOMATION_APP_ID }}
+          client-id: ${{ secrets.AUTOMATION_APP_ID }}  # secret holds the App's Client ID (Iv23...)
           private-key: ${{ secrets.AUTOMATION_APP_PRIVATE_KEY }}
           permission-pull-requests: write  # scope the token: this workflow only opens/updates PRs
 

@@ -40,6 +40,7 @@ jobs:
         with:
           app-id: ${{ secrets.AUTOMATION_APP_ID }}
           private-key: ${{ secrets.AUTOMATION_APP_PRIVATE_KEY }}
+          permission-pull-requests: write  # scope the token: this workflow only opens/updates PRs
 
       - name: Open or reuse the jim-dev -> main PR
         id: open_pr

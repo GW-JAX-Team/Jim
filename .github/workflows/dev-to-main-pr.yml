@@ -34,10 +34,18 @@ jobs:
           fetch-depth: 0
           persist-credentials: false  # only local git reads + gh (GH_TOKEN) are used
 
-      - name: Open PR from jim-dev to main and request CodeRabbit review
+      - uses: actions/create-github-app-token@v3
+        id: app-token
+        if: steps.gate.outputs.run == 'true'
+        with:
+          app-id: ${{ secrets.AUTOMATION_APP_ID }}
+          private-key: ${{ secrets.AUTOMATION_APP_PRIVATE_KEY }}
+
+      - name: Open or reuse the jim-dev -> main PR
+        id: open_pr
         if: steps.gate.outputs.run == 'true'
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}  # App token: PRs it opens trigger CI without manual approval
         run: |
           pr_url=$(gh pr list --repo "$GITHUB_REPOSITORY" --base main --head jim-dev --state open --json url --jq '.[0].url // empty')
           if [ -z "$pr_url" ]; then
@@ -60,6 +68,15 @@ jobs:
               --body "Automated monthly pull request merging \`jim-dev\` into \`main\`.")
           fi
 
-          gh pr comment "$pr_url" \
+          echo "pr_url=$pr_url" >> "$GITHUB_OUTPUT"
+
+      - name: Request CodeRabbit review
+        # CodeRabbit skips auto-review for bot-authored PRs, so ping it explicitly.
+        # Kept on GITHUB_TOKEN so the comment is posted as github-actions[bot].
+        if: steps.gate.outputs.run == 'true' && steps.open_pr.outputs.pr_url != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr comment "${{ steps.open_pr.outputs.pr_url }}" \
             --repo "$GITHUB_REPOSITORY" \
             --body "@coderabbitai review"

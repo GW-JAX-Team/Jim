@@ -514,9 +514,7 @@ class BoundToUnbound(BijectiveTransform):
     Maps values from ``(original_lower, original_upper)`` to the real line via
 
     $$
-
     y = \\text{logit}\\!\\left(\\frac{x - x_{\\min}}{x_{\\max} - x_{\\min}}\\right)
-
     $$
 
     The inverse maps back with the sigmoid function.

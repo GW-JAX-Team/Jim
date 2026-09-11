@@ -126,9 +126,7 @@ class BlackJAXNSSSampler(Sampler):
                 n_delete=n_delete,
                 mesh=mesh,
             )
-            # `nested_sampler.init` is never called (state init happens in
-            # `_batched_nss_init`); BlackJAX still requires SamplingAlgorithm.init
-            # to type as returning a State.
+            # `_sample` initializes state directly; BlackJAX still requires an init callable.
             return SamplingAlgorithm(
                 lambda position, rng_key=None: position,  # type: ignore[return-value]
                 kernel,
@@ -167,15 +165,15 @@ class BlackJAXNSSSampler(Sampler):
         n_live = config.n_live
         n_delete = int(n_live * config.n_delete_frac)
         mesh = make_live_mesh(config.n_devices, n_live, n_delete)
-        ckpt_path = (
+        checkpoint_path = (
             config.checkpoint_dir / "checkpoint.pkl"
             if config.checkpoint_dir is not None
             else None
         )
         config.configure_jax_cache()
-        _method_t0 = time.perf_counter()
+        run_started_at = time.perf_counter()
 
-        def _validated_initial_particles(pos):
+        def validate_initial_particles(pos):
             arr = jnp.asarray(pos)
             if arr.ndim != 2 or arr.shape != (n_live, self.n_dims):
                 raise ValueError(
@@ -186,57 +184,58 @@ class BlackJAXNSSSampler(Sampler):
 
         nested_sampler = self._build_nested_sampler(n_delete, mesh)
 
-        # Bypass BlackJAX's jax.vmap(init_state_fn) to avoid peak-memory OOM.
-        # A full vmap over all live particles materialises O(n_live) concurrent
-        # intermediate buffers, which can exceed available GPU memory for expensive
-        # likelihoods. lax.map with n_delete particles per batch bounds peak memory
-        # to n_delete/n_live of the full-vmap cost at no extra computation.
-        _single_init_fn = partial(
+        initialize_single_particle = partial(
             _init_state_strategy,
             logprior_fn=self._log_prior_fn,
             loglikelihood_fn=self._log_likelihood_fn,
         )
 
-        def _batched_nss_init(positions):
+        def initialize_nested_sampler_state(positions):
+            """Initialize particle states in batches to bound peak GPU memory.
+
+            A full ``vmap`` over all live particles materializes concurrent
+            intermediate buffers. ``lax.map`` limits the batch to ``n_delete``
+            particles without adding computation.
+            """
             if mesh is not None:
                 positions = jax.device_put(
                     positions, NamedSharding(mesh, P(_LIVE_AXIS))
                 )
 
-            def _batched_fn(pos):
-                return jax.lax.map(_single_init_fn, pos, batch_size=n_delete)
+            def initialize_particle_batch(pos):
+                return jax.lax.map(initialize_single_particle, pos, batch_size=n_delete)
 
             state = _ns_adaptive_init(
                 positions,
-                init_state_fn=_batched_fn,
+                init_state_fn=initialize_particle_batch,
                 update_inner_kernel_params_fn=self._update_inner_kernel_params_fn,
             )
             return place_state(state, mesh) if mesh is not None else state
 
         # Resume from checkpoint if one exists.
         if (
-            ckpt_path is not None
+            checkpoint_path is not None
             and config.checkpoint_interval > 0
-            and ckpt_path.exists()
+            and checkpoint_path.exists()
         ):
-            _initial_rng_key = rng_key
+            initial_rng_key = rng_key
             try:
-                with open(ckpt_path, "rb") as _f:
-                    _ckpt = pickle.load(_f)
-                self._validate_checkpoint(_ckpt)
-                state = _ckpt["state"]
-                dead = _ckpt["dead"]
-                rng_key = _ckpt["rng_key"]
+                with open(checkpoint_path, "rb") as checkpoint_file:
+                    checkpoint = pickle.load(checkpoint_file)
+                self._validate_checkpoint(checkpoint)
+                state = checkpoint["state"]
+                dead = checkpoint["dead"]
+                rng_key = checkpoint["rng_key"]
                 if mesh is not None:
                     state = place_state(state, mesh)
                     rng_key = place_key(rng_key, mesh)
-                n_iter = _ckpt["n_iter"]
-                self._prev_elapsed = float(_ckpt["elapsed_time"])
+                n_completed_iterations = checkpoint["n_iter"]
+                self._prev_elapsed = float(checkpoint["elapsed_time"])
                 logger.info(
                     "%s: resumed from checkpoint at n_iter=%d (%s)",
                     self.sampler_name,
-                    n_iter,
-                    ckpt_path,
+                    n_completed_iterations,
+                    checkpoint_path,
                 )
             except (
                 OSError,
@@ -245,61 +244,64 @@ class BlackJAXNSSSampler(Sampler):
                 TypeError,
                 ValueError,
                 pickle.UnpicklingError,
-            ) as _e:
+            ) as error:
                 logger.warning(
                     "%s: incompatible or corrupt checkpoint at %s (%s) — starting fresh.",
                     self.sampler_name,
-                    ckpt_path,
-                    _e,
+                    checkpoint_path,
+                    error,
                 )
-                rng_key = _initial_rng_key
-                state = _batched_nss_init(
-                    _validated_initial_particles(initial_position)
+                rng_key = initial_rng_key
+                state = initialize_nested_sampler_state(
+                    validate_initial_particles(initial_position)
                 )
                 dead = []
-                n_iter = 0
+                n_completed_iterations = 0
                 self._prev_elapsed = 0.0
         else:
-            state = _batched_nss_init(_validated_initial_particles(initial_position))
+            state = initialize_nested_sampler_state(
+                validate_initial_particles(initial_position)
+            )
             dead = []
-            n_iter = 0
+            n_completed_iterations = 0
 
         if mesh is not None:
             rng_key = place_key(rng_key, mesh)
 
-        def _terminate(state: AdaptiveNSState) -> bool:
+        def should_terminate(state: AdaptiveNSState) -> bool:
             dlogz = jnp.logaddexp(0, state.integrator.logZ_live - state.integrator.logZ)
             return bool(jnp.isfinite(dlogz) and dlogz < config.termination_dlogz)
 
         step_fn = jax.jit(nested_sampler.step)
-        _last_ckpt_t = time.perf_counter()
+        last_checkpoint_at = time.perf_counter()
 
-        while not _terminate(state):
-            rng_key, subkey = jax.random.split(rng_key)
-            state, dead_info = step_fn(subkey, state)
+        while not should_terminate(state):
+            rng_key, step_key = jax.random.split(rng_key)
+            state, dead_info = step_fn(step_key, state)
             dead.append(dead_info)
-            n_iter += 1
+            n_completed_iterations += 1
             if (
-                ckpt_path is not None
+                checkpoint_path is not None
                 and config.checkpoint_interval > 0
-                and time.perf_counter() - _last_ckpt_t >= config.checkpoint_interval
+                and time.perf_counter() - last_checkpoint_at
+                >= config.checkpoint_interval
             ):
-                _last_ckpt_t = config.write_checkpoint(
+                last_checkpoint_at = config.write_checkpoint(
                     {
                         "state": jax.device_get(state),
                         "dead": jax.device_get(dead),
                         "rng_key": jax.device_get(rng_key),
-                        "n_iter": n_iter,
+                        "n_iter": n_completed_iterations,
                         "sampler_name": self.sampler_name,
                         "elapsed_time": self._prev_elapsed
-                        + (time.perf_counter() - _method_t0),
+                        + (time.perf_counter() - run_started_at),
                     },
                     self.sampler_name,
                 )
 
         final_state = finalise(state, dead)  # type: ignore[arg-type]  # AdaptiveNSState structurally satisfies NSState (.particles field)
         self._final_state = jax.device_get(final_state)
-        self._n_iterations = n_iter
+        self._n_iterations = n_completed_iterations
 
         # Build anesthetic NestedSamples for use in get_samples() and get_diagnostics().
         particles_sample = np.array(self._final_state.particles.position)
@@ -313,8 +315,8 @@ class BlackJAXNSSSampler(Sampler):
             logzero=np.nan,
             dtype=np.float64,
         )
-        if ckpt_path is not None:
-            ckpt_path.unlink(missing_ok=True)
+        if checkpoint_path is not None:
+            checkpoint_path.unlink(missing_ok=True)
         if config.checkpoint_dir is not None:
             shutil.rmtree(config.checkpoint_dir / "jax_cache", ignore_errors=True)
             jax.config.update("jax_compilation_cache_dir", None)

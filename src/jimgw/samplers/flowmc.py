@@ -218,7 +218,7 @@ class FlowMCSampler(Sampler):
 
         resource_strategy_bundle = bundle_cls(**common_kwargs)
 
-        _outdir = (
+        outdir = (
             str(config.checkpoint_dir)
             if config.checkpoint_dir is not None
             else "./outdir/"
@@ -228,7 +228,7 @@ class FlowMCSampler(Sampler):
             n_chains=config.n_chains,
             rng_key=sampler_key,
             resource_strategy_bundles=resource_strategy_bundle,
-            outdir=_outdir,
+            outdir=outdir,
             checkpoint_interval=config.checkpoint_interval,
         )
         if config.checkpoint_interval > 0:
@@ -237,23 +237,23 @@ class FlowMCSampler(Sampler):
             )
 
         # Skip initial_position validation when resuming from an existing checkpoint.
-        _ckpt_path = (
+        checkpoint_path = (
             config.checkpoint_dir / "checkpoint.pkl"
             if config.checkpoint_dir is not None
             else None
         )
-        _resuming = (
+        is_resuming = (
             config.checkpoint_interval > 0
-            and _ckpt_path is not None
-            and _ckpt_path.exists()
+            and checkpoint_path is not None
+            and checkpoint_path.exists()
         )
-        if _resuming and _ckpt_path is not None:
-            with open(_ckpt_path, "rb") as _f:
-                checkpoint = pickle.load(_f)
+        if is_resuming and checkpoint_path is not None:
+            with open(checkpoint_path, "rb") as checkpoint_file:
+                checkpoint = pickle.load(checkpoint_file)
             self._validate_checkpoint(checkpoint)
             self._prev_elapsed = float(checkpoint["elapsed_time"])
         initial_position = jnp.asarray(initial_position)
-        if not _resuming:
+        if not is_resuming:
             if initial_position.ndim == 1:
                 if initial_position.shape[0] != self.n_dims:
                     raise ValueError(

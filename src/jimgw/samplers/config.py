@@ -79,22 +79,22 @@ class _CheckpointMixin(BaseModel):
 
         Returns:
             Wall-clock time of the write (``time.perf_counter()``), suitable
-            for resetting the caller's ``_last_ckpt_t`` timer.
+            for resetting the caller's ``last_checkpoint_at`` timer.
         """
         assert self.checkpoint_dir is not None
-        ckpt_path = self.checkpoint_dir / "checkpoint.pkl"
-        ckpt_path.parent.mkdir(parents=True, exist_ok=True)
-        tmp = ckpt_path.with_suffix(".pkl.tmp")
-        with open(tmp, "wb") as _f:
-            pickle.dump(data, _f)
-        tmp.replace(ckpt_path)
-        t = time.perf_counter()
+        checkpoint_path = self.checkpoint_dir / "checkpoint.pkl"
+        checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
+        temporary_path = checkpoint_path.with_suffix(".pkl.tmp")
+        with open(temporary_path, "wb") as checkpoint_file:
+            pickle.dump(data, checkpoint_file)
+        temporary_path.replace(checkpoint_path)
+        checkpoint_written_at = time.perf_counter()
         logger.debug(
             "%s: checkpoint saved at n_iter=%s",
             label,
             data.get("n_iter", "?"),
         )
-        return t
+        return checkpoint_written_at
 
     def configure_jax_cache(self) -> None:
         """Enable JAX's persistent XLA compilation cache under ``checkpoint_dir/jax_cache``.
@@ -300,16 +300,16 @@ class FlowMCConfig(BaseSamplerConfig[Literal["flowmc"]], _CheckpointMixin):
         )
 
     @model_validator(mode="after")
-    def _warn_if_irrelevant_kernel_set(self) -> Self:
-        active = self.local_kernel
-        for name in ("MALA", "HMC", "GRW"):
-            if name == active:
+    def _warn_about_inactive_kernel_settings(self) -> Self:
+        active_kernel = self.local_kernel
+        for kernel_name in ("MALA", "HMC", "GRW"):
+            if kernel_name == active_kernel:
                 continue
-            sub_config = getattr(self, name.lower())
-            if sub_config.model_fields_set:
+            inactive_settings = getattr(self, kernel_name.lower())
+            if inactive_settings.model_fields_set:
                 warnings.warn(
-                    f"FlowMCConfig: `{name.lower()}` sub-config has non-default "
-                    f"values but `local_kernel='{active}'` — the `{name.lower()}` "
+                    f"FlowMCConfig: `{kernel_name.lower()}` sub-config has non-default "
+                    f"values but `local_kernel='{active_kernel}'` — the `{kernel_name.lower()}` "
                     f"settings will be ignored.",
                     UserWarning,
                     stacklevel=2,

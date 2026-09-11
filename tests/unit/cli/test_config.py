@@ -210,6 +210,23 @@ def test_checkpoint_defaults_do_not_activate_inactive_smc_settings():
     assert sampler_config.checkpoint_interval == 600.0
 
 
+def test_explicit_none_checkpoint_dir_disables_cli_checkpointing():
+    cfg = PipelineConfig.model_validate(
+        {
+            **_MINIMAL_RAW,
+            "sampler": {
+                "type": "blackjax-smc",
+                "checkpoint_dir": None,
+            },
+        }
+    )
+
+    sampler_config = _with_checkpoint(cfg.sampler, Path("checkpoints"))
+
+    assert sampler_config.checkpoint_dir is None
+    assert sampler_config.checkpoint_interval == 0.0
+
+
 def test_resolved_config_strips_inactive_smc_kernel_settings():
     cfg = PipelineConfig.model_validate(
         {

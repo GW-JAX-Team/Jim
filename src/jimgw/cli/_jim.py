@@ -18,10 +18,16 @@ def _with_checkpoint(sampler_config, output_dir):
     ``{output_dir}/checkpoint.pkl``.
     """
     explicitly_set = sampler_config.model_fields_set
+    checkpointing_explicitly_disabled = (
+        "checkpoint_dir" in explicitly_set and sampler_config.checkpoint_dir is None
+    )
     update = {}
     if "checkpoint_dir" not in explicitly_set:
         update["checkpoint_dir"] = output_dir
-    if "checkpoint_interval" not in explicitly_set:
+    if (
+        "checkpoint_interval" not in explicitly_set
+        and not checkpointing_explicitly_disabled
+    ):
         update["checkpoint_interval"] = _CLI_CHECKPOINT_INTERVAL
     if not update:
         return sampler_config

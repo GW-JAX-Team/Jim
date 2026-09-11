@@ -1,6 +1,8 @@
 """Unit tests for CLI config schema (TOML round-trips, validation, prior parsing)."""
 
 import tomllib
+import warnings
+from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
@@ -24,6 +26,8 @@ from jimgw.cli._config import (
     UniformSphereSpec,
     WaveformConfig,
 )
+from jimgw.cli._jim import _with_checkpoint
+from jimgw.cli._output import _resolved_config_data
 
 _MINIMAL_RAW = {
     "data": {
@@ -177,16 +181,59 @@ def test_extra_fields_rejected():
 
 def test_dump_resolved_round_trip():
     cfg = PipelineConfig.model_validate(_MINIMAL_RAW)
-    dumped = cfg.model_dump(mode="json")
-    # Strip inactive FlowMC kernel sub-configs (mirrors _output.py logic)
-    if dumped.get("sampler", {}).get("type") == "flowmc":
-        active = dumped["sampler"]["local_kernel"].lower()
-        for kernel in ("mala", "hmc", "grw"):
-            if kernel != active:
-                dumped["sampler"].pop(kernel, None)
+    dumped = _resolved_config_data(cfg)
     cfg2 = PipelineConfig.model_validate(dumped)
     assert cfg.waveform.approximant == cfg2.waveform.approximant
     assert cfg.seed == cfg2.seed
+
+
+def test_checkpoint_defaults_do_not_activate_inactive_smc_settings():
+    cfg = PipelineConfig.model_validate(
+        {
+            **_MINIMAL_RAW,
+            "sampler": {
+                "type": "blackjax-smc",
+                "inner_kernel": "DE",
+                "n_particles": 3,
+            },
+        }
+    )
+
+    with warnings.catch_warnings(record=True) as captured_warnings:
+        warnings.simplefilter("always")
+        sampler_config = _with_checkpoint(cfg.sampler, Path("checkpoints"))
+
+    assert not any(
+        "sub-config" in str(warning.message) for warning in captured_warnings
+    )
+    assert sampler_config.checkpoint_dir == Path("checkpoints")
+    assert sampler_config.checkpoint_interval == 600.0
+
+
+def test_resolved_config_strips_inactive_smc_kernel_settings():
+    cfg = PipelineConfig.model_validate(
+        {
+            **_MINIMAL_RAW,
+            "sampler": {
+                "type": "blackjax-smc",
+                "inner_kernel": "DE",
+                "n_particles": 3,
+            },
+        }
+    )
+
+    dumped = _resolved_config_data(cfg)
+    assert dumped["sampler"]["de"] == {}
+    assert "grw" not in dumped["sampler"]
+
+    with warnings.catch_warnings(record=True) as captured_warnings:
+        warnings.simplefilter("always")
+        restored = PipelineConfig.model_validate(dumped)
+
+    assert restored.sampler.inner_kernel == "DE"
+    assert not any(
+        "sub-config" in str(warning.message) for warning in captured_warnings
+    )
 
 
 def test_file_config_from_toml():

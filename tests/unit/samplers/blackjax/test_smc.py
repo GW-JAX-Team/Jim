@@ -80,6 +80,13 @@ def _init_pos(n: int, seed: int = 99) -> jax.Array:
     return jax.random.uniform(jax.random.key(seed), (n, 2))
 
 
+def test_smc_de_requires_three_particles():
+    with pytest.raises(ValueError, match="n_particles >= 3"):
+        BlackJAXSMCConfig(inner_kernel="DE", n_particles=2)
+
+    assert BlackJAXSMCConfig(inner_kernel="DE", n_particles=3).n_particles == 3
+
+
 def test_smc_sample_and_get_samples():
     sampler = _make_sampler()
     sampler.sample(jax.random.key(0), _init_pos(200))

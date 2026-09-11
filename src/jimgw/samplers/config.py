@@ -544,11 +544,11 @@ class BlackJAXSMCConfig(BaseSamplerConfig[Literal["blackjax-smc"]], _CheckpointM
 
     @model_validator(mode="after")
     def _validate_de_particle_count(self) -> Self:
-        if self.inner_kernel == "DE" and self.n_particles < 2:
+        if self.inner_kernel == "DE" and self.n_particles < 3:
             raise ValueError(
-                "BlackJAXSMCConfig: inner_kernel='DE' requires n_particles >= 2 "
-                f"(got {self.n_particles}) — the DE move needs two distinct "
-                "particles to form its difference vector."
+                "BlackJAXSMCConfig: inner_kernel='DE' requires n_particles >= 3 "
+                f"(got {self.n_particles}) — the two-particle DE edge case is "
+                "unsupported."
             )
         return self
 

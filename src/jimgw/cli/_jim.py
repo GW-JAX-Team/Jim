@@ -25,8 +25,7 @@ def _with_checkpoint(sampler_config, output_dir):
         update["checkpoint_interval"] = _CLI_CHECKPOINT_INTERVAL
     if not update:
         return sampler_config
-    merged = sampler_config.model_dump() | update
-    return sampler_config.__class__.model_validate(merged)
+    return sampler_config.model_copy(update=update)
 
 
 def build_jim(

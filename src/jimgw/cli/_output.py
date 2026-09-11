@@ -18,6 +18,25 @@ from jimgw.core.transforms import BijectiveTransform, NtoMTransform
 logger = logging.getLogger(__name__)
 
 
+def _resolved_config_data(cfg) -> dict:
+    """Serialize a pipeline config without inactive sampler sub-configs."""
+    dumped = cfg.model_dump(mode="json", exclude_none=True)
+    sampler = dumped.get("sampler", {})
+    if sampler.get("type") == "flowmc":
+        active_kernel = sampler["local_kernel"].lower()
+        kernel_names = ("mala", "hmc", "grw")
+    elif sampler.get("type") == "blackjax-smc":
+        active_kernel = sampler["inner_kernel"].lower()
+        kernel_names = ("grw", "de")
+    else:
+        return dumped
+
+    for kernel_name in kernel_names:
+        if kernel_name != active_kernel:
+            sampler.pop(kernel_name, None)
+    return dumped
+
+
 def write_outputs(jim, cfg) -> None:
     """Write samples, diagnostics, and optional corner plot under output.dir."""
 
@@ -62,12 +81,7 @@ def write_outputs(jim, cfg) -> None:
 
     # Resolved config
     cfg_path = out_dir / "config.final.toml"
-    dumped = cfg.model_dump(mode="json", exclude_none=True)
-    if dumped.get("sampler", {}).get("type") == "flowmc":
-        active = dumped["sampler"]["local_kernel"].lower()
-        for kernel in ("mala", "hmc", "grw"):
-            if kernel != active:
-                dumped["sampler"].pop(kernel, None)
+    dumped = _resolved_config_data(cfg)
     with open(cfg_path, "wb") as f:
         tomli_w.dump(dumped, f)
     logger.info("Saved resolved config to %s", cfg_path)

@@ -542,6 +542,16 @@ class BlackJAXSMCConfig(BaseSamplerConfig[Literal["blackjax-smc"]], _CheckpointM
             )
         return self
 
+    @model_validator(mode="after")
+    def _validate_de_particle_count(self) -> Self:
+        if self.inner_kernel == "DE" and self.n_particles < 2:
+            raise ValueError(
+                "BlackJAXSMCConfig: inner_kernel='DE' requires n_particles >= 2 "
+                f"(got {self.n_particles}) — the DE move needs two distinct "
+                "particles to form its difference vector."
+            )
+        return self
+
     def _resolve_target_ess_fraction(self) -> float:
         """Return the ESS target as a fraction of n_particles."""
         if self.target_ess_fraction is not None:

@@ -559,6 +559,7 @@ def test_smc_checkpoint_failure_restores_caller_rng_key(tmp_path):
             {
                 "sampler_name": sampler.sampler_name,
                 "mode": sampler.mode,
+                "inner_kernel": sampler._config.inner_kernel,
                 "state": None,
                 "rng_key": jax.random.key(999),
             },

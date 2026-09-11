@@ -12,9 +12,9 @@ from jimgw.samplers.config import (
     BlackJAXSMCConfig,
     BlackJAXSwiGConfig,
     FlowMCConfig,
-    GRWConfig,
-    HMCConfig,
-    MALAConfig,
+    FlowMCGRWConfig,
+    FlowMCHMCConfig,
+    FlowMCMALAConfig,
     ParallelTemperingConfig,
     SamplerConfig,
 )
@@ -172,7 +172,7 @@ def test_flowmc_pt_off_with_none():
 def test_flowmc_irrelevant_kernel_warns():
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
-        FlowMCConfig(local_kernel="MALA", hmc=HMCConfig(step_size=0.5))
+        FlowMCConfig(local_kernel="MALA", hmc=FlowMCHMCConfig(step_size=0.5))
     assert any("hmc" in str(warning.message).lower() for warning in w)
 
 
@@ -188,7 +188,7 @@ def test_flowmc_irrelevant_parallel_tempering_warns():
 def test_flowmc_no_spurious_warning_when_kernel_matches():
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
-        FlowMCConfig(local_kernel="HMC", hmc=HMCConfig(step_size=0.5))
+        FlowMCConfig(local_kernel="HMC", hmc=FlowMCHMCConfig(step_size=0.5))
     kernel_warnings = [x for x in w if "hmc" in str(x.message).lower()]
     assert len(kernel_warnings) == 0
 
@@ -299,35 +299,35 @@ def test_smc_fraction_warns_with_fixed_ladder():
 
 
 def test_mala_step_size_scalar():
-    cfg = MALAConfig(step_size=1e-2)
+    cfg = FlowMCMALAConfig(step_size=1e-2)
     assert cfg.step_size == 1e-2
 
 
 def test_mala_step_size_array():
     arr = np.array([1e-2, 2e-2, 3e-2])
-    cfg = MALAConfig(step_size=arr)
+    cfg = FlowMCMALAConfig(step_size=arr)
     np.testing.assert_array_equal(cfg.step_size, arr)
 
 
 def test_grw_step_size_array():
     arr = np.array([5e-3, 1e-2])
-    cfg = GRWConfig(step_size=arr)
+    cfg = FlowMCGRWConfig(step_size=arr)
     np.testing.assert_array_equal(cfg.step_size, arr)
 
 
 def test_hmc_condition_matrix_scalar():
-    cfg = HMCConfig(condition_matrix=2.0)
+    cfg = FlowMCHMCConfig(condition_matrix=2.0)
     assert cfg.condition_matrix == 2.0
 
 
 def test_hmc_condition_matrix_array():
     arr = np.array([1.0, 2.0, 0.5])
-    cfg = HMCConfig(condition_matrix=arr)
+    cfg = FlowMCHMCConfig(condition_matrix=arr)
     np.testing.assert_array_equal(cfg.condition_matrix, arr)
 
 
 def test_hmc_defaults():
-    cfg = HMCConfig()
+    cfg = FlowMCHMCConfig()
     assert cfg.step_size == 2e-3
     assert cfg.condition_matrix == 1.0
     assert cfg.n_leapfrog_steps == 10

@@ -181,7 +181,7 @@ class ParallelTemperingConfig(BaseModel):
     n_tempered_steps: int = Field(default=5, ge=1)
 
 
-class MALAConfig(BaseModel):
+class FlowMCMALAConfig(BaseModel):
     """MALA local-kernel settings for the flowMC backend.
 
     ``step_size`` may be a scalar ``float`` (applied uniformly to all
@@ -194,7 +194,7 @@ class MALAConfig(BaseModel):
     step_size: float | np.ndarray = 2e-3
 
 
-class HMCConfig(BaseModel):
+class FlowMCHMCConfig(BaseModel):
     """HMC local-kernel settings for the flowMC backend.
 
     ``step_size`` may be a scalar ``float`` (applied uniformly) or a 1-D
@@ -210,7 +210,7 @@ class HMCConfig(BaseModel):
     n_leapfrog_steps: int = Field(default=10, ge=1)
 
 
-class GRWConfig(BaseModel):
+class FlowMCGRWConfig(BaseModel):
     """Gaussian random-walk local-kernel settings for the flowMC backend.
 
     ``step_size`` may be a scalar ``float`` (applied uniformly to all
@@ -259,9 +259,9 @@ class FlowMCConfig(BaseSamplerConfig[Literal["flowmc"]], _CheckpointMixin):
     local_kernel: Literal["MALA", "HMC", "GRW"] = "MALA"
     parallel_tempering: Optional[ParallelTemperingConfig] = None
     # dict[str, Any] accepted here; Pydantic coerces it to the typed config via field_validator.
-    mala: MALAConfig | dict[str, Any] = Field(default_factory=MALAConfig)
-    hmc: HMCConfig | dict[str, Any] = Field(default_factory=HMCConfig)
-    grw: GRWConfig | dict[str, Any] = Field(default_factory=GRWConfig)
+    mala: FlowMCMALAConfig | dict[str, Any] = Field(default_factory=FlowMCMALAConfig)
+    hmc: FlowMCHMCConfig | dict[str, Any] = Field(default_factory=FlowMCHMCConfig)
+    grw: FlowMCGRWConfig | dict[str, Any] = Field(default_factory=FlowMCGRWConfig)
 
     rq_spline_hidden_units: list[int] = Field(default_factory=lambda: [128, 128])
     rq_spline_n_bins: int = Field(default=10, ge=1)

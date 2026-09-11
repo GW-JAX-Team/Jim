@@ -24,7 +24,12 @@ from flowMC.Sampler import Sampler as FlowMCSamplerBackend
 from jaxtyping import Array, Float, Key
 
 from jimgw.samplers.base import Sampler
-from jimgw.samplers.config import FlowMCConfig, GRWConfig, HMCConfig, MALAConfig
+from jimgw.samplers.config import (
+    FlowMCConfig,
+    FlowMCGRWConfig,
+    FlowMCHMCConfig,
+    FlowMCMALAConfig,
+)
 from jimgw.typing import FloatScalar
 
 logger = logging.getLogger(__name__)
@@ -197,15 +202,15 @@ class FlowMCSampler(Sampler):
 
         # Kernel-specific kwargs. isinstance checks narrow the type after Pydantic coercion.
         if config.local_kernel == "MALA":
-            assert isinstance(config.mala, MALAConfig)
+            assert isinstance(config.mala, FlowMCMALAConfig)
             common_kwargs["mala_step_size"] = config.mala.step_size
         elif config.local_kernel == "HMC":
-            assert isinstance(config.hmc, HMCConfig)
+            assert isinstance(config.hmc, FlowMCHMCConfig)
             common_kwargs["hmc_step_size"] = config.hmc.step_size
             common_kwargs["hmc_n_leapfrog"] = config.hmc.n_leapfrog_steps
             common_kwargs["condition_matrix"] = config.hmc.condition_matrix
         elif config.local_kernel == "GRW":
-            assert isinstance(config.grw, GRWConfig)
+            assert isinstance(config.grw, FlowMCGRWConfig)
             common_kwargs["grw_step_size"] = config.grw.step_size
 
         # PT-specific kwargs (only for PT bundles).

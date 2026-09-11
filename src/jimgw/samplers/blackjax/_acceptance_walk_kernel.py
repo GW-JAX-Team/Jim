@@ -37,6 +37,11 @@ from blackjax.ns.base import (
 from blackjax.types import ArrayLikeTree
 from jaxtyping import Array, Bool, Float, Key
 
+from jimgw.samplers.blackjax._de_move import (
+    de_proposal_scale,
+    sample_de_gamma,
+    sample_two_distinct_indices,
+)
 from jimgw.typing import FloatScalar, IntScalar
 
 
@@ -77,27 +82,22 @@ def _de_one_step(
 ):
     def body_fun(carry):
         _is_valid, key, _pos, _logp, count = carry
-        key_a, key_b, key_mix, key_gamma, new_key = jax.random.split(key, 5)
+        key_pair, key_gamma, new_key = jax.random.split(key, 3)
 
         _, top_indices = jax.lax.top_k(params.loglikelihoods, num_survivors)
-        pos_a = jax.random.randint(key_a, (), 0, num_survivors)
-        pos_b_raw = jax.random.randint(key_b, (), 0, num_survivors - 1)
-        pos_b = jnp.where(pos_b_raw >= pos_a, pos_b_raw + 1, pos_b_raw)
+        first_index, second_index = sample_two_distinct_indices(key_pair, num_survivors)
 
-        point_a = jax.tree_util.tree_map(
-            lambda x: x[top_indices[pos_a]], params.live_points
+        first_point = jax.tree_util.tree_map(
+            lambda x: x[top_indices[first_index]], params.live_points
         )
-        point_b = jax.tree_util.tree_map(
-            lambda x: x[top_indices[pos_b]], params.live_points
+        second_point = jax.tree_util.tree_map(
+            lambda x: x[top_indices[second_index]], params.live_points
         )
-        delta = jax.tree_util.tree_map(lambda a, b: a - b, point_a, point_b)
+        delta = jax.tree_util.tree_map(
+            lambda first, second: first - second, first_point, second_point
+        )
 
-        is_small_step = jax.random.uniform(key_mix) < params.mix
-        gamma = jnp.where(
-            is_small_step,
-            params.scale * jax.random.gamma(key_gamma, 4.0) * 0.25,
-            1.0,
-        )
+        gamma = sample_de_gamma(key_gamma, params.mix, params.scale)
 
         new_pos = stepper_fn(state.position, delta, gamma)
         new_logp = logprior_fn(new_pos)
@@ -278,7 +278,7 @@ def _update_bilby_walks(
         live_points=ns_state.particles.position,
         loglikelihoods=ns_state.particles.loglikelihood,
         mix=0.5,
-        scale=2.38 / jnp.sqrt(2 * n_dim),
+        scale=de_proposal_scale(n_dim),
         num_walks=jnp.array(num_walks_int, dtype=jnp.int32),
         walks_float=jnp.array(new_walks_float, dtype=jnp.float32),
         n_accept_total=jnp.array(0, dtype=jnp.int32),
@@ -358,18 +358,20 @@ def bilby_adaptive_de_sampler(
     base_kernel_step = build_adaptive_kernel(delete_fn, inner_kernel, update_fn)  # type: ignore[arg-type]  # blackjax stubs
 
     def init_fn(particles):
-        # Use lax.map instead of vmap to bound peak memory during init.
-        # A full vmap over all live particles materialises O(n_live) concurrent
-        # intermediate buffers, which can exhaust GPU memory for expensive likelihoods.
-        # Batching by num_delete caps peak to num_delete/nlive of the full-vmap cost.
-        _single_init_fn = partial(
+        """Initialize particle states in batches to bound peak GPU memory.
+
+        A full ``vmap`` over all live particles materializes concurrent
+        intermediate buffers. ``lax.map`` limits the batch to ``num_delete``
+        particles.
+        """
+        single_init_fn = partial(
             init_state_strategy,
             logprior_fn=logprior_fn,
             loglikelihood_fn=loglikelihood_fn,
         )
 
-        def _init_state_fn(positions):
-            return jax.lax.map(_single_init_fn, positions, batch_size=num_delete)
+        def init_state_fn(positions):
+            return jax.lax.map(single_init_fn, positions, batch_size=num_delete)
 
         def init_params_fn(rng_key, ns_state, info, current_params):
             example_particle = jax.tree_util.tree_map(
@@ -377,12 +379,11 @@ def bilby_adaptive_de_sampler(
             )
             flat_particle, _ = jax.flatten_util.ravel_pytree(example_particle)
             n_dim = flat_particle.shape[0]
-            scale = 2.38 / jnp.sqrt(2 * n_dim)
             initial_de_params = DEKernelParams(
                 live_points=ns_state.particles.position,
                 loglikelihoods=ns_state.particles.loglikelihood,
                 mix=0.5,
-                scale=scale,
+                scale=de_proposal_scale(n_dim),
                 num_walks=jnp.array(100, dtype=jnp.int32),
                 walks_float=jnp.array(100.0, dtype=jnp.float32),
                 n_accept_total=jnp.array(-1, dtype=jnp.int32),
@@ -391,7 +392,7 @@ def bilby_adaptive_de_sampler(
             return {"params": initial_de_params}
 
         return adaptive_init(
-            particles, _init_state_fn, update_inner_kernel_params_fn=init_params_fn
+            particles, init_state_fn, update_inner_kernel_params_fn=init_params_fn
         )
 
     def step_fn(rng_key, state: AdaptiveNSState):

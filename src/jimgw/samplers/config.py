@@ -403,17 +403,40 @@ class BlackJAXSwiGConfig(
         return blocks
 
 
+class BlackJAXSMCGRWConfig(BaseModel):
+    """Gaussian random-walk inner-kernel settings for the BlackJAX SMC sampler.
+
+    The proposal covariance is estimated from the particles and rescaled each
+    tempering step toward ``target_acceptance_rate`` with gain
+    ``scale_adaptation_gain``; ``initial_cov_scale`` scales the starting
+    covariance.
+    """
+
+    model_config = {"extra": "forbid"}
+
+    initial_cov_scale: float = Field(default=0.5, gt=0.0)
+    target_acceptance_rate: float = Field(default=0.234, gt=0.0, lt=1.0)
+    scale_adaptation_gain: float = Field(default=3.0, gt=0.0)
+
+
+class BlackJAXSMCDEConfig(BaseModel):
+    """Differential-evolution inner-kernel settings for the BlackJAX SMC sampler.
+
+    The bilby/dynesty-style move is ``x + gamma * (x_a - x_b)``. Its mix
+    probability and scale currently match the NS acceptance-walk kernel. This
+    empty model reserves a clear place for future DE settings and rejects
+    misspelled configuration keys.
+    """
+
+    model_config = {"extra": "forbid"}
+
+
 class BlackJAXSMCConfig(BaseSamplerConfig[Literal["blackjax-smc"]], _CheckpointMixin):
     """Configuration for the BlackJAX SMC sampler.
 
-    Parameters
-    ----------
-    batch_size : int, optional
-        Number of particles to process per sequential batch during the MCMC
-        update step. When ``batch_size > 0``, the sampler uses ``jax.lax.map``
-        instead of ``jax.vmap``, which reduces peak GPU memory at the cost
-        of sequential execution. ``0`` (default) uses the original full
-        ``jax.vmap`` behaviour.
+    ``inner_kernel`` selects ``"GRW"`` (adaptive-covariance random walk;
+    default) or ``"DE"`` (differential-evolution move) for the per-particle
+    MCMC step; settings live in the matching ``grw``/``de`` sub-config.
 
     !!! note
         Periodic parameters are **not** configured here.  Pass a ``periodic``
@@ -428,9 +451,10 @@ class BlackJAXSMCConfig(BaseSamplerConfig[Literal["blackjax-smc"]], _CheckpointM
     target_ess_fraction: Optional[float] = None
     # 0 = full vmap; >0 = lax.map batch size to reduce peak memory
     batch_size: int = Field(default=0, ge=0)
-    initial_cov_scale: float = Field(default=0.5, gt=0.0)
-    target_acceptance_rate: float = Field(default=0.234, gt=0.0, lt=1.0)
-    scale_adaptation_gain: float = Field(default=3.0, gt=0.0)
+
+    inner_kernel: Literal["GRW", "DE"] = "GRW"
+    grw: BlackJAXSMCGRWConfig = Field(default_factory=BlackJAXSMCGRWConfig)
+    de: BlackJAXSMCDEConfig = Field(default_factory=BlackJAXSMCDEConfig)
 
     persistent_sampling: bool = True
     temperature_ladder: Optional[list[float]] = None
@@ -499,6 +523,20 @@ class BlackJAXSMCConfig(BaseSamplerConfig[Literal["blackjax-smc"]], _CheckpointM
             warnings.warn(
                 "BlackJAXSMCConfig: ESS target has no effect when "
                 "`temperature_ladder` is provided (fixed-ladder mode).",
+                UserWarning,
+                stacklevel=2,
+            )
+        return self
+
+    @model_validator(mode="after")
+    def _warn_about_inactive_kernel_settings(self) -> Self:
+        inactive_kernel = "de" if self.inner_kernel == "GRW" else "grw"
+        inactive_settings = getattr(self, inactive_kernel)
+        if inactive_settings.model_fields_set:
+            warnings.warn(
+                f"BlackJAXSMCConfig: `{inactive_kernel}` sub-config has non-default "
+                f"values but `inner_kernel='{self.inner_kernel}'` — the "
+                f"`{inactive_kernel}` settings will be ignored.",
                 UserWarning,
                 stacklevel=2,
             )

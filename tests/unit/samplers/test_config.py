@@ -10,6 +10,8 @@ from jimgw.samplers.config import (
     BlackJAXNSAWConfig,
     BlackJAXNSSConfig,
     BlackJAXSMCConfig,
+    BlackJAXSMCDEConfig,
+    BlackJAXSMCGRWConfig,
     BlackJAXSwiGConfig,
     FlowMCConfig,
     FlowMCGRWConfig,
@@ -169,11 +171,11 @@ def test_flowmc_pt_off_with_none():
     assert cfg.parallel_tempering is None
 
 
-def test_flowmc_irrelevant_kernel_warns():
-    with warnings.catch_warnings(record=True) as w:
+def test_flowmc_warns_when_inactive_kernel_settings_are_provided():
+    with warnings.catch_warnings(record=True) as captured_warnings:
         warnings.simplefilter("always")
         FlowMCConfig(local_kernel="MALA", hmc=FlowMCHMCConfig(step_size=0.5))
-    assert any("hmc" in str(warning.message).lower() for warning in w)
+    assert any("hmc" in str(warning.message).lower() for warning in captured_warnings)
 
 
 def test_flowmc_irrelevant_parallel_tempering_warns():
@@ -293,9 +295,37 @@ def test_smc_fraction_warns_with_fixed_ladder():
     )
 
 
-# ---------------------------------------------------------------------------
-# C: New kernel sub-config features (array step sizes, condition_matrix)
-# ---------------------------------------------------------------------------
+def test_smc_inner_kernel_default():
+    assert BlackJAXSMCConfig().inner_kernel == "GRW"
+
+
+def test_smc_inner_kernel_de_selected():
+    assert BlackJAXSMCConfig(inner_kernel="DE").inner_kernel == "DE"
+
+
+def test_smc_inner_kernel_rejects_lowercase():
+    with pytest.raises(ValidationError):
+        BlackJAXSMCConfig(inner_kernel="de")
+
+
+def test_smc_warns_when_inactive_kernel_settings_are_provided():
+    with warnings.catch_warnings(record=True) as captured_warnings:
+        warnings.simplefilter("always")
+        BlackJAXSMCConfig(
+            inner_kernel="DE", grw=BlackJAXSMCGRWConfig(initial_cov_scale=0.9)
+        )
+    assert any("grw" in str(warning.message).lower() for warning in captured_warnings)
+
+
+def test_smc_does_not_warn_when_active_kernel_settings_are_provided():
+    with warnings.catch_warnings(record=True) as captured_warnings:
+        warnings.simplefilter("always")
+        BlackJAXSMCConfig(
+            inner_kernel="GRW", grw=BlackJAXSMCGRWConfig(initial_cov_scale=0.9)
+        )
+    assert not any(
+        "sub-config" in str(warning.message) for warning in captured_warnings
+    )
 
 
 def test_mala_step_size_scalar():
@@ -331,6 +361,34 @@ def test_hmc_defaults():
     assert cfg.step_size == 2e-3
     assert cfg.condition_matrix == 1.0
     assert cfg.n_leapfrog_steps == 10
+
+
+def test_smc_grw_subconfig_defaults():
+    cfg = BlackJAXSMCGRWConfig()
+    assert cfg.initial_cov_scale == 0.5
+    assert cfg.target_acceptance_rate == 0.234
+    assert cfg.scale_adaptation_gain == 3.0
+
+
+def test_smc_de_subconfig_has_no_fields():
+    assert BlackJAXSMCDEConfig().model_dump() == {}
+
+
+def test_smc_kernel_subconfig_coerced_from_dict():
+    cfg = BlackJAXSMCConfig(grw={"initial_cov_scale": 0.3}, de={})
+    assert isinstance(cfg.grw, BlackJAXSMCGRWConfig)
+    assert cfg.grw.initial_cov_scale == 0.3
+    assert isinstance(cfg.de, BlackJAXSMCDEConfig)
+
+
+def test_smc_kernel_subconfig_rejects_unknown_key():
+    with pytest.raises(ValidationError):
+        BlackJAXSMCConfig(grw={"step_size": 0.1})
+
+
+def test_smc_de_subconfig_rejects_unknown_key():
+    with pytest.raises(ValidationError):
+        BlackJAXSMCConfig(de={"mix": 0.5})
 
 
 # ---------------------------------------------------------------------------

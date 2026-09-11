@@ -42,9 +42,6 @@ def _make_sampler(
             n_particles=n_particles,
             n_mcmc_steps_per_dim=5,
             target_ess=50,
-            initial_cov_scale=0.5,
-            target_acceptance_rate=0.234,
-            scale_adaptation_gain=3.0,
         )
     parameter_names = prior.parameter_names  # ("x", "y")
 
@@ -163,12 +160,20 @@ def test_smc_ap_diagnostics():
     assert diag["log_Z_error"] >= 0.0
 
 
-def test_smc_n_evals_formula():
-    """n_likelihood_evaluations == n_mcmc * n_iter * n_particles."""
+@pytest.mark.parametrize("inner_kernel", ["GRW", "DE"])
+def test_smc_n_evals_formula(inner_kernel):
+    """n_likelihood_evaluations == n_mcmc * n_iter * n_particles for both kernels
+    (one log-density eval per proposal, regardless of proposal shape)."""
     n_particles = 200
     n_mcmc_per_dim = 5
     n_dims = 2
-    sampler = _make_sampler(n_particles=n_particles)
+    config = BlackJAXSMCConfig(
+        n_particles=n_particles,
+        n_mcmc_steps_per_dim=n_mcmc_per_dim,
+        target_ess=50,
+        inner_kernel=inner_kernel,
+    )
+    sampler = _make_sampler(n_particles=n_particles, config=config)
     sampler.sample(jax.random.key(5), _init_pos(n_particles))
     diag = sampler.get_diagnostics()
 
@@ -367,28 +372,30 @@ def test_smc_checkpoint_file_created(tmp_path, monkeypatch):
         config=config,
     )
     # Suppress deletion of only the checkpoint file so we can inspect it after sampling.
-    ckpt_path = tmp_path / "checkpoint.pkl"
-    _orig_unlink = Path.unlink
+    checkpoint_path = tmp_path / "checkpoint.pkl"
+    original_unlink = Path.unlink
     monkeypatch.setattr(
         Path,
         "unlink",
         lambda self, missing_ok=False: (
-            None if self == ckpt_path else _orig_unlink(self, missing_ok=missing_ok)
+            None
+            if self == checkpoint_path
+            else original_unlink(self, missing_ok=missing_ok)
         ),
     )
     sampler.sample(jax.random.key(42), _init_pos(200))
-    monkeypatch.setattr(Path, "unlink", _orig_unlink)
-    assert ckpt_path.exists(), "Checkpoint was never written"
-    with open(ckpt_path, "rb") as f:
-        ckpt = pickle.load(f)
-    assert "elapsed_time" in ckpt
-    assert ckpt["elapsed_time"] >= 0.0
-    assert ckpt["sampler_name"] == sampler.sampler_name
-    assert ckpt["mode"] == sampler.mode
+    monkeypatch.setattr(Path, "unlink", original_unlink)
+    assert checkpoint_path.exists(), "Checkpoint was never written"
+    with open(checkpoint_path, "rb") as checkpoint_file:
+        checkpoint = pickle.load(checkpoint_file)
+    assert "elapsed_time" in checkpoint
+    assert checkpoint["elapsed_time"] >= 0.0
+    assert checkpoint["sampler_name"] == sampler.sampler_name
+    assert checkpoint["mode"] == sampler.mode
 
     # Now let a clean run delete it.
-    ckpt_path.unlink()
-    assert not ckpt_path.exists()
+    checkpoint_path.unlink()
+    assert not checkpoint_path.exists()
 
 
 @pytest.mark.parametrize(
@@ -416,11 +423,19 @@ def test_smc_mode_is_derived_from_config(
 def test_smc_checkpoint_validation_checks_mode():
     sampler = _make_sampler()
     sampler._validate_checkpoint(
-        {"sampler_name": sampler.sampler_name, "mode": sampler.mode}
+        {
+            "sampler_name": sampler.sampler_name,
+            "mode": sampler.mode,
+            "inner_kernel": "GRW",
+        }
     )
     with pytest.raises(ValueError, match="different SMC mode"):
         sampler._validate_checkpoint(
-            {"sampler_name": sampler.sampler_name, "mode": "fp"}
+            {
+                "sampler_name": sampler.sampler_name,
+                "mode": "fp",
+                "inner_kernel": "GRW",
+            }
         )
 
 
@@ -435,14 +450,11 @@ def test_smc_resume_gives_same_result(tmp_path, monkeypatch):
     likelihood = _GaussianLikelihood()
     parameter_names = prior.parameter_names
 
-    def _make(checkpoint_dir=None):
+    def make_sampler(checkpoint_dir=None):
         config = BlackJAXSMCConfig(
             n_particles=200,
             n_mcmc_steps_per_dim=5,
             target_ess=50,
-            initial_cov_scale=0.5,
-            target_acceptance_rate=0.234,
-            scale_adaptation_gain=3.0,
             checkpoint_dir=checkpoint_dir,
             checkpoint_interval=1e-9 if checkpoint_dir is not None else 0.0,
         )
@@ -464,31 +476,32 @@ def test_smc_resume_gives_same_result(tmp_path, monkeypatch):
             config=config,
         )
 
-    s_a = _make(checkpoint_dir=None)
-    s_a.sample(jax.random.key(0), _init_pos(200))
-    log_z_a = s_a.get_diagnostics()["log_Z"]
+    reference_sampler = make_sampler(checkpoint_dir=None)
+    reference_sampler.sample(jax.random.key(0), _init_pos(200))
+    reference_log_evidence = reference_sampler.get_diagnostics()["log_Z"]
 
-    # Run B: suppress deletion of the checkpoint file only (simulates a crash leaving it behind).
-    ckpt_path = tmp_path / "checkpoint.pkl"
-    _orig_unlink = Path.unlink
+    checkpoint_path = tmp_path / "checkpoint.pkl"
+    original_unlink = Path.unlink
     monkeypatch.setattr(
         Path,
         "unlink",
         lambda self, missing_ok=False: (
-            None if self == ckpt_path else _orig_unlink(self, missing_ok=missing_ok)
+            None
+            if self == checkpoint_path
+            else original_unlink(self, missing_ok=missing_ok)
         ),
     )
-    s_b = _make(checkpoint_dir=tmp_path)
-    s_b.sample(jax.random.key(0), _init_pos(200))
-    monkeypatch.setattr(Path, "unlink", _orig_unlink)
-    assert ckpt_path.exists(), "Checkpoint was never written"
+    interrupted_sampler = make_sampler(checkpoint_dir=tmp_path)
+    interrupted_sampler.sample(jax.random.key(0), _init_pos(200))
+    monkeypatch.setattr(Path, "unlink", original_unlink)
+    assert checkpoint_path.exists(), "Checkpoint was never written"
 
-    # Run C: resumes from B's checkpoint → same RNG sequence → same log_Z.
-    # On clean completion C deletes the checkpoint.
-    s_c = _make(checkpoint_dir=tmp_path)
-    s_c.sample(jax.random.key(0), _init_pos(200))
+    resumed_sampler = make_sampler(checkpoint_dir=tmp_path)
+    resumed_sampler.sample(jax.random.key(0), _init_pos(200))
 
-    assert s_c.get_diagnostics()["log_Z"] == pytest.approx(log_z_a, rel=1e-6)
+    assert resumed_sampler.get_diagnostics()["log_Z"] == pytest.approx(
+        reference_log_evidence, rel=1e-6
+    )
     assert not (tmp_path / "checkpoint.pkl").exists(), "Checkpoint was not cleaned up"
 
 
@@ -507,14 +520,11 @@ def test_smc_checkpoint_failure_restores_caller_rng_key(tmp_path):
     likelihood = _GaussianLikelihood()
     parameter_names = prior.parameter_names
 
-    def _make(checkpoint_dir=None):
+    def make_sampler(checkpoint_dir=None):
         config = BlackJAXSMCConfig(
             n_particles=200,
             n_mcmc_steps_per_dim=5,
             target_ess=50,
-            initial_cov_scale=0.5,
-            target_acceptance_rate=0.234,
-            scale_adaptation_gain=3.0,
             checkpoint_dir=checkpoint_dir,
             checkpoint_interval=1e-9 if checkpoint_dir is not None else 0.0,
         )
@@ -538,15 +548,13 @@ def test_smc_checkpoint_failure_restores_caller_rng_key(tmp_path):
 
     caller_key = jax.random.key(7)
 
-    reference = _make(checkpoint_dir=None)
-    reference.sample(caller_key, _init_pos(200))
-    log_z_reference = reference.get_diagnostics()["log_Z"]
+    reference_sampler = make_sampler(checkpoint_dir=None)
+    reference_sampler.sample(caller_key, _init_pos(200))
+    reference_log_evidence = reference_sampler.get_diagnostics()["log_Z"]
 
-    sampler = _make(checkpoint_dir=tmp_path)
-    ckpt_path = tmp_path / "checkpoint.pkl"
-    # Valid enough to pass `_validate_checkpoint` and overwrite `rng_key` with
-    # a decoy key, but missing "n_iter" so loading fails right after.
-    with open(ckpt_path, "wb") as f:
+    sampler = make_sampler(checkpoint_dir=tmp_path)
+    checkpoint_path = tmp_path / "checkpoint.pkl"
+    with open(checkpoint_path, "wb") as checkpoint_file:
         pickle.dump(
             {
                 "sampler_name": sampler.sampler_name,
@@ -554,13 +562,13 @@ def test_smc_checkpoint_failure_restores_caller_rng_key(tmp_path):
                 "state": None,
                 "rng_key": jax.random.key(999),
             },
-            f,
+            checkpoint_file,
         )
 
     sampler.sample(caller_key, _init_pos(200))
 
     assert sampler.get_diagnostics()["log_Z"] == pytest.approx(
-        log_z_reference, rel=1e-6
+        reference_log_evidence, rel=1e-6
     )
 
 
@@ -579,9 +587,6 @@ def _make_sampler_batched(
         n_particles=n_particles,
         n_mcmc_steps_per_dim=5,
         target_ess=50,
-        initial_cov_scale=0.5,
-        target_acceptance_rate=0.234,
-        scale_adaptation_gain=3.0,
         batch_size=batch_size,
     )
     parameter_names = prior.parameter_names
@@ -663,3 +668,304 @@ def test_smc_particle_batch_size_at_mode():
     assert isinstance(result, dict)
     assert "samples" in result
     assert result["samples"].shape[0] > 0
+
+
+def _make_sampler_de(
+    n_particles: int = 400,
+    persistent_sampling: bool = True,
+    temperature_ladder: list[float] | None = None,
+) -> BlackJAXSMCSampler:
+    """SMC sampler using the differential-evolution inner kernel.
+
+    Adaptive by default; pass ``temperature_ladder`` for a fixed-ladder run.
+    """
+    prior = CombinePrior(
+        [
+            UniformPrior(0.0, 1.0, parameter_names=["x"]),
+            UniformPrior(0.0, 1.0, parameter_names=["y"]),
+        ]
+    )
+    likelihood = _GaussianLikelihood()
+    if temperature_ladder is not None:
+        config = BlackJAXSMCConfig(
+            n_particles=n_particles,
+            n_mcmc_steps_per_dim=10,
+            inner_kernel="DE",
+            persistent_sampling=persistent_sampling,
+            temperature_ladder=temperature_ladder,
+        )
+    else:
+        config = BlackJAXSMCConfig(
+            n_particles=n_particles,
+            n_mcmc_steps_per_dim=10,
+            inner_kernel="DE",
+            persistent_sampling=persistent_sampling,
+            target_ess=n_particles // 2,
+        )
+    parameter_names = prior.parameter_names
+
+    def log_prior_fn(arr):
+        return prior.log_prob(dict(zip(parameter_names, arr, strict=True)))
+
+    def log_likelihood_fn(arr):
+        return likelihood.evaluate(dict(zip(parameter_names, arr, strict=True)))
+
+    def log_posterior_fn(arr):
+        return log_prior_fn(arr) + log_likelihood_fn(arr)
+
+    return BlackJAXSMCSampler(
+        n_dims=len(parameter_names),
+        log_prior_fn=log_prior_fn,
+        log_likelihood_fn=log_likelihood_fn,
+        log_posterior_fn=log_posterior_fn,
+        config=config,
+    )
+
+
+def test_smc_de_samples_in_prior_support():
+    sampler = _make_sampler_de(n_particles=400)
+    sampler.sample(jax.random.key(20), _init_pos(400))
+    result = sampler.get_samples()
+
+    assert result["samples"].ndim == 2
+    assert result["samples"].shape[1] == 2
+    assert result["samples"].shape[0] > 0
+    assert np.all(result["samples"] >= 0.0) and np.all(result["samples"] <= 1.0)
+
+
+def test_smc_de_ap_diagnostics_no_cov_scale():
+    """DE inner kernel: acceptance history is kept; cov-scale history is empty."""
+    sampler = _make_sampler_de(n_particles=400)
+    sampler.sample(jax.random.key(22), _init_pos(400))
+    diag = sampler.get_diagnostics()
+
+    assert diag["n_iterations"] > 0
+    assert len(diag["acceptance_history"]) == diag["n_iterations"]
+    assert np.all(np.isfinite(diag["acceptance_history"]))
+    assert len(diag["cov_scale_history"]) == 0
+    assert float(diag["tempering_schedule"][-1]) == pytest.approx(1.0, abs=1e-6)
+
+
+def test_smc_de_at_mode_runs():
+    sampler = _make_sampler_de(n_particles=400, persistent_sampling=False)
+    assert sampler.mode == "at"
+    sampler.sample(jax.random.key(23), _init_pos(400))
+    result = sampler.get_samples()
+    assert result["samples"].shape[0] > 0
+    assert np.all(result["samples"] >= 0.0) and np.all(result["samples"] <= 1.0)
+
+
+def test_smc_de_evidence_matches_grw():
+    """DE and GRW agree with the analytic evidence for a 2-D Gaussian.
+
+    The analytic log evidence over the unit square is approximately
+    ``log(2 * pi * sigma**2)`` because truncation is negligible.
+    """
+    log_evidences = {}
+    for inner_kernel in ("GRW", "DE"):
+        prior = CombinePrior(
+            [
+                UniformPrior(0.0, 1.0, parameter_names=["x"]),
+                UniformPrior(0.0, 1.0, parameter_names=["y"]),
+            ]
+        )
+        likelihood = _GaussianLikelihood()
+        config = BlackJAXSMCConfig(
+            n_particles=1500,
+            n_mcmc_steps_per_dim=15,
+            target_ess=750,
+            inner_kernel=inner_kernel,
+        )
+        parameter_names = prior.parameter_names
+
+        def log_prior_fn(arr, parameter_names=parameter_names, prior=prior):
+            return prior.log_prob(dict(zip(parameter_names, arr, strict=True)))
+
+        def log_likelihood_fn(
+            arr, parameter_names=parameter_names, likelihood=likelihood
+        ):
+            return likelihood.evaluate(dict(zip(parameter_names, arr, strict=True)))
+
+        def log_posterior_fn(
+            arr,
+            log_prior_fn=log_prior_fn,
+            log_likelihood_fn=log_likelihood_fn,
+        ):
+            return log_prior_fn(arr) + log_likelihood_fn(arr)
+
+        sampler = BlackJAXSMCSampler(
+            n_dims=2,
+            log_prior_fn=log_prior_fn,
+            log_likelihood_fn=log_likelihood_fn,
+            log_posterior_fn=log_posterior_fn,
+            config=config,
+        )
+        sampler.sample(jax.random.key(24), _init_pos(1500))
+        log_evidences[inner_kernel] = sampler.get_diagnostics()["log_Z"]
+
+    analytic = float(np.log(2 * np.pi * _SIGMA**2))
+    assert log_evidences["DE"] == pytest.approx(analytic, abs=0.15)
+    assert log_evidences["DE"] == pytest.approx(log_evidences["GRW"], abs=0.15)
+
+
+def test_smc_de_checkpoint_records_inner_kernel(tmp_path, monkeypatch):
+    """DE checkpoints carry inner_kernel; a GRW sampler refuses to resume from one."""
+    prior = CombinePrior(
+        [
+            UniformPrior(0.0, 1.0, parameter_names=["x"]),
+            UniformPrior(0.0, 1.0, parameter_names=["y"]),
+        ]
+    )
+    likelihood = _GaussianLikelihood()
+    parameter_names = prior.parameter_names
+
+    def log_prior_fn(arr):
+        return prior.log_prob(dict(zip(parameter_names, arr, strict=True)))
+
+    def log_likelihood_fn(arr):
+        return likelihood.evaluate(dict(zip(parameter_names, arr, strict=True)))
+
+    def log_posterior_fn(arr):
+        return log_prior_fn(arr) + log_likelihood_fn(arr)
+
+    def make_sampler(inner_kernel):
+        return BlackJAXSMCSampler(
+            n_dims=2,
+            log_prior_fn=log_prior_fn,
+            log_likelihood_fn=log_likelihood_fn,
+            log_posterior_fn=log_posterior_fn,
+            config=BlackJAXSMCConfig(
+                n_particles=200,
+                n_mcmc_steps_per_dim=5,
+                target_ess=50,
+                inner_kernel=inner_kernel,
+                checkpoint_dir=tmp_path,
+                checkpoint_interval=1e-9,
+            ),
+        )
+
+    checkpoint_path = tmp_path / "checkpoint.pkl"
+    original_unlink = Path.unlink
+    monkeypatch.setattr(
+        Path,
+        "unlink",
+        lambda self, missing_ok=False: (
+            None
+            if self == checkpoint_path
+            else original_unlink(self, missing_ok=missing_ok)
+        ),
+    )
+    make_sampler("DE").sample(jax.random.key(25), _init_pos(200))
+    monkeypatch.setattr(Path, "unlink", original_unlink)
+
+    with open(checkpoint_path, "rb") as checkpoint_file:
+        checkpoint = pickle.load(checkpoint_file)
+    assert checkpoint["inner_kernel"] == "DE"
+
+    with pytest.raises(ValueError, match="different SMC inner kernel"):
+        make_sampler("GRW")._validate_checkpoint(checkpoint)
+    make_sampler("DE")._validate_checkpoint(checkpoint)
+
+
+def test_smc_de_resume_gives_same_result(tmp_path, monkeypatch):
+    """A DE run resumed from a crashed checkpoint reproduces the uninterrupted log_Z."""
+    prior = CombinePrior(
+        [
+            UniformPrior(0.0, 1.0, parameter_names=["x"]),
+            UniformPrior(0.0, 1.0, parameter_names=["y"]),
+        ]
+    )
+    likelihood = _GaussianLikelihood()
+    parameter_names = prior.parameter_names
+
+    def log_prior_fn(arr):
+        return prior.log_prob(dict(zip(parameter_names, arr, strict=True)))
+
+    def log_likelihood_fn(arr):
+        return likelihood.evaluate(dict(zip(parameter_names, arr, strict=True)))
+
+    def log_posterior_fn(arr):
+        return log_prior_fn(arr) + log_likelihood_fn(arr)
+
+    def make_sampler(checkpoint_dir=None):
+        return BlackJAXSMCSampler(
+            n_dims=2,
+            log_prior_fn=log_prior_fn,
+            log_likelihood_fn=log_likelihood_fn,
+            log_posterior_fn=log_posterior_fn,
+            config=BlackJAXSMCConfig(
+                n_particles=300,
+                n_mcmc_steps_per_dim=5,
+                target_ess=80,
+                inner_kernel="DE",
+                checkpoint_dir=checkpoint_dir,
+                checkpoint_interval=1e-9 if checkpoint_dir is not None else 0.0,
+            ),
+        )
+
+    initial_particles = _init_pos(300)
+    reference_sampler = make_sampler()
+    reference_sampler.sample(jax.random.key(0), initial_particles)
+    reference_log_evidence = reference_sampler.get_diagnostics()["log_Z"]
+
+    checkpoint_path = tmp_path / "checkpoint.pkl"
+    original_unlink = Path.unlink
+    monkeypatch.setattr(
+        Path,
+        "unlink",
+        lambda self, missing_ok=False: (
+            None
+            if self == checkpoint_path
+            else original_unlink(self, missing_ok=missing_ok)
+        ),
+    )
+    make_sampler(checkpoint_dir=tmp_path).sample(jax.random.key(0), initial_particles)
+    monkeypatch.setattr(Path, "unlink", original_unlink)
+    assert checkpoint_path.exists(), "Checkpoint was never written"
+
+    resumed_sampler = make_sampler(checkpoint_dir=tmp_path)
+    resumed_sampler.sample(jax.random.key(0), initial_particles)
+    assert resumed_sampler.get_diagnostics()["log_Z"] == pytest.approx(
+        reference_log_evidence, rel=1e-6
+    )
+    assert not checkpoint_path.exists(), "Checkpoint was not cleaned up"
+
+
+_DE_TEMPERATURE_LADDER = [0.0, 0.05, 0.15, 0.35, 0.65, 1.0]
+
+
+def test_smc_de_fp_evidence_and_mixing():
+    """FP + DE: evidence matches analytic, and the refreshed reference ensemble
+    keeps the chain mixing at the final temperature (a frozen prior-width
+    ensemble would collapse acceptance to ~0 by then)."""
+    sampler = _make_sampler_de(
+        n_particles=800, temperature_ladder=_DE_TEMPERATURE_LADDER
+    )
+    assert sampler.mode == "fp"
+    sampler.sample(jax.random.key(30), _init_pos(800))
+
+    result = sampler.get_samples()
+    assert np.all(result["samples"] >= 0.0) and np.all(result["samples"] <= 1.0)
+
+    diag = sampler.get_diagnostics()
+    analytic = float(np.log(2 * np.pi * _SIGMA**2))
+    assert diag["log_Z"] == pytest.approx(analytic, abs=0.2)
+    assert diag["acceptance_history"][-1] > 0.1
+
+
+def test_smc_de_ft_runs():
+    sampler = _make_sampler_de(
+        n_particles=600,
+        persistent_sampling=False,
+        temperature_ladder=_DE_TEMPERATURE_LADDER,
+    )
+    assert sampler.mode == "ft"
+    sampler.sample(jax.random.key(31), _init_pos(600))
+
+    result = sampler.get_samples()
+    assert np.all(result["samples"] >= 0.0) and np.all(result["samples"] <= 1.0)
+    assert abs(float(result["samples"].mean()) - _MU) < 0.04
+
+    diag = sampler.get_diagnostics()
+    assert len(diag["ess_history"]) == len(_DE_TEMPERATURE_LADDER) - 1
+    assert diag["acceptance_history"][-1] > 0.1

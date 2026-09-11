@@ -347,16 +347,30 @@ n_tempered_steps = 5
 
 | Field | Default | Description |
 | --- | --- | --- |
-| `n_particles` | `2000` | Number of particles |
+| `n_particles` | `5000` | Number of particles |
 | `n_mcmc_steps_per_dim` | `100` | MCMC steps per dimension per temperature |
 | `target_ess_fraction` | `0.9` | Optional — target effective sample size as a fraction of `n_particles`; use instead of `target_ess`, not both |
 | `target_ess` | — | Optional — target absolute ESS count; use instead of `target_ess_fraction`, not both |
-| `initial_cov_scale` | `0.5` | Initial covariance scale factor |
-| `target_acceptance_rate` | `0.234` | Target MCMC acceptance rate |
+| `inner_kernel` | `"GRW"` | Inner MCMC kernel: `"GRW"` or `"DE"` |
+| `grw.initial_cov_scale` | `0.5` | Initial covariance scale factor for GRW |
+| `grw.target_acceptance_rate` | `0.234` | Target MCMC acceptance rate for GRW |
+| `grw.scale_adaptation_gain` | `3.0` | Covariance-scale adaptation gain for GRW |
 | `persistent_sampling` | `true` | Reuse particles across temperatures |
 | `temperature_ladder` | — | Optional — fixed list of temperatures from 0.0 to 1.0; omit to use adaptive tempering |
 | `checkpoint_dir` | `{output.dir}/` | Directory for `checkpoint.pkl`; set by the CLI automatically |
 | `checkpoint_interval` | `600.0` | Seconds between checkpoint writes; `0` disables checkpointing |
+
+Configure GRW-specific settings in a nested TOML table:
+
+```toml
+[sampler.grw]
+initial_cov_scale = 0.5
+target_acceptance_rate = 0.234
+scale_adaptation_gain = 3.0
+```
+
+`"DE"` uses the differential-evolution acceptance-walk proposal and currently
+has no additional settings.
 
 ### `type = "blackjax-nss"`
 

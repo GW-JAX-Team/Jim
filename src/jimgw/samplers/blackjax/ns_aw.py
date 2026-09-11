@@ -138,15 +138,15 @@ class BlackJAXNSAWSampler(Sampler):
         config = self._config
         n_live = config.n_live
         n_delete = int(n_live * config.n_delete_frac)
-        ckpt_path = (
+        checkpoint_path = (
             config.checkpoint_dir / "checkpoint.pkl"
             if config.checkpoint_dir is not None
             else None
         )
         config.configure_jax_cache()
-        _method_t0 = time.perf_counter()
+        run_started_at = time.perf_counter()
 
-        def _validated_initial_particles(pos):
+        def validate_initial_particles(pos):
             arr = jnp.asarray(pos)
             if arr.ndim != 2 or arr.shape != (n_live, self.n_dims):
                 raise ValueError(
@@ -168,25 +168,25 @@ class BlackJAXNSAWSampler(Sampler):
 
         # Resume from checkpoint if one exists.
         if (
-            ckpt_path is not None
+            checkpoint_path is not None
             and config.checkpoint_interval > 0
-            and ckpt_path.exists()
+            and checkpoint_path.exists()
         ):
-            _initial_rng_key = rng_key
+            initial_rng_key = rng_key
             try:
-                with open(ckpt_path, "rb") as _f:
-                    _ckpt = pickle.load(_f)
-                self._validate_checkpoint(_ckpt)
-                state = _ckpt["state"]
-                dead = _ckpt["dead"]
-                rng_key = _ckpt["rng_key"]
-                n_iter = _ckpt["n_iter"]
-                self._prev_elapsed = float(_ckpt["elapsed_time"])
+                with open(checkpoint_path, "rb") as checkpoint_file:
+                    checkpoint = pickle.load(checkpoint_file)
+                self._validate_checkpoint(checkpoint)
+                state = checkpoint["state"]
+                dead = checkpoint["dead"]
+                rng_key = checkpoint["rng_key"]
+                n_completed_iterations = checkpoint["n_iter"]
+                self._prev_elapsed = float(checkpoint["elapsed_time"])
                 logger.info(
                     "%s: resumed from checkpoint at n_iter=%d (%s)",
                     self.sampler_name,
-                    n_iter,
-                    ckpt_path,
+                    n_completed_iterations,
+                    checkpoint_path,
                 )
             except (
                 OSError,
@@ -195,57 +195,58 @@ class BlackJAXNSAWSampler(Sampler):
                 TypeError,
                 ValueError,
                 pickle.UnpicklingError,
-            ) as _e:
+            ) as error:
                 logger.warning(
                     "%s: incompatible or corrupt checkpoint at %s (%s) — starting fresh.",
                     self.sampler_name,
-                    ckpt_path,
-                    _e,
+                    checkpoint_path,
+                    error,
                 )
-                rng_key = _initial_rng_key
+                rng_key = initial_rng_key
                 state = nested_sampler.init(
-                    _validated_initial_particles(initial_position)
+                    validate_initial_particles(initial_position)
                 )  # type: ignore[call-arg]  # blackjax API
                 dead = []
-                n_iter = 0
+                n_completed_iterations = 0
                 self._prev_elapsed = 0.0
         else:
-            state = nested_sampler.init(_validated_initial_particles(initial_position))  # type: ignore[call-arg]  # blackjax API
+            state = nested_sampler.init(validate_initial_particles(initial_position))  # type: ignore[call-arg]  # blackjax API
             dead = []
-            n_iter = 0
+            n_completed_iterations = 0
 
-        def _terminate(state: AdaptiveNSState) -> bool:
+        def should_terminate(state: AdaptiveNSState) -> bool:
             dlogz = jnp.logaddexp(0, state.integrator.logZ_live - state.integrator.logZ)
             return bool(jnp.isfinite(dlogz) and dlogz < config.termination_dlogz)
 
         step_fn = jax.jit(nested_sampler.step)
-        _last_ckpt_t = time.perf_counter()
+        last_checkpoint_at = time.perf_counter()
 
-        while not _terminate(state):
-            rng_key, subkey = jax.random.split(rng_key)
-            state, dead_info = step_fn(subkey, state)
+        while not should_terminate(state):
+            rng_key, step_key = jax.random.split(rng_key)
+            state, dead_info = step_fn(step_key, state)
             dead.append(dead_info)
-            n_iter += 1
+            n_completed_iterations += 1
             if (
-                ckpt_path is not None
+                checkpoint_path is not None
                 and config.checkpoint_interval > 0
-                and time.perf_counter() - _last_ckpt_t >= config.checkpoint_interval
+                and time.perf_counter() - last_checkpoint_at
+                >= config.checkpoint_interval
             ):
-                _last_ckpt_t = config.write_checkpoint(
+                last_checkpoint_at = config.write_checkpoint(
                     {
                         "state": state,
                         "dead": dead,
                         "rng_key": rng_key,
-                        "n_iter": n_iter,
+                        "n_iter": n_completed_iterations,
                         "sampler_name": self.sampler_name,
                         "elapsed_time": self._prev_elapsed
-                        + (time.perf_counter() - _method_t0),
+                        + (time.perf_counter() - run_started_at),
                     },
                     self.sampler_name,
                 )
 
         self._final_state = finalise(state, dead)
-        self._n_iterations = n_iter
+        self._n_iterations = n_completed_iterations
 
         # Build anesthetic NestedSamples for use in get_samples() and get_diagnostics().
         particles_sample = np.array(self._final_state.particles.position)
@@ -259,8 +260,8 @@ class BlackJAXNSAWSampler(Sampler):
             logzero=np.nan,
             dtype=np.float64,
         )
-        if ckpt_path is not None:
-            ckpt_path.unlink(missing_ok=True)
+        if checkpoint_path is not None:
+            checkpoint_path.unlink(missing_ok=True)
         if config.checkpoint_dir is not None:
             shutil.rmtree(config.checkpoint_dir / "jax_cache", ignore_errors=True)
             jax.config.update("jax_compilation_cache_dir", None)

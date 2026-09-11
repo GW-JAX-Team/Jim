@@ -268,9 +268,7 @@ class BlackJAXSwiGSampler(BlackJAXNSSSampler):
                 mesh=mesh,
             )
 
-        # `nested_sampler.init` is never called (state init happens in
-        # `_batched_nss_init`); BlackJAX still requires SamplingAlgorithm.init
-        # to type as returning a State.
+        # `_sample` initializes state directly; BlackJAX still requires an init callable.
         return SamplingAlgorithm(
             lambda position, rng_key=None: position,  # type: ignore[return-value]
             kernel,

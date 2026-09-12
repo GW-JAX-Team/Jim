@@ -12,13 +12,13 @@
         <meta name="author" content="GW JAX Team">
       
       
-        <link rel="canonical" href="https://gw-jax-team.github.io/Jim/development/api/jimgw/samplers/blackjax/swig/">
+        <link rel="canonical" href="https://gw-jax-team.github.io/Jim/development/api/jimgw/samplers/blackjax/utils/">
       
       
-        <link rel="prev" href="../smc/">
+        <link rel="prev" href="../swig/">
       
       
-        <link rel="next" href="../utils/">
+        <link rel="next" href="../../config/">
       
       
         
@@ -29,7 +29,7 @@
     
     
       
-        <title>swig - Jim</title>
+        <title>utils - Jim</title>
       
     
     
@@ -85,7 +85,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#jimgw.samplers.blackjax.swig" class="md-skip">
+        <a href="#jimgw.samplers.blackjax.utils" class="md-skip">
           Skip to content
         </a>
       
@@ -123,7 +123,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              swig
+              utils
             
           </span>
         </div>
@@ -1916,6 +1916,33 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../swig/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  swig
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -1933,7 +1960,7 @@
   <span class="md-ellipsis">
     
   
-  swig
+  utils
 
     
   </span>
@@ -1950,7 +1977,7 @@
   <span class="md-ellipsis">
     
   
-  swig
+  utils
 
     
   </span>
@@ -1974,10 +2001,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#jimgw.samplers.blackjax.swig" class="md-nav__link">
+  <a href="#jimgw.samplers.blackjax.utils" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        swig
+        utils
       </span>
     </span>
   </a>
@@ -1985,10 +2012,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#jimgw.samplers.blackjax.swig.BlackJAXSwiGSampler" class="md-nav__link">
+  <a href="#jimgw.samplers.blackjax.utils.load_or_initialize_checkpoint" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        BlackJAXSwiGSampler
+        load_or_initialize_checkpoint
       </span>
     </span>
   </a>
@@ -1996,10 +2023,32 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#jimgw.samplers.blackjax.swig.CachedSliceState" class="md-nav__link">
+  <a href="#jimgw.samplers.blackjax.utils.prepare_checkpointing" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        CachedSliceState
+        prepare_checkpointing
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jimgw.samplers.blackjax.utils.remove_checkpoint_and_jax_cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        remove_checkpoint_and_jax_cache
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jimgw.samplers.blackjax.utils.save_checkpoint_if_due" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        save_checkpoint_if_due
       </span>
     </span>
   </a>
@@ -2010,33 +2059,6 @@
   
 </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../utils/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  utils
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -2218,10 +2240,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#jimgw.samplers.blackjax.swig" class="md-nav__link">
+  <a href="#jimgw.samplers.blackjax.utils" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        swig
+        utils
       </span>
     </span>
   </a>
@@ -2229,10 +2251,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#jimgw.samplers.blackjax.swig.BlackJAXSwiGSampler" class="md-nav__link">
+  <a href="#jimgw.samplers.blackjax.utils.load_or_initialize_checkpoint" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        BlackJAXSwiGSampler
+        load_or_initialize_checkpoint
       </span>
     </span>
   </a>
@@ -2240,10 +2262,32 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#jimgw.samplers.blackjax.swig.CachedSliceState" class="md-nav__link">
+  <a href="#jimgw.samplers.blackjax.utils.prepare_checkpointing" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        CachedSliceState
+        prepare_checkpointing
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jimgw.samplers.blackjax.utils.remove_checkpoint_and_jax_cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        remove_checkpoint_and_jax_cache
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jimgw.samplers.blackjax.utils.save_checkpoint_if_due" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        save_checkpoint_if_due
       </span>
     </span>
   </a>
@@ -2268,16 +2312,25 @@
   
 
 
-  <h1 id="__skip">swig</h1>
+  <h1 id="__skip">utils</h1>
 
 <div class="doc doc-object doc-module">
 
 
 
-<a id="jimgw.samplers.blackjax.swig"></a>
+<a id="jimgw.samplers.blackjax.utils"></a>
     <div class="doc doc-contents first">
 
-        <p>Cache-aware Nested Slice within Gibbs (SwiG) sampling.</p>
+        <p>Checkpoint save/load/cleanup helpers shared by the BlackJAX SMC and nested-sampling backends.</p>
+<p><code>BlackJAXSMCSampler</code>, <code>BlackJAXNSSSampler</code>, and <code>BlackJAXNSAWSampler</code> each
+run their own JAX while-loop and periodically checkpoint it to
+<code>config.checkpoint_dir/checkpoint.pkl</code>. The load/save/cleanup mechanics
+(compute the path, try to resume, fall back to a fresh state on a corrupt or
+foreign checkpoint, gate saves on the configured interval, clean up on
+completion) are identical across the three; only the state shape, the extra
+per-run bookkeeping (SMC's acceptance/covariance histories vs. NS's <code>dead</code>
+point list), and a couple of backend-specific hooks differ. This module holds
+that shared mechanics; each sampler supplies the differences via callbacks.</p>
 
 
 
@@ -2285,6 +2338,51 @@
 
 
 
+
+
+<p><span class="doc-section-title">Functions:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;load_or_initialize_checkpoint&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sampler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Sampler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;checkpoint_path&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Optional&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Path&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;config&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_CheckpointMixin&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rng_key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;initial_particles&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Any&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;initialize_state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Callable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;...&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Any&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;initial_extra&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;dict&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Any&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;load_extra&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Callable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;dict&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;dict&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Any&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]],&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;log_label&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;after_load&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Optional&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Callable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Any&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Any&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;None&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;is_stale&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Optional&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Callable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;bool&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;None&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;stale_message&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&#x27;checkpoint exceeds current schedule&#x27;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;tuple&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Any&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;dict&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Any&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]]&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.samplers.blackjax.utils.load_or_initialize_checkpoint">load_or_initialize_checkpoint</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Load a compatible checkpoint or initialize a new sampler state.</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;prepare_checkpointing&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;config&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_CheckpointMixin&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;tuple&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Optional&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Path&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.samplers.blackjax.utils.prepare_checkpointing">prepare_checkpointing</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Enable the JAX compile cache and return the checkpoint path and start time.</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;remove_checkpoint_and_jax_cache&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;config&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_CheckpointMixin&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;checkpoint_path&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Optional&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Path&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;None&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.samplers.blackjax.utils.remove_checkpoint_and_jax_cache">remove_checkpoint_and_jax_cache</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Remove a completed run's checkpoint, JAX cache, and cache setting.</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;save_checkpoint_if_due&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sampler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Sampler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;config&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_CheckpointMixin&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;checkpoint_path&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Optional&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Path&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;last_checkpoint_write_time&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;run_start_time&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Any&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rng_key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;n_completed_iterations&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;extra&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;dict&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Any&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;log_label&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;before_save&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Optional&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Callable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Any&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;dict&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Any&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]],&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;tuple&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Any&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;dict&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Any&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]]]]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;None&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;float&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.samplers.blackjax.utils.save_checkpoint_if_due">save_checkpoint_if_due</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Save a checkpoint when its interval has elapsed.</p>
+                </div>
+              </td>
+            </tr>
+      </tbody>
+    </table>
 
 
 
@@ -2300,106 +2398,95 @@
 
 
 
-<div class="doc doc-object doc-class">
+
+<div class="doc doc-object doc-function">
 
 
+<h3 id="jimgw.samplers.blackjax.utils.load_or_initialize_checkpoint" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">load_or_initialize_checkpoint</span><span class="p">(</span><span class="n">sampler</span><span class="p">:</span> <span class="n">Sampler</span><span class="p">,</span> <span class="n">checkpoint_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">],</span> <span class="n">config</span><span class="p">:</span> <span class="n">_CheckpointMixin</span><span class="p">,</span> <span class="n">rng_key</span><span class="p">:</span> <span class="n">Key</span><span class="p">,</span> <span class="n">initial_particles</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">initialize_state</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">initial_extra</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">load_extra</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">dict</span><span class="p">],</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="o">*</span><span class="p">,</span> <span class="n">log_label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">after_load</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">is_stale</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">bool</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">stale_message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'checkpoint exceeds current schedule'</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Key</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span></code>
 
-<h3 id="jimgw.samplers.blackjax.swig.BlackJAXSwiGSampler" class="doc doc-heading">
-            <code>BlackJAXSwiGSampler</code>
-
-
-<a href="#jimgw.samplers.blackjax.swig.BlackJAXSwiGSampler" class="headerlink" title="Permanent link">¤</a></h3>
+<a href="#jimgw.samplers.blackjax.utils.load_or_initialize_checkpoint" class="headerlink" title="Permanent link">¤</a></h3>
 
 
     <div class="doc doc-contents ">
-            <p class="doc doc-class-bases">
-              Bases: <code><a class="autorefs autorefs-internal" href="../nss/#jimgw.samplers.blackjax.nss.BlackJAXNSSSampler">BlackJAXNSSSampler</a></code></p>
 
+        <p>Load a compatible checkpoint or initialize a new sampler state.</p>
+<p><code>initialize_state</code> builds a fresh state from <code>initial_particles</code>.
+<code>initial_extra</code>/<code>load_extra</code> supply and restore backend-specific
+extras (histories for SMC, the NS <code>dead</code> point list, ...). <code>after_load</code>
+post-processes a freshly loaded <code>state</code> — used for device/mesh placement
+(NSS) or other backend-specific reconstruction. <code>is_stale</code> optionally
+rejects a loaded checkpoint whose <code>n_iter</code> no longer fits the current
+run (a fixed temperature ladder that has since changed length) and falls
+back to a fresh state.</p>
+<p>Only trusted checkpoint files may be loaded because pickle can execute
+arbitrary code.</p>
 
-
-        <p>Nested Slice within Gibbs using cache-aware slices over named blocks.</p>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="doc doc-children">
-
-
-
-
-
-
-
-
-
-
-
-
-  </div>
 
     </div>
 
 </div>
 
-<div class="doc doc-object doc-class">
+<div class="doc doc-object doc-function">
 
 
+<h3 id="jimgw.samplers.blackjax.utils.prepare_checkpointing" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">prepare_checkpointing</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">_CheckpointMixin</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">],</span> <span class="nb">float</span><span class="p">]</span></code>
 
-<h3 id="jimgw.samplers.blackjax.swig.CachedSliceState" class="doc doc-heading">
-            <code>CachedSliceState</code>
-
-
-<a href="#jimgw.samplers.blackjax.swig.CachedSliceState" class="headerlink" title="Permanent link">¤</a></h3>
+<a href="#jimgw.samplers.blackjax.utils.prepare_checkpointing" class="headerlink" title="Permanent link">¤</a></h3>
 
 
     <div class="doc doc-contents ">
-            <p class="doc doc-class-bases">
-              Bases: <code><span title="typing.NamedTuple">NamedTuple</span></code></p>
 
+        <p>Enable the JAX compile cache and return the checkpoint path and start time.</p>
 
-
-        <p>Ephemeral slice state; caches are never stored on the live particles.</p>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="doc doc-children">
-
-
-
-
-
-
-
-
-
-
-
-
-  </div>
 
     </div>
 
 </div>
 
+<div class="doc doc-object doc-function">
+
+
+<h3 id="jimgw.samplers.blackjax.utils.remove_checkpoint_and_jax_cache" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">remove_checkpoint_and_jax_cache</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">_CheckpointMixin</span><span class="p">,</span> <span class="n">checkpoint_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span></code>
+
+<a href="#jimgw.samplers.blackjax.utils.remove_checkpoint_and_jax_cache" class="headerlink" title="Permanent link">¤</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Remove a completed run's checkpoint, JAX cache, and cache setting.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="jimgw.samplers.blackjax.utils.save_checkpoint_if_due" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">save_checkpoint_if_due</span><span class="p">(</span><span class="n">sampler</span><span class="p">:</span> <span class="n">Sampler</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">_CheckpointMixin</span><span class="p">,</span> <span class="n">checkpoint_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">],</span> <span class="n">last_checkpoint_write_time</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">run_start_time</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">rng_key</span><span class="p">:</span> <span class="n">Key</span><span class="p">,</span> <span class="n">n_completed_iterations</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">extra</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">log_label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">before_save</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Key</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Key</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span></code>
+
+<a href="#jimgw.samplers.blackjax.utils.save_checkpoint_if_due" class="headerlink" title="Permanent link">¤</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Save a checkpoint when its interval has elapsed.</p>
+<p><code>extra</code> is merged into the common checkpoint payload (state, rng_key,
+n_iter, sampler_name, elapsed_time) — use it for backend-specific fields
+such as per-iteration histories or the NS <code>dead</code> point list.
+<code>before_save</code> transforms <code>(state, rng_key, extra)</code> right before they
+are written — e.g. NSS's <code>jax.device_get</code> on all three. It is called
+only when a checkpoint is actually due, so a host transfer here doesn't
+run every iteration. Returns the last checkpoint time.</p>
+
+
+    </div>
+
+</div>
 
 
 

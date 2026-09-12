@@ -16,7 +16,7 @@ samples = jim.get_samples()  # dict[str, np.ndarray] keyed by parameter name
 | [flowMC](#flowmc) | normalizing-flow-enhanced MCMC | No | None |
 | [NS AW](#blackjax-ns-aw) | Nested sampling (bilby/dynesty-style acceptance-walk) | Yes | Uniform prior; unit-cube sampling space |
 | [NSS](#blackjax-nss) | Nested slice sampling | Yes | Normalised prior |
-| [SwiG](#blackjax-swig) | Nested Slice within Gibbs with waveform caching | Yes | Normalised prior |
+| [SwiG](#blackjax-swig) | Blocked-Gibbs nested slice sampling | Yes | Normalised prior |
 | [SMC](#blackjax-smc) | Sequential Monte Carlo | Yes | Normalised prior |
 
 ---

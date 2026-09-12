@@ -27,6 +27,7 @@ from jimgw.cli._config import (
     WaveformConfig,
 )
 from jimgw.cli._jim import _with_checkpoint
+from jimgw.cli._output import _resolved_config_data
 
 _MINIMAL_RAW = {
     "data": {
@@ -180,13 +181,7 @@ def test_extra_fields_rejected():
 
 def test_dump_resolved_round_trip():
     cfg = PipelineConfig.model_validate(_MINIMAL_RAW)
-    dumped = cfg.model_dump(mode="json")
-    # Strip inactive FlowMC kernel sub-configs (mirrors _output.py logic)
-    if dumped.get("sampler", {}).get("type") == "flowmc":
-        active = dumped["sampler"]["local_kernel"].lower()
-        for kernel in ("mala", "hmc", "grw"):
-            if kernel != active:
-                dumped["sampler"].pop(kernel, None)
+    dumped = _resolved_config_data(cfg)
     cfg2 = PipelineConfig.model_validate(dumped)
     assert cfg.waveform.approximant == cfg2.waveform.approximant
     assert cfg.seed == cfg2.seed

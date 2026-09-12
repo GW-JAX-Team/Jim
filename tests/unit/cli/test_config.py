@@ -1,6 +1,8 @@
 """Unit tests for CLI config schema (TOML round-trips, validation, prior parsing)."""
 
 import tomllib
+import warnings
+from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
@@ -24,6 +26,7 @@ from jimgw.cli._config import (
     UniformSphereSpec,
     WaveformConfig,
 )
+from jimgw.cli._jim import _with_checkpoint
 
 _MINIMAL_RAW = {
     "data": {
@@ -187,6 +190,26 @@ def test_dump_resolved_round_trip():
     cfg2 = PipelineConfig.model_validate(dumped)
     assert cfg.waveform.approximant == cfg2.waveform.approximant
     assert cfg.seed == cfg2.seed
+
+
+def test_checkpoint_defaults_do_not_activate_inactive_flowmc_settings():
+    # Regression test: applying CLI checkpoint defaults used to round-trip the
+    # sampler config through model_dump()+model_validate(), which marks every
+    # field of every sub-config as "explicitly set" — including the inactive
+    # `hmc`/`grw` sub-configs left at their defaults — and spuriously fired
+    # the "inactive kernel sub-config" warning on every CLI run.
+    cfg = PipelineConfig.model_validate(_MINIMAL_RAW)
+    assert cfg.sampler.type == "flowmc"
+
+    with warnings.catch_warnings(record=True) as captured_warnings:
+        warnings.simplefilter("always")
+        sampler_config = _with_checkpoint(cfg.sampler, Path("checkpoints"))
+
+    assert not any(
+        "sub-config" in str(warning.message) for warning in captured_warnings
+    )
+    assert sampler_config.checkpoint_dir == Path("checkpoints")
+    assert sampler_config.checkpoint_interval == 600.0
 
 
 def test_file_config_from_toml():

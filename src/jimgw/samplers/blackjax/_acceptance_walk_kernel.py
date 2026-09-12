@@ -35,7 +35,7 @@ from blackjax.ns.base import (
     delete_fn as default_delete_fn,
 )
 from blackjax.types import ArrayLikeTree
-from jaxtyping import Array, Bool, Float, Key
+from jaxtyping import Array, Bool, Float, Int, Key
 
 from jimgw.samplers.blackjax._de_move import (
     de_proposal_scale,
@@ -78,13 +78,13 @@ def _de_one_step(
     params: DEKernelParams,
     stepper_fn,
     num_survivors: int,
+    top_indices: Int[Array, " num_survivors"],
     max_proposals: int = 1000,
 ):
     def body_fun(carry):
         _is_valid, key, _pos, _logp, count = carry
         key_pair, key_gamma, new_key = jax.random.split(key, 3)
 
-        _, top_indices = jax.lax.top_k(params.loglikelihoods, num_survivors)
         first_index, second_index = sample_two_distinct_indices(key_pair, num_survivors)
 
         first_point = jax.tree_util.tree_map(
@@ -146,9 +146,13 @@ def _de_walk(
     max_proposals: int = 1000,
     max_mcmc: int = 5000,
 ):
+    # top_indices is loop-invariant for the whole walk; compute it once here rather than inside _de_one_step's body_fun, since XLA won't hoist it out of the nested while_loops itself.
+    _, top_indices = jax.lax.top_k(params.loglikelihoods, num_survivors)
+
     one_step = partial(
         _de_one_step,
         num_survivors=num_survivors,
+        top_indices=top_indices,
         max_proposals=max_proposals,
     )
 

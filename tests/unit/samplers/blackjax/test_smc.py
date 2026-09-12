@@ -869,6 +869,9 @@ def test_smc_de_checkpoint_records_inner_kernel(tmp_path, monkeypatch):
     with open(checkpoint_path, "rb") as checkpoint_file:
         checkpoint = pickle.load(checkpoint_file)
     assert checkpoint["inner_kernel"] == "DE"
+    # The DE reference ensemble duplicates state.sampler_state.particles; it
+    # must be dropped before pickling and rebuilt on resume, not persisted.
+    assert "ensemble" not in checkpoint["state"].parameter_override
 
     with pytest.raises(ValueError, match="different SMC inner kernel"):
         make_sampler("GRW")._validate_checkpoint(checkpoint)

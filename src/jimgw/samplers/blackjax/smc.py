@@ -294,6 +294,49 @@ class BlackJAXSMCSampler(Sampler):
         )
         return smc_algorithm.init, smc_algorithm.step
 
+    def _checkpoint_safe_state(self, config: BlackJAXSMCConfig, state: Any) -> Any:
+        """Drop the DE reference ensemble from ``state`` before checkpointing.
+
+        For ``inner_kernel="DE"`` in the adaptive (inner-kernel-tuning) modes,
+        ``state.parameter_override["ensemble"]`` is always an exact copy of
+        ``state.sampler_state.particles`` — see
+        ``_build_adaptive_inner_kernel_parameters``'s ``update_ensemble_parameters``,
+        which sets it to ``extend_params({"ensemble": smc_state.particles})`` every
+        step. Persisting it doubles the particle population's footprint in every
+        checkpoint file for no benefit, since ``_restore_checkpoint_ensemble``
+        recomputes it from ``sampler_state.particles`` on resume.
+        """
+        if config.inner_kernel == "DE" and isinstance(
+            state, StateWithParameterOverride
+        ):
+            return state._replace(
+                parameter_override={
+                    key: value
+                    for key, value in state.parameter_override.items()
+                    if key != "ensemble"
+                }
+            )
+        return state
+
+    def _restore_checkpoint_ensemble(
+        self, config: BlackJAXSMCConfig, state: Any
+    ) -> Any:
+        """Reconstruct the DE ensemble dropped by ``_checkpoint_safe_state``."""
+        if (
+            config.inner_kernel == "DE"
+            and isinstance(state, StateWithParameterOverride)
+            and "ensemble" not in state.parameter_override
+        ):
+            return state._replace(
+                parameter_override={
+                    **state.parameter_override,
+                    **extend_params(
+                        {"ensemble": state.sampler_state.particles}  # type: ignore[arg-type]
+                    ),
+                }
+            )
+        return state
+
     def _load_or_initialize_state(
         self,
         checkpoint_path: Optional[Path],
@@ -352,6 +395,7 @@ class BlackJAXSMCSampler(Sampler):
                 self._prev_elapsed = 0.0
             else:
                 self._prev_elapsed = float(checkpoint["elapsed_time"])
+                state = self._restore_checkpoint_ensemble(config, state)
                 logger.info(
                     "%s: resumed from checkpoint at n_iter=%d (%s)",
                     f"{self.sampler_name} ({self.mode.upper()})",
@@ -417,7 +461,7 @@ class BlackJAXSMCSampler(Sampler):
             return last_checkpoint_at
         return config.write_checkpoint(
             {
-                "state": state,
+                "state": self._checkpoint_safe_state(config, state),
                 "rng_key": rng_key,
                 "n_iter": n_completed_iterations,
                 "mode": self.mode,

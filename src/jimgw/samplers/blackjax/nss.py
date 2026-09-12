@@ -258,7 +258,9 @@ class BlackJAXNSSSampler(Sampler):
                 ),
             )
 
-        final_state = finalise(state, dead)  # type: ignore[arg-type]  # AdaptiveNSState structurally satisfies NSState (.particles field)
+        final_state = finalise(
+            state, dead
+        )  # AdaptiveNSState structurally satisfies NSState (.particles field)
         self._final_state = jax.device_get(final_state)
         self._n_iterations = n_completed_iterations
 

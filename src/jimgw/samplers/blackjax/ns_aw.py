@@ -1,8 +1,5 @@
 """BlackJAX nested sampling with bilby/dynesty-style adaptive DE acceptance-walk kernel."""
 
-import logging
-import pickle
-import shutil
 import time
 from collections.abc import Callable
 from typing import Any, Optional
@@ -18,10 +15,14 @@ from jaxtyping import Array, Float, Key
 
 from jimgw.samplers.base import Sampler
 from jimgw.samplers.blackjax._acceptance_walk_kernel import bilby_adaptive_de_sampler
+from jimgw.samplers.blackjax.utils import (
+    load_or_initialize_checkpoint,
+    prepare_checkpointing,
+    remove_checkpoint_and_jax_cache,
+    save_checkpoint_if_due,
+)
 from jimgw.samplers.config import BlackJAXNSAWConfig
 from jimgw.samplers.periodic import to_unit_cube_stepper
-
-logger = logging.getLogger(__name__)
 
 
 class BlackJAXNSAWSampler(Sampler):
@@ -138,13 +139,7 @@ class BlackJAXNSAWSampler(Sampler):
         config = self._config
         n_live = config.n_live
         n_delete = int(n_live * config.n_delete_frac)
-        checkpoint_path = (
-            config.checkpoint_dir / "checkpoint.pkl"
-            if config.checkpoint_dir is not None
-            else None
-        )
-        config.configure_jax_cache()
-        run_started_at = time.perf_counter()
+        checkpoint_path, run_start_time = prepare_checkpointing(config)
 
         def validate_initial_particles(pos):
             arr = jnp.asarray(pos)
@@ -166,84 +161,43 @@ class BlackJAXNSAWSampler(Sampler):
             max_proposals=config.max_proposals,
         )
 
-        # Resume from checkpoint if one exists.
-        if (
-            checkpoint_path is not None
-            and config.checkpoint_interval > 0
-            and checkpoint_path.exists()
-        ):
-            initial_rng_key = rng_key
-            try:
-                with open(checkpoint_path, "rb") as checkpoint_file:
-                    checkpoint = pickle.load(checkpoint_file)
-                self._validate_checkpoint(checkpoint)
-                state = checkpoint["state"]
-                dead = checkpoint["dead"]
-                rng_key = checkpoint["rng_key"]
-                n_completed_iterations = checkpoint["n_iter"]
-                self._prev_elapsed = float(checkpoint["elapsed_time"])
-                logger.info(
-                    "%s: resumed from checkpoint at n_iter=%d (%s)",
-                    self.sampler_name,
-                    n_completed_iterations,
-                    checkpoint_path,
-                )
-            except (
-                OSError,
-                EOFError,
-                KeyError,
-                TypeError,
-                ValueError,
-                pickle.UnpicklingError,
-            ) as error:
-                logger.warning(
-                    "%s: incompatible or corrupt checkpoint at %s (%s) — starting fresh.",
-                    self.sampler_name,
-                    checkpoint_path,
-                    error,
-                )
-                rng_key = initial_rng_key
-                state = nested_sampler.init(
-                    validate_initial_particles(initial_position)
-                )  # type: ignore[call-arg]  # blackjax API
-                dead = []
-                n_completed_iterations = 0
-                self._prev_elapsed = 0.0
-        else:
-            state = nested_sampler.init(validate_initial_particles(initial_position))  # type: ignore[call-arg]  # blackjax API
-            dead = []
-            n_completed_iterations = 0
+        state, rng_key, n_completed_iterations, extra = load_or_initialize_checkpoint(
+            self,
+            checkpoint_path,
+            config,
+            rng_key,
+            initial_position,
+            lambda position: nested_sampler.init(validate_initial_particles(position)),  # type: ignore[call-arg]  # blackjax API
+            initial_extra={"dead": []},
+            load_extra=lambda checkpoint: {"dead": checkpoint["dead"]},
+            log_label=self.sampler_name,
+        )
+        dead = extra["dead"]
 
         def should_terminate(state: AdaptiveNSState) -> bool:
             dlogz = jnp.logaddexp(0, state.integrator.logZ_live - state.integrator.logZ)
             return bool(jnp.isfinite(dlogz) and dlogz < config.termination_dlogz)
 
         step_fn = jax.jit(nested_sampler.step)
-        last_checkpoint_at = time.perf_counter()
+        last_checkpoint_write_time = time.perf_counter()
 
         while not should_terminate(state):
             rng_key, step_key = jax.random.split(rng_key)
             state, dead_info = step_fn(step_key, state)
             dead.append(dead_info)
             n_completed_iterations += 1
-            if (
-                checkpoint_path is not None
-                and config.checkpoint_interval > 0
-                and time.perf_counter() - last_checkpoint_at
-                >= config.checkpoint_interval
-            ):
-                last_checkpoint_at = config.write_checkpoint(
-                    {
-                        "state": state,
-                        "dead": dead,
-                        "rng_key": rng_key,
-                        "n_iter": n_completed_iterations,
-                        "sampler_name": self.sampler_name,
-                        "elapsed_time": self._prev_elapsed
-                        + (time.perf_counter() - run_started_at),
-                    },
-                    self.sampler_name,
-                )
+            last_checkpoint_write_time = save_checkpoint_if_due(
+                self,
+                config,
+                checkpoint_path,
+                last_checkpoint_write_time,
+                run_start_time,
+                state,
+                rng_key,
+                n_completed_iterations,
+                {"dead": dead},
+                log_label=self.sampler_name,
+            )
 
         self._final_state = finalise(state, dead)
         self._n_iterations = n_completed_iterations
@@ -260,11 +214,7 @@ class BlackJAXNSAWSampler(Sampler):
             logzero=np.nan,
             dtype=np.float64,
         )
-        if checkpoint_path is not None:
-            checkpoint_path.unlink(missing_ok=True)
-        if config.checkpoint_dir is not None:
-            shutil.rmtree(config.checkpoint_dir / "jax_cache", ignore_errors=True)
-            jax.config.update("jax_compilation_cache_dir", None)
+        remove_checkpoint_and_jax_cache(config, checkpoint_path)
 
     def get_samples(self) -> dict[str, np.ndarray]:
         """Return equally-weighted posterior samples.

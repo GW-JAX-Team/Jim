@@ -9,12 +9,8 @@ Supports four mode combinations selected by
 * ``persistent_sampling=False, temperature_ladder=given`` → fixed-ladder tempered SMC
 """
 
-import logging
-import pickle
-import shutil
 import time
 from collections.abc import Callable
-from pathlib import Path
 from typing import Any, Optional
 
 import jax
@@ -44,10 +40,18 @@ from jimgw.samplers.blackjax._de_move import (
     sample_de_gamma,
     sample_two_distinct_indices,
 )
+from jimgw.samplers.blackjax.smc_utils import (
+    checkpoint_safe_state,
+    restore_checkpoint_ensemble,
+)
+from jimgw.samplers.blackjax.utils import (
+    load_or_initialize_checkpoint,
+    prepare_checkpointing,
+    remove_checkpoint_and_jax_cache,
+    save_checkpoint_if_due,
+)
 from jimgw.samplers.config import BlackJAXSMCConfig
 from jimgw.samplers.periodic import to_displacement_wrapper
-
-logger = logging.getLogger(__name__)
 
 # Fixed key used for post-sampling resampling in get_samples().
 _RESAMPLE_KEY = jax.random.key(123)
@@ -294,202 +298,12 @@ class BlackJAXSMCSampler(Sampler):
         )
         return smc_algorithm.init, smc_algorithm.step
 
-    def _checkpoint_safe_state(self, config: BlackJAXSMCConfig, state: Any) -> Any:
-        """Drop the DE reference ensemble from ``state`` before checkpointing.
-
-        For ``inner_kernel="DE"`` in the adaptive (inner-kernel-tuning) modes,
-        ``state.parameter_override["ensemble"]`` is always an exact copy of
-        ``state.sampler_state.particles`` — see
-        ``_build_adaptive_inner_kernel_parameters``'s ``update_ensemble_parameters``,
-        which sets it to ``extend_params({"ensemble": smc_state.particles})`` every
-        step. Persisting it doubles the particle population's footprint in every
-        checkpoint file for no benefit, since ``_restore_checkpoint_ensemble``
-        recomputes it from ``sampler_state.particles`` on resume.
-        """
-        if config.inner_kernel == "DE" and isinstance(
-            state, StateWithParameterOverride
-        ):
-            return state._replace(
-                parameter_override={
-                    key: value
-                    for key, value in state.parameter_override.items()
-                    if key != "ensemble"
-                }
-            )
-        return state
-
-    def _restore_checkpoint_ensemble(
-        self, config: BlackJAXSMCConfig, state: Any
-    ) -> Any:
-        """Reconstruct the DE ensemble dropped by ``_checkpoint_safe_state``."""
-        if (
-            config.inner_kernel == "DE"
-            and isinstance(state, StateWithParameterOverride)
-            and "ensemble" not in state.parameter_override
-        ):
-            return state._replace(
-                parameter_override={
-                    **state.parameter_override,
-                    **extend_params(
-                        {"ensemble": state.sampler_state.particles}  # type: ignore[arg-type]
-                    ),
-                }
-            )
-        return state
-
-    def _load_or_initialize_state(
-        self,
-        checkpoint_path: Optional[Path],
-        config: BlackJAXSMCConfig,
-        rng_key: Key,
-        initial_particles,
-        initialize_state: Callable,
-        initial_mode_data: dict[str, Any],
-        load_mode_data: Callable[[dict], dict[str, Any]],
-        n_temperature_steps: Optional[int] = None,
-    ) -> tuple[Any, Key, int, dict[str, Any]]:
-        """Load a compatible checkpoint or initialize a new SMC state.
-
-        ``load_mode_data`` restores histories that are specific to each SMC
-        mode. ``initial_mode_data`` is used when no usable checkpoint exists or
-        when a fixed-ladder checkpoint exceeds the current number of temperature
-        steps. Only trusted checkpoint files may be loaded because pickle can
-        execute arbitrary code.
-        """
-        if not (
-            checkpoint_path is not None
-            and config.checkpoint_interval > 0
-            and checkpoint_path.exists()
-        ):
-            self._prev_elapsed = 0.0
-            return (
-                initialize_state(initial_particles),
-                rng_key,
-                0,
-                dict(initial_mode_data),
-            )
-
-        initial_rng_key = rng_key
-        try:
-            with open(checkpoint_path, "rb") as checkpoint_file:
-                checkpoint = pickle.load(checkpoint_file)
-            self._validate_checkpoint(checkpoint)
-            state = checkpoint["state"]
-            rng_key = checkpoint["rng_key"]
-            n_completed_iterations = checkpoint["n_iter"]
-            mode_data = load_mode_data(checkpoint)
-            if (
-                n_temperature_steps is not None
-                and n_completed_iterations > n_temperature_steps
-            ):
-                logger.warning(
-                    "%s: checkpoint n_iter=%d exceeds current schedule length=%d — starting fresh.",
-                    f"{self.sampler_name} ({self.mode.upper()})",
-                    n_completed_iterations,
-                    n_temperature_steps,
-                )
-                rng_key = initial_rng_key
-                state = initialize_state(initial_particles)
-                n_completed_iterations = 0
-                mode_data = dict(initial_mode_data)
-                self._prev_elapsed = 0.0
-            else:
-                self._prev_elapsed = float(checkpoint["elapsed_time"])
-                state = self._restore_checkpoint_ensemble(config, state)
-                logger.info(
-                    "%s: resumed from checkpoint at n_iter=%d (%s)",
-                    f"{self.sampler_name} ({self.mode.upper()})",
-                    n_completed_iterations,
-                    checkpoint_path,
-                )
-            return state, rng_key, n_completed_iterations, mode_data
-        except (
-            OSError,
-            EOFError,
-            KeyError,
-            TypeError,
-            ValueError,
-            pickle.UnpicklingError,
-        ) as error:
-            logger.warning(
-                "%s: incompatible or corrupt checkpoint at %s (%s) — starting fresh.",
-                f"{self.sampler_name} ({self.mode.upper()})",
-                checkpoint_path,
-                error,
-            )
-            self._prev_elapsed = 0.0
-            return (
-                initialize_state(initial_particles),
-                initial_rng_key,
-                0,
-                dict(initial_mode_data),
-            )
-
-    def _prepare_checkpointing(
-        self, config: BlackJAXSMCConfig
-    ) -> tuple[Optional[Path], float]:
-        """Enable the JAX compile cache and return the checkpoint path and start time."""
-        checkpoint_path = (
-            config.checkpoint_dir / "checkpoint.pkl"
-            if config.checkpoint_dir is not None
-            else None
-        )
-        config.configure_jax_cache()
-        return checkpoint_path, time.perf_counter()
-
-    def _save_checkpoint_if_due(
-        self,
-        config: BlackJAXSMCConfig,
-        checkpoint_path: Optional[Path],
-        last_checkpoint_at: float,
-        run_started_at: float,
-        state: Any,
-        rng_key: Key,
-        n_completed_iterations: int,
-        mode_data: dict[str, Any],
-    ) -> float:
-        """Save a checkpoint when its interval has elapsed.
-
-        ``mode_data`` contains mode-specific histories to merge into the common
-        checkpoint data. Returns the last checkpoint time.
-        """
-        if not (
-            checkpoint_path is not None
-            and config.checkpoint_interval > 0
-            and time.perf_counter() - last_checkpoint_at >= config.checkpoint_interval
-        ):
-            return last_checkpoint_at
-        return config.write_checkpoint(
-            {
-                "state": self._checkpoint_safe_state(config, state),
-                "rng_key": rng_key,
-                "n_iter": n_completed_iterations,
-                "mode": self.mode,
-                "inner_kernel": config.inner_kernel,
-                "sampler_name": self.sampler_name,
-                "elapsed_time": self._prev_elapsed
-                + (time.perf_counter() - run_started_at),
-                **mode_data,
-            },
-            f"{self.sampler_name} ({self.mode.upper()})",
-        )
-
-    def _remove_checkpoint_and_jax_cache(
-        self, config: BlackJAXSMCConfig, checkpoint_path: Optional[Path]
-    ) -> None:
-        """Remove a completed run's checkpoint, JAX cache, and cache setting."""
-        if checkpoint_path is not None:
-            checkpoint_path.unlink(missing_ok=True)
-        if config.checkpoint_dir is not None:
-            shutil.rmtree(config.checkpoint_dir / "jax_cache", ignore_errors=True)
-            jax.config.update("jax_compilation_cache_dir", None)
-
     def _run_adaptive_persistent(self, rng_key: Key, initial_particles) -> None:
         """Run adaptive persistent SMC with the configured inner kernel."""
         config = self._config
         n_mcmc_steps = config.n_mcmc_steps_per_dim * self.n_dims
         target_ess = config._resolve_target_ess_fraction()
-        checkpoint_path, run_started_at = self._prepare_checkpointing(config)
+        checkpoint_path, run_start_time = prepare_checkpointing(config)
 
         inner_kernel_step = self._build_inner_kernel_step()
         update_mcmc_parameters, initial_mcmc_parameters = (
@@ -511,24 +325,28 @@ class BlackJAXSMCSampler(Sampler):
             batch_size=config.batch_size,
         )
 
+        log_label = f"{self.sampler_name} ({self.mode.upper()})"
         covariance_scale = float(config.grw.initial_cov_scale)
         state, rng_key, n_completed_iterations, mode_checkpoint_data = (
-            self._load_or_initialize_state(
+            load_or_initialize_checkpoint(
+                self,
                 checkpoint_path,
                 config,
                 rng_key,
                 initial_particles,
                 smc_algorithm.init,
-                initial_mode_data={
+                initial_extra={
                     "cov_scale": covariance_scale,
                     "accept_history": [],
                     "cov_scale_history": [],
                 },
-                load_mode_data=lambda checkpoint: {
+                load_extra=lambda checkpoint: {
                     "cov_scale": float(checkpoint.get("cov_scale", covariance_scale)),
                     "accept_history": list(checkpoint["accept_history"]),
                     "cov_scale_history": list(checkpoint["cov_scale_history"]),
                 },
+                log_label=log_label,
+                after_load=lambda state: restore_checkpoint_ensemble(config, state),
             )
         )
         covariance_scale = mode_checkpoint_data["cov_scale"]
@@ -538,7 +356,7 @@ class BlackJAXSMCSampler(Sampler):
         ]
 
         run_adaptive_step = jax.jit(smc_algorithm.step)
-        last_checkpoint_at = time.perf_counter()
+        last_checkpoint_write_time = time.perf_counter()
 
         while state.sampler_state.tempering_param < 1.0:  # type: ignore[attr-defined]
             rng_key, step_key = jax.random.split(rng_key)
@@ -565,26 +383,35 @@ class BlackJAXSMCSampler(Sampler):
             acceptance_history.append(acceptance_rate)
             n_completed_iterations += 1
 
-            last_checkpoint_at = self._save_checkpoint_if_due(
+            last_checkpoint_write_time = save_checkpoint_if_due(
+                self,
                 config,
                 checkpoint_path,
-                last_checkpoint_at,
-                run_started_at,
+                last_checkpoint_write_time,
+                run_start_time,
                 state,
                 rng_key,
                 n_completed_iterations,
                 {
+                    "mode": self.mode,
+                    "inner_kernel": config.inner_kernel,
                     "cov_scale": covariance_scale,
                     "accept_history": acceptance_history.copy(),
                     "cov_scale_history": covariance_scale_history.copy(),
                 },
+                log_label=log_label,
+                before_save=lambda state, rng_key, extra: (
+                    checkpoint_safe_state(config, state),
+                    rng_key,
+                    extra,
+                ),
             )
 
         self._final_state = state
         self._n_iterations = n_completed_iterations
         self._acceptance_history = np.asarray(acceptance_history)
         self._cov_scale_history = np.asarray(covariance_scale_history)
-        self._remove_checkpoint_and_jax_cache(config, checkpoint_path)
+        remove_checkpoint_and_jax_cache(config, checkpoint_path)
 
     def _run_fixed_persistent(
         self, rng_key: Key, initial_particles, ladder: list[float]
@@ -594,7 +421,8 @@ class BlackJAXSMCSampler(Sampler):
         n_mcmc_steps = config.n_mcmc_steps_per_dim * self.n_dims
         tempering_parameters = ladder[1:]
         n_temperature_steps = len(tempering_parameters)
-        checkpoint_path, run_started_at = self._prepare_checkpointing(config)
+        checkpoint_path, run_start_time = prepare_checkpointing(config)
+        log_label = f"{self.sampler_name} ({self.mode.upper()})"
 
         inner_kernel_step = self._build_inner_kernel_step()
         initialize_state, temperature_step = self._build_fixed_ladder_smc(
@@ -606,51 +434,68 @@ class BlackJAXSMCSampler(Sampler):
         )
 
         state, rng_key, n_completed_iterations, mode_checkpoint_data = (
-            self._load_or_initialize_state(
+            load_or_initialize_checkpoint(
+                self,
                 checkpoint_path,
                 config,
                 rng_key,
                 initial_particles,
                 initialize_state,
-                initial_mode_data={"accept_history": []},
-                load_mode_data=lambda checkpoint: {
+                initial_extra={"accept_history": []},
+                load_extra=lambda checkpoint: {
                     "accept_history": list(checkpoint["accept_history"])
                 },
-                n_temperature_steps=n_temperature_steps,
+                log_label=log_label,
+                after_load=lambda state: restore_checkpoint_ensemble(config, state),
+                is_stale=lambda n_iter: n_iter > n_temperature_steps,
+                stale_message="checkpoint n_iter exceeds current schedule length"
+                f"={n_temperature_steps}",
             )
         )
         acceptance_history: list[float] = mode_checkpoint_data["accept_history"]
 
         run_temperature_step = jax.jit(temperature_step)
-        last_checkpoint_at = time.perf_counter()
+        last_checkpoint_write_time = time.perf_counter()
 
         for tempering_parameter in tempering_parameters[n_completed_iterations:]:
             rng_key, step_key = jax.random.split(rng_key)
             state, info = run_temperature_step(step_key, state, tempering_parameter)
             acceptance_history.append(float(info.update_info.acceptance_rate.mean()))
             n_completed_iterations += 1
-            last_checkpoint_at = self._save_checkpoint_if_due(
+            last_checkpoint_write_time = save_checkpoint_if_due(
+                self,
                 config,
                 checkpoint_path,
-                last_checkpoint_at,
-                run_started_at,
+                last_checkpoint_write_time,
+                run_start_time,
                 state,
                 rng_key,
                 n_completed_iterations,
-                {"accept_history": acceptance_history.copy()},
+                {
+                    "mode": self.mode,
+                    "inner_kernel": config.inner_kernel,
+                    "accept_history": acceptance_history.copy(),
+                },
+                log_label=log_label,
+                before_save=lambda state, rng_key, extra: (
+                    checkpoint_safe_state(config, state),
+                    rng_key,
+                    extra,
+                ),
             )
 
         self._final_state = state
         self._n_iterations = n_temperature_steps
         self._acceptance_history = np.asarray(acceptance_history)
-        self._remove_checkpoint_and_jax_cache(config, checkpoint_path)
+        remove_checkpoint_and_jax_cache(config, checkpoint_path)
 
     def _run_adaptive_tempered(self, rng_key: Key, initial_particles) -> None:
         """Run adaptive tempered SMC with the configured inner kernel."""
         config = self._config
         n_mcmc_steps = config.n_mcmc_steps_per_dim * self.n_dims
         target_ess = config._resolve_target_ess_fraction()
-        checkpoint_path, run_started_at = self._prepare_checkpointing(config)
+        checkpoint_path, run_start_time = prepare_checkpointing(config)
+        log_label = f"{self.sampler_name} ({self.mode.upper()})"
 
         inner_kernel_step = self._build_inner_kernel_step()
         update_mcmc_parameters, initial_mcmc_parameters = (
@@ -672,22 +517,25 @@ class BlackJAXSMCSampler(Sampler):
         )
 
         state, rng_key, n_completed_iterations, mode_checkpoint_data = (
-            self._load_or_initialize_state(
+            load_or_initialize_checkpoint(
+                self,
                 checkpoint_path,
                 config,
                 rng_key,
                 initial_particles,
                 smc_algorithm.init,
-                initial_mode_data={
+                initial_extra={
                     "accept_history": [],
                     "tempering_schedule": [],
                     "is_weights_history": [],
                 },
-                load_mode_data=lambda checkpoint: {
+                load_extra=lambda checkpoint: {
                     "accept_history": list(checkpoint["accept_history"]),
                     "tempering_schedule": list(checkpoint["tempering_schedule"]),
                     "is_weights_history": list(checkpoint["is_weights_history"]),
                 },
+                log_label=log_label,
+                after_load=lambda state: restore_checkpoint_ensemble(config, state),
             )
         )
         acceptance_history: list[float] = mode_checkpoint_data["accept_history"]
@@ -697,7 +545,7 @@ class BlackJAXSMCSampler(Sampler):
         ]
 
         run_adaptive_step = jax.jit(smc_algorithm.step)
-        last_checkpoint_at = time.perf_counter()
+        last_checkpoint_write_time = time.perf_counter()
 
         while state.sampler_state.tempering_param < 1.0:
             rng_key, step_key = jax.random.split(rng_key)
@@ -708,19 +556,28 @@ class BlackJAXSMCSampler(Sampler):
             importance_weight_history.append(np.asarray(state.sampler_state.weights))
             n_completed_iterations += 1
 
-            last_checkpoint_at = self._save_checkpoint_if_due(
+            last_checkpoint_write_time = save_checkpoint_if_due(
+                self,
                 config,
                 checkpoint_path,
-                last_checkpoint_at,
-                run_started_at,
+                last_checkpoint_write_time,
+                run_start_time,
                 state,
                 rng_key,
                 n_completed_iterations,
                 {
+                    "mode": self.mode,
+                    "inner_kernel": config.inner_kernel,
                     "accept_history": acceptance_history.copy(),
                     "tempering_schedule": tempering_schedule.copy(),
                     "is_weights_history": np.stack(importance_weight_history),
                 },
+                log_label=log_label,
+                before_save=lambda state, rng_key, extra: (
+                    checkpoint_safe_state(config, state),
+                    rng_key,
+                    extra,
+                ),
             )
 
         self._final_state = state
@@ -732,7 +589,7 @@ class BlackJAXSMCSampler(Sampler):
             if importance_weight_history
             else np.empty((0, initial_particles.shape[0]))
         )
-        self._remove_checkpoint_and_jax_cache(config, checkpoint_path)
+        remove_checkpoint_and_jax_cache(config, checkpoint_path)
 
     def _run_fixed_tempered(
         self, rng_key: Key, initial_particles, ladder: list[float]
@@ -742,7 +599,8 @@ class BlackJAXSMCSampler(Sampler):
         n_mcmc_steps = config.n_mcmc_steps_per_dim * self.n_dims
         tempering_parameters = ladder[1:]
         n_temperature_steps = len(tempering_parameters)
-        checkpoint_path, run_started_at = self._prepare_checkpointing(config)
+        checkpoint_path, run_start_time = prepare_checkpointing(config)
+        log_label = f"{self.sampler_name} ({self.mode.upper()})"
 
         inner_kernel_step = self._build_inner_kernel_step()
         initialize_state, temperature_step = self._build_fixed_ladder_smc(
@@ -754,18 +612,23 @@ class BlackJAXSMCSampler(Sampler):
         )
 
         state, rng_key, n_completed_iterations, mode_checkpoint_data = (
-            self._load_or_initialize_state(
+            load_or_initialize_checkpoint(
+                self,
                 checkpoint_path,
                 config,
                 rng_key,
                 initial_particles,
                 initialize_state,
-                initial_mode_data={"accept_history": [], "is_weights_history": []},
-                load_mode_data=lambda checkpoint: {
+                initial_extra={"accept_history": [], "is_weights_history": []},
+                load_extra=lambda checkpoint: {
                     "accept_history": list(checkpoint["accept_history"]),
                     "is_weights_history": list(checkpoint["is_weights_history"]),
                 },
-                n_temperature_steps=n_temperature_steps,
+                log_label=log_label,
+                after_load=lambda state: restore_checkpoint_ensemble(config, state),
+                is_stale=lambda n_iter: n_iter > n_temperature_steps,
+                stale_message="checkpoint n_iter exceeds current schedule length"
+                f"={n_temperature_steps}",
             )
         )
         acceptance_history: list[float] = mode_checkpoint_data["accept_history"]
@@ -774,7 +637,7 @@ class BlackJAXSMCSampler(Sampler):
         ]
 
         run_temperature_step = jax.jit(temperature_step)
-        last_checkpoint_at = time.perf_counter()
+        last_checkpoint_write_time = time.perf_counter()
 
         for tempering_parameter in tempering_parameters[n_completed_iterations:]:
             rng_key, step_key = jax.random.split(rng_key)
@@ -782,18 +645,27 @@ class BlackJAXSMCSampler(Sampler):
             acceptance_history.append(float(info.update_info.acceptance_rate.mean()))
             importance_weight_history.append(np.asarray(state.weights))
             n_completed_iterations += 1
-            last_checkpoint_at = self._save_checkpoint_if_due(
+            last_checkpoint_write_time = save_checkpoint_if_due(
+                self,
                 config,
                 checkpoint_path,
-                last_checkpoint_at,
-                run_started_at,
+                last_checkpoint_write_time,
+                run_start_time,
                 state,
                 rng_key,
                 n_completed_iterations,
                 {
+                    "mode": self.mode,
+                    "inner_kernel": config.inner_kernel,
                     "accept_history": acceptance_history.copy(),
                     "is_weights_history": np.stack(importance_weight_history),
                 },
+                log_label=log_label,
+                before_save=lambda state, rng_key, extra: (
+                    checkpoint_safe_state(config, state),
+                    rng_key,
+                    extra,
+                ),
             )
 
         self._final_state = state
@@ -804,7 +676,7 @@ class BlackJAXSMCSampler(Sampler):
             if importance_weight_history
             else np.empty((0, initial_particles.shape[0]))
         )
-        self._remove_checkpoint_and_jax_cache(config, checkpoint_path)
+        remove_checkpoint_and_jax_cache(config, checkpoint_path)
 
     def _sample(
         self,

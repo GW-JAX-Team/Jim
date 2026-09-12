@@ -1,8 +1,5 @@
 """BlackJAX Nested Slice Sampling (NSS)."""
 
-import logging
-import pickle
-import shutil
 import time
 from collections.abc import Callable
 from functools import partial
@@ -37,10 +34,14 @@ from jimgw.samplers.blackjax.sharding import (
     place_key,
     place_state,
 )
+from jimgw.samplers.blackjax.utils import (
+    load_or_initialize_checkpoint,
+    prepare_checkpointing,
+    remove_checkpoint_and_jax_cache,
+    save_checkpoint_if_due,
+)
 from jimgw.samplers.config import BlackJAXNSSConfig
 from jimgw.samplers.periodic import to_prior_space_proposal
-
-logger = logging.getLogger(__name__)
 
 
 class BlackJAXNSSSampler(Sampler):
@@ -165,13 +166,7 @@ class BlackJAXNSSSampler(Sampler):
         n_live = config.n_live
         n_delete = int(n_live * config.n_delete_frac)
         mesh = make_live_mesh(config.n_devices, n_live, n_delete)
-        checkpoint_path = (
-            config.checkpoint_dir / "checkpoint.pkl"
-            if config.checkpoint_dir is not None
-            else None
-        )
-        config.configure_jax_cache()
-        run_started_at = time.perf_counter()
+        checkpoint_path, run_start_time = prepare_checkpointing(config)
 
         def validate_initial_particles(pos):
             arr = jnp.asarray(pos)
@@ -212,58 +207,23 @@ class BlackJAXNSSSampler(Sampler):
             )
             return place_state(state, mesh) if mesh is not None else state
 
-        # Resume from checkpoint if one exists.
-        if (
-            checkpoint_path is not None
-            and config.checkpoint_interval > 0
-            and checkpoint_path.exists()
-        ):
-            initial_rng_key = rng_key
-            try:
-                with open(checkpoint_path, "rb") as checkpoint_file:
-                    checkpoint = pickle.load(checkpoint_file)
-                self._validate_checkpoint(checkpoint)
-                state = checkpoint["state"]
-                dead = checkpoint["dead"]
-                rng_key = checkpoint["rng_key"]
-                if mesh is not None:
-                    state = place_state(state, mesh)
-                    rng_key = place_key(rng_key, mesh)
-                n_completed_iterations = checkpoint["n_iter"]
-                self._prev_elapsed = float(checkpoint["elapsed_time"])
-                logger.info(
-                    "%s: resumed from checkpoint at n_iter=%d (%s)",
-                    self.sampler_name,
-                    n_completed_iterations,
-                    checkpoint_path,
-                )
-            except (
-                OSError,
-                EOFError,
-                KeyError,
-                TypeError,
-                ValueError,
-                pickle.UnpicklingError,
-            ) as error:
-                logger.warning(
-                    "%s: incompatible or corrupt checkpoint at %s (%s) — starting fresh.",
-                    self.sampler_name,
-                    checkpoint_path,
-                    error,
-                )
-                rng_key = initial_rng_key
-                state = initialize_nested_sampler_state(
-                    validate_initial_particles(initial_position)
-                )
-                dead = []
-                n_completed_iterations = 0
-                self._prev_elapsed = 0.0
-        else:
-            state = initialize_nested_sampler_state(
-                validate_initial_particles(initial_position)
-            )
-            dead = []
-            n_completed_iterations = 0
+        state, rng_key, n_completed_iterations, extra = load_or_initialize_checkpoint(
+            self,
+            checkpoint_path,
+            config,
+            rng_key,
+            initial_position,
+            lambda position: initialize_nested_sampler_state(
+                validate_initial_particles(position)
+            ),
+            initial_extra={"dead": []},
+            load_extra=lambda checkpoint: {"dead": checkpoint["dead"]},
+            log_label=self.sampler_name,
+            after_load=lambda state: (
+                place_state(state, mesh) if mesh is not None else state
+            ),
+        )
+        dead = extra["dead"]
 
         if mesh is not None:
             rng_key = place_key(rng_key, mesh)
@@ -273,33 +233,34 @@ class BlackJAXNSSSampler(Sampler):
             return bool(jnp.isfinite(dlogz) and dlogz < config.termination_dlogz)
 
         step_fn = jax.jit(nested_sampler.step)
-        last_checkpoint_at = time.perf_counter()
+        last_checkpoint_write_time = time.perf_counter()
 
         while not should_terminate(state):
             rng_key, step_key = jax.random.split(rng_key)
             state, dead_info = step_fn(step_key, state)
             dead.append(dead_info)
             n_completed_iterations += 1
-            if (
-                checkpoint_path is not None
-                and config.checkpoint_interval > 0
-                and time.perf_counter() - last_checkpoint_at
-                >= config.checkpoint_interval
-            ):
-                last_checkpoint_at = config.write_checkpoint(
-                    {
-                        "state": jax.device_get(state),
-                        "dead": jax.device_get(dead),
-                        "rng_key": jax.device_get(rng_key),
-                        "n_iter": n_completed_iterations,
-                        "sampler_name": self.sampler_name,
-                        "elapsed_time": self._prev_elapsed
-                        + (time.perf_counter() - run_started_at),
-                    },
-                    self.sampler_name,
-                )
+            last_checkpoint_write_time = save_checkpoint_if_due(
+                self,
+                config,
+                checkpoint_path,
+                last_checkpoint_write_time,
+                run_start_time,
+                state,
+                rng_key,
+                n_completed_iterations,
+                {"dead": dead},
+                log_label=self.sampler_name,
+                before_save=lambda state, rng_key, extra: (
+                    jax.device_get(state),
+                    jax.device_get(rng_key),
+                    jax.device_get(extra),
+                ),
+            )
 
-        final_state = finalise(state, dead)  # type: ignore[arg-type]  # AdaptiveNSState structurally satisfies NSState (.particles field)
+        final_state = finalise(
+            state, dead
+        )  # AdaptiveNSState structurally satisfies NSState (.particles field)
         self._final_state = jax.device_get(final_state)
         self._n_iterations = n_completed_iterations
 
@@ -315,11 +276,7 @@ class BlackJAXNSSSampler(Sampler):
             logzero=np.nan,
             dtype=np.float64,
         )
-        if checkpoint_path is not None:
-            checkpoint_path.unlink(missing_ok=True)
-        if config.checkpoint_dir is not None:
-            shutil.rmtree(config.checkpoint_dir / "jax_cache", ignore_errors=True)
-            jax.config.update("jax_compilation_cache_dir", None)
+        remove_checkpoint_and_jax_cache(config, checkpoint_path)
 
     def get_samples(self) -> dict[str, np.ndarray]:
         """Return equally-weighted posterior samples via anesthetic's ``posterior_points``.

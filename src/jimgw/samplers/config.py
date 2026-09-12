@@ -79,7 +79,7 @@ class _CheckpointMixin(BaseModel):
 
         Returns:
             Wall-clock time of the write (``time.perf_counter()``), suitable
-            for resetting the caller's ``last_checkpoint_at`` timer.
+            for resetting the caller's ``last_checkpoint_write_time`` timer.
         """
         assert self.checkpoint_dir is not None
         checkpoint_path = self.checkpoint_dir / "checkpoint.pkl"
@@ -88,13 +88,13 @@ class _CheckpointMixin(BaseModel):
         with open(temporary_path, "wb") as checkpoint_file:
             pickle.dump(data, checkpoint_file)
         temporary_path.replace(checkpoint_path)
-        checkpoint_written_at = time.perf_counter()
+        checkpoint_write_time = time.perf_counter()
         logger.debug(
             "%s: checkpoint saved at n_iter=%s",
             label,
             data.get("n_iter", "?"),
         )
-        return checkpoint_written_at
+        return checkpoint_write_time
 
     def configure_jax_cache(self) -> None:
         """Enable JAX's persistent XLA compilation cache under ``checkpoint_dir/jax_cache``.

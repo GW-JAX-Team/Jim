@@ -9,12 +9,8 @@ Supports four mode combinations selected by
 * ``persistent_sampling=False, temperature_ladder=given`` → fixed-ladder tempered SMC
 """
 
-import logging
-import pickle
-import shutil
 import time
 from collections.abc import Callable
-from pathlib import Path
 from typing import Any, Optional
 
 import jax
@@ -39,10 +35,14 @@ from blackjax.smc.resampling import systematic
 from jaxtyping import Array, Float, Key
 
 from jimgw.samplers.base import Sampler
+from jimgw.samplers.blackjax.utils import (
+    load_or_initialize_checkpoint,
+    prepare_checkpointing,
+    remove_checkpoint_and_jax_cache,
+    save_checkpoint_if_due,
+)
 from jimgw.samplers.config import BlackJAXSMCConfig
 from jimgw.samplers.periodic import to_displacement_wrapper
-
-logger = logging.getLogger(__name__)
 
 # Fixed key used for post-sampling resampling in get_samples().
 _RESAMPLE_KEY = jax.random.key(123)
@@ -152,94 +152,6 @@ class BlackJAXSMCSampler(Sampler):
 
         return step
 
-    def _resume_or_init_state(
-        self,
-        ckpt_path: Optional[Path],
-        config: BlackJAXSMCConfig,
-        rng_key: Key,
-        initial_particles,
-        smc_alg,
-        fresh_extra: dict[str, Any],
-        restore_extra: Callable[[dict], dict[str, Any]],
-        n_schedule: Optional[int] = None,
-    ) -> tuple[Any, Key, int, dict[str, Any]]:
-        """Resume ``(state, rng_key, n_iter, extra)`` from a checkpoint, or init fresh.
-
-        ``restore_extra`` maps a loaded checkpoint dict to the mode-specific
-        history fields (e.g. acceptance/covariance/tempering history);
-        ``fresh_extra`` is used whenever sampling starts fresh — no
-        checkpoint, an incompatible/corrupt one, or (fixed-ladder modes
-        only, via ``n_schedule``) a checkpoint whose ``n_iter`` exceeds the
-        current schedule length. Sets ``self._prev_elapsed`` as a side
-        effect, matching each mode's previous per-branch behavior.
-        """
-        if not (
-            ckpt_path is not None
-            and config.checkpoint_interval > 0
-            and ckpt_path.exists()
-        ):
-            self._prev_elapsed = 0.0
-            return (
-                smc_alg.init(initial_particles),
-                rng_key,
-                0,
-                dict(fresh_extra),
-            )
-
-        _initial_rng_key = rng_key
-        try:
-            with open(ckpt_path, "rb") as _f:
-                _ckpt = pickle.load(
-                    _f
-                )  # Only load trusted checkpoints — pickle executes arbitrary code.
-            self._validate_checkpoint(_ckpt)
-            state = _ckpt["state"]
-            rng_key = _ckpt["rng_key"]
-            n_iter = _ckpt["n_iter"]
-            extra = restore_extra(_ckpt)
-            if n_schedule is not None and n_iter > n_schedule:
-                logger.warning(
-                    "%s: checkpoint n_iter=%d exceeds current schedule length=%d — starting fresh.",
-                    f"{self.sampler_name} ({self.mode.upper()})",
-                    n_iter,
-                    n_schedule,
-                )
-                rng_key = _initial_rng_key
-                state = smc_alg.init(initial_particles)
-                n_iter = 0
-                extra = dict(fresh_extra)
-                self._prev_elapsed = 0.0
-            else:
-                self._prev_elapsed = float(_ckpt["elapsed_time"])
-                logger.info(
-                    "%s: resumed from checkpoint at n_iter=%d (%s)",
-                    f"{self.sampler_name} ({self.mode.upper()})",
-                    n_iter,
-                    ckpt_path,
-                )
-            return state, rng_key, n_iter, extra
-        except (
-            OSError,
-            EOFError,
-            KeyError,
-            TypeError,
-            ValueError,
-            pickle.UnpicklingError,
-        ) as _e:
-            logger.warning(
-                "%s: incompatible or corrupt checkpoint at %s (%s) — starting fresh.",
-                f"{self.sampler_name} ({self.mode.upper()})",
-                ckpt_path,
-                _e,
-            )
-            self._prev_elapsed = 0.0
-            return (
-                smc_alg.init(initial_particles),
-                _initial_rng_key,
-                0,
-                dict(fresh_extra),
-            )
-
     # ------------------------------------------------------------------
     # Mode runners
     # ------------------------------------------------------------------
@@ -249,21 +161,18 @@ class BlackJAXSMCSampler(Sampler):
         config = self._config
         n_mcmc_steps = config.n_mcmc_steps_per_dim * self.n_dims
         target_ess = config._resolve_target_ess_fraction()
-        ckpt_path = (
-            config.checkpoint_dir / "checkpoint.pkl"
-            if config.checkpoint_dir is not None
-            else None
-        )
-        config.configure_jax_cache()
-        _method_t0 = time.perf_counter()
+        checkpoint_path, run_start_time = prepare_checkpointing(config)
+        log_label = f"{self.sampler_name} ({self.mode.upper()})"
 
         mcmc_step = self._build_mcmc_step()
-        cov0 = jnp.atleast_2d(jnp.cov(initial_particles.T)) * config.initial_cov_scale
+        initial_covariance = (
+            jnp.atleast_2d(jnp.cov(initial_particles.T)) * config.initial_cov_scale
+        )
 
         def mcmc_parameter_update_fn(_key, state, _info):
             return extend_params({"cov": jnp.atleast_2d(jnp.cov(state.particles.T))})  # type: ignore[arg-type]  # blackjax stubs: extend_params accepts dict
 
-        smc_alg = inner_kernel_tuning(
+        smc_algorithm = inner_kernel_tuning(
             smc_algorithm=adaptive_persistent_sampling_smc,
             logprior_fn=self._log_prior_fn,
             loglikelihood_fn=self._log_likelihood_fn,
@@ -272,88 +181,89 @@ class BlackJAXSMCSampler(Sampler):
             mcmc_init_fn=rmh.init,
             resampling_fn=systematic,
             mcmc_parameter_update_fn=mcmc_parameter_update_fn,
-            initial_parameter_value=extend_params({"cov": cov0}),  # type: ignore[arg-type]  # blackjax stubs: extend_params accepts dict
+            initial_parameter_value=extend_params({"cov": initial_covariance}),  # type: ignore[arg-type]  # blackjax stubs: extend_params accepts dict
             num_mcmc_steps=n_mcmc_steps,
             target_ess=target_ess,
             batch_size=config.batch_size,
         )
 
-        cov_scale = float(config.initial_cov_scale)
-        state, rng_key, n_iter, _extra = self._resume_or_init_state(
-            ckpt_path,
-            config,
-            rng_key,
-            initial_particles,
-            smc_alg,
-            fresh_extra={
-                "cov_scale": cov_scale,
-                "accept_history": [],
-                "cov_scale_history": [],
-            },
-            restore_extra=lambda ckpt: {
-                "cov_scale": float(ckpt.get("cov_scale", cov_scale)),
-                "accept_history": list(ckpt["accept_history"]),
-                "cov_scale_history": list(ckpt["cov_scale_history"]),
-            },
+        covariance_scale = float(config.initial_cov_scale)
+        state, rng_key, n_completed_iterations, mode_checkpoint_data = (
+            load_or_initialize_checkpoint(
+                self,
+                checkpoint_path,
+                config,
+                rng_key,
+                initial_particles,
+                smc_algorithm.init,
+                initial_extra={
+                    "cov_scale": covariance_scale,
+                    "accept_history": [],
+                    "cov_scale_history": [],
+                },
+                load_extra=lambda checkpoint: {
+                    "cov_scale": float(checkpoint.get("cov_scale", covariance_scale)),
+                    "accept_history": list(checkpoint["accept_history"]),
+                    "cov_scale_history": list(checkpoint["cov_scale_history"]),
+                },
+                log_label=log_label,
+            )
         )
-        cov_scale = _extra["cov_scale"]
-        accept_list: list[float] = _extra["accept_history"]
-        cov_scale_list: list[float] = _extra["cov_scale_history"]
+        covariance_scale = mode_checkpoint_data["cov_scale"]
+        acceptance_history: list[float] = mode_checkpoint_data["accept_history"]
+        covariance_scale_history: list[float] = mode_checkpoint_data[
+            "cov_scale_history"
+        ]
 
-        step_fn = jax.jit(smc_alg.step)
-        _last_ckpt_t = time.perf_counter()
+        run_adaptive_step = jax.jit(smc_algorithm.step)
+        last_checkpoint_write_time = time.perf_counter()
 
         while state.sampler_state.tempering_param < 1.0:  # type: ignore[attr-defined]  # blackjax stubs
-            rng_key, subkey = jax.random.split(rng_key)
-            state, info = step_fn(subkey, state)
+            rng_key, step_key = jax.random.split(rng_key)
+            state, info = run_adaptive_step(step_key, state)
 
-            ps = state.sampler_state
+            sampler_state = state.sampler_state
             acceptance_rate = float(info.update_info.acceptance_rate.mean())
-            new_scale = cov_scale * float(
+            updated_covariance_scale = covariance_scale * float(
                 jnp.exp(
                     config.scale_adaptation_gain
                     * (acceptance_rate - config.target_acceptance_rate)
                 )
             )
-            current_cov = state.parameter_override["cov"]
-            new_params = extend_params({"cov": current_cov[0] * new_scale})  # type: ignore[arg-type]  # blackjax stubs
-            state = StateWithParameterOverride(ps, new_params)  # type: ignore[arg-type]  # blackjax stubs
+            current_covariance = state.parameter_override["cov"]
+            updated_parameters = extend_params(
+                {"cov": current_covariance[0] * updated_covariance_scale}  # type: ignore[arg-type]  # blackjax stubs
+            )
+            state = StateWithParameterOverride(sampler_state, updated_parameters)  # type: ignore[arg-type]  # blackjax stubs
 
-            accept_list.append(acceptance_rate)
-            cov_scale_list.append(new_scale)
-            cov_scale = new_scale
-            n_iter += 1
+            acceptance_history.append(acceptance_rate)
+            covariance_scale_history.append(updated_covariance_scale)
+            covariance_scale = updated_covariance_scale
+            n_completed_iterations += 1
 
-            if (
-                ckpt_path is not None
-                and config.checkpoint_interval > 0
-                and time.perf_counter() - _last_ckpt_t >= config.checkpoint_interval
-            ):
-                _last_ckpt_t = config.write_checkpoint(
-                    {
-                        "state": state,
-                        "rng_key": rng_key,
-                        "n_iter": n_iter,
-                        "mode": self.mode,
-                        "sampler_name": self.sampler_name,
-                        "elapsed_time": self._prev_elapsed
-                        + (time.perf_counter() - _method_t0),
-                        "cov_scale": cov_scale,
-                        "accept_history": accept_list.copy(),
-                        "cov_scale_history": cov_scale_list.copy(),
-                    },
-                    f"{self.sampler_name} ({self.mode.upper()})",
-                )
+            last_checkpoint_write_time = save_checkpoint_if_due(
+                self,
+                config,
+                checkpoint_path,
+                last_checkpoint_write_time,
+                run_start_time,
+                state,
+                rng_key,
+                n_completed_iterations,
+                {
+                    "mode": self.mode,
+                    "cov_scale": covariance_scale,
+                    "accept_history": acceptance_history.copy(),
+                    "cov_scale_history": covariance_scale_history.copy(),
+                },
+                log_label=log_label,
+            )
 
         self._final_state = state
-        self._n_iterations = n_iter
-        self._acceptance_history = np.asarray(accept_list)
-        self._cov_scale_history = np.asarray(cov_scale_list)
-        if ckpt_path is not None:
-            ckpt_path.unlink(missing_ok=True)
-        if config.checkpoint_dir is not None:
-            shutil.rmtree(config.checkpoint_dir / "jax_cache", ignore_errors=True)
-            jax.config.update("jax_compilation_cache_dir", None)
+        self._n_iterations = n_completed_iterations
+        self._acceptance_history = np.asarray(acceptance_history)
+        self._cov_scale_history = np.asarray(covariance_scale_history)
+        remove_checkpoint_and_jax_cache(config, checkpoint_path)
 
     def _run_fixed_persistent(
         self, rng_key: Key, initial_particles, ladder: list[float]
@@ -361,99 +271,94 @@ class BlackJAXSMCSampler(Sampler):
         """Mode FP: persistent_sampling_smc over an explicit temperature ladder — Python for loop."""
         config = self._config
         n_mcmc_steps = config.n_mcmc_steps_per_dim * self.n_dims
-        ladder_values = ladder[1:]  # skip 0.0 (already in init state)
-        n_schedule = len(ladder_values)
-        ckpt_path = (
-            config.checkpoint_dir / "checkpoint.pkl"
-            if config.checkpoint_dir is not None
-            else None
-        )
-        config.configure_jax_cache()
-        _method_t0 = time.perf_counter()
+        tempering_parameters = ladder[1:]  # skip 0.0 (already in init state)
+        n_temperature_steps = len(tempering_parameters)
+        checkpoint_path, run_start_time = prepare_checkpointing(config)
+        log_label = f"{self.sampler_name} ({self.mode.upper()})"
 
         mcmc_step = self._build_mcmc_step()
-        cov0 = jnp.atleast_2d(jnp.cov(initial_particles.T)) * config.initial_cov_scale
+        initial_covariance = (
+            jnp.atleast_2d(jnp.cov(initial_particles.T)) * config.initial_cov_scale
+        )
 
-        smc_alg = persistent_sampling_smc(
+        smc_algorithm = persistent_sampling_smc(
             logprior_fn=self._log_prior_fn,
             loglikelihood_fn=self._log_likelihood_fn,
-            n_schedule=n_schedule,
+            n_schedule=n_temperature_steps,
             mcmc_step_fn=mcmc_step,
             mcmc_init_fn=rmh.init,
-            mcmc_parameters=extend_params({"cov": cov0}),  # type: ignore[arg-type]  # blackjax stubs: extend_params accepts dict
+            mcmc_parameters=extend_params({"cov": initial_covariance}),  # type: ignore[arg-type]  # blackjax stubs: extend_params accepts dict
             resampling_fn=systematic,
             num_mcmc_steps=n_mcmc_steps,
             batch_size=config.batch_size,
         )
 
-        state, rng_key, n_iter, _extra = self._resume_or_init_state(
-            ckpt_path,
-            config,
-            rng_key,
-            initial_particles,
-            smc_alg,
-            fresh_extra={"accept_history": []},
-            restore_extra=lambda ckpt: {"accept_history": list(ckpt["accept_history"])},
-            n_schedule=n_schedule,
+        state, rng_key, n_completed_iterations, mode_checkpoint_data = (
+            load_or_initialize_checkpoint(
+                self,
+                checkpoint_path,
+                config,
+                rng_key,
+                initial_particles,
+                smc_algorithm.init,
+                initial_extra={"accept_history": []},
+                load_extra=lambda checkpoint: {
+                    "accept_history": list(checkpoint["accept_history"])
+                },
+                log_label=log_label,
+                is_stale=lambda n_iter: n_iter > n_temperature_steps,
+                stale_message="checkpoint n_iter exceeds current schedule length"
+                f"={n_temperature_steps}",
+            )
         )
-        accept_list: list[float] = _extra["accept_history"]
+        acceptance_history: list[float] = mode_checkpoint_data["accept_history"]
 
-        step_fn = jax.jit(smc_alg.step)
-        _last_ckpt_t = time.perf_counter()
+        run_temperature_step = jax.jit(smc_algorithm.step)
+        last_checkpoint_write_time = time.perf_counter()
 
-        for lmbda in ladder_values[n_iter:]:
-            rng_key, subkey = jax.random.split(rng_key)
-            state, info = step_fn(subkey, state, lmbda)
-            accept_list.append(float(info.update_info.acceptance_rate.mean()))
-            n_iter += 1
-            if (
-                ckpt_path is not None
-                and config.checkpoint_interval > 0
-                and time.perf_counter() - _last_ckpt_t >= config.checkpoint_interval
-            ):
-                _last_ckpt_t = config.write_checkpoint(
-                    {
-                        "state": state,
-                        "rng_key": rng_key,
-                        "n_iter": n_iter,
-                        "mode": self.mode,
-                        "sampler_name": self.sampler_name,
-                        "elapsed_time": self._prev_elapsed
-                        + (time.perf_counter() - _method_t0),
-                        "accept_history": accept_list.copy(),
-                    },
-                    f"{self.sampler_name} ({self.mode.upper()})",
-                )
+        for tempering_parameter in tempering_parameters[n_completed_iterations:]:
+            rng_key, step_key = jax.random.split(rng_key)
+            state, info = run_temperature_step(step_key, state, tempering_parameter)
+            acceptance_history.append(float(info.update_info.acceptance_rate.mean()))
+            n_completed_iterations += 1
+            last_checkpoint_write_time = save_checkpoint_if_due(
+                self,
+                config,
+                checkpoint_path,
+                last_checkpoint_write_time,
+                run_start_time,
+                state,
+                rng_key,
+                n_completed_iterations,
+                {
+                    "mode": self.mode,
+                    "accept_history": acceptance_history.copy(),
+                },
+                log_label=log_label,
+            )
 
         self._final_state = state
-        self._n_iterations = n_schedule
-        self._acceptance_history = np.asarray(accept_list)
-        if ckpt_path is not None:
-            ckpt_path.unlink(missing_ok=True)
-        if config.checkpoint_dir is not None:
-            shutil.rmtree(config.checkpoint_dir / "jax_cache", ignore_errors=True)
-            jax.config.update("jax_compilation_cache_dir", None)
+        self._n_iterations = n_temperature_steps
+        self._acceptance_history = np.asarray(acceptance_history)
+        remove_checkpoint_and_jax_cache(config, checkpoint_path)
 
     def _run_adaptive_tempered(self, rng_key: Key, initial_particles) -> None:
         """Mode AT: adaptive_tempered_smc + inner_kernel_tuning + Python while."""
         config = self._config
         n_mcmc_steps = config.n_mcmc_steps_per_dim * self.n_dims
         target_ess = config._resolve_target_ess_fraction()
-        ckpt_path = (
-            config.checkpoint_dir / "checkpoint.pkl"
-            if config.checkpoint_dir is not None
-            else None
-        )
-        config.configure_jax_cache()
-        _method_t0 = time.perf_counter()
+        checkpoint_path, run_start_time = prepare_checkpointing(config)
+        log_label = f"{self.sampler_name} ({self.mode.upper()})"
 
         mcmc_step = self._build_mcmc_step()
-        cov0 = jnp.atleast_2d(jnp.cov(initial_particles.T)) * config.initial_cov_scale
+        initial_covariance = (
+            jnp.atleast_2d(jnp.cov(initial_particles.T)) * config.initial_cov_scale
+        )
 
         def mcmc_parameter_update_fn(_key, state, _info):
             return extend_params({"cov": jnp.atleast_2d(jnp.cov(state.particles.T))})  # type: ignore[arg-type]  # blackjax stubs: extend_params accepts dict
 
-        smc_alg = inner_kernel_tuning(
+        smc_algorithm = inner_kernel_tuning(
             smc_algorithm=adaptive_tempered_smc,
             logprior_fn=self._log_prior_fn,
             loglikelihood_fn=self._log_likelihood_fn,
@@ -461,80 +366,79 @@ class BlackJAXSMCSampler(Sampler):
             mcmc_init_fn=rmh.init,
             resampling_fn=systematic,
             mcmc_parameter_update_fn=mcmc_parameter_update_fn,
-            initial_parameter_value=extend_params({"cov": cov0}),  # type: ignore[arg-type]  # blackjax stubs: extend_params accepts dict
+            initial_parameter_value=extend_params({"cov": initial_covariance}),  # type: ignore[arg-type]  # blackjax stubs: extend_params accepts dict
             num_mcmc_steps=n_mcmc_steps,
             target_ess=target_ess,
             batch_size=config.batch_size,
         )
 
-        state, rng_key, n_iter, _extra = self._resume_or_init_state(
-            ckpt_path,
-            config,
-            rng_key,
-            initial_particles,
-            smc_alg,
-            fresh_extra={
-                "accept_history": [],
-                "tempering_schedule": [],
-                "is_weights_history": [],
-            },
-            restore_extra=lambda ckpt: {
-                "accept_history": list(ckpt["accept_history"]),
-                "tempering_schedule": list(ckpt["tempering_schedule"]),
-                "is_weights_history": list(ckpt["is_weights_history"]),
-            },
+        state, rng_key, n_completed_iterations, mode_checkpoint_data = (
+            load_or_initialize_checkpoint(
+                self,
+                checkpoint_path,
+                config,
+                rng_key,
+                initial_particles,
+                smc_algorithm.init,
+                initial_extra={
+                    "accept_history": [],
+                    "tempering_schedule": [],
+                    "is_weights_history": [],
+                },
+                load_extra=lambda checkpoint: {
+                    "accept_history": list(checkpoint["accept_history"]),
+                    "tempering_schedule": list(checkpoint["tempering_schedule"]),
+                    "is_weights_history": list(checkpoint["is_weights_history"]),
+                },
+                log_label=log_label,
+            )
         )
-        accept_list: list[float] = _extra["accept_history"]
-        temp_list: list[float] = _extra["tempering_schedule"]
-        is_weights_list: list[np.ndarray] = _extra["is_weights_history"]
+        acceptance_history: list[float] = mode_checkpoint_data["accept_history"]
+        tempering_schedule: list[float] = mode_checkpoint_data["tempering_schedule"]
+        importance_weight_history: list[np.ndarray] = mode_checkpoint_data[
+            "is_weights_history"
+        ]
 
-        step_fn = jax.jit(smc_alg.step)
-        _last_ckpt_t = time.perf_counter()
+        run_adaptive_step = jax.jit(smc_algorithm.step)
+        last_checkpoint_write_time = time.perf_counter()
 
         while state.sampler_state.tempering_param < 1.0:
-            rng_key, subkey = jax.random.split(rng_key)
-            state, info = step_fn(subkey, state)
+            rng_key, step_key = jax.random.split(rng_key)
+            state, info = run_adaptive_step(step_key, state)
 
-            accept_list.append(float(info.update_info.acceptance_rate.mean()))
-            temp_list.append(float(state.sampler_state.tempering_param))
-            is_weights_list.append(np.asarray(state.sampler_state.weights))
-            n_iter += 1
+            acceptance_history.append(float(info.update_info.acceptance_rate.mean()))
+            tempering_schedule.append(float(state.sampler_state.tempering_param))
+            importance_weight_history.append(np.asarray(state.sampler_state.weights))
+            n_completed_iterations += 1
 
-            if (
-                ckpt_path is not None
-                and config.checkpoint_interval > 0
-                and time.perf_counter() - _last_ckpt_t >= config.checkpoint_interval
-            ):
-                _last_ckpt_t = config.write_checkpoint(
-                    {
-                        "state": state,
-                        "rng_key": rng_key,
-                        "n_iter": n_iter,
-                        "mode": self.mode,
-                        "sampler_name": self.sampler_name,
-                        "elapsed_time": self._prev_elapsed
-                        + (time.perf_counter() - _method_t0),
-                        "accept_history": accept_list.copy(),
-                        "tempering_schedule": temp_list.copy(),
-                        "is_weights_history": np.stack(is_weights_list),
-                    },
-                    f"{self.sampler_name} ({self.mode.upper()})",
-                )
+            last_checkpoint_write_time = save_checkpoint_if_due(
+                self,
+                config,
+                checkpoint_path,
+                last_checkpoint_write_time,
+                run_start_time,
+                state,
+                rng_key,
+                n_completed_iterations,
+                {
+                    "mode": self.mode,
+                    "accept_history": acceptance_history.copy(),
+                    "tempering_schedule": tempering_schedule.copy(),
+                    "is_weights_history": np.stack(importance_weight_history),
+                },
+                log_label=log_label,
+            )
 
         self._final_state = state
-        self._n_iterations = n_iter
-        self._acceptance_history = np.asarray(accept_list)
-        self._tempering_schedule = np.asarray(temp_list)
+        self._n_iterations = n_completed_iterations
+        self._acceptance_history = np.asarray(acceptance_history)
+        self._tempering_schedule = np.asarray(tempering_schedule)
         self._is_weights_history = (
-            np.stack(is_weights_list)
-            if is_weights_list
+            np.stack(importance_weight_history)
+            if importance_weight_history
             else np.empty((0, initial_particles.shape[0]))
         )
-        if ckpt_path is not None:
-            ckpt_path.unlink(missing_ok=True)
-        if config.checkpoint_dir is not None:
-            shutil.rmtree(config.checkpoint_dir / "jax_cache", ignore_errors=True)
-            jax.config.update("jax_compilation_cache_dir", None)
+        remove_checkpoint_and_jax_cache(config, checkpoint_path)
 
     def _run_fixed_tempered(
         self, rng_key: Key, initial_particles, ladder: list[float]
@@ -542,88 +446,86 @@ class BlackJAXSMCSampler(Sampler):
         """Mode FT: tempered_smc + Python for loop over explicit temperature ladder."""
         config = self._config
         n_mcmc_steps = config.n_mcmc_steps_per_dim * self.n_dims
-        ladder_values = ladder[1:]  # skip 0.0
-        n_schedule = len(ladder_values)
-        ckpt_path = (
-            config.checkpoint_dir / "checkpoint.pkl"
-            if config.checkpoint_dir is not None
-            else None
-        )
-        config.configure_jax_cache()
-        _method_t0 = time.perf_counter()
+        tempering_parameters = ladder[1:]  # skip 0.0
+        n_temperature_steps = len(tempering_parameters)
+        checkpoint_path, run_start_time = prepare_checkpointing(config)
+        log_label = f"{self.sampler_name} ({self.mode.upper()})"
 
         mcmc_step = self._build_mcmc_step()
-        cov0 = jnp.atleast_2d(jnp.cov(initial_particles.T)) * config.initial_cov_scale
+        initial_covariance = (
+            jnp.atleast_2d(jnp.cov(initial_particles.T)) * config.initial_cov_scale
+        )
 
-        smc_alg = tempered_smc(
+        smc_algorithm = tempered_smc(
             logprior_fn=self._log_prior_fn,
             loglikelihood_fn=self._log_likelihood_fn,
             mcmc_step_fn=mcmc_step,
             mcmc_init_fn=rmh.init,
-            mcmc_parameters=extend_params({"cov": cov0}),  # type: ignore[arg-type]  # blackjax stubs: extend_params accepts dict
+            mcmc_parameters=extend_params({"cov": initial_covariance}),  # type: ignore[arg-type]  # blackjax stubs: extend_params accepts dict
             resampling_fn=systematic,
             num_mcmc_steps=n_mcmc_steps,
             batch_size=config.batch_size,
         )
 
-        state, rng_key, n_iter, _extra = self._resume_or_init_state(
-            ckpt_path,
-            config,
-            rng_key,
-            initial_particles,
-            smc_alg,
-            fresh_extra={"accept_history": [], "is_weights_history": []},
-            restore_extra=lambda ckpt: {
-                "accept_history": list(ckpt["accept_history"]),
-                "is_weights_history": list(ckpt["is_weights_history"]),
-            },
-            n_schedule=n_schedule,
+        state, rng_key, n_completed_iterations, mode_checkpoint_data = (
+            load_or_initialize_checkpoint(
+                self,
+                checkpoint_path,
+                config,
+                rng_key,
+                initial_particles,
+                smc_algorithm.init,
+                initial_extra={"accept_history": [], "is_weights_history": []},
+                load_extra=lambda checkpoint: {
+                    "accept_history": list(checkpoint["accept_history"]),
+                    "is_weights_history": list(checkpoint["is_weights_history"]),
+                },
+                log_label=log_label,
+                is_stale=lambda n_iter: n_iter > n_temperature_steps,
+                stale_message="checkpoint n_iter exceeds current schedule length"
+                f"={n_temperature_steps}",
+            )
         )
-        accept_list: list[float] = _extra["accept_history"]
-        is_weights_list: list[np.ndarray] = _extra["is_weights_history"]
+        acceptance_history: list[float] = mode_checkpoint_data["accept_history"]
+        importance_weight_history: list[np.ndarray] = mode_checkpoint_data[
+            "is_weights_history"
+        ]
 
-        step_fn = jax.jit(smc_alg.step)
-        _last_ckpt_t = time.perf_counter()
+        run_temperature_step = jax.jit(smc_algorithm.step)
+        last_checkpoint_write_time = time.perf_counter()
 
-        for lmbda in ladder_values[n_iter:]:
-            rng_key, subkey = jax.random.split(rng_key)
-            state, info = step_fn(subkey, state, lmbda)
-            accept_list.append(float(info.update_info.acceptance_rate.mean()))
-            is_weights_list.append(np.asarray(state.weights))
-            n_iter += 1
-            if (
-                ckpt_path is not None
-                and config.checkpoint_interval > 0
-                and time.perf_counter() - _last_ckpt_t >= config.checkpoint_interval
-            ):
-                _last_ckpt_t = config.write_checkpoint(
-                    {
-                        "state": state,
-                        "rng_key": rng_key,
-                        "n_iter": n_iter,
-                        "mode": self.mode,
-                        "sampler_name": self.sampler_name,
-                        "elapsed_time": self._prev_elapsed
-                        + (time.perf_counter() - _method_t0),
-                        "accept_history": accept_list.copy(),
-                        "is_weights_history": np.stack(is_weights_list),
-                    },
-                    f"{self.sampler_name} ({self.mode.upper()})",
-                )
+        for tempering_parameter in tempering_parameters[n_completed_iterations:]:
+            rng_key, step_key = jax.random.split(rng_key)
+            state, info = run_temperature_step(step_key, state, tempering_parameter)
+            acceptance_history.append(float(info.update_info.acceptance_rate.mean()))
+            importance_weight_history.append(np.asarray(state.weights))
+            n_completed_iterations += 1
+            last_checkpoint_write_time = save_checkpoint_if_due(
+                self,
+                config,
+                checkpoint_path,
+                last_checkpoint_write_time,
+                run_start_time,
+                state,
+                rng_key,
+                n_completed_iterations,
+                {
+                    "mode": self.mode,
+                    "accept_history": acceptance_history.copy(),
+                    "is_weights_history": np.stack(importance_weight_history),
+                },
+                log_label=log_label,
+            )
 
         self._final_state = state
-        self._n_iterations = n_schedule
-        self._acceptance_history = np.asarray(accept_list)
+        self._n_iterations = n_temperature_steps
+        self._acceptance_history = np.asarray(acceptance_history)
         self._is_weights_history = (
-            np.stack(is_weights_list)
-            if is_weights_list
+            np.stack(importance_weight_history)
+            if importance_weight_history
             else np.empty((0, initial_particles.shape[0]))
         )
-        if ckpt_path is not None:
-            ckpt_path.unlink(missing_ok=True)
-        if config.checkpoint_dir is not None:
-            shutil.rmtree(config.checkpoint_dir / "jax_cache", ignore_errors=True)
-            jax.config.update("jax_compilation_cache_dir", None)
+        remove_checkpoint_and_jax_cache(config, checkpoint_path)
 
     # ------------------------------------------------------------------
     # Public API

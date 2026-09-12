@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import pickle
 from pathlib import Path
 from typing import Optional
@@ -663,3 +664,53 @@ def test_smc_particle_batch_size_at_mode():
     assert isinstance(result, dict)
     assert "samples" in result
     assert result["samples"].shape[0] > 0
+
+
+def test_smc_fixed_ladder_stale_checkpoint_restarts_fresh(
+    tmp_path, monkeypatch, caplog
+):
+    """A fixed-ladder run whose checkpoint n_iter exceeds the current ladder length
+    restarts fresh rather than resuming with an out-of-range iteration count."""
+    long_ladder = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
+    checkpoint_path = tmp_path / "checkpoint.pkl"
+    original_unlink = Path.unlink
+    monkeypatch.setattr(
+        Path,
+        "unlink",
+        lambda self, missing_ok=False: (
+            None
+            if self == checkpoint_path
+            else original_unlink(self, missing_ok=missing_ok)
+        ),
+    )
+    long_sampler = _make_sampler(
+        config=BlackJAXSMCConfig(
+            n_particles=200,
+            n_mcmc_steps_per_dim=5,
+            temperature_ladder=long_ladder,
+            checkpoint_dir=tmp_path,
+            checkpoint_interval=1e-9,
+        )
+    )
+    long_sampler.sample(jax.random.key(7), _init_pos(200))
+    monkeypatch.setattr(Path, "unlink", original_unlink)
+    assert checkpoint_path.exists(), "Checkpoint was never written"
+    with open(checkpoint_path, "rb") as checkpoint_file:
+        checkpoint = pickle.load(checkpoint_file)
+    assert checkpoint["n_iter"] == len(long_ladder) - 1
+
+    short_ladder = [0.0, 0.5, 1.0]
+    short_sampler = _make_sampler(
+        config=BlackJAXSMCConfig(
+            n_particles=200,
+            n_mcmc_steps_per_dim=5,
+            temperature_ladder=short_ladder,
+            checkpoint_dir=tmp_path,
+            checkpoint_interval=1e-9,
+        )
+    )
+    with caplog.at_level(logging.WARNING):
+        short_sampler.sample(jax.random.key(7), _init_pos(200))
+    assert "exceeds current schedule" in caplog.text
+    assert short_sampler._n_iterations == len(short_ladder) - 1
+    assert not checkpoint_path.exists(), "Checkpoint was not cleaned up"

@@ -53,7 +53,7 @@ class _CheckpointMixin(BaseModel):
 
     @field_validator("checkpoint_dir", mode="before")
     @classmethod
-    def _coerce_checkpoint_dir(cls, v: object) -> Optional[Path]:
+    def _resolve_checkpoint_dir(cls, v: object) -> Optional[Path]:
         if v is None:
             return None
         return Path(str(v))
@@ -285,7 +285,9 @@ class FlowMCConfig(BaseSamplerConfig[Literal["flowmc"]], _CheckpointMixin):
 
     @field_validator("parallel_tempering", mode="before")
     @classmethod
-    def _coerce_parallel_tempering(cls, v: object) -> Optional[ParallelTemperingConfig]:
+    def _resolve_parallel_tempering(
+        cls, v: object
+    ) -> Optional[ParallelTemperingConfig]:
         if v is None or v is False:
             return None
         if v is True:

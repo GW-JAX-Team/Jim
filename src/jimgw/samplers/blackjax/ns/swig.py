@@ -16,8 +16,8 @@ from blackjax.smc.tuning.from_particles import particles_covariance_matrix
 from jax.sharding import Mesh
 from jaxtyping import Array, Float
 
-from jimgw.samplers.blackjax.nss import BlackJAXNSSSampler
-from jimgw.samplers.blackjax.sharding import build_sharded_from_mcmc_kernel
+from jimgw.samplers.blackjax.ns.nss import BlackJAXNSSSampler
+from jimgw.samplers.blackjax.ns.sharding import build_sharded_from_mcmc_kernel
 from jimgw.samplers.config import BlackJAXNSSConfig, BlackJAXSwiGConfig
 from jimgw.samplers.periodic import _build_masks_arrays
 from jimgw.typing import FloatScalar

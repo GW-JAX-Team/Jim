@@ -14,7 +14,7 @@ from blackjax.ns.utils import finalise
 from jaxtyping import Array, Float, Key
 
 from jimgw.samplers.base import Sampler
-from jimgw.samplers.blackjax._acceptance_walk_kernel import bilby_adaptive_de_sampler
+from jimgw.samplers.blackjax.ns._acceptance_walk_kernel import bilby_adaptive_de_sampler
 from jimgw.samplers.blackjax.utils import (
     load_or_initialize_checkpoint,
     prepare_checkpointing,

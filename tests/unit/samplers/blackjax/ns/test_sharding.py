@@ -10,9 +10,9 @@ import jax.numpy as jnp
 import numpy as np
 import pytest
 
-from jimgw.samplers.blackjax.nss import BlackJAXNSSSampler
-from jimgw.samplers.blackjax.sharding import make_live_mesh
-from jimgw.samplers.blackjax.swig import BlackJAXSwiGSampler
+from jimgw.samplers.blackjax.ns.nss import BlackJAXNSSSampler
+from jimgw.samplers.blackjax.ns.sharding import make_live_mesh
+from jimgw.samplers.blackjax.ns.swig import BlackJAXSwiGSampler
 from jimgw.samplers.config import BlackJAXNSSConfig, BlackJAXSwiGConfig
 
 _HAS_FOUR_DEVICES = jax.local_device_count() >= 4

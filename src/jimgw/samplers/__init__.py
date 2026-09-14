@@ -94,14 +94,14 @@ from jimgw.samplers.blackjax.smc import BlackJAXSMCSampler
 
 register_sampler("blackjax-smc", lambda: BlackJAXSMCSampler)
 
-from jimgw.samplers.blackjax.ns_aw import BlackJAXNSAWSampler
+from jimgw.samplers.blackjax.ns.ns_aw import BlackJAXNSAWSampler
 
 register_sampler("blackjax-ns-aw", lambda: BlackJAXNSAWSampler)
 
-from jimgw.samplers.blackjax.nss import BlackJAXNSSSampler
+from jimgw.samplers.blackjax.ns.nss import BlackJAXNSSSampler
 
 register_sampler("blackjax-nss", lambda: BlackJAXNSSSampler)
 
-from jimgw.samplers.blackjax.swig import BlackJAXSwiGSampler
+from jimgw.samplers.blackjax.ns.swig import BlackJAXSwiGSampler
 
 register_sampler("blackjax-swig", lambda: BlackJAXSwiGSampler)

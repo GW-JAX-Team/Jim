@@ -4,10 +4,10 @@ import pytest
 
 from jimgw.core.prior import CombinePrior, UniformPrior
 from jimgw.samplers import build_sampler
-from jimgw.samplers.blackjax.ns_aw import BlackJAXNSAWSampler
-from jimgw.samplers.blackjax.nss import BlackJAXNSSSampler
+from jimgw.samplers.blackjax.ns.ns_aw import BlackJAXNSAWSampler
+from jimgw.samplers.blackjax.ns.nss import BlackJAXNSSSampler
+from jimgw.samplers.blackjax.ns.swig import BlackJAXSwiGSampler
 from jimgw.samplers.blackjax.smc import BlackJAXSMCSampler
-from jimgw.samplers.blackjax.swig import BlackJAXSwiGSampler
 from jimgw.samplers.config import (
     BlackJAXNSAWConfig,
     BlackJAXNSSConfig,

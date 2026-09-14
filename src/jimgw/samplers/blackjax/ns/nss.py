@@ -27,7 +27,7 @@ from jax.sharding import PartitionSpec as P
 from jaxtyping import Array, Float, Key
 
 from jimgw.samplers.base import Sampler
-from jimgw.samplers.blackjax.sharding import (
+from jimgw.samplers.blackjax.ns.sharding import (
     _LIVE_AXIS,
     build_sharded_from_mcmc_kernel,
     make_live_mesh,

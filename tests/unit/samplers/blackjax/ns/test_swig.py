@@ -9,7 +9,7 @@ import jax.numpy as jnp
 import numpy as np
 import pytest
 
-from jimgw.samplers.blackjax.swig import BlackJAXSwiGSampler
+from jimgw.samplers.blackjax.ns.swig import BlackJAXSwiGSampler
 from jimgw.samplers.config import BlackJAXSwiGConfig
 
 

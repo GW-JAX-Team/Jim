@@ -106,19 +106,19 @@
         <loc>https://gw-jax-team.github.io/Jim/development/api/jimgw/samplers/base/</loc>
       </url>
       <url>
-        <loc>https://gw-jax-team.github.io/Jim/development/api/jimgw/samplers/blackjax/ns_aw/</loc>
+        <loc>https://gw-jax-team.github.io/Jim/development/api/jimgw/samplers/blackjax/ns/ns_aw/</loc>
       </url>
       <url>
-        <loc>https://gw-jax-team.github.io/Jim/development/api/jimgw/samplers/blackjax/nss/</loc>
+        <loc>https://gw-jax-team.github.io/Jim/development/api/jimgw/samplers/blackjax/ns/nss/</loc>
       </url>
       <url>
-        <loc>https://gw-jax-team.github.io/Jim/development/api/jimgw/samplers/blackjax/sharding/</loc>
+        <loc>https://gw-jax-team.github.io/Jim/development/api/jimgw/samplers/blackjax/ns/sharding/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/development/api/jimgw/samplers/blackjax/ns/swig/</loc>
       </url>
       <url>
         <loc>https://gw-jax-team.github.io/Jim/development/api/jimgw/samplers/blackjax/smc/</loc>
-      </url>
-      <url>
-        <loc>https://gw-jax-team.github.io/Jim/development/api/jimgw/samplers/blackjax/swig/</loc>
       </url>
       <url>
         <loc>https://gw-jax-team.github.io/Jim/development/api/jimgw/samplers/blackjax/utils/</loc>

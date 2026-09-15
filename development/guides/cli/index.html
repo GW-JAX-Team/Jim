@@ -2224,8 +2224,56 @@
   
   
   
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_1_2_2_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_9_1_2_2_1" id="__nav_9_1_2_2_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  ns
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="5" aria-labelledby="__nav_9_1_2_2_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_1_2_2_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+  ns
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
     <li class="md-nav__item">
-      <a href="../../api/jimgw/samplers/blackjax/ns_aw/" class="md-nav__link">
+      <a href="../../api/jimgw/samplers/blackjax/ns/ns_aw/" class="md-nav__link">
         
   
   
@@ -2252,7 +2300,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/jimgw/samplers/blackjax/nss/" class="md-nav__link">
+      <a href="../../api/jimgw/samplers/blackjax/ns/nss/" class="md-nav__link">
         
   
   
@@ -2279,7 +2327,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/jimgw/samplers/blackjax/sharding/" class="md-nav__link">
+      <a href="../../api/jimgw/samplers/blackjax/ns/sharding/" class="md-nav__link">
         
   
   
@@ -2306,14 +2354,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/jimgw/samplers/blackjax/smc/" class="md-nav__link">
+      <a href="../../api/jimgw/samplers/blackjax/ns/swig/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  smc
+  swig
 
     
   </span>
@@ -2326,6 +2374,14 @@
 
               
             
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
               
                 
   
@@ -2333,14 +2389,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/jimgw/samplers/blackjax/swig/" class="md-nav__link">
+      <a href="../../api/jimgw/samplers/blackjax/smc/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  swig
+  smc
 
     
   </span>
@@ -3682,7 +3738,7 @@ Each backend has its own set of tuning parameters.</p>
 </tr>
 <tr>
 <td><code>n_delete_frac</code></td>
-<td><code>0.125</code></td>
+<td><code>0.5</code></td>
 <td>Fraction of live points replaced per iteration</td>
 </tr>
 <tr>
@@ -3694,16 +3750,6 @@ Each backend has its own set of tuning parameters.</p>
 <td><code>num_gibbs_sweeps</code></td>
 <td><code>2</code></td>
 <td>Complete block sweeps per replacement</td>
-</tr>
-<tr>
-<td><code>max_steps</code></td>
-<td><code>10</code></td>
-<td>Maximum stepping-out expansions per slice</td>
-</tr>
-<tr>
-<td><code>max_shrinkage</code></td>
-<td><code>100</code></td>
-<td>Maximum shrinkage evaluations per slice</td>
 </tr>
 <tr>
 <td><code>termination_dlogz</code></td>

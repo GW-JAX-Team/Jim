@@ -215,7 +215,7 @@ jim = Jim(
             ["t_c"],
         ],
         n_live=512,
-        n_delete_frac=0.125,
+        n_delete_frac=0.5,
         num_inner_steps_per_dim=1,
         num_gibbs_sweeps=2,
         n_devices=1,

@@ -1,7 +1,7 @@
 """Checkpoint save/load/cleanup helpers shared by the BlackJAX SMC and nested-sampling backends.
 
-``BlackJAXSMCSampler``, ``BlackJAXNSSSampler``, and ``BlackJAXNSAWSampler`` each
-run their own JAX while-loop and periodically checkpoint it to
+The four BlackJAX SMC mode samplers, ``BlackJAXNSSSampler``, and
+``BlackJAXNSAWSampler`` each run their own JAX while-loop and periodically checkpoint it to
 ``config.checkpoint_dir/checkpoint.pkl``. The load/save/cleanup mechanics
 (compute the path, try to resume, fall back to a fresh state on a corrupt or
 foreign checkpoint, gate saves on the configured interval, clean up on

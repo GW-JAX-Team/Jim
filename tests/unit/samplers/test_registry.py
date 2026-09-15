@@ -7,7 +7,7 @@ from jimgw.samplers import build_sampler
 from jimgw.samplers.blackjax.ns.ns_aw import BlackJAXNSAWSampler
 from jimgw.samplers.blackjax.ns.nss import BlackJAXNSSSampler
 from jimgw.samplers.blackjax.ns.swig import BlackJAXSwiGSampler
-from jimgw.samplers.blackjax.smc import BlackJAXSMCSampler
+from jimgw.samplers.blackjax.smc.base import _BlackJAXSMCBase
 from jimgw.samplers.config import (
     BlackJAXNSAWConfig,
     BlackJAXNSSConfig,
@@ -102,7 +102,7 @@ def test_build_sampler_returns_blackjax_smc():
         log_likelihood_fn=ll,
         log_posterior_fn=lpost,
     )
-    assert isinstance(sampler, BlackJAXSMCSampler)
+    assert isinstance(sampler, _BlackJAXSMCBase)
 
 
 def test_build_sampler_forwards_backend_specific_arguments(monkeypatch):

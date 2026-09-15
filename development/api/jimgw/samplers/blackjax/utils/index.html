@@ -15,7 +15,7 @@
         <link rel="canonical" href="https://gw-jax-team.github.io/Jim/development/api/jimgw/samplers/blackjax/utils/">
       
       
-        <link rel="prev" href="../smc/">
+        <link rel="prev" href="../smc/typing/">
       
       
         <link rel="next" href="../../config/">
@@ -1974,9 +1974,23 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="../smc/" class="md-nav__link">
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
         
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_1_2_2_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_9_1_2_2_2" id="__nav_9_1_2_2_2_label" tabindex="0">
+            
   
   
   <span class="md-ellipsis">
@@ -1989,7 +2003,238 @@
   
   
 
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="5" aria-labelledby="__nav_9_1_2_2_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_1_2_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+  smc
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../smc/adaptive_persistent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  adaptive_persistent
+
+    
+  </span>
+  
+  
+
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../smc/adaptive_tempered/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  adaptive_tempered
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../smc/base/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  base
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../smc/diagnostics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  diagnostics
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../smc/fixed_persistent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  fixed_persistent
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../smc/fixed_tempered/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  fixed_tempered
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../smc/sampler/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  sampler
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../smc/typing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  typing
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -2378,8 +2623,8 @@
     <div class="doc doc-contents first">
 
         <p>Checkpoint save/load/cleanup helpers shared by the BlackJAX SMC and nested-sampling backends.</p>
-<p><code>BlackJAXSMCSampler</code>, <code>BlackJAXNSSSampler</code>, and <code>BlackJAXNSAWSampler</code> each
-run their own JAX while-loop and periodically checkpoint it to
+<p>The four BlackJAX SMC mode samplers, <code>BlackJAXNSSSampler</code>, and
+<code>BlackJAXNSAWSampler</code> each run their own JAX while-loop and periodically checkpoint it to
 <code>config.checkpoint_dir/checkpoint.pkl</code>. The load/save/cleanup mechanics
 (compute the path, try to resume, fall back to a fresh state on a corrupt or
 foreign checkpoint, gate saves on the configured interval, clean up on

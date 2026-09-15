@@ -118,7 +118,28 @@
         <loc>https://gw-jax-team.github.io/Jim/development/api/jimgw/samplers/blackjax/ns/swig/</loc>
       </url>
       <url>
-        <loc>https://gw-jax-team.github.io/Jim/development/api/jimgw/samplers/blackjax/smc/</loc>
+        <loc>https://gw-jax-team.github.io/Jim/development/api/jimgw/samplers/blackjax/smc/adaptive_persistent/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/development/api/jimgw/samplers/blackjax/smc/adaptive_tempered/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/development/api/jimgw/samplers/blackjax/smc/base/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/development/api/jimgw/samplers/blackjax/smc/diagnostics/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/development/api/jimgw/samplers/blackjax/smc/fixed_persistent/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/development/api/jimgw/samplers/blackjax/smc/fixed_tempered/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/development/api/jimgw/samplers/blackjax/smc/sampler/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/development/api/jimgw/samplers/blackjax/smc/typing/</loc>
       </url>
       <url>
         <loc>https://gw-jax-team.github.io/Jim/development/api/jimgw/samplers/blackjax/utils/</loc>

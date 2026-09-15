@@ -37,8 +37,6 @@ def _make_sampler(
         n_live=24,
         n_delete_frac=0.25,
         termination_dlogz=1.5,
-        max_steps=4,
-        max_shrinkage=30,
         checkpoint_dir=checkpoint_dir,
         checkpoint_interval=1e-9 if checkpoint_dir is not None else 0.0,
     )

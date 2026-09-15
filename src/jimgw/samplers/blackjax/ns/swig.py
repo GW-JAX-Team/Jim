@@ -41,15 +41,13 @@ def _build_swig_constrained_step(
     rebuild_required_by_block: dict[tuple[int, ...], bool],
     num_gibbs_sweeps: int,
     num_inner_steps_per_dim: int,
-    max_steps: int,
-    max_shrinkage: int,
     periodic: Optional[dict[int, tuple[float, float]]],
     n_dims: int,
 ) -> Callable:
     slice_kernel = build_slice_kernel(
         interval=stepping_out,
-        max_expansions=max_steps,
-        max_shrinkage=max_shrinkage,
+        max_expansions=10,
+        max_shrinkage=100,
     )
     periodic_mask, periodic_lower, periodic_period = _build_masks_arrays(
         periodic, n_dims
@@ -247,8 +245,6 @@ class BlackJAXSwiGSampler(BlackJAXNSSSampler):
             rebuild_required_by_block=self._rebuild_required_by_block,
             num_gibbs_sweeps=self._swig_config.num_gibbs_sweeps,
             num_inner_steps_per_dim=self._swig_config.num_inner_steps_per_dim,
-            max_steps=self._swig_config.max_steps,
-            max_shrinkage=self._swig_config.max_shrinkage,
             periodic=self._periodic,
             n_dims=self.n_dims,
         )

@@ -387,8 +387,6 @@ class BlackJAXSwiGConfig(
     n_delete_frac: float = 0.125
     num_gibbs_sweeps: int = Field(default=2, ge=1)
     num_inner_steps_per_dim: int = Field(default=1, ge=1)
-    max_steps: int = Field(default=10, ge=1)
-    max_shrinkage: int = Field(default=100, ge=1)
     termination_dlogz: float = Field(default=0.1, gt=0.0)
 
     @field_validator("blocks")

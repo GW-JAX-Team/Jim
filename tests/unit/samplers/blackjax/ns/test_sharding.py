@@ -94,8 +94,6 @@ def test_swig_runs_sharded_with_consistent_cache():
         n_live=16,
         n_delete_frac=0.25,
         num_gibbs_sweeps=1,
-        max_steps=3,
-        max_shrinkage=20,
         termination_dlogz=2.0,
         n_devices=4,
     )
@@ -177,8 +175,6 @@ def test_swig_sharded_checkpoint_is_host_backed_and_resumable(tmp_path, monkeypa
         n_live=16,
         n_delete_frac=0.25,
         num_gibbs_sweeps=1,
-        max_steps=3,
-        max_shrinkage=20,
         termination_dlogz=2.0,
         n_devices=4,
         checkpoint_dir=tmp_path,

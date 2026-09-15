@@ -384,7 +384,7 @@ class BlackJAXSwiGConfig(
 
     blocks: list[list[str]]
     n_live: int = 500
-    n_delete_frac: float = 0.125
+    n_delete_frac: float = 0.5
     num_gibbs_sweeps: int = Field(default=2, ge=1)
     num_inner_steps_per_dim: int = Field(default=1, ge=1)
     termination_dlogz: float = Field(default=0.1, gt=0.0)

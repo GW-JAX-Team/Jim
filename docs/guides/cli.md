@@ -376,7 +376,7 @@ n_tempered_steps = 5
 | --- | --- | --- |
 | `blocks` | required | Ordered lists of sampling-space parameter names |
 | `n_live` | `500` | Number of live points |
-| `n_delete_frac` | `0.125` | Fraction of live points replaced per iteration |
+| `n_delete_frac` | `0.5` | Fraction of live points replaced per iteration |
 | `num_inner_steps_per_dim` | `1` | Slice steps per dimension within each block |
 | `num_gibbs_sweeps` | `2` | Complete block sweeps per replacement |
 | `termination_dlogz` | `0.1` | Stop when the remaining evidence contribution falls below this |

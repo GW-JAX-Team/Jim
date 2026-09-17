@@ -99,6 +99,23 @@ Key parameters:
 - `persistent_sampling` — whether to retain particles from all temperature steps (default `True`).
 - `temperature_ladder` — explicit temperature schedule.
   If given, the sampler advances through this fixed ladder and ignores `target_ess_fraction` and `target_ess`.
+- `precondition` — optional normalizing-flow preconditioning of the mutation kernel (pocoMC-style; Karamanis et al. 2022).
+  `True` enables it with default settings; `False`/`None` (default) disables it; a `PreconditionConfig` (or equivalent `dict`) tunes the flow architecture (`rq_spline_n_layers`, `rq_spline_hidden_units`, `rq_spline_n_bins`), its training (`flow_learning_rate`, `flow_n_epochs`, `flow_train_batch_size`), and how often it retrains during the run (`train_frequency`).
+  Trains a flow on the current particle population and proposes in its latent space, where random-walk Metropolis mixes better on curved/correlated posteriors.
+
+```python
+from jimgw.samplers.config import BlackJAXSMCConfig, PreconditionConfig
+
+jim = Jim(
+    likelihood,
+    prior,
+    sampler_config=BlackJAXSMCConfig(
+        n_particles=2000,
+        n_mcmc_steps_per_dim=100,
+        precondition=PreconditionConfig(rq_spline_n_layers=4),
+    ),
+)
+```
 
 **Repository:** [blackjax-devs/blackjax](https://github.com/blackjax-devs/blackjax)
 

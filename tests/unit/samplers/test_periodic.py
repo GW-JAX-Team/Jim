@@ -5,6 +5,7 @@ import pytest
 
 from jimgw.samplers.periodic import (
     to_displacement_wrapper,
+    to_position_wrapper,
     to_prior_space_proposal,
     to_unit_cube_stepper,
 )
@@ -151,3 +152,31 @@ def test_displacement_wrapper_wraps_periodic():
 def test_displacement_wrapper_invalid_bounds_raises():
     with pytest.raises(ValueError, match="hi > lo"):
         to_displacement_wrapper({1: (2.0, 1.0)}, 3)
+
+
+# ---------------------------------------------------------------------------
+# to_position_wrapper — flat arrays (BlackJAX SMC preconditioning)
+# ---------------------------------------------------------------------------
+
+
+def test_position_wrapper_none_periodic():
+    wrapper = to_position_wrapper(None, 3)
+    position = jnp.array([0.1, 6.0, -0.2])
+    assert jnp.allclose(wrapper(position), position)
+
+
+def test_position_wrapper_wraps_periodic():
+    two_pi = 2 * math.pi
+    wrapper = to_position_wrapper({1: (0.0, two_pi)}, 3)  # index 1 = phase_c
+    position = jnp.array([0.0, 7.0, 0.0])
+    result = wrapper(position)
+    expected_phase = float(jnp.mod(7.0, two_pi))
+    assert float(result[1]) == pytest.approx(expected_phase, abs=1e-6)
+    # Non-periodic params unchanged
+    assert float(result[0]) == pytest.approx(0.0, abs=1e-6)
+    assert float(result[2]) == pytest.approx(0.0, abs=1e-6)
+
+
+def test_position_wrapper_invalid_bounds_raises():
+    with pytest.raises(ValueError, match="hi > lo"):
+        to_position_wrapper({1: (2.0, 1.0)}, 3)

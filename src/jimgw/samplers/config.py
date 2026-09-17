@@ -403,6 +403,38 @@ class BlackJAXSwiGConfig(
         return blocks
 
 
+# BlackJAX SMC sub-config
+
+
+class PreconditionConfig(BaseModel):
+    """Normalizing-flow preconditioning settings for the BlackJAX SMC sampler.
+
+    Construct directly or pass a plain ``dict`` to ``BlackJAXSMCConfig.precondition``.
+    Use ``True`` to enable with all defaults, ``False`` / ``None`` to disable.
+    """
+
+    model_config = {"extra": "forbid"}
+
+    rq_spline_n_layers: int = Field(default=4, ge=1)
+    rq_spline_hidden_units: list[int] = Field(default_factory=lambda: [32, 32])
+    rq_spline_n_bins: int = Field(default=8, ge=1)
+    flow_learning_rate: float = Field(default=1e-3, gt=0.0)
+    flow_n_epochs: int = Field(default=30, ge=1)
+    flow_train_batch_size: int = Field(default=0, ge=0)
+    train_frequency: int = Field(default=1, ge=1)
+
+    @field_validator("rq_spline_hidden_units")
+    @classmethod
+    def _validate_hidden_units(cls, hidden_units: list[int]) -> list[int]:
+        if not hidden_units:
+            raise ValueError("rq_spline_hidden_units must be a non-empty list")
+        if any(width <= 0 for width in hidden_units):
+            raise ValueError(
+                f"rq_spline_hidden_units must all be positive, got {hidden_units}"
+            )
+        return hidden_units
+
+
 class BlackJAXSMCConfig(BaseSamplerConfig[Literal["blackjax-smc"]], _CheckpointMixin):
     """Configuration for the BlackJAX SMC sampler.
 
@@ -434,6 +466,24 @@ class BlackJAXSMCConfig(BaseSamplerConfig[Literal["blackjax-smc"]], _CheckpointM
 
     persistent_sampling: bool = True
     temperature_ladder: Optional[list[float]] = None
+
+    precondition: Optional[PreconditionConfig] = None
+
+    @field_validator("precondition", mode="before")
+    @classmethod
+    def _resolve_precondition(cls, v: object) -> Optional[PreconditionConfig]:
+        if v is None or v is False:
+            return None
+        if v is True:
+            return PreconditionConfig()
+        if isinstance(v, dict):
+            return PreconditionConfig.model_validate(v)
+        if isinstance(v, PreconditionConfig):
+            return v
+        raise ValueError(
+            "precondition must be None, False, True, a dict of PreconditionConfig "
+            f"fields, or a PreconditionConfig instance; got {type(v).__name__}."
+        )
 
     @field_validator("temperature_ladder")
     @classmethod

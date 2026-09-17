@@ -16,6 +16,7 @@ from jimgw.samplers.config import (
     HMCConfig,
     MALAConfig,
     ParallelTemperingConfig,
+    PreconditionConfig,
     SamplerConfig,
 )
 
@@ -426,3 +427,28 @@ def test_configure_jax_cache_noop_when_no_dir():
         assert getattr(jax.config, "jax_compilation_cache_dir", None) == original
     finally:
         jax.config.update("jax_compilation_cache_dir", original)
+
+
+# ---------------------------------------------------------------------------
+# G: PreconditionConfig validation
+# ---------------------------------------------------------------------------
+
+
+def test_precondition_hidden_units_empty_raises():
+    with pytest.raises(ValidationError, match="non-empty"):
+        PreconditionConfig(rq_spline_hidden_units=[])
+
+
+def test_precondition_hidden_units_zero_raises():
+    with pytest.raises(ValidationError, match="positive"):
+        PreconditionConfig(rq_spline_hidden_units=[32, 0])
+
+
+def test_precondition_hidden_units_negative_raises():
+    with pytest.raises(ValidationError, match="positive"):
+        PreconditionConfig(rq_spline_hidden_units=[-8, 16])
+
+
+def test_precondition_hidden_units_valid_ok():
+    config = PreconditionConfig(rq_spline_hidden_units=[16, 32])
+    assert config.rq_spline_hidden_units == [16, 32]

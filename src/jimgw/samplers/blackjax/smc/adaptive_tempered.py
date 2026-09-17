@@ -7,10 +7,11 @@ import jax.numpy as jnp
 import numpy as np
 from blackjax import adaptive_tempered_smc, inner_kernel_tuning, rmh
 from blackjax.smc import extend_params
+from blackjax.smc.inner_kernel_tuning import StateWithParameterOverride
 from blackjax.smc.resampling import systematic
-from jaxtyping import Key
+from jaxtyping import Array, Key
 
-from jimgw.samplers.blackjax.smc import diagnostics
+from jimgw.samplers.blackjax.smc import diagnostics, precondition
 from jimgw.samplers.blackjax.smc.base import _BlackJAXSMCBase
 from jimgw.samplers.blackjax.utils import (
     load_or_initialize_checkpoint,
@@ -34,10 +35,21 @@ class AdaptiveTemperedSMCSampler(_BlackJAXSMCBase):
         checkpoint_path, run_start_time = prepare_checkpointing(config)
         log_label = f"{self.sampler_name} ({self.mode.upper()})"
 
-        mcmc_step = self._build_mcmc_step()
-        initial_covariance = (
-            jnp.atleast_2d(jnp.cov(initial_particles.T)) * config.initial_cov_scale
+        rng_key, precond = self._setup_precondition_for_run(rng_key, initial_particles)
+        mcmc_step = (
+            precond.mcmc_step if precond is not None else self._build_mcmc_step()
         )
+        initial_covariance = (
+            precondition.weighted_covariance(initial_particles)
+            * config.initial_cov_scale
+        )
+        initial_parameters: dict[str, Array] = {"cov": initial_covariance}
+        if precond is not None:
+            initial_parameters["cov"] = (
+                self._latent_covariance(precond.flow, initial_particles)
+                * config.initial_cov_scale
+            )
+            initial_parameters["flow_params"] = precond.flat_params
 
         def mcmc_parameter_update_fn(_key, state, _info):
             return extend_params({"cov": jnp.atleast_2d(jnp.cov(state.particles.T))})  # type: ignore[arg-type]  # blackjax stubs: extend_params accepts dict
@@ -50,7 +62,7 @@ class AdaptiveTemperedSMCSampler(_BlackJAXSMCBase):
             mcmc_init_fn=rmh.init,
             resampling_fn=systematic,
             mcmc_parameter_update_fn=mcmc_parameter_update_fn,
-            initial_parameter_value=extend_params({"cov": initial_covariance}),  # type: ignore[arg-type]  # blackjax stubs: extend_params accepts dict
+            initial_parameter_value=extend_params(initial_parameters),  # type: ignore[arg-type]  # blackjax stubs: extend_params accepts dict
             num_mcmc_steps=n_mcmc_steps,
             target_ess=target_ess,
             batch_size=config.batch_size,
@@ -68,11 +80,15 @@ class AdaptiveTemperedSMCSampler(_BlackJAXSMCBase):
                     "accept_history": [],
                     "tempering_schedule": [],
                     "is_weights_history": [],
+                    "precondition_optimizer_state": None,
                 },
                 load_extra=lambda checkpoint: {
                     "accept_history": list(checkpoint["accept_history"]),
                     "tempering_schedule": list(checkpoint["tempering_schedule"]),
                     "is_weights_history": list(checkpoint["is_weights_history"]),
+                    "precondition_optimizer_state": checkpoint.get(
+                        "precondition_optimizer_state"
+                    ),
                 },
                 log_label=log_label,
             )
@@ -82,17 +98,41 @@ class AdaptiveTemperedSMCSampler(_BlackJAXSMCBase):
         importance_weight_history: list[np.ndarray] = mode_checkpoint_data[
             "is_weights_history"
         ]
+        if precond is not None:
+            precond.flow, precond.flat_params = self._reconstruct_precondition_flow(
+                state, precond.unravel_fn, precond.static
+            )
+        self._restore_precondition_optimizer_state(
+            precond, mode_checkpoint_data, n_completed_iterations
+        )
 
         run_adaptive_step = jax.jit(smc_algorithm.step)
         last_checkpoint_write_time = time.perf_counter()
 
-        while state.sampler_state.tempering_param < 1.0:
+        while state.sampler_state.tempering_param < 1.0:  # type: ignore[attr-defined]  # blackjax stubs
             rng_key, step_key = jax.random.split(rng_key)
             state, info = run_adaptive_step(step_key, state)
 
             acceptance_history.append(float(info.update_info.acceptance_rate.mean()))
             tempering_schedule.append(float(state.sampler_state.tempering_param))
             importance_weight_history.append(np.asarray(state.sampler_state.weights))
+
+            if precond is not None:
+                sampler_state = state.sampler_state
+                is_terminal_iteration = bool(sampler_state.tempering_param >= 1.0)
+                rng_key, new_parameters = self._precondition_iteration_update(
+                    rng_key,
+                    precond,
+                    sampler_state,
+                    is_terminal_iteration=is_terminal_iteration,
+                    n_completed_iterations=n_completed_iterations,
+                    needs_resampling=True,
+                )
+                state = StateWithParameterOverride(
+                    sampler_state,
+                    extend_params(new_parameters),  # type: ignore[arg-type]  # blackjax stubs
+                )
+
             n_completed_iterations += 1
 
             last_checkpoint_write_time = save_checkpoint_if_due(
@@ -108,6 +148,9 @@ class AdaptiveTemperedSMCSampler(_BlackJAXSMCBase):
                     accept_history=acceptance_history.copy(),
                     tempering_schedule=tempering_schedule.copy(),
                     is_weights_history=np.stack(importance_weight_history),
+                    precondition_optimizer_state=(
+                        precond.optimizer.optim_state if precond is not None else None
+                    ),
                 ),
                 log_label=log_label,
             )

@@ -164,3 +164,30 @@ def to_displacement_wrapper(
         return wrapped_pos - current_position
 
     return wrapper
+
+
+def to_position_wrapper(
+    periodic_index: Optional[dict[int, tuple[float, float]]],
+    n_dims: int,
+) -> Callable[[jnp.ndarray], jnp.ndarray]:
+    """Position wrapper for BlackJAX SMC preconditioning.
+
+    Unlike ``to_displacement_wrapper`` (current position + a proposed displacement),
+    the preconditioned kernel proposes/accepts entirely in the flow's latent space
+    and only produces a sampling-space position at specific points, so this wraps a
+    full position directly.
+
+    Args:
+        periodic_index: Maps dimension index to ``(lower, upper)`` bounds for each
+            periodic dimension; ``None`` for no periodic dimensions.
+        n_dims: Total number of sampling dimensions.
+
+    Returns:
+        ``wrapper(position) -> wrapped_position``.
+    """
+    mask, lower, period = _build_masks_arrays(periodic_index, n_dims)
+
+    def wrapper(position: jnp.ndarray) -> jnp.ndarray:
+        return jnp.where(mask, lower + jnp.mod(position - lower, period), position)
+
+    return wrapper

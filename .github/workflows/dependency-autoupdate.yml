@@ -2,7 +2,7 @@ name: Scheduled dependency autoupdate
 
 on:
   schedule:
-    - cron: "0 6 * * 1"  # 7am CET (UTC+1, winter) / 8am CEST (UTC+2, summer)
+    - cron: "0 2 * * 1"  # 3am CET (UTC+1, winter) / 4am CEST (UTC+2, summer)
   workflow_dispatch:
 
 concurrency:

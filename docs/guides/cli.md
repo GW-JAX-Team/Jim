@@ -330,7 +330,7 @@ Each backend has its own set of tuning parameters.
 | `global_thinning` | `1` | Keep every Nth global step in the production chain |
 | `local_thinning` | `1` | Keep every Nth local step |
 | `early_stopping` | `true` | Stop training when the loss plateaus |
-| `parallel_tempering` | disabled | Set to `true` to enable with defaults, or provide a dict for custom settings |
+| `parallel_tempering` | disabled | Set to `true` to enable with defaults, `false` (or omit) to disable, or a sub-table for custom settings (see below) |
 | `checkpoint_dir` | `{output.dir}/` | Directory for `checkpoint.pkl`; set by the CLI automatically |
 | `checkpoint_interval` | `600.0` | Seconds between checkpoint writes; `0` disables checkpointing |
 

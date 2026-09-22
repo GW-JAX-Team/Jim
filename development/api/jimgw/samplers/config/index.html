@@ -2363,6 +2363,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#jimgw.samplers.config.LocalKernelConfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        LocalKernelConfig
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#jimgw.samplers.config.SamplerConfig" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -2647,6 +2658,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#jimgw.samplers.config.LocalKernelConfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        LocalKernelConfig
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#jimgw.samplers.config.SamplerConfig" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -2820,6 +2842,20 @@
       </thead>
       <tbody>
           <tr class="doc-section-item">
+            <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;LocalKernelConfig&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Annotated&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Union&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;MALAConfig&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;HMCConfig&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;GRWConfig&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Discriminator&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&#x27;kernel&#x27;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)]&lt;/span&gt;&lt;/code&gt;
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="./#jimgw.samplers.config.LocalKernelConfig">LocalKernelConfig</a></code></td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Discriminated union of every flowMC local-kernel config, by its own</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
             <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;SamplerConfig&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Annotated&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Union&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;FlowMCConfig&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;BlackJAXNSAWConfig&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;BlackJAXNSSConfig&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;BlackJAXSwiGConfig&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;BlackJAXSMCConfig&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Discriminator&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&#x27;type&#x27;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)]&lt;/span&gt;&lt;/code&gt;
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
@@ -2845,6 +2881,31 @@
 
 
 
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="jimgw.samplers.config.LocalKernelConfig" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">LocalKernelConfig</span> <span class="o">=</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">MALAConfig</span><span class="p">,</span> <span class="n">HMCConfig</span><span class="p">,</span> <span class="n">GRWConfig</span><span class="p">],</span> <span class="n">Discriminator</span><span class="p">(</span><span class="s1">'kernel'</span><span class="p">)]</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+<a href="#jimgw.samplers.config.LocalKernelConfig" class="headerlink" title="Permanent link">¤</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Discriminated union of every flowMC local-kernel config, by its own
+<code>kernel</code> field -- the same pattern <code>SamplerConfig</code> itself uses (there via
+<code>type</code>), so the active kernel's settings live in exactly one place with no
+separate selector field to fall out of sync with it.</p>
+
+    </div>
+
+</div>
 
 <div class="doc doc-object doc-attribute">
 
@@ -3171,21 +3232,20 @@ identifies which blocks refresh its cache.</p>
 
 
         <p>Configuration for <a class="autorefs autorefs-internal" href="../flowmc/#jimgw.samplers.flowmc.FlowMCSampler"><code>FlowMCSampler</code></a>.</p>
-<p>The <code>local_kernel</code> field selects the MCMC kernel used for local proposals:</p>
+<p>The <code>local_kernel</code> field selects the MCMC kernel used for local
+proposals -- pass a <code>MALAConfig</code> (default), <code>HMCConfig</code>, or
+<code>GRWConfig</code> instance (or an equivalent <code>dict</code> with a <code>"kernel"</code> key,
+or just the bare kernel name as a string for its defaults, e.g.
+<code>local_kernel="HMC"</code>):</p>
 <ul>
-<li><code>"MALA"</code> — Metropolis-Adjusted Langevin; default.</li>
-<li><code>"HMC"</code> — Hamiltonian Monte Carlo.</li>
-<li><code>"GRW"</code> — Gaussian random walk.</li>
+<li><code>MALAConfig</code> — Metropolis-Adjusted Langevin; default.</li>
+<li><code>HMCConfig</code> — Hamiltonian Monte Carlo.</li>
+<li><code>GRWConfig</code> — Gaussian random walk.</li>
 </ul>
 <p>Parallel tempering is <strong>off by default</strong>.  To enable, pass a
 <a class="autorefs autorefs-internal" href="./#jimgw.samplers.config.ParallelTemperingConfig"><code>ParallelTemperingConfig</code></a>,
 a <code>dict</code> of its fields, or simply <code>True</code> (uses all defaults).
 <code>False</code> disables it.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Only the sub-config matching the active <code>local_kernel</code> is used.
-Non-default values in inactive sub-configs emit a <code>UserWarning</code>.</p>
-</div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Periodic parameters are <strong>not</strong> configured here.  Pass a <code>periodic</code>

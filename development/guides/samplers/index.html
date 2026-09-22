@@ -2850,7 +2850,7 @@ You select one by passing a typed config object to <code>Jim</code>.</p>
 <li><code>n_chains</code> — number of parallel MCMC chains.</li>
 <li><code>n_training_loops</code> / <code>n_production_loops</code> — how many rounds of training (flow updates) and production (sample collection) to run.</li>
 <li><code>n_local_steps</code> / <code>n_global_steps</code> — local MCMC steps and flow-proposal steps per loop.</li>
-<li><code>local_kernel</code> — MCMC kernel for local steps; one of <code>"MALA"</code> (default), <code>"HMC"</code>, or <code>"GRW"</code>.</li>
+<li><code>local_kernel</code> — MCMC kernel for local steps: a <code>MALAConfig</code> (default), <code>HMCConfig</code>, or <code>GRWConfig</code> instance (or an equivalent <code>dict</code> with a <code>"kernel"</code> key, or just the bare name, e.g. <code>local_kernel="HMC"</code>, for its defaults).</li>
 <li><code>parallel_tempering</code> — parallel tempering settings; disabled by default.
   Enable with <code>parallel_tempering=True</code> (uses defaults), a plain dict of settings such as <code>{"n_temperatures": 8}</code>, or a <code>ParallelTemperingConfig</code> instance.</li>
 </ul>

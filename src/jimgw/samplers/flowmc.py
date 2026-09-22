@@ -162,7 +162,7 @@ class FlowMCSampler(Sampler):
         rng_key, bundle_key, sampler_key = jax.random.split(rng_key, 3)
 
         bundle_cls = _BUNDLE[
-            (config.local_kernel, config.parallel_tempering is not None)
+            (config.local_kernel.kernel, config.parallel_tempering is not None)
         ]
 
         # Common kwargs for every bundle.
@@ -195,18 +195,15 @@ class FlowMCSampler(Sampler):
             "verbose": logging.getLogger("jimgw").isEnabledFor(logging.DEBUG),
         }
 
-        # Kernel-specific kwargs. isinstance checks narrow the type after Pydantic coercion.
-        if config.local_kernel == "MALA":
-            assert isinstance(config.mala, MALAConfig)
-            common_kwargs["mala_step_size"] = config.mala.step_size
-        elif config.local_kernel == "HMC":
-            assert isinstance(config.hmc, HMCConfig)
-            common_kwargs["hmc_step_size"] = config.hmc.step_size
-            common_kwargs["hmc_n_leapfrog"] = config.hmc.n_leapfrog_steps
-            common_kwargs["condition_matrix"] = config.hmc.condition_matrix
-        elif config.local_kernel == "GRW":
-            assert isinstance(config.grw, GRWConfig)
-            common_kwargs["grw_step_size"] = config.grw.step_size
+        # Kernel-specific kwargs.
+        if isinstance(config.local_kernel, MALAConfig):
+            common_kwargs["mala_step_size"] = config.local_kernel.step_size
+        elif isinstance(config.local_kernel, HMCConfig):
+            common_kwargs["hmc_step_size"] = config.local_kernel.step_size
+            common_kwargs["hmc_n_leapfrog"] = config.local_kernel.n_leapfrog_steps
+            common_kwargs["condition_matrix"] = config.local_kernel.condition_matrix
+        elif isinstance(config.local_kernel, GRWConfig):
+            common_kwargs["grw_step_size"] = config.local_kernel.step_size
 
         # PT-specific kwargs (only for PT bundles).
         if config.parallel_tempering is not None:

@@ -325,7 +325,7 @@ Each backend has its own set of tuning parameters.
 | `n_training_loops` | `20` | Number of training loops |
 | `n_production_loops` | `10` | Number of production (no-training) loops |
 | `n_epochs` | `20` | Normalizing-flow training epochs per loop |
-| `local_kernel` | `"MALA"` | Local kernel: `"MALA"`, `"HMC"`, or `"GRW"` |
+| `local_kernel` | `"MALA"` | Local kernel: `"MALA"`, `"HMC"`, or `"GRW"`, or a sub-table for kernel-specific settings (see below) |
 | `n_NFproposal_batch_size` | `1000` | Flow proposal batch size |
 | `global_thinning` | `1` | Keep every Nth global step in the production chain |
 | `local_thinning` | `1` | Keep every Nth local step |
@@ -333,6 +333,15 @@ Each backend has its own set of tuning parameters.
 | `parallel_tempering` | disabled | Set to `true` to enable with defaults, `false` (or omit) to disable, or a sub-table for custom settings (see below) |
 | `checkpoint_dir` | `{output.dir}/` | Directory for `checkpoint.pkl`; set by the CLI automatically |
 | `checkpoint_interval` | `600.0` | Seconds between checkpoint writes; `0` disables checkpointing |
+
+Local-kernel sub-table:
+
+```toml
+[sampler.local_kernel]
+kernel = "HMC"
+step_size = 0.01
+n_leapfrog_steps = 20
+```
 
 Parallel-tempering sub-table:
 

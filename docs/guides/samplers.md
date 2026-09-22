@@ -50,7 +50,7 @@ Key parameters:
 - `n_chains` — number of parallel MCMC chains.
 - `n_training_loops` / `n_production_loops` — how many rounds of training (flow updates) and production (sample collection) to run.
 - `n_local_steps` / `n_global_steps` — local MCMC steps and flow-proposal steps per loop.
-- `local_kernel` — MCMC kernel for local steps; one of `"MALA"` (default), `"HMC"`, or `"GRW"`.
+- `local_kernel` — MCMC kernel for local steps: a `MALAConfig` (default), `HMCConfig`, or `GRWConfig` instance (or an equivalent `dict` with a `"kernel"` key, or just the bare name, e.g. `local_kernel="HMC"`, for its defaults).
 - `parallel_tempering` — parallel tempering settings; disabled by default.
   Enable with `parallel_tempering=True` (uses defaults), a plain dict of settings such as `{"n_temperatures": 8}`, or a `ParallelTemperingConfig` instance.
 

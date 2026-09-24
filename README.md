@@ -2,7 +2,7 @@
 
 ### A JAX-based gravitational-wave inference toolkit
 
-[![docs](https://img.shields.io/badge/docs-online-blue)](https://gw-jax-team.github.io/Jim/) [![license](https://img.shields.io/badge/License-MIT-blue)](https://github.com/GW-JAX-Team/Jim/blob/main/LICENSE) [![coverage](https://img.shields.io/coveralls/github/GW-JAX-Team/Jim/main)](https://coveralls.io/github/GW-JAX-Team/Jim?branch=main) [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/GW-JAX-Team/Jim/main.svg)](https://results.pre-commit.ci/latest/github/GW-JAX-Team/Jim/main)
+[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/GW-JAX-Team/Jim/main.svg)](https://results.pre-commit.ci/latest/github/GW-JAX-Team/Jim/main) [![CI](https://github.com/GW-JAX-Team/Jim/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/GW-JAX-Team/Jim/actions/workflows/CI.yml) [![coverage](https://img.shields.io/coveralls/github/GW-JAX-Team/Jim/main)](https://coveralls.io/github/GW-JAX-Team/Jim?branch=main) [![PyPI](https://img.shields.io/pypi/v/JimGW.svg)](https://pypi.org/project/JimGW/) [![Python](https://img.shields.io/pypi/pyversions/JimGW.svg)](https://pypi.org/project/JimGW/) [![docs](https://img.shields.io/badge/docs-online-blue)](https://gw-jax-team.github.io/Jim/) [![license](https://img.shields.io/badge/License-MIT-blue)](https://github.com/GW-JAX-Team/Jim/blob/main/LICENSE)
 
 Jim is a JAX-based toolkit for Bayesian parameter estimation of gravitational-wave sources.
 It pairs differentiable waveform models from [ripple](https://github.com/GW-JAX-Team/ripple) with GPU-accelerated JAX-based samplers, enabling massively parallel inference.
@@ -10,9 +10,9 @@ It pairs differentiable waveform models from [ripple](https://github.com/GW-JAX-
 **Supported samplers:**
 
 - [flowMC](https://github.com/GW-JAX-Team/flowMC) — normalizing-flow-enhanced MCMC with optional parallel tempering.
-- [BlackJAX NS AW](https://github.com/mrosep/blackjax_ns_gw) — nested sampling described in [Prathaban et al. 2025 (arXiv:2509.04336)](https://arxiv.org/abs/2509.04336).
-- [BlackJAX NSS](https://github.com/blackjax-devs/blackjax) — nested slice sampling.
-- [BlackJAX SwiG](https://github.com/blackjax-devs/blackjax) — nested Slice within Gibbs with waveform-cache reuse across parameter blocks.
+- [BlackJAX NS AW](https://github.com/mrosep/blackjax_ns_gw) — nested sampling described in [Prathaban et al. 2025](https://arxiv.org/abs/2509.04336).
+- [BlackJAX NSS](https://github.com/blackjax-devs/blackjax) — nested slice sampling described in [Yallup et al. 2025](https://arxiv.org/abs/2509.24949).
+- [BlackJAX SwiG](https://github.com/blackjax-devs/blackjax) — nested slice sampling with waveform-cache reuse across parameter blocks described in [Yallup et al. 2026](https://arxiv.org/abs/2607.28265).
 - [BlackJAX SMC](https://github.com/blackjax-devs/blackjax) — sequential Monte Carlo with optional adaptive tempering and persistent sampling.
 
 For a quick introduction, see the [Quick Start guide](https://gw-jax-team.github.io/Jim/stable/quickstart/).

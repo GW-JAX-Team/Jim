@@ -169,13 +169,6 @@ def test_flowmc_pt_off_with_none():
     assert cfg.parallel_tempering is None
 
 
-def test_flowmc_irrelevant_kernel_warns():
-    with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter("always")
-        FlowMCConfig(local_kernel="MALA", hmc=HMCConfig(step_size=0.5))
-    assert any("hmc" in str(warning.message).lower() for warning in w)
-
-
 def test_flowmc_irrelevant_parallel_tempering_warns():
     # No warning expected: passing PT config enables it, nothing is ignored.
     with warnings.catch_warnings(record=True) as w:
@@ -185,12 +178,34 @@ def test_flowmc_irrelevant_parallel_tempering_warns():
     assert len(pt_warnings) == 0
 
 
-def test_flowmc_no_spurious_warning_when_kernel_matches():
-    with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter("always")
-        FlowMCConfig(local_kernel="HMC", hmc=HMCConfig(step_size=0.5))
-    kernel_warnings = [x for x in w if "hmc" in str(x.message).lower()]
-    assert len(kernel_warnings) == 0
+def test_flowmc_local_kernel_string_shorthand_selects_defaults():
+    cfg = FlowMCConfig(local_kernel="HMC")
+    assert isinstance(cfg.local_kernel, HMCConfig)
+    assert cfg.local_kernel.kernel == "HMC"
+
+
+def test_flowmc_local_kernel_accepts_config_instance_directly():
+    cfg = FlowMCConfig(local_kernel=HMCConfig(step_size=0.5))
+    assert isinstance(cfg.local_kernel, HMCConfig)
+    assert cfg.local_kernel.step_size == 0.5
+
+
+def test_flowmc_local_kernel_settings_for_inactive_kernel_are_structurally_unreachable():
+    # There is no longer a separate selector + parallel per-kernel sub-configs
+    # to set inconsistently -- local_kernel is a single discriminated-union
+    # field, so HMC-specific settings simply cannot be attached while some
+    # other kernel is active. (No "inactive kernel sub-config" warning exists
+    # anymore; this replaces the tests that used to check for it.)
+    cfg = FlowMCConfig(local_kernel="MALA")
+    assert isinstance(cfg.local_kernel, MALAConfig)
+    assert not hasattr(cfg, "hmc")
+    assert not hasattr(cfg, "grw")
+    assert not hasattr(cfg, "mala")
+
+
+def test_flowmc_local_kernel_rejects_unknown_field():
+    with pytest.raises(ValidationError):
+        FlowMCConfig(local_kernel={"kernel": "HMC", "step_siz": 0.5})  # typo
 
 
 # ---------------------------------------------------------------------------

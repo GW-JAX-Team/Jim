@@ -16,8 +16,8 @@ from blackjax.smc.tuning.from_particles import particles_covariance_matrix
 from jax.sharding import Mesh
 from jaxtyping import Array, Float
 
-from jimgw.samplers.blackjax.nss import BlackJAXNSSSampler
-from jimgw.samplers.blackjax.sharding import build_sharded_from_mcmc_kernel
+from jimgw.samplers.blackjax.ns.nss import BlackJAXNSSSampler
+from jimgw.samplers.blackjax.ns.sharding import build_sharded_from_mcmc_kernel
 from jimgw.samplers.config import BlackJAXNSSConfig, BlackJAXSwiGConfig
 from jimgw.samplers.periodic import _build_masks_arrays
 from jimgw.typing import FloatScalar
@@ -41,15 +41,13 @@ def _build_swig_constrained_step(
     rebuild_required_by_block: dict[tuple[int, ...], bool],
     num_gibbs_sweeps: int,
     num_inner_steps_per_dim: int,
-    max_steps: int,
-    max_shrinkage: int,
     periodic: Optional[dict[int, tuple[float, float]]],
     n_dims: int,
 ) -> Callable:
     slice_kernel = build_slice_kernel(
         interval=stepping_out,
-        max_expansions=max_steps,
-        max_shrinkage=max_shrinkage,
+        max_expansions=10,
+        max_shrinkage=100,
     )
     periodic_mask, periodic_lower, periodic_period = _build_masks_arrays(
         periodic, n_dims
@@ -247,8 +245,6 @@ class BlackJAXSwiGSampler(BlackJAXNSSSampler):
             rebuild_required_by_block=self._rebuild_required_by_block,
             num_gibbs_sweeps=self._swig_config.num_gibbs_sweeps,
             num_inner_steps_per_dim=self._swig_config.num_inner_steps_per_dim,
-            max_steps=self._swig_config.max_steps,
-            max_shrinkage=self._swig_config.max_shrinkage,
             periodic=self._periodic,
             n_dims=self.n_dims,
         )
@@ -268,9 +264,7 @@ class BlackJAXSwiGSampler(BlackJAXNSSSampler):
                 mesh=mesh,
             )
 
-        # `nested_sampler.init` is never called (state init happens in
-        # `_batched_nss_init`); BlackJAX still requires SamplingAlgorithm.init
-        # to type as returning a State.
+        # `_sample` initializes state directly; BlackJAX still requires an init callable.
         return SamplingAlgorithm(
             lambda position, rng_key=None: position,  # type: ignore[return-value]
             kernel,

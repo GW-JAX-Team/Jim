@@ -90,18 +90,18 @@ from jimgw.samplers.flowmc import FlowMCSampler
 
 register_sampler("flowmc", lambda: FlowMCSampler)
 
-from jimgw.samplers.blackjax.smc import BlackJAXSMCSampler
+from jimgw.samplers.blackjax.smc.sampler import build_blackjax_smc_sampler
 
-register_sampler("blackjax-smc", lambda: BlackJAXSMCSampler)
+register_sampler("blackjax-smc", lambda: build_blackjax_smc_sampler)
 
-from jimgw.samplers.blackjax.ns_aw import BlackJAXNSAWSampler
+from jimgw.samplers.blackjax.ns.ns_aw import BlackJAXNSAWSampler
 
 register_sampler("blackjax-ns-aw", lambda: BlackJAXNSAWSampler)
 
-from jimgw.samplers.blackjax.nss import BlackJAXNSSSampler
+from jimgw.samplers.blackjax.ns.nss import BlackJAXNSSSampler
 
 register_sampler("blackjax-nss", lambda: BlackJAXNSSSampler)
 
-from jimgw.samplers.blackjax.swig import BlackJAXSwiGSampler
+from jimgw.samplers.blackjax.ns.swig import BlackJAXSwiGSampler
 
 register_sampler("blackjax-swig", lambda: BlackJAXSwiGSampler)

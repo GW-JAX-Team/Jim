@@ -76,9 +76,7 @@ def complex_inner_product(
     The first waveform ``h1`` is complex-conjugated. The result is:
 
     $$
-
     \\langle h_1, h_2 \\rangle = 4 \\Delta f \\sum_k \\frac{h_1^*(f_k)\\, h_2(f_k)}{S_n(f_k)}
-
     $$
 
     Args:
@@ -105,13 +103,11 @@ def inner_product(
 
     Returns the real part of `complex_inner_product`:
 
-        $$
-
-        (h_1 | h_2) = \\operatorname{Re}\\langle h_1, h_2 \\rangle
-                = 4 \\Delta f \\sum_k \\operatorname{Re}\\!\\left[
-                    \\frac{h_1^*(f_k)\\, h_2(f_k)}{S_n(f_k)} \\right]
-
-        $$
+    $$
+    (h_1 | h_2) = \\operatorname{Re}\\langle h_1, h_2 \\rangle
+            = 4 \\Delta f \\sum_k \\operatorname{Re}\\!\\left[
+                \\frac{h_1^*(f_k)\\, h_2(f_k)}{S_n(f_k)} \\right]
+    $$
 
     Args:
         h1 (Float[Array, " n_freq"]): First waveform (complex array).

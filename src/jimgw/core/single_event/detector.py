@@ -338,9 +338,7 @@ class GroundBased2G(Detector):
         For a 2-arm differential-length detector, this is given by:
 
         $$
-
         D_{ij} = \\left(x_i x_j - y_i y_j\\right)/2
-
         $$
 
         for unit vectors $x$ and $y$ along the x and y arms.

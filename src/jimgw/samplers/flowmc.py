@@ -162,7 +162,7 @@ class FlowMCSampler(Sampler):
         rng_key, bundle_key, sampler_key = jax.random.split(rng_key, 3)
 
         bundle_cls = _BUNDLE[
-            (config.local_kernel, config.parallel_tempering is not None)
+            (config.local_kernel.kernel, config.parallel_tempering is not None)
         ]
 
         # Common kwargs for every bundle.
@@ -195,18 +195,15 @@ class FlowMCSampler(Sampler):
             "verbose": logging.getLogger("jimgw").isEnabledFor(logging.DEBUG),
         }
 
-        # Kernel-specific kwargs. isinstance checks narrow the type after Pydantic coercion.
-        if config.local_kernel == "MALA":
-            assert isinstance(config.mala, MALAConfig)
-            common_kwargs["mala_step_size"] = config.mala.step_size
-        elif config.local_kernel == "HMC":
-            assert isinstance(config.hmc, HMCConfig)
-            common_kwargs["hmc_step_size"] = config.hmc.step_size
-            common_kwargs["hmc_n_leapfrog"] = config.hmc.n_leapfrog_steps
-            common_kwargs["condition_matrix"] = config.hmc.condition_matrix
-        elif config.local_kernel == "GRW":
-            assert isinstance(config.grw, GRWConfig)
-            common_kwargs["grw_step_size"] = config.grw.step_size
+        # Kernel-specific kwargs.
+        if isinstance(config.local_kernel, MALAConfig):
+            common_kwargs["mala_step_size"] = config.local_kernel.step_size
+        elif isinstance(config.local_kernel, HMCConfig):
+            common_kwargs["hmc_step_size"] = config.local_kernel.step_size
+            common_kwargs["hmc_n_leapfrog"] = config.local_kernel.n_leapfrog_steps
+            common_kwargs["condition_matrix"] = config.local_kernel.condition_matrix
+        elif isinstance(config.local_kernel, GRWConfig):
+            common_kwargs["grw_step_size"] = config.local_kernel.step_size
 
         # PT-specific kwargs (only for PT bundles).
         if config.parallel_tempering is not None:
@@ -218,7 +215,7 @@ class FlowMCSampler(Sampler):
 
         resource_strategy_bundle = bundle_cls(**common_kwargs)
 
-        _outdir = (
+        outdir = (
             str(config.checkpoint_dir)
             if config.checkpoint_dir is not None
             else "./outdir/"
@@ -228,7 +225,7 @@ class FlowMCSampler(Sampler):
             n_chains=config.n_chains,
             rng_key=sampler_key,
             resource_strategy_bundles=resource_strategy_bundle,
-            outdir=_outdir,
+            outdir=outdir,
             checkpoint_interval=config.checkpoint_interval,
         )
         if config.checkpoint_interval > 0:
@@ -237,23 +234,23 @@ class FlowMCSampler(Sampler):
             )
 
         # Skip initial_position validation when resuming from an existing checkpoint.
-        _ckpt_path = (
+        checkpoint_path = (
             config.checkpoint_dir / "checkpoint.pkl"
             if config.checkpoint_dir is not None
             else None
         )
-        _resuming = (
+        is_resuming = (
             config.checkpoint_interval > 0
-            and _ckpt_path is not None
-            and _ckpt_path.exists()
+            and checkpoint_path is not None
+            and checkpoint_path.exists()
         )
-        if _resuming and _ckpt_path is not None:
-            with open(_ckpt_path, "rb") as _f:
-                checkpoint = pickle.load(_f)
+        if is_resuming and checkpoint_path is not None:
+            with open(checkpoint_path, "rb") as checkpoint_file:
+                checkpoint = pickle.load(checkpoint_file)
             self._validate_checkpoint(checkpoint)
             self._prev_elapsed = float(checkpoint["elapsed_time"])
         initial_position = jnp.asarray(initial_position)
-        if not _resuming:
+        if not is_resuming:
             if initial_position.ndim == 1:
                 if initial_position.shape[0] != self.n_dims:
                     raise ValueError(

@@ -17,6 +17,22 @@ permissions:
   contents: read
 
 jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.1.0
+        with:
+          enable-cache: true
+          python-version: "3.12"
+      - name: Install dependencies
+        run: uv sync --group test
+      - uses: ./.github/actions/install-siblings
+      - name: Run pre-commit (excluding pyright)
+        run: SKIP=pyright uv run --no-sync pre-commit run --all-files
+      - name: Run pyright
+        run: uv run --no-sync pyright src/
+
   test:
     name: ${{ matrix.test_suite }} (${{ matrix.python-version }})
     runs-on: ubuntu-latest
@@ -26,7 +42,7 @@ jobs:
         test_suite: [unit, integration, cross-validation]
     steps:
       - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10.0.1
+      - uses: astral-sh/setup-uv@v10.1.0
         with:
           enable-cache: true
           python-version: ${{ matrix.python-version }}
@@ -69,7 +85,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10.0.1
+      - uses: astral-sh/setup-uv@v10.1.0
         with:
           enable-cache: true
           python-version: "3.12"
@@ -91,21 +107,27 @@ jobs:
           COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
         run: uv run --no-sync coveralls
 
-  pre-commit:
+  publish-testpypi:
+    needs: [test, pre-commit]
     runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/project/jimgw/
     steps:
       - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10.0.1
         with:
-          enable-cache: true
-          python-version: "3.12"
-      - name: Install dependencies
-        run: uv sync --group test
-      - uses: ./.github/actions/install-siblings
-      - name: Run pre-commit (excluding pyright)
-        run: SKIP=pyright uv run --no-sync pre-commit run --all-files
-      - name: Run pyright
-        run: uv run --no-sync pyright src/
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v10.1.0
+      - name: Build package
+        run: uv build
+      - name: Publish to TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          password: ${{ secrets.TESTPYPI_API_TOKEN }}
+          skip-existing: true
 
   publish:
     needs: [test, pre-commit]
@@ -118,7 +140,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: astral-sh/setup-uv@v10.0.1
+      - uses: astral-sh/setup-uv@v10.1.0
       - name: Build package
         run: uv build
       - name: Publish to PyPI
@@ -166,25 +188,3 @@ jobs:
                 --body "Automated merge of main into jim-dev failed due to conflicts. Please resolve manually."
             fi
           fi
-
-  publish-testpypi:
-    needs: [test, pre-commit]
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    environment:
-      name: testpypi
-      url: https://test.pypi.org/project/jimgw/
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: astral-sh/setup-uv@v10.0.1
-      - name: Build package
-        run: uv build
-      - name: Publish to TestPyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          repository-url: https://test.pypi.org/legacy/
-          password: ${{ secrets.TESTPYPI_API_TOKEN }}
-          skip-existing: true

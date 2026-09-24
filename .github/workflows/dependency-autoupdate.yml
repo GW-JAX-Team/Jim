@@ -2,7 +2,7 @@ name: Scheduled dependency autoupdate
 
 on:
   schedule:
-    - cron: "0 6 * * 1"  # 7am CET (UTC+1, winter) / 8am CEST (UTC+2, summer)
+    - cron: "0 2 * * 1"  # 3am CET (UTC+1, winter) / 4am CEST (UTC+2, summer)
   workflow_dispatch:
 
 concurrency:
@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: jim-dev
-      - uses: astral-sh/setup-uv@v10.0.1
+      - uses: astral-sh/setup-uv@v10.1.0
         with:
           python-version: "3.12"
       - run: uvx pre-commit autoupdate

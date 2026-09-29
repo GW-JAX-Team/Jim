@@ -4,49 +4,7 @@
         <loc>https://gw-jax-team.github.io/Jim/development/</loc>
       </url>
       <url>
-        <loc>https://gw-jax-team.github.io/Jim/development/installation/</loc>
-      </url>
-      <url>
-        <loc>https://gw-jax-team.github.io/Jim/development/quickstart/</loc>
-      </url>
-      <url>
-        <loc>https://gw-jax-team.github.io/Jim/development/tutorials/</loc>
-      </url>
-      <url>
-        <loc>https://gw-jax-team.github.io/Jim/development/tutorials/getting_started/</loc>
-      </url>
-      <url>
-        <loc>https://gw-jax-team.github.io/Jim/development/tutorials/gw150914_cli/</loc>
-      </url>
-      <url>
-        <loc>https://gw-jax-team.github.io/Jim/development/guides/</loc>
-      </url>
-      <url>
-        <loc>https://gw-jax-team.github.io/Jim/development/guides/cli/</loc>
-      </url>
-      <url>
-        <loc>https://gw-jax-team.github.io/Jim/development/guides/data/</loc>
-      </url>
-      <url>
-        <loc>https://gw-jax-team.github.io/Jim/development/guides/likelihood/</loc>
-      </url>
-      <url>
-        <loc>https://gw-jax-team.github.io/Jim/development/guides/prior/</loc>
-      </url>
-      <url>
-        <loc>https://gw-jax-team.github.io/Jim/development/guides/samplers/</loc>
-      </url>
-      <url>
-        <loc>https://gw-jax-team.github.io/Jim/development/guides/transforms/</loc>
-      </url>
-      <url>
         <loc>https://gw-jax-team.github.io/Jim/development/FAQ/</loc>
-      </url>
-      <url>
-        <loc>https://gw-jax-team.github.io/Jim/development/citing/</loc>
-      </url>
-      <url>
-        <loc>https://gw-jax-team.github.io/Jim/development/contributing/</loc>
       </url>
       <url>
         <loc>https://gw-jax-team.github.io/Jim/development/api/jimgw/core/base/</loc>
@@ -155,5 +113,47 @@
       </url>
       <url>
         <loc>https://gw-jax-team.github.io/Jim/development/api/jimgw/typing/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/development/citing/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/development/contributing/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/development/guides/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/development/guides/cli/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/development/guides/data/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/development/guides/likelihood/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/development/guides/prior/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/development/guides/samplers/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/development/guides/transforms/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/development/installation/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/development/quickstart/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/development/tutorials/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/development/tutorials/getting_started/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/development/tutorials/gw150914_cli/</loc>
       </url>
 </urlset>

@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../../../../assets/images/favicon.png">
-      <meta name="generator" content="zensical-0.0.63">
+      <meta name="generator" content="zensical-0.0.66">
     
     
       
@@ -36,7 +36,7 @@
       
         
       
-      <link rel="stylesheet" href="../../../../assets/stylesheets/modern/main.10763589.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/modern/main.1502b751.min.css">
       
         
           
@@ -2682,7 +2682,7 @@ class that encapsulates everything Jim needs from a JAX sampler backend.</p>
 prior/likelihood details beyond what the injected callables provide.
 Jim is responsible for building those callables and for converting
 the sampling-space arrays returned by <code>Sampler.get_samples</code> back to a
-named prior-space dict via <a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;get_samples&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;n_samples&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;dict&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;np&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ndarray&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;/code&gt;" href="../../core/jim/#jimgw.core.jim.Jim.get_samples"><code>Jim.get_samples</code></a>.</p>
+named prior-space dict via <a class="autorefs autorefs-internal" title="get_samples(n_samples: int = 0) -&gt; dict[str, np.ndarray]" href="../../core/jim/#jimgw.core.jim.Jim.get_samples"><code>Jim.get_samples</code></a>.</p>
 
 
 
@@ -2750,7 +2750,7 @@ samples themselves.</p>
       </thead>
       <tbody>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;get_diagnostics&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;dict&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Any&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.samplers.base.Sampler.get_diagnostics">get_diagnostics</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="get_diagnostics() -&gt; dict[str, Any] (jimgw.samplers.base.Sampler.get_diagnostics)" href="./#jimgw.samplers.base.Sampler.get_diagnostics">get_diagnostics</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Return run-level diagnostics.</p>
@@ -2758,11 +2758,11 @@ samples themselves.</p>
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;get_samples&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;dict&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;np&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ndarray&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;/code&gt;
+              <td><code><a class="autorefs autorefs-internal" title="get_samples() -&gt; dict[str, np.ndarray]
 
-  &lt;span class=&quot;doc doc-labels&quot;&gt;
-      &lt;small class=&quot;doc doc-label doc-label-abstractmethod&quot;&gt;&lt;code&gt;abstractmethod&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt;" href="./#jimgw.samplers.base.Sampler.get_samples">get_samples</a></code></td>
+  
+      abstractmethod
+   (jimgw.samplers.base.Sampler.get_samples)" href="./#jimgw.samplers.base.Sampler.get_samples">get_samples</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Return posterior samples after internal post-processing.</p>
@@ -2770,7 +2770,7 @@ samples themselves.</p>
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;sample&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rng_key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;initial_position&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Array&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&#x27;n n_dims&#x27;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;None&lt;/span&gt;&lt;/code&gt;" href="./#jimgw.samplers.base.Sampler.sample">sample</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="sample(rng_key: Key, initial_position: Float[Array, &#x27;n n_dims&#x27;]) -&gt; None (jimgw.samplers.base.Sampler.sample)" href="./#jimgw.samplers.base.Sampler.sample">sample</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Run the sampler and record wall-clock sampling time.</p>
@@ -2794,12 +2794,12 @@ samples themselves.</p>
       </thead>
       <tbody>
           <tr class="doc-section-item">
-            <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;sampler_name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;/code&gt;
+            <td><code><a class="autorefs autorefs-internal" title="sampler_name: str
 
-  &lt;span class=&quot;doc doc-labels&quot;&gt;
-      &lt;small class=&quot;doc doc-label doc-label-abstractmethod&quot;&gt;&lt;code&gt;abstractmethod&lt;/code&gt;&lt;/small&gt;
-      &lt;small class=&quot;doc doc-label doc-label-property&quot;&gt;&lt;code&gt;property&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt;" href="./#jimgw.samplers.base.Sampler.sampler_name">sampler_name</a></code></td>
+  
+      abstractmethod
+      property
+   (jimgw.samplers.base.Sampler.sampler_name)" href="./#jimgw.samplers.base.Sampler.sampler_name">sampler_name</a></code></td>
             <td>
                   <code><span title="str">str</span></code>
             </td>
@@ -3049,7 +3049,7 @@ backend (<code>n_chains</code> for flowMC, <code>n_live</code> for NS,
       <script id="__config" type="application/json">{"annotate":null,"base":"../../../..","features":["content.code.copy","navigation.instant","navigation.tabs","navigation.top","toc.follow","header.autohide"],"redirect":null,"search":"../../../../assets/javascripts/workers/search.7d14d953.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":{"default":"stable","provider":"mike"}}</script>
     
     
-      <script src="../../../../assets/javascripts/bundle.8dcc8e9c.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.b7d3f789.min.js"></script>
       
         <script src="../../../../javascripts/mathjax.js"></script>
       

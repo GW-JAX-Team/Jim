@@ -589,7 +589,7 @@ class TestJimPriorLikelihoodConsistencyChecks:
             )
 
     def test_swig_builds_cache_callbacks_from_likelihood(self):
-        from jimgw.samplers.blackjax.swig import BlackJAXSwiGSampler
+        from jimgw.samplers.blackjax.ns.swig import BlackJAXSwiGSampler
         from jimgw.samplers.config import BlackJAXSwiGConfig
 
         prior = CombinePrior(

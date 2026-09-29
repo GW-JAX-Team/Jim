@@ -1,7 +1,6 @@
-"""Smoke test: BlackJAXSMCSampler on a 2-D Gaussian."""
+"""Smoke test: the BlackJAX SMC sampler on a 2-D Gaussian."""
 
-from __future__ import annotations
-
+import logging
 import pickle
 from pathlib import Path
 from typing import Optional
@@ -13,7 +12,8 @@ import pytest
 blackjax = pytest.importorskip("blackjax")
 
 from jimgw.core.prior import CombinePrior, UniformPrior
-from jimgw.samplers.blackjax.smc import BlackJAXSMCSampler
+from jimgw.samplers.base import Sampler
+from jimgw.samplers.blackjax.smc.sampler import build_blackjax_smc_sampler
 from jimgw.samplers.config import BlackJAXSMCConfig
 
 _SIGMA = 0.1
@@ -29,7 +29,7 @@ class _GaussianLikelihood:
 
 def _make_sampler(
     n_particles: int = 200, config: Optional[BlackJAXSMCConfig] = None
-) -> BlackJAXSMCSampler:
+) -> Sampler:
     prior = CombinePrior(
         [
             UniformPrior(0.0, 1.0, parameter_names=["x"]),
@@ -59,7 +59,7 @@ def _make_sampler(
     def log_posterior_fn(arr):
         return log_prior_fn(arr) + log_likelihood_fn(arr)
 
-    return BlackJAXSMCSampler(
+    return build_blackjax_smc_sampler(
         n_dims=len(parameter_names),
         log_prior_fn=log_prior_fn,
         log_likelihood_fn=log_likelihood_fn,
@@ -176,7 +176,7 @@ def test_smc_n_evals_formula():
     assert diag["n_likelihood_evaluations"] == expected
 
 
-def _make_sampler_at(n_particles: int = 200) -> BlackJAXSMCSampler:
+def _make_sampler_at(n_particles: int = 200) -> Sampler:
     """Non-persistent (adaptive tempered) mode."""
     prior = CombinePrior(
         [
@@ -204,7 +204,7 @@ def _make_sampler_at(n_particles: int = 200) -> BlackJAXSMCSampler:
     def log_posterior_fn(arr):
         return log_prior_fn(arr) + log_likelihood_fn(arr)
 
-    return BlackJAXSMCSampler(
+    return build_blackjax_smc_sampler(
         n_dims=len(parameter_names),
         log_prior_fn=log_prior_fn,
         log_likelihood_fn=log_likelihood_fn,
@@ -261,7 +261,7 @@ def test_smc_fp_diagnostics():
     def log_posterior_fn(arr):
         return log_prior_fn(arr) + log_likelihood_fn(arr)
 
-    sampler = BlackJAXSMCSampler(
+    sampler = build_blackjax_smc_sampler(
         n_dims=len(parameter_names),
         log_prior_fn=log_prior_fn,
         log_likelihood_fn=log_likelihood_fn,
@@ -311,7 +311,7 @@ def test_smc_ft_diagnostics():
     def log_posterior_fn(arr):
         return log_prior_fn(arr) + log_likelihood_fn(arr)
 
-    sampler = BlackJAXSMCSampler(
+    sampler = build_blackjax_smc_sampler(
         n_dims=len(parameter_names),
         log_prior_fn=log_prior_fn,
         log_likelihood_fn=log_likelihood_fn,
@@ -359,7 +359,7 @@ def test_smc_checkpoint_file_created(tmp_path, monkeypatch):
     def log_posterior_fn(arr):
         return log_prior_fn(arr) + log_likelihood_fn(arr)
 
-    sampler = BlackJAXSMCSampler(
+    sampler = build_blackjax_smc_sampler(
         n_dims=len(parameter_names),
         log_prior_fn=log_prior_fn,
         log_likelihood_fn=log_likelihood_fn,
@@ -456,7 +456,7 @@ def test_smc_resume_gives_same_result(tmp_path, monkeypatch):
         def log_posterior_fn(arr):
             return log_prior_fn(arr) + log_likelihood_fn(arr)
 
-        return BlackJAXSMCSampler(
+        return build_blackjax_smc_sampler(
             n_dims=len(parameter_names),
             log_prior_fn=log_prior_fn,
             log_likelihood_fn=log_likelihood_fn,
@@ -528,7 +528,7 @@ def test_smc_checkpoint_failure_restores_caller_rng_key(tmp_path):
         def log_posterior_fn(arr):
             return log_prior_fn(arr) + log_likelihood_fn(arr)
 
-        return BlackJAXSMCSampler(
+        return build_blackjax_smc_sampler(
             n_dims=len(parameter_names),
             log_prior_fn=log_prior_fn,
             log_likelihood_fn=log_likelihood_fn,
@@ -564,9 +564,7 @@ def test_smc_checkpoint_failure_restores_caller_rng_key(tmp_path):
     )
 
 
-def _make_sampler_batched(
-    n_particles: int = 200, batch_size: int = 20
-) -> BlackJAXSMCSampler:
+def _make_sampler_batched(n_particles: int = 200, batch_size: int = 20) -> Sampler:
     """AP mode sampler with particle_batch_size > 0."""
     prior = CombinePrior(
         [
@@ -597,7 +595,7 @@ def _make_sampler_batched(
     def log_posterior_fn(arr):
         return log_prior_fn(arr) + log_likelihood_fn(arr)
 
-    return BlackJAXSMCSampler(
+    return build_blackjax_smc_sampler(
         n_dims=len(parameter_names),
         log_prior_fn=log_prior_fn,
         log_likelihood_fn=log_likelihood_fn,
@@ -650,7 +648,7 @@ def test_smc_particle_batch_size_at_mode():
     def log_posterior_fn(arr):
         return log_prior_fn(arr) + log_likelihood_fn(arr)
 
-    sampler = BlackJAXSMCSampler(
+    sampler = build_blackjax_smc_sampler(
         n_dims=len(parameter_names),
         log_prior_fn=log_prior_fn,
         log_likelihood_fn=log_likelihood_fn,
@@ -663,3 +661,87 @@ def test_smc_particle_batch_size_at_mode():
     assert isinstance(result, dict)
     assert "samples" in result
     assert result["samples"].shape[0] > 0
+
+
+def test_smc_fixed_ladder_stale_checkpoint_restarts_fresh(
+    tmp_path, monkeypatch, caplog
+):
+    """A fixed-ladder run whose checkpoint n_iter exceeds the current ladder length
+    restarts fresh rather than resuming with an out-of-range iteration count."""
+    long_ladder = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
+    checkpoint_path = tmp_path / "checkpoint.pkl"
+    original_unlink = Path.unlink
+    monkeypatch.setattr(
+        Path,
+        "unlink",
+        lambda self, missing_ok=False: (
+            None
+            if self == checkpoint_path
+            else original_unlink(self, missing_ok=missing_ok)
+        ),
+    )
+    long_sampler = _make_sampler(
+        config=BlackJAXSMCConfig(
+            n_particles=200,
+            n_mcmc_steps_per_dim=5,
+            temperature_ladder=long_ladder,
+            checkpoint_dir=tmp_path,
+            checkpoint_interval=1e-9,
+        )
+    )
+    long_sampler.sample(jax.random.key(7), _init_pos(200))
+    monkeypatch.setattr(Path, "unlink", original_unlink)
+    assert checkpoint_path.exists(), "Checkpoint was never written"
+    with open(checkpoint_path, "rb") as checkpoint_file:
+        checkpoint = pickle.load(checkpoint_file)
+    assert checkpoint["n_iter"] == len(long_ladder) - 1
+
+    short_ladder = [0.0, 0.5, 1.0]
+    short_sampler = _make_sampler(
+        config=BlackJAXSMCConfig(
+            n_particles=200,
+            n_mcmc_steps_per_dim=5,
+            temperature_ladder=short_ladder,
+            checkpoint_dir=tmp_path,
+            checkpoint_interval=1e-9,
+        )
+    )
+    with caplog.at_level(logging.WARNING):
+        short_sampler.sample(jax.random.key(7), _init_pos(200))
+    assert "exceeds current schedule" in caplog.text
+    assert short_sampler._n_iterations == len(short_ladder) - 1
+    assert not checkpoint_path.exists(), "Checkpoint was not cleaned up"
+
+
+def test_smc_fixed_ladder_same_length_stale_checkpoint_restarts_fresh(tmp_path, caplog):
+    """A checkpoint whose ``n_iter`` exceeds the current schedule length
+    restarts fresh, exercised directly against ``is_stale`` via a hand-built
+    checkpoint (rather than two full sampler runs, as in
+    ``test_smc_fixed_ladder_stale_checkpoint_restarts_fresh``)."""
+    ladder = [0.0, 0.5, 1.0]
+    sampler = _make_sampler(
+        config=BlackJAXSMCConfig(
+            n_particles=200,
+            n_mcmc_steps_per_dim=5,
+            temperature_ladder=ladder,
+            checkpoint_dir=tmp_path,
+            checkpoint_interval=1e-9,
+        )
+    )
+    checkpoint_path = tmp_path / "checkpoint.pkl"
+    sampler._config.write_checkpoint(
+        {
+            "state": None,
+            "rng_key": jax.random.key(0),
+            "n_iter": len(ladder) + 5,  # out of range for this ladder
+            "sampler_name": sampler.sampler_name,
+            "elapsed_time": 0.0,
+            **sampler._checkpoint_extra(accept_history=[]),
+        },
+        "test",
+    )
+    assert checkpoint_path.exists()
+    with caplog.at_level(logging.WARNING):
+        sampler.sample(jax.random.key(7), _init_pos(200))
+    assert "exceeds current schedule" in caplog.text
+    assert sampler._n_iterations == len(ladder) - 1

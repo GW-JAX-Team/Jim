@@ -10,7 +10,7 @@ import pickle
 import time
 import warnings
 from pathlib import Path
-from typing import Annotated, Any, Generic, Literal, Optional, Self, TypeVar, Union
+from typing import Annotated, Generic, Literal, Optional, Self, TypeVar, Union
 
 import jax
 import numpy as np
@@ -53,7 +53,7 @@ class _CheckpointMixin(BaseModel):
 
     @field_validator("checkpoint_dir", mode="before")
     @classmethod
-    def _coerce_checkpoint_dir(cls, v: object) -> Optional[Path]:
+    def _resolve_checkpoint_dir(cls, v: object) -> Optional[Path]:
         if v is None:
             return None
         return Path(str(v))
@@ -79,22 +79,22 @@ class _CheckpointMixin(BaseModel):
 
         Returns:
             Wall-clock time of the write (``time.perf_counter()``), suitable
-            for resetting the caller's ``_last_ckpt_t`` timer.
+            for resetting the caller's ``last_checkpoint_write_time`` timer.
         """
         assert self.checkpoint_dir is not None
-        ckpt_path = self.checkpoint_dir / "checkpoint.pkl"
-        ckpt_path.parent.mkdir(parents=True, exist_ok=True)
-        tmp = ckpt_path.with_suffix(".pkl.tmp")
-        with open(tmp, "wb") as _f:
-            pickle.dump(data, _f)
-        tmp.replace(ckpt_path)
-        t = time.perf_counter()
+        checkpoint_path = self.checkpoint_dir / "checkpoint.pkl"
+        checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
+        temporary_path = checkpoint_path.with_suffix(".pkl.tmp")
+        with open(temporary_path, "wb") as checkpoint_file:
+            pickle.dump(data, checkpoint_file)
+        temporary_path.replace(checkpoint_path)
+        checkpoint_write_time = time.perf_counter()
         logger.debug(
             "%s: checkpoint saved at n_iter=%s",
             label,
             data.get("n_iter", "?"),
         )
-        return t
+        return checkpoint_write_time
 
     def configure_jax_cache(self) -> None:
         """Enable JAX's persistent XLA compilation cache under ``checkpoint_dir/jax_cache``.
@@ -191,6 +191,7 @@ class MALAConfig(BaseModel):
 
     model_config = {"extra": "forbid", "arbitrary_types_allowed": True}
 
+    kernel: Literal["MALA"] = "MALA"
     step_size: float | np.ndarray = 2e-3
 
 
@@ -205,6 +206,7 @@ class HMCConfig(BaseModel):
 
     model_config = {"extra": "forbid", "arbitrary_types_allowed": True}
 
+    kernel: Literal["HMC"] = "HMC"
     step_size: float = 2e-3
     condition_matrix: float | np.ndarray = 1.0
     n_leapfrog_steps: int = Field(default=10, ge=1)
@@ -220,26 +222,36 @@ class GRWConfig(BaseModel):
 
     model_config = {"extra": "forbid", "arbitrary_types_allowed": True}
 
+    kernel: Literal["GRW"] = "GRW"
     step_size: float | np.ndarray = 2e-3
+
+
+LocalKernelConfig = Annotated[
+    Union[MALAConfig, HMCConfig, GRWConfig], Discriminator("kernel")
+]
+"""Discriminated union of every flowMC local-kernel config, by its own
+``kernel`` field -- the same pattern `SamplerConfig` itself uses (there via
+``type``), so the active kernel's settings live in exactly one place with no
+separate selector field to fall out of sync with it."""
 
 
 class FlowMCConfig(BaseSamplerConfig[Literal["flowmc"]], _CheckpointMixin):
     """Configuration for [`FlowMCSampler`][jimgw.samplers.flowmc.FlowMCSampler].
 
-    The ``local_kernel`` field selects the MCMC kernel used for local proposals:
+    The ``local_kernel`` field selects the MCMC kernel used for local
+    proposals -- pass a ``MALAConfig`` (default), ``HMCConfig``, or
+    ``GRWConfig`` instance (or an equivalent ``dict`` with a ``"kernel"`` key,
+    or just the bare kernel name as a string for its defaults, e.g.
+    ``local_kernel="HMC"``):
 
-    * ``"MALA"`` — Metropolis-Adjusted Langevin; default.
-    * ``"HMC"`` — Hamiltonian Monte Carlo.
-    * ``"GRW"`` — Gaussian random walk.
+    * ``MALAConfig`` — Metropolis-Adjusted Langevin; default.
+    * ``HMCConfig`` — Hamiltonian Monte Carlo.
+    * ``GRWConfig`` — Gaussian random walk.
 
     Parallel tempering is **off by default**.  To enable, pass a
     [`ParallelTemperingConfig`][jimgw.samplers.config.ParallelTemperingConfig],
     a ``dict`` of its fields, or simply ``True`` (uses all defaults).
     ``False`` disables it.
-
-    !!! note
-        Only the sub-config matching the active ``local_kernel`` is used.
-        Non-default values in inactive sub-configs emit a `UserWarning`.
 
     !!! note
         Periodic parameters are **not** configured here.  Pass a ``periodic``
@@ -256,12 +268,8 @@ class FlowMCConfig(BaseSamplerConfig[Literal["flowmc"]], _CheckpointMixin):
     n_production_loops: int = Field(default=10, ge=1)
     n_epochs: int = Field(default=20, ge=1)
 
-    local_kernel: Literal["MALA", "HMC", "GRW"] = "MALA"
+    local_kernel: LocalKernelConfig = Field(default_factory=MALAConfig)
     parallel_tempering: Optional[ParallelTemperingConfig] = None
-    # dict[str, Any] accepted here; Pydantic coerces it to the typed config via field_validator.
-    mala: MALAConfig | dict[str, Any] = Field(default_factory=MALAConfig)
-    hmc: HMCConfig | dict[str, Any] = Field(default_factory=HMCConfig)
-    grw: GRWConfig | dict[str, Any] = Field(default_factory=GRWConfig)
 
     rq_spline_hidden_units: list[int] = Field(default_factory=lambda: [128, 128])
     rq_spline_n_bins: int = Field(default=10, ge=1)
@@ -283,9 +291,18 @@ class FlowMCConfig(BaseSamplerConfig[Literal["flowmc"]], _CheckpointMixin):
     early_stopping_patience: int = Field(default=3, ge=1)
     early_stopping_min_acceptance: float = Field(default=0.1, ge=0.0, le=1.0)
 
+    @field_validator("local_kernel", mode="before")
+    @classmethod
+    def _resolve_local_kernel(cls, v: object) -> object:
+        if isinstance(v, str):
+            return {"kernel": v}
+        return v
+
     @field_validator("parallel_tempering", mode="before")
     @classmethod
-    def _coerce_parallel_tempering(cls, v: object) -> Optional[ParallelTemperingConfig]:
+    def _resolve_parallel_tempering(
+        cls, v: object
+    ) -> Optional[ParallelTemperingConfig]:
         if v is None or v is False:
             return None
         if v is True:
@@ -298,23 +315,6 @@ class FlowMCConfig(BaseSamplerConfig[Literal["flowmc"]], _CheckpointMixin):
             "parallel_tempering must be None, False, True, a dict of ParallelTemperingConfig "
             f"fields, or a ParallelTemperingConfig instance; got {type(v).__name__}."
         )
-
-    @model_validator(mode="after")
-    def _warn_if_irrelevant_kernel_set(self) -> Self:
-        active = self.local_kernel
-        for name in ("MALA", "HMC", "GRW"):
-            if name == active:
-                continue
-            sub_config = getattr(self, name.lower())
-            if sub_config.model_fields_set:
-                warnings.warn(
-                    f"FlowMCConfig: `{name.lower()}` sub-config has non-default "
-                    f"values but `local_kernel='{active}'` — the `{name.lower()}` "
-                    f"settings will be ignored.",
-                    UserWarning,
-                    stacklevel=2,
-                )
-        return self
 
 
 class BlackJAXNSAWConfig(
@@ -382,11 +382,9 @@ class BlackJAXSwiGConfig(
 
     blocks: list[list[str]]
     n_live: int = 500
-    n_delete_frac: float = 0.125
+    n_delete_frac: float = 0.5
     num_gibbs_sweeps: int = Field(default=2, ge=1)
     num_inner_steps_per_dim: int = Field(default=1, ge=1)
-    max_steps: int = Field(default=10, ge=1)
-    max_shrinkage: int = Field(default=100, ge=1)
     termination_dlogz: float = Field(default=0.1, gt=0.0)
 
     @field_validator("blocks")

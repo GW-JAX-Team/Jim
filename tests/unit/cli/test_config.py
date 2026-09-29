@@ -1,6 +1,8 @@
 """Unit tests for CLI config schema (TOML round-trips, validation, prior parsing)."""
 
 import tomllib
+import warnings
+from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
@@ -24,6 +26,7 @@ from jimgw.cli._config import (
     UniformSphereSpec,
     WaveformConfig,
 )
+from jimgw.cli._jim import _with_checkpoint
 
 _MINIMAL_RAW = {
     "data": {
@@ -177,16 +180,40 @@ def test_extra_fields_rejected():
 
 def test_dump_resolved_round_trip():
     cfg = PipelineConfig.model_validate(_MINIMAL_RAW)
-    dumped = cfg.model_dump(mode="json")
-    # Strip inactive FlowMC kernel sub-configs (mirrors _output.py logic)
-    if dumped.get("sampler", {}).get("type") == "flowmc":
-        active = dumped["sampler"]["local_kernel"].lower()
-        for kernel in ("mala", "hmc", "grw"):
-            if kernel != active:
-                dumped["sampler"].pop(kernel, None)
+    dumped = cfg.model_dump(mode="json", exclude_none=True)
     cfg2 = PipelineConfig.model_validate(dumped)
     assert cfg.waveform.approximant == cfg2.waveform.approximant
     assert cfg.seed == cfg2.seed
+
+
+def test_checkpoint_defaults_applied_without_warnings():
+    cfg = PipelineConfig.model_validate(_MINIMAL_RAW)
+    assert cfg.sampler.type == "flowmc"
+
+    with warnings.catch_warnings(record=True) as captured_warnings:
+        warnings.simplefilter("always")
+        sampler_config = _with_checkpoint(cfg.sampler, Path("checkpoints"))
+
+    assert not captured_warnings
+    assert sampler_config.checkpoint_dir == Path("checkpoints")
+    assert sampler_config.checkpoint_interval == 600.0
+
+
+def test_explicit_none_checkpoint_dir_disables_cli_checkpointing():
+    cfg = PipelineConfig.model_validate(
+        {
+            **_MINIMAL_RAW,
+            "sampler": {
+                "type": "blackjax-smc",
+                "checkpoint_dir": None,
+            },
+        }
+    )
+
+    sampler_config = _with_checkpoint(cfg.sampler, Path("checkpoints"))
+
+    assert sampler_config.checkpoint_dir is None
+    assert sampler_config.checkpoint_interval == 0.0
 
 
 def test_file_config_from_toml():

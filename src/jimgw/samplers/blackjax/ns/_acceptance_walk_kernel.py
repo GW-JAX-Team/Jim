@@ -35,7 +35,7 @@ from blackjax.ns.base import (
     delete_fn as default_delete_fn,
 )
 from blackjax.types import ArrayLikeTree
-from jaxtyping import Array, Bool, Float, Key
+from jaxtyping import Array, Bool, Float, Int, Key
 
 from jimgw.typing import FloatScalar, IntScalar
 
@@ -73,13 +73,13 @@ def _de_one_step(
     params: DEKernelParams,
     stepper_fn,
     num_survivors: int,
+    top_indices: Int[Array, " num_survivors"],
     max_proposals: int = 1000,
 ):
     def body_fun(carry):
         _is_valid, key, _pos, _logp, count = carry
         key_a, key_b, key_mix, key_gamma, new_key = jax.random.split(key, 5)
 
-        _, top_indices = jax.lax.top_k(params.loglikelihoods, num_survivors)
         pos_a = jax.random.randint(key_a, (), 0, num_survivors)
         pos_b_raw = jax.random.randint(key_b, (), 0, num_survivors - 1)
         pos_b = jnp.where(pos_b_raw >= pos_a, pos_b_raw + 1, pos_b_raw)
@@ -146,9 +146,13 @@ def _de_walk(
     max_proposals: int = 1000,
     max_mcmc: int = 5000,
 ):
+    # top_indices is loop-invariant for the whole walk; compute it once here rather than inside _de_one_step's body_fun, since XLA won't hoist it out of the nested while_loops itself.
+    _, top_indices = jax.lax.top_k(params.loglikelihoods, num_survivors)
+
     one_step = partial(
         _de_one_step,
         num_survivors=num_survivors,
+        top_indices=top_indices,
         max_proposals=max_proposals,
     )
 

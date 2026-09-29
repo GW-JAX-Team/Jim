@@ -14,10 +14,8 @@ class UniformComponentChirpMassPrior(PowerLawPrior):
     power-law distribution with exponent ``alpha = 1``:
 
     $$
-
     p(\\mathcal{M}_c) \\propto \\mathcal{M}_c, \\quad
     \\mathcal{M}_c \\in [x_{\\min}, x_{\\max})
-
     $$
     """
 

@@ -3346,7 +3346,7 @@ This page documents every section, field, and default value.</p>
 <td><code>seed</code></td>
 <td>int</td>
 <td><code>0</code></td>
-<td>JAX random seed</td>
+<td>JAX random seed for everything except injected noise, which has its own <code>noise_seed</code></td>
 </tr>
 </tbody>
 </table>
@@ -3446,7 +3446,13 @@ To use your own, set <code>psd_files</code> or <code>asd_files</code>; see <a hr
 <td><code>zero_noise</code></td>
 <td>bool</td>
 <td><code>false</code></td>
-<td>If <code>true</code>, inject into zero noise (noiseless matched-filter test)</td>
+<td>If <code>true</code>, inject into zero noise.</td>
+</tr>
+<tr>
+<td><code>noise_seed</code></td>
+<td>int</td>
+<td>—</td>
+<td>Seed for the injected noise. Required unless <code>zero_noise = true</code>.</td>
 </tr>
 <tr>
 <td><code>psd_files</code></td>
@@ -3469,6 +3475,7 @@ To use your own, set <code>psd_files</code> or <code>asd_files</code>; see <a hr
 <span class="n">trigger_time</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1126259462.4</span>
 <span class="n">duration</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">4.0</span>
 <span class="n">sampling_frequency</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">2048.0</span>
+<span class="n">noise_seed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
 
 <span class="k">[data.injection_parameters]</span>
 <span class="n">M_c</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="mf">28.3</span>

@@ -5280,6 +5280,40 @@ Defaults to None.</p>
                   <code>None</code>
             </td>
           </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>zero_noise</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If True, inject into zero noise.
+Defaults to False.</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>rng_key</code>
+            </td>
+            <td>
+                  <code><span title="typing.Optional">Optional</span>[<span title="jaxtyping.Key">Key</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>PRNG key for the injected noise.
+Required unless <code>zero_noise</code> is True.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
       </tbody>
     </table>
 
@@ -5300,6 +5334,30 @@ Defaults to None.</p>
             <td>
               <div class="doc-md-description">
                 <p>None</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="ValueError">ValueError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If no PSD is set on the detector, or if <code>zero_noise</code> is
+False and <code>rng_key</code> is None.</p>
               </div>
             </td>
           </tr>

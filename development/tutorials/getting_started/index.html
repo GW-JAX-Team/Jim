@@ -2750,6 +2750,8 @@ the injection value.</p>
 <span class="n">duration</span> <span class="o">=</span> <span class="mf">4.0</span>
 <span class="n">sampling_frequency</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">f_max</span>
 
+<span class="n">noise_key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">key</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
 <span class="n">ifos</span> <span class="o">=</span> <span class="p">[</span><span class="n">get_H1</span><span class="p">(),</span> <span class="n">get_L1</span><span class="p">()]</span>
 <span class="k">for</span> <span class="n">ifo</span> <span class="ow">in</span> <span class="n">ifos</span><span class="p">:</span>
     <span class="n">ifo</span><span class="o">.</span><span class="n">load_and_set_psd</span><span class="p">()</span>
@@ -2761,6 +2763,7 @@ the injection value.</p>
         <span class="n">parameters</span><span class="o">=</span><span class="n">injection_parameters</span><span class="p">,</span>
         <span class="n">f_min</span><span class="o">=</span><span class="n">f_min</span><span class="p">,</span>
         <span class="n">f_max</span><span class="o">=</span><span class="n">f_max</span><span class="p">,</span>
+        <span class="n">rng_key</span><span class="o">=</span><span class="n">noise_key</span><span class="p">,</span>
     <span class="p">)</span>
 </code></pre></div>
 <h2 id="3-define-the-prior">3. Define the prior<a class="headerlink" href="#3-define-the-prior" title="Permanent link">¤</a></h2>

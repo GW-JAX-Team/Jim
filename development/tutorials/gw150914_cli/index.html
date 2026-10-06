@@ -3107,7 +3107,7 @@ Before re-running, either change <code>output.dir</code> to a new path or add <c
 <h2 id="5-next-steps">5. Next steps<a class="headerlink" href="#5-next-steps" title="Permanent link">¤</a></h2>
 <ul>
 <li><strong>Switch to a nested sampler</strong> — change <code>[sampler]</code> to <code>type = "blackjax-ns-aw"</code> or <code>type = "blackjax-nss"</code> to obtain a log-evidence estimate.</li>
-<li><strong>Try an injection</strong> — change <code>[data]</code> to <code>type = "injection"</code> with <code>injection_parameters</code> to validate recovery on a known signal.
+<li><strong>Try an injection</strong> — change <code>[data]</code> to <code>type = "injection"</code> with <code>injection_parameters</code> and a <code>noise_seed</code> to validate recovery on a known signal.
   See the <a href="../../guides/cli/">CLI Config Reference</a> for the full injection syntax.</li>
 <li><strong>Enable heterodyning</strong> — add a <code>[likelihood.heterodyne]</code> block for a 10–100× likelihood speedup.
   See the <a href="../../guides/cli/">CLI Config Reference</a>.</li>

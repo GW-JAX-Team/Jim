@@ -48,7 +48,7 @@ Fetches public LIGO/Virgo/KAGRA strain and PSD from the Gravitational-Wave Open 
 Injects a waveform into simulated Gaussian noise drawn from the detector PSD.
 
 By default the PSD is the built-in O3 ASD, available for `H1`, `L1` and `V1`.
-To use your own, set `psd_files` or `asd_files`; see [PSD and ASD files](#psd-and-asd-files).
+To use your own, set `psd_files` or `asd_files`; see the note on PSD and ASD files below.
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
@@ -93,7 +93,7 @@ Loads strain and PSD from local files.
 Useful for offline or CI use.
 
 Supported strain formats: `.npz`, `.gwf` / `.gwf.gz`, `.hdf5` / `.h5`, `.csv`.
-PSD and ASD formats are described in [PSD and ASD files](#psd-and-asd-files).
+PSD and ASD formats are described in the note on PSD and ASD files below.
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
@@ -142,20 +142,19 @@ H1 = "O3-H1_asd.txt"
 L1 = "O3-L1_asd.txt"
 ```
 
-### PSD and ASD files
+!!! note "PSD and ASD files"
+    `file` and `injection` runs read the PSD from the files named in one of two tables:
 
-`file` and `injection` runs read the PSD from the files named in one of two tables:
+    | Table | Values | Formats |
+    | --- | --- | --- |
+    | `psd_files` | PSD, $\mathrm{Hz}^{-1}$ | `.npz`, `.txt`, `.dat`, `.csv` |
+    | `asd_files` | ASD, $\mathrm{Hz}^{-1/2}$ (squared on load) | `.npz`, `.txt`, `.dat`, `.csv` |
 
-| Table | Values | Formats |
-| --- | --- | --- |
-| `psd_files` | PSD, $\mathrm{Hz}^{-1}$ | `.npz`, `.txt`, `.dat`, `.csv` |
-| `asd_files` | ASD, $\mathrm{Hz}^{-1/2}$ (squared on load) | `.npz`, `.txt`, `.dat`, `.csv` |
-
-- Set at most one of the two tables.
-- Once a table is set it must name every detector in `detectors`; there is no per-detector fallback to the built-in default.
-- One `ET` entry covers all three ET interferometers.
-- An `.npz` archive holds `values` and `frequencies` arrays; the table it is listed under decides whether `values` is read as a PSD or an ASD.
-- Text files have two columns: frequency in Hz, then the value.
+    - Set at most one of the two tables.
+    - Once a table is set it must name every detector in `detectors`; there is no per-detector fallback to the built-in default.
+    - One `ET` entry covers all three ET interferometers.
+    - An `.npz` archive holds `values` and `frequencies` arrays; the table it is listed under decides whether `values` is read as a PSD or an ASD.
+    - Text files have two columns: frequency in Hz, then the value.
 
 ---
 

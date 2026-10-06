@@ -3,6 +3,7 @@ from pathlib import Path
 
 import jax
 import jax.numpy as jnp
+import numpy as np
 import pytest
 
 from jimgw.core.constants import EARTH_RADIUS_LIGHT_S
@@ -1760,6 +1761,57 @@ class TestHeterodynedTransientLikelihoodFD:
         expected_arr = jnp.array([expected + nn * 100 for nn in range(4)])
         for detector in ifos:
             assert jnp.array_equal(likelihood.summary_data[detector.name], expected_arr)
+
+    # ── Coefficient computation ───────────────────────────────────────────────
+
+    @pytest.mark.parametrize(
+        "bin_edges",
+        [
+            pytest.param([1.03, 3.17, 6.81, 14.07], id="off-grid-edges"),
+            pytest.param([2.0, 3.125, 7.5, 14.0], id="exact-edges"),
+            pytest.param([2.0, 2.0, 4.0, 4.0, 9.0, 14.0, 14.0], id="duplicate-edges"),
+            pytest.param([2.0, 14.0], id="single-bin"),
+            pytest.param([17.0, 18.0], id="all-samples-outside"),
+            pytest.param([4.0, 4.0], id="zero-width-final-bin"),
+        ],
+    )
+    def test_compute_coefficients_matches_dense_reference(self, bin_edges):
+        rng = np.random.default_rng(140)
+        freqs = np.linspace(0.0, 16.0, 129)
+        data = rng.normal(size=freqs.size) + 1j * rng.normal(size=freqs.size)
+        h_ref = rng.normal(size=freqs.size) + 1j * rng.normal(size=freqs.size)
+        psd = rng.uniform(0.1, 10.0, size=freqs.size)
+        detector = get_H1()
+        detector.set_data(Data.from_fd(jnp.array(data), jnp.array(freqs)))
+        detector.set_psd(PowerSpectrum(jnp.array(psd), jnp.array(freqs)))
+        detector.set_frequency_bounds(0.0, 16.0)
+
+        edges = np.array(bin_edges)
+        # Preserve the original dense definition independently of segment indices.
+        mask = (freqs[None, :] >= edges[:-1, None]) & (freqs[None, :] < edges[1:, None])
+        mask[-1] |= freqs == edges[-1]
+        centers = (edges[:-1] + edges[1:]) / 2
+        shifted_mask = (freqs[None, :] - centers[:, None]) * mask
+        data_prod = data * h_ref.conj() / psd
+        self_prod = h_ref * h_ref.conj() / psd
+        expected = (
+            4
+            / float(detector.duration)
+            * np.array(
+                [
+                    np.sum(data_prod[None, :] * mask, axis=1),
+                    np.sum(data_prod[None, :] * shifted_mask, axis=1),
+                    np.sum(self_prod[None, :] * mask, axis=1),
+                    np.sum(self_prod[None, :] * shifted_mask, axis=1),
+                ]
+            )
+        )
+
+        actual = HeterodynedTransientLikelihoodFD._compute_coefficients(
+            detector, jnp.array(h_ref), jnp.array(edges)
+        )
+        assert actual.shape == (4, len(edges) - 1)
+        np.testing.assert_allclose(actual, expected, rtol=1e-12, atol=1e-12)
 
     # ── Phase marginalization ──────────────────────────────────────────────────
 

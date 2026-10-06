@@ -1032,12 +1032,11 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         # interpolated bin edge coincides with the last discrete frequency sample
         # (common when the waveform reaches f_max).  Close the last bin on the right.
         idx = jnp.where(freqs == f_bins[-1], n_bins - 1, idx)
-        # Samples outside the binned range go to an extra "dump" segment.
-        segment_ids = jnp.where((idx >= 0) & (idx < n_bins), idx, n_bins)
         freq_shift = freqs - freq_bins_center[jnp.clip(idx, 0, n_bins - 1)]
 
         def _bin_sum(x: Complex[Array, " n_freq"]) -> Complex[Array, " n_valid"]:
-            return jax.ops.segment_sum(x, segment_ids, num_segments=n_bins + 1)[:n_bins]
+            # Drop samples outside the binned range without accumulating them.
+            return jax.ops.segment_sum(x, idx, num_segments=n_bins, mode="drop")
 
         # The resultant arrays have shape (n_valid), the dimension with "n_freq" is summed over.
         summary_data = jnp.array(

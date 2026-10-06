@@ -865,17 +865,6 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#psd-and-asd-files" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        PSD and ASD files
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
@@ -2958,17 +2947,6 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#psd-and-asd-files" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        PSD and ASD files
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
@@ -3350,6 +3328,11 @@ This page documents every section, field, and default value.</p>
 </tr>
 </tbody>
 </table>
+<div class="admonition note">
+<p class="admonition-title">Reproducibility</p>
+<p>The same config, with the same <code>seed</code> and <code>noise_seed</code>, gives bit-identical samples.
+This is not guaranteed on GPU, across JAX versions, or for sharded nested sampling with a different <code>n_devices</code>.</p>
+</div>
 <hr />
 <h2 id="data"><code>[data]</code><a class="headerlink" href="#data" title="Permanent link">¤</a></h2>
 <p>Selects where strain and PSD data come from.
@@ -3401,7 +3384,7 @@ The <code>type</code> field is required and determines which other fields are va
 <h3 id="type-injection-synthetic-signal-in-gaussian-noise"><code>type = "injection"</code> — synthetic signal in Gaussian noise<a class="headerlink" href="#type-injection-synthetic-signal-in-gaussian-noise" title="Permanent link">¤</a></h3>
 <p>Injects a waveform into simulated Gaussian noise drawn from the detector PSD.</p>
 <p>By default the PSD is the built-in O3 ASD, available for <code>H1</code>, <code>L1</code> and <code>V1</code>.
-To use your own, set <code>psd_files</code> or <code>asd_files</code>; see <a href="#psd-and-asd-files">PSD and ASD files</a>.</p>
+To use your own, set <code>psd_files</code> or <code>asd_files</code>; see the note on PSD and ASD files below.</p>
 <table>
 <thead>
 <tr>
@@ -3494,7 +3477,7 @@ To use your own, set <code>psd_files</code> or <code>asd_files</code>; see <a hr
 <p>Loads strain and PSD from local files.
 Useful for offline or CI use.</p>
 <p>Supported strain formats: <code>.npz</code>, <code>.gwf</code> / <code>.gwf.gz</code>, <code>.hdf5</code> / <code>.h5</code>, <code>.csv</code>.
-PSD and ASD formats are described in <a href="#psd-and-asd-files">PSD and ASD files</a>.</p>
+PSD and ASD formats are described in the note on PSD and ASD files below.</p>
 <table>
 <thead>
 <tr>
@@ -3575,7 +3558,8 @@ PSD and ASD formats are described in <a href="#psd-and-asd-files">PSD and ASD fi
 <span class="n">H1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"O3-H1_asd.txt"</span>
 <span class="n">L1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"O3-L1_asd.txt"</span>
 </code></pre></div>
-<h3 id="psd-and-asd-files">PSD and ASD files<a class="headerlink" href="#psd-and-asd-files" title="Permanent link">¤</a></h3>
+<div class="admonition note">
+<p class="admonition-title">PSD and ASD files</p>
 <p><code>file</code> and <code>injection</code> runs read the PSD from the files named in one of two tables:</p>
 <table>
 <thead>
@@ -3605,6 +3589,7 @@ PSD and ASD formats are described in <a href="#psd-and-asd-files">PSD and ASD fi
 <li>An <code>.npz</code> archive holds <code>values</code> and <code>frequencies</code> arrays; the table it is listed under decides whether <code>values</code> is read as a PSD or an ASD.</li>
 <li>Text files have two columns: frequency in Hz, then the value.</li>
 </ul>
+</div>
 <hr />
 <h2 id="waveform"><code>[waveform]</code><a class="headerlink" href="#waveform" title="Permanent link">¤</a></h2>
 <table>

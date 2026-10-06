@@ -2879,7 +2879,7 @@ pluggable JAX <a class="autorefs autorefs-internal" href="../../samplers/base/#j
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="sample_initial_positions(n_points: int, rng_key: Optional[Key] = None) -&gt; Float[Array, &#x27;n_points n_dims&#x27;] (jimgw.core.jim.Jim.sample_initial_positions)" href="./#jimgw.core.jim.Jim.sample_initial_positions">sample_initial_positions</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="sample_initial_positions(n_points: int, rng_key: Key) -&gt; Float[Array, &#x27;n_points n_dims&#x27;] (jimgw.core.jim.Jim.sample_initial_positions)" href="./#jimgw.core.jim.Jim.sample_initial_positions">sample_initial_positions</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Draw <code>n_points</code> initial positions from the prior in sampling space.</p>
@@ -3046,10 +3046,10 @@ names (bounds are implicit as <code>[0, 1]</code>).</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Integer random seed. The key for the sampling run is derived
-from this seed at construction time, so <code>sample</code> is
-reproducible regardless of any intermediate operations (sanity
-checks, initial-position draws, etc.).</p>
+                <p>Integer random seed. The keys for sampling, the initial
+positions and the posterior check are all derived from it at
+construction time, so <code>sample</code> gives the same result
+regardless of any calls made before it.</p>
               </div>
             </td>
             <td>
@@ -3279,9 +3279,9 @@ Pass <code>n_samples</code> to further downsample.</p>
     <div class="doc doc-contents ">
 
         <p>Run the sampler.</p>
-<p>The sampling key is pre-reserved at construction time from <code>seed</code>,
-so results are reproducible regardless of any calls made before this
-method (e.g. the construction-time posterior verification).</p>
+<p>Every key comes from <code>seed</code> at construction time, so the result does
+not depend on any call made before this one. Calling it again on the
+same <code>Jim</code> replays the run.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3333,7 +3333,7 @@ expected shape depends on the backend:</p>
 
 
 <h4 id="jimgw.core.jim.Jim.sample_initial_positions" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">sample_initial_positions</span><span class="p">(</span><span class="n">n_points</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">rng_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Key</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">'n_points n_dims'</span><span class="p">]</span></code>
+            <code class="highlight language-python"><span class="n">sample_initial_positions</span><span class="p">(</span><span class="n">n_points</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">rng_key</span><span class="p">:</span> <span class="n">Key</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">'n_points n_dims'</span><span class="p">]</span></code>
 
 <a href="#jimgw.core.jim.Jim.sample_initial_positions" class="headerlink" title="Permanent link">¤</a></h4>
 
@@ -3375,16 +3375,15 @@ expected shape depends on the backend:</p>
                 <code>rng_key</code>
             </td>
             <td>
-                  <code><span title="typing.Optional">Optional</span>[<span title="jaxtyping.Key">Key</span>]</code>
+                  <code><span title="jaxtyping.Key">Key</span></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Optional explicit PRNG key. If <code>None</code>, Jim's internal
-auxiliary key is advanced automatically.</p>
+                <p>JAX PRNG key.</p>
               </div>
             </td>
             <td>
-                  <code>None</code>
+                <em>required</em>
             </td>
           </tr>
       </tbody>

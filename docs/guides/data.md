@@ -172,7 +172,7 @@ Supported formats:
 
 | Format | Extensions | Notes |
 | --- | --- | --- |
-| NumPy archive | `.npz` | Must contain `values` (Hz⁻¹) and `frequencies` arrays |
+| NumPy archive | `.npz` | Must contain `values` ($\mathrm{Hz}^{-1}$, or ASD with `is_asd=True`) and `frequencies` arrays |
 | Text / dat | `.txt`, `.dat` | Two-column whitespace-separated: `(frequency, value)` |
 | CSV | `.csv` | Two-column comma-separated: `(frequency, value)` |
 

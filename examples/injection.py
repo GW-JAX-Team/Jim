@@ -35,8 +35,10 @@ waveform = RippleIMRPhenomXAS(f_ref=20)
 
 # --- Inject signal ---
 
-gps = time.time() - 1000
+gps = 1126259462.4
 random_samples = jax.random.uniform(jax.random.key(0), (3,), maxval=jnp.pi)
+
+noise_key = jax.random.key(1)
 
 # Injection parameters in likelihood space
 injection_parameters = {
@@ -77,6 +79,7 @@ for ifo in ifos:
         f_min=f_min,
         f_max=f_max,
         zero_noise=False,
+        rng_key=noise_key,
     )
 
 # --- Prior ---

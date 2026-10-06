@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="zensical-0.0.66">
+      <meta name="generator" content="zensical-0.0.67">
     
     
       
@@ -36,12 +36,12 @@
       
         
       
-      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.1502b751.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.4ae390e2.min.css">
       
         
           
         
-        <link rel="stylesheet" href="../../assets/stylesheets/modern/palette.812a03bb.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/modern/palette.96d1a7e4.min.css">
       
       
 
@@ -844,10 +844,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#type-injection-synthetic-signal-in-design-noise" class="md-nav__link">
+  <a href="#type-injection-synthetic-signal-in-gaussian-noise" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        <code>type = "injection"</code> — synthetic signal in design noise
+        <code>type = "injection"</code> — synthetic signal in Gaussian noise
       </span>
     </span>
   </a>
@@ -859,6 +859,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         <code>type = "file"</code> — load from local files
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#psd-and-asd-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        PSD and ASD files
       </span>
     </span>
   </a>
@@ -2926,10 +2937,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#type-injection-synthetic-signal-in-design-noise" class="md-nav__link">
+  <a href="#type-injection-synthetic-signal-in-gaussian-noise" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        <code>type = "injection"</code> — synthetic signal in design noise
+        <code>type = "injection"</code> — synthetic signal in Gaussian noise
       </span>
     </span>
   </a>
@@ -2941,6 +2952,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         <code>type = "file"</code> — load from local files
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#psd-and-asd-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        PSD and ASD files
       </span>
     </span>
   </a>
@@ -3271,6 +3293,7 @@
               <article class="md-content__inner md-typeset">
                 
                   
+
   
   
 
@@ -3375,8 +3398,10 @@ The <code>type</code> field is required and determines which other fields are va
 </tr>
 </tbody>
 </table>
-<h3 id="type-injection-synthetic-signal-in-design-noise"><code>type = "injection"</code> — synthetic signal in design noise<a class="headerlink" href="#type-injection-synthetic-signal-in-design-noise" title="Permanent link">¤</a></h3>
-<p>Injects a waveform into simulated design-sensitivity Gaussian noise.</p>
+<h3 id="type-injection-synthetic-signal-in-gaussian-noise"><code>type = "injection"</code> — synthetic signal in Gaussian noise<a class="headerlink" href="#type-injection-synthetic-signal-in-gaussian-noise" title="Permanent link">¤</a></h3>
+<p>Injects a waveform into simulated Gaussian noise drawn from the detector PSD.</p>
+<p>By default the PSD is the built-in O3 ASD, available for <code>H1</code>, <code>L1</code> and <code>V1</code>.
+To use your own, set <code>psd_files</code> or <code>asd_files</code>; see <a href="#psd-and-asd-files">PSD and ASD files</a>.</p>
 <table>
 <thead>
 <tr>
@@ -3423,6 +3448,18 @@ The <code>type</code> field is required and determines which other fields are va
 <td><code>false</code></td>
 <td>If <code>true</code>, inject into zero noise (noiseless matched-filter test)</td>
 </tr>
+<tr>
+<td><code>psd_files</code></td>
+<td>dict[str, path]</td>
+<td>—</td>
+<td>Map from detector name to PSD file. Mutually exclusive with <code>asd_files</code>. Omit both to use the built-in O3 ASD.</td>
+</tr>
+<tr>
+<td><code>asd_files</code></td>
+<td>dict[str, path]</td>
+<td>—</td>
+<td>Map from detector name to ASD file. Mutually exclusive with <code>psd_files</code>.</td>
+</tr>
 </tbody>
 </table>
 <p>Example:</p>
@@ -3450,7 +3487,7 @@ The <code>type</code> field is required and determines which other fields are va
 <p>Loads strain and PSD from local files.
 Useful for offline or CI use.</p>
 <p>Supported strain formats: <code>.npz</code>, <code>.gwf</code> / <code>.gwf.gz</code>, <code>.hdf5</code> / <code>.h5</code>, <code>.csv</code>.
-Supported PSD formats: <code>.npz</code>, <code>.txt</code>, <code>.dat</code>, <code>.csv</code>.</p>
+PSD and ASD formats are described in <a href="#psd-and-asd-files">PSD and ASD files</a>.</p>
 <table>
 <thead>
 <tr>
@@ -3483,19 +3520,19 @@ Supported PSD formats: <code>.npz</code>, <code>.txt</code>, <code>.dat</code>, 
 <td><code>psd_files</code></td>
 <td>dict[str, path]</td>
 <td>—</td>
-<td>Map from detector name to PSD file (any supported format)</td>
+<td>Map from detector name to PSD file. Exactly one of <code>psd_files</code> and <code>asd_files</code> is required.</td>
+</tr>
+<tr>
+<td><code>asd_files</code></td>
+<td>dict[str, path]</td>
+<td>—</td>
+<td>Map from detector name to ASD file. Exactly one of <code>psd_files</code> and <code>asd_files</code> is required.</td>
 </tr>
 <tr>
 <td><code>strain_channels</code></td>
 <td>dict[str, str]</td>
 <td><code>{}</code></td>
 <td>Channel name per detector for GWF/HDF5 files (e.g. <code>"H1:GDS-CALIB_STRAIN"</code>). If omitted, common LIGO/Virgo preset channel names are tried for <code>.gwf</code> files.</td>
-</tr>
-<tr>
-<td><code>psd_is_asd</code></td>
-<td>dict[str, bool]</td>
-<td><code>{}</code></td>
-<td>Set to <code>true</code> for detectors whose PSD file contains ASD values (Hz⁻¹/²); they are squared automatically. Ignored for <code>.npz</code> files.</td>
 </tr>
 </tbody>
 </table>
@@ -3527,14 +3564,40 @@ Supported PSD formats: <code>.npz</code>, <code>.txt</code>, <code>.dat</code>, 
 <span class="n">H1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"H1:GWOSC-4KHZ_R1_STRAIN"</span>
 <span class="n">L1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"L1:GWOSC-4KHZ_R1_STRAIN"</span>
 
-<span class="k">[data.psd_files]</span>
+<span class="k">[data.asd_files]</span>
 <span class="n">H1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"O3-H1_asd.txt"</span>
 <span class="n">L1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"O3-L1_asd.txt"</span>
-
-<span class="k">[data.psd_is_asd]</span>
-<span class="n">H1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
-<span class="n">L1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
 </code></pre></div>
+<h3 id="psd-and-asd-files">PSD and ASD files<a class="headerlink" href="#psd-and-asd-files" title="Permanent link">¤</a></h3>
+<p><code>file</code> and <code>injection</code> runs read the PSD from the files named in one of two tables:</p>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Values</th>
+<th>Formats</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>psd_files</code></td>
+<td>PSD, <span class="arithmatex">\(\mathrm{Hz}^{-1}\)</span></td>
+<td><code>.npz</code>, <code>.txt</code>, <code>.dat</code>, <code>.csv</code></td>
+</tr>
+<tr>
+<td><code>asd_files</code></td>
+<td>ASD, <span class="arithmatex">\(\mathrm{Hz}^{-1/2}\)</span> (squared on load)</td>
+<td><code>.npz</code>, <code>.txt</code>, <code>.dat</code>, <code>.csv</code></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Set at most one of the two tables.</li>
+<li>Once a table is set it must name every detector in <code>detectors</code>; there is no per-detector fallback to the built-in default.</li>
+<li>One <code>ET</code> entry covers all three ET interferometers.</li>
+<li>An <code>.npz</code> archive holds <code>values</code> and <code>frequencies</code> arrays; the table it is listed under decides whether <code>values</code> is read as a PSD or an ASD.</li>
+<li>Text files have two columns: frequency in Hz, then the value.</li>
+</ul>
 <hr />
 <h2 id="waveform"><code>[waveform]</code><a class="headerlink" href="#waveform" title="Permanent link">¤</a></h2>
 <table>
@@ -4222,7 +4285,7 @@ The CLI enforces this automatically.</p>
 </footer>
       
     </div>
-    <div class="md-dialog" data-md-component="dialog">
+    <div class="md-dialog" data-md-component="dialog" role="status" aria-atomic="true">
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
@@ -4234,10 +4297,10 @@ The CLI enforces this automatically.</p>
       
         
         
-      <script id="__config" type="application/json">{"annotate":null,"base":"../..","features":["content.code.copy","navigation.instant","navigation.tabs","navigation.top","toc.follow","header.autohide"],"redirect":null,"search":"../../assets/javascripts/workers/search.7d14d953.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":{"default":"stable","provider":"mike"}}</script>
+      <script id="__config" type="application/json">{"annotate":null,"base":"../..","features":["content.code.copy","navigation.instant","navigation.tabs","navigation.top","toc.follow","header.autohide"],"redirect":null,"search":"../../assets/javascripts/workers/search.7d14d953.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","clipboard.error":"Could not copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":{"default":"stable","provider":"mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.b7d3f789.min.js"></script>
+      <script src="../../assets/javascripts/bundle.67a597eb.min.js"></script>
       
         <script src="../../javascripts/mathjax.js"></script>
       

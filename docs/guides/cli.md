@@ -24,6 +24,10 @@ jim-run [CONFIG] [OPTIONS]
 | --- | --- | --- | --- |
 | `seed` | int | `0` | JAX random seed for everything except injected noise, which has its own `noise_seed` |
 
+!!! note "Reproducibility"
+    The same config, with the same `seed` and `noise_seed`, gives bit-identical samples.
+    This is not guaranteed on GPU, across JAX versions, or for sharded nested sampling with a different `n_devices`.
+
 ---
 
 ## `[data]`

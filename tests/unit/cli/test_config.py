@@ -1,5 +1,6 @@
 """Unit tests for CLI config schema (TOML round-trips, validation, prior parsing)."""
 
+import logging
 import tomllib
 import warnings
 from pathlib import Path
@@ -94,11 +95,13 @@ def test_pipeline_config_injection_data():
                 "ra": 1.375,
                 "dec": -1.21,
             },
+            "noise_seed": 0,
         },
     }
     cfg = PipelineConfig.model_validate(raw)
     assert isinstance(cfg.data, InjectionDataConfig)
     assert cfg.data.zero_noise is False  # default
+    assert cfg.data.noise_seed == 0
 
 
 def test_prior_spec_uniform():
@@ -356,6 +359,7 @@ def _injection_data(detectors=("H1",), **extra):
         "duration": 4.0,
         "sampling_frequency": 2048.0,
         "injection_parameters": _INJECTION_PARAMETERS,
+        "noise_seed": 0,
         **extra,
     }
 
@@ -455,8 +459,49 @@ def test_resolved_config_with_asd_files_serialises_to_toml():
     )
     dumped = cfg.model_dump(mode="json", exclude_none=True)
     assert "psd_files" not in dumped
+    assert dumped["noise_seed"] == 0  # recorded, so the run can be reproduced
     round_trip = tomllib.loads(tomli_w.dumps({"data": dumped}))["data"]
     assert InjectionDataConfig.model_validate(round_trip).asd_files == cfg.asd_files
+
+
+# ---------------------------------------------------------------------------
+# Injected-noise seed
+# ---------------------------------------------------------------------------
+
+
+def test_noisy_injection_requires_noise_seed():
+    with pytest.raises(ValidationError, match="noise_seed is required"):
+        InjectionDataConfig.model_validate(_injection_data(noise_seed=None))
+
+
+def test_zero_noise_injection_warns_about_a_noise_seed(caplog, monkeypatch):
+    # No noise is drawn, so the seed is useless; the config stays valid and keeps it.
+    # The "jimgw" logger does not propagate, which hides records from caplog.
+    monkeypatch.setattr(logging.getLogger("jimgw"), "propagate", True)
+    with caplog.at_level("WARNING"):
+        cfg = InjectionDataConfig.model_validate(
+            _injection_data(zero_noise=True, noise_seed=3)
+        )
+    assert any("noise_seed is ignored" in r.message for r in caplog.records)
+    assert cfg.noise_seed == 3
+
+
+def test_zero_noise_injection_needs_no_noise_seed(caplog, monkeypatch):
+    monkeypatch.setattr(logging.getLogger("jimgw"), "propagate", True)
+    with caplog.at_level("WARNING"):
+        cfg = InjectionDataConfig.model_validate(
+            _injection_data(zero_noise=True, noise_seed=None)
+        )
+    assert not [r for r in caplog.records if "noise_seed" in r.message]
+    assert cfg.noise_seed is None
+    assert "noise_seed" not in cfg.model_dump(mode="json", exclude_none=True)
+
+
+def test_noise_seed_only_exists_for_injection_data():
+    with pytest.raises(ValidationError, match="noise_seed"):
+        FileDataConfig.model_validate(
+            _file_data(psd_files={"H1": _PSD_H1}, noise_seed=1)
+        )
 
 
 # ---------------------------------------------------------------------------

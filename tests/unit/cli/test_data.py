@@ -5,6 +5,7 @@ noise seed; they check *which* PSD ends up on the detector, which is what both t
 injected noise and the likelihood read.
 """
 
+import time
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -39,18 +40,33 @@ def waveform():
     return build_waveform(WaveformConfig(approximant="IMRPhenomD", f_ref=20.0))
 
 
-def _injection_cfg(detectors, **tables):
+DURATION = 4.0
+
+
+def _injection_cfg(detectors, **fields):
+    """An injection config, zero-noise unless *fields* say otherwise."""
     return InjectionDataConfig.model_validate(
         {
             "type": "injection",
             "detectors": list(detectors),
             "trigger_time": 1126259462.4,
-            "duration": 4.0,
+            "duration": DURATION,
             "sampling_frequency": 2048.0,
             "injection_parameters": INJECTION_PARAMETERS,
             "zero_noise": True,
-            **tables,
+            **fields,
         }
+    )
+
+
+def _build_h1_l1(waveform, **fields):
+    """Build H1 and L1 from their fixture PSDs (offline)."""
+    psd_files = {d: FIXTURES / f"GW150914_psd_{d}.npz" for d in ("H1", "L1")}
+    return build_data(
+        _injection_cfg(("H1", "L1"), psd_files=psd_files, **fields),
+        f_min=F_MIN,
+        f_max=F_MAX,
+        waveform=waveform,
     )
 
 
@@ -103,6 +119,37 @@ def test_injection_squares_asd_files(tmp_path, waveform, monkeypatch):
 
     expected = np.interp(np.asarray(ifo.sliced_frequencies), freqs, asd**2)
     np.testing.assert_allclose(np.asarray(ifo.sliced_psd), expected, rtol=1e-12)
+
+
+def test_injection_noise_is_fixed_by_noise_seed(waveform):
+    first = _build_h1_l1(waveform, zero_noise=False, noise_seed=7)
+    time.sleep(1.1)  # the old wall-clock seed changed every second
+    second = _build_h1_l1(waveform, zero_noise=False, noise_seed=7)
+    other = _build_h1_l1(waveform, zero_noise=False, noise_seed=8)
+
+    for a, b, c in zip(first, second, other):
+        np.testing.assert_array_equal(a.sliced_fd_data, b.sliced_fd_data)
+        assert np.max(np.abs(np.asarray(a.sliced_fd_data - c.sliced_fd_data))) > 0
+
+
+def test_injected_noise_follows_each_detectors_psd_and_is_independent(waveform):
+    # Noise = noisy data minus the zero-noise data.  Whitened by the PSD the
+    # likelihood will use, it has unit variance in its real and imaginary parts, so
+    # noise and analysis share one PSD, and the two detectors do not share draws.
+    clean = _build_h1_l1(waveform)
+    noisy = _build_h1_l1(waveform, zero_noise=False, noise_seed=7)
+
+    whitened = []
+    for c, n in zip(clean, noisy):
+        noise = np.asarray(n.sliced_fd_data - c.sliced_fd_data)
+        w = noise / np.sqrt(np.asarray(n.sliced_psd) * DURATION / 4)
+        assert np.var(w.real) == pytest.approx(1.0, abs=0.1)
+        assert np.var(w.imag) == pytest.approx(1.0, abs=0.1)
+        whitened.append(w)
+
+    h1, l1 = whitened
+    correlation = np.abs(np.vdot(h1, l1)) / (np.linalg.norm(h1) * np.linalg.norm(l1))
+    assert correlation < 0.1
 
 
 def test_injection_squares_npz_asd_files(tmp_path, waveform, monkeypatch):

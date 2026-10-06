@@ -8,6 +8,7 @@ Design intent: users specify *what* (prior bounds, waveform, sampler settings).
 The CLI figures out *how* (transforms, parameter conversions, consistency checks).
 """
 
+import logging
 from pathlib import Path
 from typing import Annotated, Literal, Optional, Union
 
@@ -31,6 +32,8 @@ from jimgw.cli._utils import (
 
 # SamplerConfig is safe to import here — samplers/config.py only uses numpy.
 from jimgw.samplers.config import SamplerConfig
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Data section
@@ -109,18 +112,24 @@ class _PSDSourceBase(_DataBase):
 
 
 class InjectionDataConfig(_PSDSourceBase):
-    """Synthetic injection into Gaussian noise drawn from the detector PSD.
-
-    The PSD comes from ``psd_files`` / ``asd_files`` when given, otherwise from
-    the built-in O3 ASD (H1, L1 and V1 only).  The same PSD is used to draw the
-    noise and in the likelihood; the two cannot differ.
-    """
+    """Synthetic injection into Gaussian noise drawn from the detector PSD."""
 
     type: Literal["injection"] = "injection"
     duration: float = Field(gt=0.0)
     sampling_frequency: float = Field(gt=0.0)
     injection_parameters: dict[str, float]
     zero_noise: bool = False
+    noise_seed: Optional[int] = None
+
+    @model_validator(mode="after")
+    def _check_noise_seed(self) -> "InjectionDataConfig":
+        if self.zero_noise and self.noise_seed is not None:
+            logger.warning(
+                "noise_seed is ignored because zero_noise = true: no noise is drawn."
+            )
+        if not self.zero_noise and self.noise_seed is None:
+            raise ValueError("noise_seed is required when zero_noise = false.")
+        return self
 
     @model_validator(mode="after")
     def _check_built_in_psd_available(self) -> "InjectionDataConfig":

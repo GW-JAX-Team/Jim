@@ -1,6 +1,8 @@
 import logging
 from typing import Optional, assert_never
 
+import jax
+
 from jimgw.cli._config import (
     DataConfig,
     FileDataConfig,
@@ -117,6 +119,12 @@ def _load_injection(
         time_frame=time_frame,
     )
 
+    noise_key = None
+    if not cfg.zero_noise:
+        assert cfg.noise_seed is not None  # required by InjectionDataConfig
+        noise_key = jax.random.key(cfg.noise_seed)
+        logger.info("Injected noise seeded with noise_seed=%d", cfg.noise_seed)
+
     for ifo in ifos:
         # The PSD is set once, here.  ``inject_signal`` draws the noise from it
         # and the likelihood reads it back, so both always use the same PSD.
@@ -138,6 +146,7 @@ def _load_injection(
             f_min=f_min,
             f_max=f_max,
             zero_noise=cfg.zero_noise,
+            rng_key=noise_key,
         )
 
 

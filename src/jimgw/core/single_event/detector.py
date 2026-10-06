@@ -1,7 +1,7 @@
 import logging
 import os
 import tempfile
-import time
+import zlib
 from abc import ABC, abstractmethod
 from typing import Optional
 
@@ -624,10 +624,41 @@ class GroundBased2G(Detector):
                 data buffer in seconds. If None, defaults to
                 ``trigger_time - duration + 2.0`` (2 s of data after the trigger).
                 Defaults to None.
+            zero_noise (bool, optional): If True, inject into zero noise.
+                Defaults to False.
+            rng_key (Optional[Key], optional): PRNG key for the injected noise.
+                Required unless ``zero_noise`` is True.
 
         Returns:
             None
+
+        Raises:
+            ValueError: If no PSD is set on the detector, or if ``zero_noise`` is
+                False and ``rng_key`` is None.
         """
+        # Check the inputs first, so a bad call leaves the detector untouched.
+        if self.psd.is_empty:
+            raise ValueError(
+                f"No PSD is set on detector {self.name}. Call set_psd() or "
+                "load_and_set_psd() before inject_signal."
+            )
+        noise_key: Optional[Key] = None
+        if zero_noise:
+            if rng_key is not None:
+                logger.warning(
+                    "rng_key is ignored because zero_noise=True: no noise is drawn."
+                )
+        else:
+            if rng_key is None:
+                raise ValueError(
+                    "rng_key is required when zero_noise=False."
+                    "Pass zero_noise=True for a noiseless injection."
+                )
+            # Derive a unique noise key for this detector based on its name
+            noise_key = jax.random.fold_in(
+                rng_key, zlib.crc32(self.name.encode("utf-8"))
+            )
+
         # Derive start_time if not provided
         if start_time is None:
             start_time = trigger_time - duration + 2.0
@@ -663,15 +694,8 @@ class GroundBased2G(Detector):
 
         # 3. Set the new data
         strain_data = jnp.where(self.frequency_mask, projected_strain, 0.0 + 0.0j)
-        if not zero_noise:
-            if rng_key is None:
-                seed = int(time.time())
-                rng_key = jax.random.key(seed)
-                logger.info(
-                    "No rng_key provided for noise simulation. Using time-based key with seed=%d.",
-                    seed,
-                )
-            noise = self.psd.simulate_data(rng_key)
+        if noise_key is not None:
+            noise = self.psd.simulate_data(noise_key)
             strain_data += jnp.where(self.frequency_mask, noise, 0.0 + 0.0j)
 
         self.set_data(

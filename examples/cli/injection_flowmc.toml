@@ -7,6 +7,7 @@ trigger_time = 1126259462.4
 duration = 4.0
 sampling_frequency = 2048.0
 zero_noise = false
+noise_seed = 0
 
 [data.injection_parameters]
 M_c     = 28.3

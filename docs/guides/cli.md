@@ -22,7 +22,7 @@ jim-run [CONFIG] [OPTIONS]
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `seed` | int | `0` | JAX random seed |
+| `seed` | int | `0` | JAX random seed for everything except injected noise, which has its own `noise_seed` |
 
 ---
 
@@ -57,7 +57,8 @@ To use your own, set `psd_files` or `asd_files`; see [PSD and ASD files](#psd-an
 | `duration` | float | — | Segment length (seconds) |
 | `sampling_frequency` | float | — | Sample rate in Hz (e.g. `2048.0`) |
 | `injection_parameters` | dict[str, float] | — | Signal parameters to inject |
-| `zero_noise` | bool | `false` | If `true`, inject into zero noise (noiseless matched-filter test) |
+| `zero_noise` | bool | `false` | If `true`, inject into zero noise. |
+| `noise_seed` | int | — | Seed for the injected noise. Required unless `zero_noise = true`. |
 | `psd_files` | dict[str, path] | — | Map from detector name to PSD file. Mutually exclusive with `asd_files`. Omit both to use the built-in O3 ASD. |
 | `asd_files` | dict[str, path] | — | Map from detector name to ASD file. Mutually exclusive with `psd_files`. |
 
@@ -70,6 +71,7 @@ detectors = ["H1", "L1"]
 trigger_time = 1126259462.4
 duration = 4.0
 sampling_frequency = 2048.0
+noise_seed = 0
 
 [data.injection_parameters]
 M_c     = 28.3

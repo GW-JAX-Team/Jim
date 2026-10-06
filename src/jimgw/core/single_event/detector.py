@@ -505,12 +505,12 @@ class GroundBased2G(Detector):
 
         Supported formats: .npz, .txt, .dat, .csv.
         Pass ``asd_file`` (or ``is_asd=True`` via :meth:`PowerSpectrum.from_file`)
-        when the file contains amplitude spectral density values (Hz⁻¹/²); they
-        are squared internally to produce a PSD.
+        when the file contains amplitude spectral density values
+        ($\\mathrm{Hz}^{-1/2}$); they are squared internally to produce a PSD.
 
         Args:
-            psd_file (str, optional): Path to a PSD file (Hz⁻¹). If empty, uses GWTC-2 ASD.
-            asd_file (str, optional): Path to an ASD file (Hz⁻¹/²). Values are squared.
+            psd_file (str, optional): Path to a PSD file ($\\mathrm{Hz}^{-1}$). If empty, uses GWTC-2 ASD.
+            asd_file (str, optional): Path to an ASD file ($\\mathrm{Hz}^{-1/2}$). Values are squared.
 
         Returns:
             PowerSpectrum: The loaded PSD, already set on the detector.

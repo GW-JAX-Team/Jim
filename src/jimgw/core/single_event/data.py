@@ -812,20 +812,21 @@ class PowerSpectrum(ABC):
 
         Supported formats:
 
-        * ``.npz`` — NumPy archive containing ``values`` (PSD, Hz⁻¹) and
-          ``frequencies`` arrays. *is_asd* is ignored.
+        * ``.npz`` — NumPy archive containing ``values`` and ``frequencies``
+          arrays (``to_file`` writes PSD values).
         * ``.txt`` / ``.dat`` — two-column whitespace-separated text file
-          ``(frequency, value)``.  Set *is_asd=True* if the second column
-          contains amplitude spectral density (Hz⁻¹/²); it will be squared
-          internally to give the PSD.
+          ``(frequency, value)``.
         * ``.csv`` — same two-column format as ``.txt``/``.dat`` but
           comma-separated.
 
+        In every format the values are a PSD in $\\mathrm{Hz}^{-1}$, unless
+        *is_asd* is set.
+
         Args:
             path: Path to the PSD file.
-            is_asd: If ``True``, the file contains ASD values (Hz⁻¹/²) that
-                are squared to obtain the PSD. Applies only to text/CSV files;
-                ignored for ``.npz``. Defaults to ``False``.
+            is_asd: If ``True``, the values in the file are an amplitude spectral
+                density in $\\mathrm{Hz}^{-1/2}$ and are squared to obtain the PSD.
+                Applies to every format. Defaults to ``False``.
 
         Returns:
             PowerSpectrum: Loaded power spectrum.
@@ -840,6 +841,8 @@ class PowerSpectrum(ABC):
                 values = jnp.array(data["values"])
                 frequencies = jnp.array(data["frequencies"])
                 name = str(data.get("name", ""))
+            if is_asd:
+                values = values**2
             return cls(values, frequencies, name)
         elif path_lower.endswith((".txt", ".dat", ".csv")):
             delimiter = "," if path_lower.endswith(".csv") else None

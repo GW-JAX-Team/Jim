@@ -152,7 +152,7 @@ L1 = "O3-L1_asd.txt"
     | Table | Values | Formats |
     | --- | --- | --- |
     | `psd_files` | PSD, $\mathrm{Hz}^{-1}$ | `.npz`, `.txt`, `.dat`, `.csv` |
-    | `asd_files` | ASD, $\mathrm{Hz}^{-1/2}$ (squared on load) | `.npz`, `.txt`, `.dat`, `.csv` |
+    | `asd_files` | ASD, $\mathrm{Hz}^{-1/2}$ | `.npz`, `.txt`, `.dat`, `.csv` |
 
     - Set at most one of the two tables.
     - Once a table is set it must name every detector in `detectors`; there is no per-detector fallback to the built-in default.

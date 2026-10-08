@@ -21,13 +21,13 @@ import pytest
 
 bilby = pytest.importorskip("bilby")
 
-from jimgw.core.constants import MSUN  # noqa: E402
-from jimgw.core.single_event.detector import (  # noqa: E402
+from jimgw.core.constants import MSUN
+from jimgw.core.single_event.detector import (
     GroundBased3G,
     get_ET,
     time_to_merger,
 )
-from jimgw.core.single_event.time_utils import (  # noqa: E402
+from jimgw.core.single_event.time_utils import (
     greenwich_mean_sidereal_time as compute_gmst,
 )
 
@@ -40,7 +40,7 @@ ETA = M1 * M2 / (M1 + M2) ** 2
 RA, DEC, PSI = 1.1, -0.4, 0.7
 START_TIME = GPS - 100.0
 
-# Frequencies from 2 Hz, where a BNS is about two days from merger.
+# Frequencies from 2 Hz, where this BNS is about 21 hours from merger.
 FREQUENCIES = np.geomspace(2.0, 2048.0, 200)
 
 
@@ -121,7 +121,7 @@ def test_rotating_response_matches_bilby_at_emission_times():
         bilby_plus[i] = ifo.antenna_response(RA, DEC, t, PSI, "plus") * shift
         bilby_cross[i] = ifo.antenna_response(RA, DEC, t, PSI, "cross") * shift
 
-    # Linear against exact GMST differs by ~2e-9 rad over two days.
+    # Linear against exact GMST differs by ~2e-9 rad over 21 hours.
     np.testing.assert_allclose(jim_plus, bilby_plus, rtol=0.0, atol=1e-7)
     np.testing.assert_allclose(jim_cross, bilby_cross, rtol=0.0, atol=1e-7)
     assert np.max(np.abs(bilby_plus)) > 0.1

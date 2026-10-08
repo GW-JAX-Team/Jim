@@ -567,7 +567,7 @@ class TestGroundBased3G:
         )
         emission = ROTATION_TRIGGER_TIME + BNS_PARAMS["t_c"] - tau
         for i in [0, 50, 200, 511]:
-            # tau(2 Hz) is about two days, so this also checks the linearisation.
+            # tau(2 Hz) is about 21 hours, so this also checks the linearisation.
             wrapped_difference = np.angle(
                 np.exp(1j * (gmst_f[i] - compute_gmst(emission[i])))
             )

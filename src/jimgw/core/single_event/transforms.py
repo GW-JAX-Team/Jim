@@ -389,9 +389,7 @@ class GeocentricArrivalPhaseToDetectorArrivalPhaseTransform(
     convention the arrival phase is
 
     $$
-
     \\phi_{\\mathrm{det}} = \\frac{\\phi_c}{2} + \\arg R_{\\mathrm{det}}
-
     $$
 
     where $R_{\\mathrm{det}}$ is the complex detector response.
@@ -484,9 +482,7 @@ class DistanceToSNRWeightedDistanceTransform(ConditionalBijectiveTransform):
     posterior:
 
     $$
-
-    d_{\\hat} = \\frac{d_L}{\\mathcal{M}_c^{5/6}\\, R_{\\mathrm{net}}}
-
+    \\hat{d}_L = \\frac{d_L}{\\mathcal{M}_c^{5/6}\\, R_{\\mathrm{net}}}
     $$
 
     Conditioning parameters are ``(M_c, ra, dec, psi, iota)``.

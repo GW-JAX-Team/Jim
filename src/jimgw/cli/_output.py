@@ -63,11 +63,6 @@ def write_outputs(jim, cfg) -> None:
     # Resolved config
     cfg_path = out_dir / "config.final.toml"
     dumped = cfg.model_dump(mode="json", exclude_none=True)
-    if dumped.get("sampler", {}).get("type") == "flowmc":
-        active = dumped["sampler"]["local_kernel"].lower()
-        for kernel in ("mala", "hmc", "grw"):
-            if kernel != active:
-                dumped["sampler"].pop(kernel, None)
     with open(cfg_path, "wb") as f:
         tomli_w.dump(dumped, f)
     logger.info("Saved resolved config to %s", cfg_path)

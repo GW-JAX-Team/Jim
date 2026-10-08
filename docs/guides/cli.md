@@ -22,7 +22,11 @@ jim-run [CONFIG] [OPTIONS]
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `seed` | int | `0` | JAX random seed |
+| `seed` | int | `0` | JAX random seed for everything except injected noise, which has its own `noise_seed` |
+
+!!! note "Reproducibility"
+    The same config, with the same `seed` and `noise_seed`, gives bit-identical samples.
+    This is not guaranteed on GPU, across JAX versions, or for sharded nested sampling with a different `n_devices`.
 
 ---
 
@@ -43,9 +47,12 @@ Fetches public LIGO/Virgo/KAGRA strain and PSD from the Gravitational-Wave Open 
 | `post_trigger_duration` | float | `2.0` | Seconds after the trigger kept in the window |
 | `psd_duration` | float | — | Off-source segment length for PSD estimation (seconds) |
 
-### `type = "injection"` — synthetic signal in design noise
+### `type = "injection"` — synthetic signal in Gaussian noise
 
-Injects a waveform into simulated design-sensitivity Gaussian noise.
+Injects a waveform into simulated Gaussian noise drawn from the detector PSD.
+
+By default the PSD is the built-in O3 ASD, available for `H1`, `L1` and `V1`.
+To use your own, set `psd_files` or `asd_files`; see the note on PSD and ASD files below.
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
@@ -54,7 +61,10 @@ Injects a waveform into simulated design-sensitivity Gaussian noise.
 | `duration` | float | — | Segment length (seconds) |
 | `sampling_frequency` | float | — | Sample rate in Hz (e.g. `2048.0`) |
 | `injection_parameters` | dict[str, float] | — | Signal parameters to inject |
-| `zero_noise` | bool | `false` | If `true`, inject into zero noise (noiseless matched-filter test) |
+| `zero_noise` | bool | `false` | If `true`, inject into zero noise. |
+| `noise_seed` | int | — | Seed for the injected noise. Required unless `zero_noise = true`. |
+| `psd_files` | dict[str, path] | — | Map from detector name to PSD file. Mutually exclusive with `asd_files`. Omit both to use the built-in O3 ASD. |
+| `asd_files` | dict[str, path] | — | Map from detector name to ASD file. Mutually exclusive with `psd_files`. |
 
 Example:
 
@@ -65,6 +75,7 @@ detectors = ["H1", "L1"]
 trigger_time = 1126259462.4
 duration = 4.0
 sampling_frequency = 2048.0
+noise_seed = 0
 
 [data.injection_parameters]
 M_c     = 28.3
@@ -86,16 +97,16 @@ Loads strain and PSD from local files.
 Useful for offline or CI use.
 
 Supported strain formats: `.npz`, `.gwf` / `.gwf.gz`, `.hdf5` / `.h5`, `.csv`.
-Supported PSD formats: `.npz`, `.txt`, `.dat`, `.csv`.
+PSD and ASD formats are described in the note on PSD and ASD files below.
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
 | `detectors` | list[str] | — | Detector identifiers |
 | `trigger_time` | float | — | GPS trigger time |
 | `strain_files` | dict[str, path] | — | Map from detector name to strain file (any supported format) |
-| `psd_files` | dict[str, path] | — | Map from detector name to PSD file (any supported format) |
+| `psd_files` | dict[str, path] | — | Map from detector name to PSD file. Exactly one of `psd_files` and `asd_files` is required. |
+| `asd_files` | dict[str, path] | — | Map from detector name to ASD file. Exactly one of `psd_files` and `asd_files` is required. |
 | `strain_channels` | dict[str, str] | `{}` | Channel name per detector for GWF/HDF5 files (e.g. `"H1:GDS-CALIB_STRAIN"`). If omitted, common LIGO/Virgo preset channel names are tried for `.gwf` files. |
-| `psd_is_asd` | dict[str, bool] | `{}` | Set to `true` for detectors whose PSD file contains ASD values (Hz⁻¹/²); they are squared automatically. Ignored for `.npz` files. |
 
 Example with `.npz` files (no channels required):
 
@@ -130,14 +141,24 @@ L1 = "L-L1_LOSC_4_V2-1126259446-32.gwf"
 H1 = "H1:GWOSC-4KHZ_R1_STRAIN"
 L1 = "L1:GWOSC-4KHZ_R1_STRAIN"
 
-[data.psd_files]
+[data.asd_files]
 H1 = "O3-H1_asd.txt"
 L1 = "O3-L1_asd.txt"
-
-[data.psd_is_asd]
-H1 = true
-L1 = true
 ```
+
+!!! note "PSD and ASD files"
+    `file` and `injection` runs read the PSD from the files named in one of two tables:
+
+    | Table | Values | Formats |
+    | --- | --- | --- |
+    | `psd_files` | PSD, $\mathrm{Hz}^{-1}$ | `.npz`, `.txt`, `.dat`, `.csv` |
+    | `asd_files` | ASD, $\mathrm{Hz}^{-1/2}$ | `.npz`, `.txt`, `.dat`, `.csv` |
+
+    - Set at most one of the two tables.
+    - Once a table is set it must name every detector in `detectors`; there is no per-detector fallback to the built-in default.
+    - One `ET` entry covers all three ET interferometers.
+    - An `.npz` archive holds `values` and `frequencies` arrays; the table it is listed under decides whether `values` is read as a PSD or an ASD.
+    - Text files have two columns: frequency in Hz, then the value.
 
 ---
 
@@ -325,14 +346,23 @@ Each backend has its own set of tuning parameters.
 | `n_training_loops` | `20` | Number of training loops |
 | `n_production_loops` | `10` | Number of production (no-training) loops |
 | `n_epochs` | `20` | Normalizing-flow training epochs per loop |
-| `local_kernel` | `"MALA"` | Local kernel: `"MALA"`, `"HMC"`, or `"GRW"` |
+| `local_kernel` | `"MALA"` | Local kernel: `"MALA"`, `"HMC"`, or `"GRW"`, or a sub-table for kernel-specific settings (see below) |
 | `n_NFproposal_batch_size` | `1000` | Flow proposal batch size |
 | `global_thinning` | `1` | Keep every Nth global step in the production chain |
 | `local_thinning` | `1` | Keep every Nth local step |
 | `early_stopping` | `true` | Stop training when the loss plateaus |
-| `parallel_tempering` | disabled | Set to `true` to enable with defaults, or provide a dict for custom settings |
+| `parallel_tempering` | disabled | Set to `true` to enable with defaults, `false` (or omit) to disable, or a sub-table for custom settings (see below) |
 | `checkpoint_dir` | `{output.dir}/` | Directory for `checkpoint.pkl`; set by the CLI automatically |
 | `checkpoint_interval` | `600.0` | Seconds between checkpoint writes; `0` disables checkpointing |
+
+Local-kernel sub-table:
+
+```toml
+[sampler.local_kernel]
+kernel = "HMC"
+step_size = 0.01
+n_leapfrog_steps = 20
+```
 
 Parallel-tempering sub-table:
 
@@ -376,11 +406,9 @@ n_tempered_steps = 5
 | --- | --- | --- |
 | `blocks` | required | Ordered lists of sampling-space parameter names |
 | `n_live` | `500` | Number of live points |
-| `n_delete_frac` | `0.125` | Fraction of live points replaced per iteration |
+| `n_delete_frac` | `0.5` | Fraction of live points replaced per iteration |
 | `num_inner_steps_per_dim` | `1` | Slice steps per dimension within each block |
 | `num_gibbs_sweeps` | `2` | Complete block sweeps per replacement |
-| `max_steps` | `10` | Maximum stepping-out expansions per slice |
-| `max_shrinkage` | `100` | Maximum shrinkage evaluations per slice |
 | `termination_dlogz` | `0.1` | Stop when the remaining evidence contribution falls below this |
 | `n_devices` | `1` | Number of local devices used to shard live points; `n_live` and `n_delete` must be divisible by it |
 | `checkpoint_dir` | `{output.dir}/` | Directory for `checkpoint.pkl`; set by the CLI automatically |

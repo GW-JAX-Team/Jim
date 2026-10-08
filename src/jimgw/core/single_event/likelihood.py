@@ -261,10 +261,8 @@ class ZeroLikelihood(LikelihoodBase):
 class TransientLikelihoodFD(SingleEventLikelihood):
     """Frequency-domain transient gravitational wave likelihood.
 
-    Supports optional analytic marginalization over coalescence time, phase,
-    and/or luminosity distance via typed config objects.  Each marginalization
-    mode is activated by passing the corresponding config object (or a plain
-    dict shorthand) to the relevant parameter.
+    Supports optional marginalization over coalescence time, phase,
+    and/or luminosity distance.
 
     Args:
         detectors: List of detector objects containing data and metadata.

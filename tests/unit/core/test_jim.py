@@ -351,19 +351,21 @@ class TestJimUtilityMethods:
         assert jnp.isfinite(log_prior)
 
     def test_sample_initial_positions(self, basic_jim):
-        initial_samples = basic_jim.sample_initial_positions(5)
+        initial_samples = basic_jim.sample_initial_positions(5, jax.random.key(0))
         assert initial_samples.shape == (5, 2)
         assert_all_finite(initial_samples)
 
     def test_sample_initial_positions_with_n_points(self, basic_jim):
-        initial_samples = basic_jim.sample_initial_positions(7)
+        initial_samples = basic_jim.sample_initial_positions(7, jax.random.key(0))
         assert initial_samples.shape == (7, 2)
         assert_all_finite(initial_samples)
 
     def test_sample_initial_positions_with_sample_transforms(
         self, jim_with_sample_transforms
     ):
-        initial_samples = jim_with_sample_transforms.sample_initial_positions(5)
+        initial_samples = jim_with_sample_transforms.sample_initial_positions(
+            5, jax.random.key(0)
+        )
         assert initial_samples.shape == (5, 2)
         assert_all_finite(initial_samples)
 
@@ -409,6 +411,48 @@ class TestJimSampleMethod:
         """3D initial position raises ValueError."""
         with pytest.raises(ValueError, match="initial_position must have shape"):
             basic_jim.sample(initial_position=jnp.ones((5, 2, 3)))
+
+
+# ---------------------------------------------------------------------------
+# TestJimReproducibility — `sample` depends on the seed and nothing else
+# ---------------------------------------------------------------------------
+
+
+class TestJimReproducibility:
+    @staticmethod
+    def _sampled(mock_likelihood, gw_prior, seed, earlier=None):
+        jim = Jim(
+            likelihood=mock_likelihood,
+            prior=gw_prior,
+            sampler_config=_tiny_flowmc_config(),
+            seed=seed,
+        )
+        if earlier is not None:
+            earlier(jim)
+        jim.sample()
+        return jim
+
+    def test_earlier_calls_do_not_change_the_result(self, mock_likelihood, gw_prior):
+        def earlier_calls(jim):
+            jim.sample_initial_positions(5, jax.random.key(1))
+            jim.evaluate_posterior(jnp.array([30.0, 0.5]))
+
+        plain = self._sampled(mock_likelihood, gw_prior, seed=3)
+        busy = self._sampled(mock_likelihood, gw_prior, seed=3, earlier=earlier_calls)
+        np.testing.assert_array_equal(
+            plain.get_samples()["M_c"], busy.get_samples()["M_c"]
+        )
+
+    def test_sampling_again_replays_the_run(self, mock_likelihood, gw_prior):
+        jim = self._sampled(mock_likelihood, gw_prior, seed=3)
+        first = jim.get_samples()["M_c"]
+        jim.sample()
+        np.testing.assert_array_equal(jim.get_samples()["M_c"], first)
+
+    def test_different_seeds_give_different_samples(self, mock_likelihood, gw_prior):
+        a = self._sampled(mock_likelihood, gw_prior, seed=1)
+        b = self._sampled(mock_likelihood, gw_prior, seed=2)
+        assert not np.array_equal(a.get_samples()["M_c"], b.get_samples()["M_c"])
 
 
 # ---------------------------------------------------------------------------
@@ -589,7 +633,7 @@ class TestJimPriorLikelihoodConsistencyChecks:
             )
 
     def test_swig_builds_cache_callbacks_from_likelihood(self):
-        from jimgw.samplers.blackjax.swig import BlackJAXSwiGSampler
+        from jimgw.samplers.blackjax.ns.swig import BlackJAXSwiGSampler
         from jimgw.samplers.config import BlackJAXSwiGConfig
 
         prior = CombinePrior(

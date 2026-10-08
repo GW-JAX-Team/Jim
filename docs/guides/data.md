@@ -24,6 +24,26 @@ H1 = detectors["H1"]
 
 Note that `get_ET()` returns a **list** of three `GroundBased2G` objects (one for each of ET's triangular arms), while all others return a single detector.
 
+### Earth rotation for next-generation detectors
+
+At low frequencies, signals in next-generation detectors last for hours, and the Earth rotates appreciably while they are in band.
+`GroundBased3G` evaluates the antenna pattern and the delay from the geocenter at the sidereal angle of the time each frequency is emitted, using the 2PN time to merger of the binary.
+It can optionally include the finite length of the arms.
+Build one from any preset with `from_detector`:
+
+```python
+from jimgw.core.single_event.detector import GroundBased3G, get_ET
+
+ET = [
+    GroundBased3G.from_detector(ifo, arm_length=1e4, finite_size=True)
+    for ifo in get_ET()
+]
+```
+
+The detectors drop into `TransientLikelihoodFD` like any other.
+The response needs `M_c`, `eta`, `s1_z` and `s2_z` among the likelihood parameters.
+With `earth_rotation=False` and `finite_size=False`, the response is identical to `GroundBased2G`.
+
 Once you have a detector, you need to attach strain data and a PSD to it.
 
 ## Loading Data

@@ -14,8 +14,10 @@ from jaxtyping import Array, Bool, Complex, Float, Key, jaxtyped
 from jimgw.core.constants import (
     C_SI,
     DEG_TO_RAD,
+    EARTH_ROTATION_RATE,
     EARTH_SEMI_MAJOR_AXIS,
     EARTH_SEMI_MINOR_AXIS,
+    MTSUN,
 )
 from jimgw.core.single_event.data import Data, PowerSpectrum
 from jimgw.core.single_event.polarization import Polarization
@@ -404,7 +406,34 @@ class GroundBased2G(Detector):
         ra, dec, psi, gmst = params["ra"], params["dec"], params["psi"], params["gmst"]
         antenna_pattern = self.antenna_pattern(ra, dec, psi, gmst)
         time_shift = self.delay_from_geocenter(ra, dec, gmst)
-        time_shift += params["trigger_time"] - self.start_time + params["t_c"]
+        return self._project(frequency, h_sky, antenna_pattern, time_shift, params)
+
+    def _project(
+        self,
+        frequency: Float[Array, " n_sample"],
+        h_sky: dict[str, Float[Array, " n_sample"]],
+        antenna_pattern: dict[str, Complex],
+        geocenter_delay: Float,
+        params: dict[str, Float],
+    ) -> Complex[Array, " n_sample"]:
+        """Combine the polarizations with the antenna pattern and shift them in time.
+
+        Args:
+            frequency (Float[Array, "n_sample"]): Array of frequency samples.
+            h_sky (dict[str, Float[Array, "n_sample"]]): Sky-frame polarizations.
+            antenna_pattern (dict[str, Complex]): Antenna pattern per polarization,
+                either a scalar or one value per frequency sample.
+            geocenter_delay (Float): Delay from the geocenter in seconds, either a
+                scalar or one value per frequency sample.
+            params (dict[str, Float]): Source parameters containing
+                ``trigger_time`` and ``t_c``.
+
+        Returns:
+            Complex[Array, "n_sample"]: Complex strain measured by the detector.
+        """
+        time_shift = geocenter_delay + (
+            params["trigger_time"] - self.start_time + params["t_c"]
+        )
 
         h_detector = jax.tree_util.tree_map(
             lambda h, antenna: h * antenna,
@@ -453,17 +482,33 @@ class GroundBased2G(Detector):
             Float: Time delay from Earth center in seconds.
         """
         delta_d = -self.vertex
+        omega = self._source_direction(ra, dec, gmst)
+        return jnp.einsum("i...,i->...", omega, delta_d) / C_SI
+
+    @staticmethod
+    def _source_direction(
+        ra: FloatScalar, dec: FloatScalar, gmst: FloatScalar
+    ) -> Float[Array, "3 ..."]:
+        """Unit vector pointing from the geocenter to the source, in Earth-fixed coordinates.
+
+        Args:
+            ra (Float): Right ascension of the source in radians.
+            dec (Float): Declination of the source in radians.
+            gmst (Float): Greenwich mean sidereal time in radians; an array
+                gives one direction per element.
+
+        Returns:
+            Float[Array, "3 ..."]: Direction to the source.
+        """
         gmst = jnp.mod(gmst, 2 * jnp.pi)
-        phi = ra - gmst
-        theta = jnp.pi / 2 - dec
-        omega = jnp.array(
+        phi, theta = jnp.broadcast_arrays(ra - gmst, jnp.pi / 2 - dec)
+        return jnp.array(
             [
                 jnp.sin(theta) * jnp.cos(phi),
                 jnp.sin(theta) * jnp.sin(phi),
                 jnp.cos(theta),
             ]
         )
-        return jnp.einsum("i...,i->...", omega, delta_d) / C_SI
 
     def antenna_pattern(
         self,
@@ -782,6 +827,324 @@ class GroundBased2G(Detector):
         return self.whitened_frequency_to_time_domain_strain(
             self.whitened_frequency_domain_data
         )
+
+
+def time_to_merger(
+    frequency: Float[Array, " n_sample"],
+    M_c: FloatLike,
+    eta: FloatLike,
+    s1_z: FloatLike = 0.0,
+    s2_z: FloatLike = 0.0,
+    mode: int = 2,
+) -> Float[Array, " n_sample"]:
+    """Stationary-phase time to merger at 2PN for an aligned-spin binary.
+
+    Implements Eq. (3.3) of Poisson & Will (1995), arXiv:gr-qc/9502040,
+
+    $$
+    \\tau(f) = \\frac{5}{256}\\mathcal{M}(\\pi\\mathcal{M}f)^{-8/3}
+    \\left[1 + \\frac{4}{3}\\left(\\frac{743}{336} + \\frac{11}{4}\\eta\\right)x
+    - \\frac{8}{5}(4\\pi - \\beta)x^{3/2}
+    + 2\\left(\\frac{3058673}{1016064} + \\frac{5429}{1008}\\eta
+    + \\frac{617}{144}\\eta^2 - \\sigma\\right)x^2\\right],
+    $$
+
+    with $x = (\\pi M f)^{2/3}$, the spin-orbit term
+    $\\beta = \\frac{1}{12}\\sum_i \\left[113 (m_i/M)^2 + 75\\eta\\right]\\chi_i$ and the
+    spin-spin term $\\sigma = \\frac{474}{48}\\eta\\chi_1\\chi_2$ for spins aligned with
+    the orbital angular momentum. A frequency $f$ of the azimuthal mode $m$ is
+    emitted when the quadrupole frequency is $2f/|m|$, so
+    $\\tau_m(f) = \\tau_{22}(2f/|m|)$.
+
+    Args:
+        frequency (Float[Array, "n_sample"]): Gravitational-wave frequency in Hz.
+        M_c (Float): Detector-frame chirp mass in solar masses.
+        eta (Float): Symmetric mass ratio.
+        s1_z (Float, optional): Aligned spin of the primary. Defaults to 0.
+        s2_z (Float, optional): Aligned spin of the secondary. Defaults to 0.
+        mode (int, optional): Azimuthal mode number $m$. Defaults to 2.
+
+    Returns:
+        Float[Array, "n_sample"]: Time to merger in seconds.
+
+    Raises:
+        ValueError: If ``mode`` is 0, for which the mapping is undefined.
+    """
+    if mode == 0:
+        raise ValueError(
+            "mode must be a non-zero azimuthal number: an m = 0 mode has no "
+            "frequency-to-time mapping."
+        )
+    f_22 = 2 * frequency / abs(mode)
+    M = M_c * eta ** (-3.0 / 5.0)
+    # Component mass fractions m_i / M.
+    delta = jnp.sqrt(1 - 4 * eta)
+    x1, x2 = (1 + delta) / 2, (1 - delta) / 2
+    M_c_s = M_c * MTSUN
+    x = (jnp.pi * M * MTSUN * f_22) ** (2.0 / 3.0)
+    beta = ((113 * x1**2 + 75 * eta) * s1_z + (113 * x2**2 + 75 * eta) * s2_z) / 12
+    sigma = 474 / 48 * eta * s1_z * s2_z
+    tau_newtonian = 5 / 256 * M_c_s * (jnp.pi * M_c_s * f_22) ** (-8.0 / 3.0)
+    return tau_newtonian * (
+        1
+        + 4 / 3 * (743 / 336 + 11 / 4 * eta) * x
+        - 8 / 5 * (4 * jnp.pi - beta) * x**1.5
+        + 2
+        * (3058673 / 1016064 + 5429 / 1008 * eta + 617 / 144 * eta**2 - sigma)
+        * x**2
+    )
+
+
+class GroundBased3G(GroundBased2G):
+    """Ground-based detector whose response follows the Earth's rotation.
+
+    Signals from next-generation detectors stay in band for hours, during which
+    the Earth rotates appreciably. Each frequency sample is therefore projected
+    with the antenna pattern and the delay from the geocenter evaluated at the
+    sidereal angle of the time it is emitted, using the stationary-phase
+    mapping $t(f) = t_c - \\tau(f)$ with $\\tau$ from
+    [`time_to_merger`][jimgw.core.single_event.detector.time_to_merger]:
+
+    $$
+    \\mathrm{GMST}(f) = \\mathrm{GMST}(t_{\\rm trigger})
+    + \\Omega_\\oplus\\left[t_c - \\tau(f)\\right],
+    $$
+
+    where $\\Omega_\\oplus$ is the sidereal rotation rate. The sky-frame
+    polarizations are mode-summed, so the dominant $m = 2$ mapping is used.
+
+    Optionally, the finite length of the arms is included through the
+    single-arm transfer function of Eq. (2.13) of Baral et al. (2023),
+    arXiv:2304.09889 (see also Rakhmanov 2008). Its phase is referenced to the
+    time the light reaches the end mirror, as in that reference, and it tends to
+    one in the long-wavelength limit.
+
+    With both effects switched off, the response is identical to
+    [`GroundBased2G`][jimgw.core.single_event.detector.GroundBased2G].
+
+    The response needs ``M_c``, ``eta``, ``s1_z`` and ``s2_z`` in the parameters
+    passed to ``fd_response`` when the Earth's rotation is switched on. Under
+    time marginalization the likelihood sets ``t_c`` to zero, so the rotation
+    across the ``t_c`` range (about 7e-6 rad for 0.1 s) is neglected.
+
+    Attributes:
+        arm_length (float): Arm length in meters, used by the finite-size response.
+        earth_rotation (bool): Whether the response follows the Earth's rotation.
+        finite_size (bool): Whether the finite-arm-length response is included.
+    """
+
+    arm_length: float = 0.0
+    earth_rotation: bool = True
+    finite_size: bool = False
+
+    def __init__(
+        self,
+        name: str,
+        latitude: float = 0,
+        longitude: float = 0,
+        elevation: float = 0,
+        xarm_azimuth: float = 0,
+        yarm_azimuth: float = 0,
+        xarm_tilt: float = 0,
+        yarm_tilt: float = 0,
+        modes: str = "pc",
+        arm_length: float = 0.0,
+        earth_rotation: bool = True,
+        finite_size: bool = False,
+    ):
+        """Initialize a ground-based detector with an Earth-rotating response.
+
+        Args:
+            name (str): Name of the detector.
+            latitude (float, optional): Latitude of the detector in radians. Defaults to 0.
+            longitude (float, optional): Longitude of the detector in radians. Defaults to 0.
+            elevation (float, optional): Elevation of the detector in meters. Defaults to 0.
+            xarm_azimuth (float, optional): Azimuth of the x-arm in radians. Defaults to 0.
+            yarm_azimuth (float, optional): Azimuth of the y-arm in radians. Defaults to 0.
+            xarm_tilt (float, optional): Tilt of the x-arm in radians. Defaults to 0.
+            yarm_tilt (float, optional): Tilt of the y-arm in radians. Defaults to 0.
+            modes (str, optional): Polarization modes. Defaults to "pc".
+            arm_length (float, optional): Arm length in meters. Defaults to 0.
+            earth_rotation (bool, optional): Follow the Earth's rotation across
+                frequencies. Defaults to True.
+            finite_size (bool, optional): Include the finite-arm-length response.
+                Defaults to False.
+
+        Raises:
+            ValueError: If ``finite_size`` is True and ``arm_length`` is not positive.
+        """
+        if finite_size and not arm_length > 0:
+            raise ValueError(
+                f"finite_size=True needs a positive arm_length, got {arm_length}."
+            )
+        super().__init__(
+            name,
+            latitude=latitude,
+            longitude=longitude,
+            elevation=elevation,
+            xarm_azimuth=xarm_azimuth,
+            yarm_azimuth=yarm_azimuth,
+            xarm_tilt=xarm_tilt,
+            yarm_tilt=yarm_tilt,
+            modes=modes,
+        )
+        self.arm_length = arm_length
+        self.earth_rotation = earth_rotation
+        self.finite_size = finite_size
+
+    @classmethod
+    def from_detector(
+        cls,
+        detector: GroundBased2G,
+        arm_length: float = 0.0,
+        earth_rotation: bool = True,
+        finite_size: bool = False,
+    ) -> "GroundBased3G":
+        """Build a detector with the geometry of an existing ground-based detector.
+
+        Only the geometry and polarization modes are copied, not the data or PSD.
+
+        Args:
+            detector (GroundBased2G): Detector whose geometry is copied, e.g. one
+                of the [`get_ET`][jimgw.core.single_event.detector.get_ET] detectors.
+            arm_length (float, optional): Arm length in meters. Defaults to 0.
+            earth_rotation (bool, optional): Follow the Earth's rotation across
+                frequencies. Defaults to True.
+            finite_size (bool, optional): Include the finite-arm-length response.
+                Defaults to False.
+
+        Returns:
+            GroundBased3G: The new detector.
+        """
+        return cls(
+            detector.name,
+            latitude=detector.latitude,
+            longitude=detector.longitude,
+            elevation=detector.elevation,
+            xarm_azimuth=detector.xarm_azimuth,
+            yarm_azimuth=detector.yarm_azimuth,
+            xarm_tilt=detector.xarm_tilt,
+            yarm_tilt=detector.yarm_tilt,
+            modes="".join(p.name for p in detector.polarization_mode),
+            arm_length=arm_length,
+            earth_rotation=earth_rotation,
+            finite_size=finite_size,
+        )
+
+    def gmst_at_frequency(
+        self, frequency: Float[Array, " n_sample"], params: dict[str, Float]
+    ) -> Float[Array, " n_sample"]:
+        """Sidereal angle at the time each frequency is emitted.
+
+        Args:
+            frequency (Float[Array, "n_sample"]): Array of frequency samples.
+            params (dict[str, Float]): Source parameters containing ``gmst`` (at
+                the trigger time), ``t_c``, ``M_c``, ``eta``, ``s1_z`` and ``s2_z``.
+
+        Returns:
+            Float[Array, "n_sample"]: GMST in radians, equal to the wrapped GMST
+                at the trigger time plus the rotation since then. Non-positive frequencies, which have no emission time, are
+                assigned the merger time.
+        """
+        positive = frequency > 0
+        # Evaluate at a safe frequency where masked, so neither the value nor
+        # its gradient is poisoned by tau(0) = inf.
+        tau = time_to_merger(
+            jnp.where(positive, frequency, 1.0),
+            params["M_c"],
+            params["eta"],
+            params["s1_z"],
+            params["s2_z"],
+        )
+        tau = jnp.where(positive, tau, 0.0)
+        # Wrap first: the rotation is added to an angle of order one rather
+        # than to an unwrapped sidereal time, which keeps its precision.
+        gmst = jnp.mod(params["gmst"], 2 * jnp.pi)
+        return gmst + EARTH_ROTATION_RATE * (params["t_c"] - tau)
+
+    @staticmethod
+    def _finite_size_factor(x: Float, y: Float) -> Complex:
+        """Single-arm transfer function, Eq. (2.13) of arXiv:2304.09889.
+
+        Args:
+            x (Float): Arm length in units of the gravitational wavelength, $fL/c$.
+            y (Float): Projection of the propagation direction onto the arm.
+
+        Returns:
+            Complex: Transfer function, equal to one when $x = 0$.
+        """
+        return 0.5 * (
+            jnp.exp(-1j * jnp.pi * x * (1 + y)) * jnp.sinc(x * (1 - y))
+            + jnp.exp(1j * jnp.pi * x * (1 - y)) * jnp.sinc(x * (1 + y))
+        )
+
+    def _finite_size_antenna_pattern(
+        self,
+        frequency: Float[Array, " n_sample"],
+        ra: FloatScalar,
+        dec: FloatScalar,
+        psi: FloatScalar,
+        gmst: Float,
+    ) -> dict[str, Complex[Array, " n_sample"]]:
+        """Antenna patterns with each arm weighted by its finite-size transfer function."""
+        propagation = -self._source_direction(ra, dec, gmst)
+        x = frequency * self.arm_length / C_SI
+        arms = self.arms
+        arm_tensors = [0.5 * jnp.einsum("i,j->ij", arm, arm) for arm in arms]
+        transfer = [
+            self._finite_size_factor(x, jnp.einsum("i...,i->...", propagation, arm))
+            for arm in arms
+        ]
+
+        antenna_patterns = {}
+        for polarization in self.polarization_mode:
+            wave_tensor = polarization.tensor_from_sky(ra, dec, psi, gmst)
+            arm_patterns = [
+                jnp.einsum("ij,ij...->...", arm_tensor, wave_tensor)
+                for arm_tensor in arm_tensors
+            ]
+            antenna_patterns[polarization.name] = (
+                transfer[0] * arm_patterns[0] - transfer[1] * arm_patterns[1]
+            )
+        return antenna_patterns
+
+    def fd_response(
+        self,
+        frequency: Float[Array, " n_sample"],
+        h_sky: dict[str, Float[Array, " n_sample"]],
+        params: dict[str, Float],
+    ) -> Complex[Array, " n_sample"]:
+        """Project the sky-frame waveform with a frequency-dependent response.
+
+        Args:
+            frequency (Float[Array, "n_sample"]): Array of frequency samples.
+            h_sky (dict[str, Float[Array, "n_sample"]]): Dictionary mapping polarization names
+                to frequency-domain waveforms.
+            params (dict[str, Float]): Source parameters containing ``ra``, ``dec``,
+                ``psi``, ``trigger_time``, ``t_c`` and ``gmst`` (at the trigger time),
+                and, when the Earth's rotation is switched on, ``M_c``, ``eta``,
+                ``s1_z`` and ``s2_z``.
+
+        Returns:
+            Complex[Array, "n_sample"]: Complex strain measured by the detector in frequency domain.
+        """
+        if not (self.earth_rotation or self.finite_size):
+            return super().fd_response(frequency, h_sky, params)
+
+        ra, dec, psi = params["ra"], params["dec"], params["psi"]
+        if self.earth_rotation:
+            gmst = self.gmst_at_frequency(frequency, params)
+        else:
+            gmst = params["gmst"]
+
+        if self.finite_size:
+            antenna_pattern = self._finite_size_antenna_pattern(
+                frequency, ra, dec, psi, gmst
+            )
+        else:
+            antenna_pattern = self.antenna_pattern(ra, dec, psi, gmst)
+        time_shift = self.delay_from_geocenter(ra, dec, gmst)
+        return self._project(frequency, h_sky, antenna_pattern, time_shift, params)
 
 
 def get_H1() -> GroundBased2G:

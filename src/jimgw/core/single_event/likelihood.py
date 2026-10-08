@@ -1020,29 +1020,31 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         data_prod = jnp.array(data * h_ref.conj()) / psd
         self_prod = jnp.array(h_ref * h_ref.conj()) / psd
 
-        # Broadcasting for 2D frequencies
-        freqs_broadcast = freqs[None, :]  # Shape: (1, n_freq)
-        freq_bins_left = f_bins[:-1][:, None]  # Shpae: (n_valid, 1)
-        freq_bins_right = f_bins[1:][:, None]  # Shape: (n_valid, 1)
-        freq_bins_center = (freq_bins_left + freq_bins_right) / 2
+        n_bins = f_bins.shape[0] - 1
+        freq_bins_center = (f_bins[:-1] + f_bins[1:]) / 2
 
-        # Shape: (n_valid, n_freq)
-        mask = (freqs_broadcast >= freq_bins_left) & (freqs_broadcast < freq_bins_right)
-        # The half-open interval [left, right) excludes any frequency that lands
-        # exactly on the upper edge of the last bin (f_bins[-1]).  This happens
-        # whenever the interpolated bin edge coincides with the last discrete
-        # frequency sample (common when the waveform reaches f_max).  Extend the
-        # last row to a closed interval by OR-ing in the equality condition.
-        mask = mask.at[-1].set(mask[-1] | (freqs == f_bins[-1]))
-        freq_shift_matrix = (freqs_broadcast - freq_bins_center) * mask
+        # Assign each frequency sample to its bin: bin k is [f_bins[k], f_bins[k+1]).
+        # A per-sample bin index with segment_sum keeps memory at O(n_freq), whereas
+        # a dense (n_bins, n_freq) mask matrix is prohibitive for long durations.
+        idx = jnp.searchsorted(f_bins, freqs, side="right") - 1
+        # The half-open interval excludes any frequency that lands exactly on the
+        # upper edge of the last bin (f_bins[-1]).  This happens whenever the
+        # interpolated bin edge coincides with the last discrete frequency sample
+        # (common when the waveform reaches f_max).  Close the last bin on the right.
+        idx = jnp.where(freqs == f_bins[-1], n_bins - 1, idx)
+        freq_shift = freqs - freq_bins_center[jnp.clip(idx, 0, n_bins - 1)]
+
+        def _bin_sum(x: Complex[Array, " n_freq"]) -> Complex[Array, " n_valid"]:
+            # Drop samples outside the binned range without accumulating them.
+            return jax.ops.segment_sum(x, idx, num_segments=n_bins, mode="drop")
 
         # The resultant arrays have shape (n_valid), the dimension with "n_freq" is summed over.
         summary_data = jnp.array(
             [
-                jnp.sum(data_prod[None, :] * mask, axis=1),  # A0
-                jnp.sum(data_prod[None, :] * freq_shift_matrix, axis=1),  # A1
-                jnp.sum(self_prod[None, :] * mask, axis=1),  # B0
-                jnp.sum(self_prod[None, :] * freq_shift_matrix, axis=1),  # B1
+                _bin_sum(data_prod),  # A0
+                _bin_sum(data_prod * freq_shift),  # A1
+                _bin_sum(self_prod),  # B0
+                _bin_sum(self_prod * freq_shift),  # B1
             ]
         )
 

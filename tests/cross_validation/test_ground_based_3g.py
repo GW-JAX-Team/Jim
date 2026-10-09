@@ -11,10 +11,6 @@
 not a runtime dependency of jimgw, and the comparison skips without it.
 """
 
-import os
-
-os.environ["JAX_PLATFORMS"] = "cpu"
-
 import jax.numpy as jnp
 import numpy as np
 import pytest

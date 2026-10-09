@@ -1,5 +1,5 @@
 version = 1
-revision = 5
+revision = 3
 requires-python = ">=3.11"
 resolution-markers = [
     "python_full_version >= '3.14' and sys_platform == 'win32'",
@@ -193,6 +193,19 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/99/54/dbf2856d7fc4038070d6ef5165763dba2edbd8728cff7837f24abffe8b2e/bilby_cython-0.5.4-cp314-cp314t-macosx_13_0_x86_64.whl", hash = "sha256:1dd8e79afb2761d20dfa14b044f70af22e89270989dc869d0d0a395b272a726e", size = 373724, upload-time = "2026-04-02T14:44:18.286Z" },
     { url = "https://files.pythonhosted.org/packages/f9/ab/1ce6f90eb2b050ba0b971b9eca26d9ff8a5a6ec7ce6a0e077a57168c6b98/bilby_cython-0.5.4-cp314-cp314t-macosx_15_0_arm64.whl", hash = "sha256:29ef89ef7c02a7a8aae3da2a0780a4c12d0036ba0d905660beced92388af0633", size = 372452, upload-time = "2026-04-02T14:44:19.748Z" },
     { url = "https://files.pythonhosted.org/packages/59/74/43cd1609d4348920258cd6fde9265a2b9ff8955df1bdc5bc0ca60d80bfc1/bilby_cython-0.5.4-cp314-cp314t-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:932fb4e308565b33f989bfbd4d506a0ae37e5a9ef41802ac841e8cb8a4abfe7b", size = 1065869, upload-time = "2026-04-02T14:44:21.12Z" },
+]
+
+[[package]]
+name = "bilby-xg"
+version = "0.1.0"
+source = { git = "https://github.com/Pratyusava/bilby_xG?rev=11ee11607a531b2d7f286eb438d2c971d4c045cf#11ee11607a531b2d7f286eb438d2c971d4c045cf" }
+dependencies = [
+    { name = "bilby" },
+    { name = "bilby-cython" },
+    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "numpy", version = "2.5.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "scipy", version = "1.17.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "scipy", version = "1.18.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
 ]
 
 [[package]]
@@ -1821,6 +1834,7 @@ cuda = [
 [package.dev-dependencies]
 cross-validation = [
     { name = "bilby", extra = ["gw"] },
+    { name = "bilby-xg" },
     { name = "lalsuite" },
 ]
 doc = [
@@ -1867,6 +1881,7 @@ provides-extras = ["cuda"]
 [package.metadata.requires-dev]
 cross-validation = [
     { name = "bilby", extras = ["gw"], specifier = ">=2.8.0" },
+    { name = "bilby-xg", git = "https://github.com/Pratyusava/bilby_xG?rev=11ee11607a531b2d7f286eb438d2c971d4c045cf" },
     { name = "lalsuite", specifier = ">=7.26.4" },
 ]
 doc = [

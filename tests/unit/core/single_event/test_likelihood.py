@@ -10,7 +10,7 @@ from jimgw.core.jim import Jim
 from jimgw.core.prior import CombinePrior, GaussianPrior, PowerLawPrior, UniformPrior
 from jimgw.core.single_event import likelihood as likelihood_module
 from jimgw.core.single_event.data import Data, PowerSpectrum
-from jimgw.core.single_event.detector import get_H1, get_L1
+from jimgw.core.single_event.detector import GroundBased3G, get_ET, get_H1, get_L1
 from jimgw.core.single_event.likelihood import (
     HeterodynedTransientLikelihoodFD,
     MultibandedTransientLikelihoodFD,
@@ -2270,3 +2270,118 @@ class TestMultibandedTransientLikelihoodFD:
             assert jnp.isfinite(likelihood.evaluate(params)), (
                 f"Not finite for accuracy_factor={acc}"
             )
+
+
+# Long enough (about 100 s above 10 Hz) for the rotation to show in the likelihood.
+LONG_SIGNAL_PARAMS = {
+    "M_c": 5.0,
+    "eta": 0.24,
+    "s1_z": 0.1,
+    "s2_z": -0.1,
+    "d_L": 200.0,
+    "phase_c": 0.4,
+    "iota": 0.5,
+    "ra": 1.1,
+    "dec": -0.4,
+    "psi": 0.7,
+    "t_c": 0.0,
+}
+
+
+class TestGroundBased3GDetectors:
+    """Likelihoods with GroundBased3G detectors, whose response follows the Earth's rotation."""
+
+    duration = 128.0
+    sampling_frequency = 512.0
+    f_min, f_max = 10.0, 200.0
+    trigger_time = 1400000000.0
+
+    def _injected(self, det):
+        frequencies = jnp.linspace(0.0, self.sampling_frequency / 2, 1025)
+        det.set_psd(PowerSpectrum(jnp.full(1025, 1e-46), frequencies))
+        det.inject_signal(
+            duration=self.duration,
+            sampling_frequency=self.sampling_frequency,
+            trigger_time=self.trigger_time,
+            waveform_model=RippleIMRPhenomD(f_ref=20.0),
+            parameters=LONG_SIGNAL_PARAMS,
+            f_min=self.f_min,
+            f_max=self.f_max,
+            zero_noise=True,
+        )
+        return det
+
+    @staticmethod
+    def _static_copy(det):
+        """A GroundBased3G without rotation, carrying the data and PSD of *det*."""
+        static = GroundBased3G.from_detector(det, earth_rotation=False)
+        static.set_psd(det.psd)
+        static.set_data(det.data)
+        return static
+
+    def _likelihood(self, dets, kind="full"):
+        waveform = RippleIMRPhenomD(f_ref=20.0)
+        common = {
+            "f_min": self.f_min,
+            "f_max": self.f_max,
+            "trigger_time": self.trigger_time,
+        }
+        if kind == "full":
+            return TransientLikelihoodFD(dets, waveform, **common)
+        if kind == "time":
+            return TransientLikelihoodFD(
+                dets, waveform, time_marginalization={"tc_range": (-0.1, 0.1)}, **common
+            )
+        if kind == "heterodyne":
+            return HeterodynedTransientLikelihoodFD(
+                dets,
+                waveform,
+                reference_parameters=dict(LONG_SIGNAL_PARAMS),
+                n_bins=100,
+                **common,
+            )
+        prior = CombinePrior([UniformPrior(-0.1, 0.1, parameter_names=["t_c"])])
+        return MultibandedTransientLikelihoodFD(
+            dets,
+            waveform,
+            prior=prior,
+            reference_chirp_mass=LONG_SIGNAL_PARAMS["M_c"],
+            **common,
+        )
+
+    def _log_likelihood(self, det, kind="full"):
+        return float(self._likelihood([det], kind).evaluate(dict(LONG_SIGNAL_PARAMS)))
+
+    def test_rotating_template_recovers_the_optimal_log_likelihood(self):
+        """A rotating injection is recovered exactly by the rotating response only."""
+        rotating = self._injected(get_ET(earth_rotation=True)[0])
+        static = self._static_copy(rotating)
+        optimal = float(rotating.optimal_snr) ** 2 / 2
+
+        assert self._log_likelihood(rotating) == pytest.approx(optimal, rel=1e-10)
+        assert optimal - self._log_likelihood(static) > 1e-3
+
+    def test_et_triangle_recovers_the_optimal_log_likelihood(self):
+        """All three ET detectors together, each with its own rotating response."""
+        et = [self._injected(det) for det in get_ET(earth_rotation=True)]
+        optimal = sum(float(det.optimal_snr) ** 2 for det in et) / 2
+        log_likelihood = float(self._likelihood(et).evaluate(dict(LONG_SIGNAL_PARAMS)))
+        assert log_likelihood == pytest.approx(optimal, rel=1e-10)
+
+    @pytest.mark.parametrize(
+        "kind",
+        ["time", "heterodyne", pytest.param("multiband", marks=pytest.mark.slow)],
+    )
+    def test_other_likelihoods_follow_the_rotation(self, kind):
+        """Switching the rotation off moves these likelihoods as it moves the full one."""
+        rotating = self._injected(get_ET(earth_rotation=True)[0])
+        static = self._static_copy(rotating)
+
+        def shift(kind):
+            return self._log_likelihood(rotating, kind) - self._log_likelihood(
+                static, kind
+            )
+
+        full = shift("full")
+        assert full > 1e-3
+        assert shift(kind) == pytest.approx(full, abs=1e-4)

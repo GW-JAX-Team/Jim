@@ -3,7 +3,7 @@ import os
 import tempfile
 import zlib
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Optional, Self
 
 import jax
 import jax.numpy as jnp
@@ -416,21 +416,7 @@ class GroundBased2G(Detector):
         geocenter_delay: Float,
         params: dict[str, Float],
     ) -> Complex[Array, " n_sample"]:
-        """Combine the polarizations with the antenna pattern and shift them in time.
-
-        Args:
-            frequency (Float[Array, "n_sample"]): Array of frequency samples.
-            h_sky (dict[str, Float[Array, "n_sample"]]): Sky-frame polarizations.
-            antenna_pattern (dict[str, Complex]): Antenna pattern per polarization,
-                either a scalar or one value per frequency sample.
-            geocenter_delay (Float): Delay from the geocenter in seconds, either a
-                scalar or one value per frequency sample.
-            params (dict[str, Float]): Source parameters containing
-                ``trigger_time`` and ``t_c``.
-
-        Returns:
-            Complex[Array, "n_sample"]: Complex strain measured by the detector.
-        """
+        """Combine the polarizations with the antenna pattern and shift them in time."""
         time_shift = geocenter_delay + (
             params["trigger_time"] - self.start_time + params["t_c"]
         )
@@ -489,17 +475,7 @@ class GroundBased2G(Detector):
     def _source_direction(
         ra: FloatScalar, dec: FloatScalar, gmst: FloatScalar
     ) -> Float[Array, "3 ..."]:
-        """Unit vector pointing from the geocenter to the source, in Earth-fixed coordinates.
-
-        Args:
-            ra (Float): Right ascension of the source in radians.
-            dec (Float): Declination of the source in radians.
-            gmst (Float): Greenwich mean sidereal time in radians; an array
-                gives one direction per element.
-
-        Returns:
-            Float[Array, "3 ..."]: Direction to the source.
-        """
+        """Unit vector from the geocenter to the source in Earth-fixed coordinates, one per ``gmst``."""
         gmst = jnp.mod(gmst, 2 * jnp.pi)
         phi, theta = jnp.broadcast_arrays(ra - gmst, jnp.pi / 2 - dec)
         return jnp.array(
@@ -839,22 +815,7 @@ def time_to_merger(
 ) -> Float[Array, " n_sample"]:
     """Stationary-phase time to merger at 2PN for an aligned-spin binary.
 
-    Implements Eq. (3.3) of Poisson & Will (1995), arXiv:gr-qc/9502040,
-
-    $$
-    \\tau(f) = \\frac{5}{256}\\mathcal{M}(\\pi\\mathcal{M}f)^{-8/3}
-    \\left[1 + \\frac{4}{3}\\left(\\frac{743}{336} + \\frac{11}{4}\\eta\\right)x
-    - \\frac{8}{5}(4\\pi - \\beta)x^{3/2}
-    + 2\\left(\\frac{3058673}{1016064} + \\frac{5429}{1008}\\eta
-    + \\frac{617}{144}\\eta^2 - \\sigma\\right)x^2\\right],
-    $$
-
-    with $x = (\\pi M f)^{2/3}$, the spin-orbit term
-    $\\beta = \\frac{1}{12}\\sum_i \\left[113 (m_i/M)^2 + 75\\eta\\right]\\chi_i$ and the
-    spin-spin term $\\sigma = \\frac{474}{48}\\eta\\chi_1\\chi_2$ for spins aligned with
-    the orbital angular momentum. A frequency $f$ of the azimuthal mode $m$ is
-    emitted when the quadrupole frequency is $2f/|m|$, so
-    $\\tau_m(f) = \\tau_{22}(2f/|m|)$.
+    Implements Eq. (3.3) of Poisson & Will (1995), arXiv:gr-qc/9502040.
 
     Args:
         frequency (Float[Array, "n_sample"]): Gravitational-wave frequency in Hz.
@@ -862,7 +823,8 @@ def time_to_merger(
         eta (Float): Symmetric mass ratio.
         s1_z (Float, optional): Aligned spin of the primary. Defaults to 0.
         s2_z (Float, optional): Aligned spin of the secondary. Defaults to 0.
-        mode (int, optional): Azimuthal mode number $m$. Defaults to 2.
+        mode (int, optional): Azimuthal mode number that ``frequency`` refers to.
+            Defaults to 2.
 
     Returns:
         Float[Array, "n_sample"]: Time to merger in seconds.
@@ -896,46 +858,29 @@ def time_to_merger(
 
 
 class GroundBased3G(GroundBased2G):
-    """Ground-based detector whose response follows the Earth's rotation.
+    """Ground-based detector with a frequency-dependent response.
 
-    Signals from next-generation detectors stay in band for hours, during which
-    the Earth rotates appreciably. Each frequency sample is therefore projected
-    with the antenna pattern and the delay from the geocenter evaluated at the
-    sidereal angle of the time it is emitted, using the stationary-phase
-    mapping $t(f) = t_c - \\tau(f)$ with $\\tau$ from
-    [`time_to_merger`][jimgw.core.single_event.detector.time_to_merger]:
+    With ``earth_rotation``, the response follows the Earth's rotation while the
+    signal is in band, which matters for signals that stay in band for ten
+    minutes or longer. It needs ``M_c``, ``eta``, ``s1_z`` and ``s2_z`` among the
+    parameters passed to ``fd_response``.
 
-    $$
-    \\mathrm{GMST}(f) = \\mathrm{GMST}(t_{\\rm trigger})
-    + \\Omega_\\oplus\\left[t_c - \\tau(f)\\right],
-    $$
+    With ``finite_arm_length``, the arms are not assumed to be short compared to
+    the gravitational wavelength (Baral et al. 2023, arXiv:2304.09889), which
+    matters for loud signals with power at high frequencies.
 
-    where $\\Omega_\\oplus$ is the sidereal rotation rate. The sky-frame
-    polarizations are mode-summed, so the dominant $m = 2$ mapping is used.
-
-    Optionally, the finite length of the arms is included through the
-    single-arm transfer function of Eq. (2.13) of Baral et al. (2023),
-    arXiv:2304.09889 (see also Rakhmanov 2008). Its phase is referenced to the
-    time the light reaches the end mirror, as in that reference, and it tends to
-    one in the long-wavelength limit.
-
-    With both effects switched off, the response is identical to
+    With both switched off, the response is identical to
     [`GroundBased2G`][jimgw.core.single_event.detector.GroundBased2G].
 
-    The response needs ``M_c``, ``eta``, ``s1_z`` and ``s2_z`` in the parameters
-    passed to ``fd_response`` when the Earth's rotation is switched on. Under
-    time marginalization the likelihood sets ``t_c`` to zero, so the rotation
-    across the ``t_c`` range (about 7e-6 rad for 0.1 s) is neglected.
-
     Attributes:
-        arm_length (float): Arm length in meters, used by the finite-size response.
+        arm_length (float): Arm length in meters, used by the finite-arm-length response.
         earth_rotation (bool): Whether the response follows the Earth's rotation.
-        finite_size (bool): Whether the finite-arm-length response is included.
+        finite_arm_length (bool): Whether the finite-arm-length response is included.
     """
 
     arm_length: float = 0.0
     earth_rotation: bool = True
-    finite_size: bool = False
+    finite_arm_length: bool = False
 
     def __init__(
         self,
@@ -950,7 +895,7 @@ class GroundBased3G(GroundBased2G):
         modes: str = "pc",
         arm_length: float = 0.0,
         earth_rotation: bool = True,
-        finite_size: bool = False,
+        finite_arm_length: bool = False,
     ):
         """Initialize a ground-based detector with an Earth-rotating response.
 
@@ -967,15 +912,15 @@ class GroundBased3G(GroundBased2G):
             arm_length (float, optional): Arm length in meters. Defaults to 0.
             earth_rotation (bool, optional): Follow the Earth's rotation across
                 frequencies. Defaults to True.
-            finite_size (bool, optional): Include the finite-arm-length response.
+            finite_arm_length (bool, optional): Include the finite-arm-length response.
                 Defaults to False.
 
         Raises:
-            ValueError: If ``finite_size`` is True and ``arm_length`` is not positive.
+            ValueError: If ``finite_arm_length`` is True and ``arm_length`` is not positive.
         """
-        if finite_size and not arm_length > 0:
+        if finite_arm_length and not arm_length > 0:
             raise ValueError(
-                f"finite_size=True needs a positive arm_length, got {arm_length}."
+                f"finite_arm_length=True needs a positive arm_length, got {arm_length}."
             )
         super().__init__(
             name,
@@ -990,7 +935,7 @@ class GroundBased3G(GroundBased2G):
         )
         self.arm_length = arm_length
         self.earth_rotation = earth_rotation
-        self.finite_size = finite_size
+        self.finite_arm_length = finite_arm_length
 
     @classmethod
     def from_detector(
@@ -998,19 +943,18 @@ class GroundBased3G(GroundBased2G):
         detector: GroundBased2G,
         arm_length: float = 0.0,
         earth_rotation: bool = True,
-        finite_size: bool = False,
-    ) -> "GroundBased3G":
+        finite_arm_length: bool = False,
+    ) -> Self:
         """Build a detector with the geometry of an existing ground-based detector.
 
         Only the geometry and polarization modes are copied, not the data or PSD.
 
         Args:
-            detector (GroundBased2G): Detector whose geometry is copied, e.g. one
-                of the [`get_ET`][jimgw.core.single_event.detector.get_ET] detectors.
+            detector (GroundBased2G): Detector whose geometry is copied.
             arm_length (float, optional): Arm length in meters. Defaults to 0.
             earth_rotation (bool, optional): Follow the Earth's rotation across
                 frequencies. Defaults to True.
-            finite_size (bool, optional): Include the finite-arm-length response.
+            finite_arm_length (bool, optional): Include the finite-arm-length response.
                 Defaults to False.
 
         Returns:
@@ -1028,7 +972,7 @@ class GroundBased3G(GroundBased2G):
             modes="".join(p.name for p in detector.polarization_mode),
             arm_length=arm_length,
             earth_rotation=earth_rotation,
-            finite_size=finite_size,
+            finite_arm_length=finite_arm_length,
         )
 
     def gmst_at_frequency(
@@ -1042,10 +986,11 @@ class GroundBased3G(GroundBased2G):
                 the trigger time), ``t_c``, ``M_c``, ``eta``, ``s1_z`` and ``s2_z``.
 
         Returns:
-            Float[Array, "n_sample"]: GMST in radians, equal to the wrapped GMST
-                at the trigger time plus the rotation since then. Non-positive frequencies, which have no emission time, are
-                assigned the merger time.
+            Float[Array, "n_sample"]: GMST in radians. Non-positive frequencies,
+                which have no emission time, are assigned the merger time.
         """
+        # The polarizations are mode-summed, so the dominant (2, 2) mapping is
+        # used for every mode.
         positive = frequency > 0
         # Evaluate at a safe frequency where masked, so neither the value nor
         # its gradient is poisoned by tau(0) = inf.
@@ -1060,11 +1005,15 @@ class GroundBased3G(GroundBased2G):
         # Wrap first: the rotation is added to an angle of order one rather
         # than to an unwrapped sidereal time, which keeps its precision.
         gmst = jnp.mod(params["gmst"], 2 * jnp.pi)
+        # Under time marginalization t_c is zero, which neglects the rotation
+        # across its range (about 7e-6 rad for 0.1 s).
         return gmst + EARTH_ROTATION_RATE * (params["t_c"] - tau)
 
     @staticmethod
-    def _finite_size_factor(x: Float, y: Float) -> Complex:
+    def _arm_transfer_function(x: Float, y: Float) -> Complex:
         """Single-arm transfer function, Eq. (2.13) of arXiv:2304.09889.
+
+        Its phase is referenced to the time the light reaches the end mirror.
 
         Args:
             x (Float): Arm length in units of the gravitational wavelength, $fL/c$.
@@ -1078,7 +1027,7 @@ class GroundBased3G(GroundBased2G):
             + jnp.exp(1j * jnp.pi * x * (1 - y)) * jnp.sinc(x * (1 + y))
         )
 
-    def _finite_size_antenna_pattern(
+    def _finite_arm_antenna_pattern(
         self,
         frequency: Float[Array, " n_sample"],
         ra: FloatScalar,
@@ -1086,13 +1035,13 @@ class GroundBased3G(GroundBased2G):
         psi: FloatScalar,
         gmst: Float,
     ) -> dict[str, Complex[Array, " n_sample"]]:
-        """Antenna patterns with each arm weighted by its finite-size transfer function."""
+        """Antenna patterns with each arm weighted by its transfer function."""
         propagation = -self._source_direction(ra, dec, gmst)
         x = frequency * self.arm_length / C_SI
         arms = self.arms
         arm_tensors = [0.5 * jnp.einsum("i,j->ij", arm, arm) for arm in arms]
         transfer = [
-            self._finite_size_factor(x, jnp.einsum("i...,i->...", propagation, arm))
+            self._arm_transfer_function(x, jnp.einsum("i...,i->...", propagation, arm))
             for arm in arms
         ]
 
@@ -1120,15 +1069,14 @@ class GroundBased3G(GroundBased2G):
             frequency (Float[Array, "n_sample"]): Array of frequency samples.
             h_sky (dict[str, Float[Array, "n_sample"]]): Dictionary mapping polarization names
                 to frequency-domain waveforms.
-            params (dict[str, Float]): Source parameters containing ``ra``, ``dec``,
-                ``psi``, ``trigger_time``, ``t_c`` and ``gmst`` (at the trigger time),
-                and, when the Earth's rotation is switched on, ``M_c``, ``eta``,
-                ``s1_z`` and ``s2_z``.
+            params (dict[str, Float]): Source parameters, as for ``GroundBased2G``,
+                plus ``M_c``, ``eta``, ``s1_z`` and ``s2_z`` when the Earth's
+                rotation is switched on.
 
         Returns:
             Complex[Array, "n_sample"]: Complex strain measured by the detector in frequency domain.
         """
-        if not (self.earth_rotation or self.finite_size):
+        if not (self.earth_rotation or self.finite_arm_length):
             return super().fd_response(frequency, h_sky, params)
 
         ra, dec, psi = params["ra"], params["dec"], params["psi"]
@@ -1137,8 +1085,8 @@ class GroundBased3G(GroundBased2G):
         else:
             gmst = params["gmst"]
 
-        if self.finite_size:
-            antenna_pattern = self._finite_size_antenna_pattern(
+        if self.finite_arm_length:
+            antenna_pattern = self._finite_arm_antenna_pattern(
                 frequency, ra, dec, psi, gmst
             )
         else:
@@ -1192,13 +1140,22 @@ def get_V1() -> GroundBased2G:
     )
 
 
-def get_ET() -> list[GroundBased2G]:
-    """Return a list of three [`GroundBased2G`][jimgw.core.single_event.detector.GroundBased2G] instances for Einstein Telescope (ET).
+def get_ET(
+    earth_rotation: bool = False, finite_arm_length: bool = False
+) -> list[GroundBased3G]:
+    """Return a list of three [`GroundBased3G`][jimgw.core.single_event.detector.GroundBased3G] instances for Einstein Telescope (ET).
 
     ET is modelled as a triangle of three interferometers at adjacent vertices,
     with arms rotated by 120° relative to each other. Vertex positions are
     propagated using the spherical forward-azimuth (haversine) formula with a
     latitude-dependent Earth radius derived from the WGS-84 ellipsoid.
+
+    Args:
+        earth_rotation (bool, optional): Follow the Earth's rotation. Turn on for
+            signals that stay in band for ten minutes or longer. Defaults to False.
+        finite_arm_length (bool, optional): Account for the arms' finite length
+            relative to the wavelength. Turn on for loud signals with power at
+            high frequencies. Defaults to False.
     """
     name = "ET"
     latitude = (43 + 37.0 / 60 + 53.0921 / 3600) * DEG_TO_RAD
@@ -1227,7 +1184,7 @@ def get_ET() -> list[GroundBased2G]:
     ifos = []
     for i in range(3):
         ifos.append(
-            GroundBased2G(
+            GroundBased3G(
                 f"{name}{i + 1}",
                 latitude=float(latitude),
                 longitude=float(longitude),
@@ -1236,6 +1193,9 @@ def get_ET() -> list[GroundBased2G]:
                 elevation=elevation,
                 xarm_tilt=xarm_tilt,
                 yarm_tilt=yarm_tilt,
+                arm_length=length,
+                earth_rotation=earth_rotation,
+                finite_arm_length=finite_arm_length,
             )
         )
         # Propagate to next vertex using the spherical forward-azimuth formula.
@@ -1257,12 +1217,21 @@ def get_ET() -> list[GroundBased2G]:
     return ifos
 
 
-def get_CE() -> GroundBased2G:
-    """Return a [`GroundBased2G`][jimgw.core.single_event.detector.GroundBased2G] instance for Cosmic Explorer (CE).
+def get_CE(
+    earth_rotation: bool = False, finite_arm_length: bool = False
+) -> GroundBased3G:
+    """Return a [`GroundBased3G`][jimgw.core.single_event.detector.GroundBased3G] instance for Cosmic Explorer (CE).
 
-    CE shares the LIGO Hanford site geometry.
+    CE shares the LIGO Hanford site geometry and has 40 km arms.
+
+    Args:
+        earth_rotation (bool, optional): Follow the Earth's rotation. Turn on for
+            signals that stay in band for ten minutes or longer. Defaults to False.
+        finite_arm_length (bool, optional): Account for the arms' finite length
+            relative to the wavelength. Turn on for loud signals with power at
+            high frequencies. Defaults to False.
     """
-    return GroundBased2G(
+    return GroundBased3G(
         "CE",
         latitude=(46 + 27.0 / 60 + 18.528 / 3600) * DEG_TO_RAD,
         longitude=-(119 + 24.0 / 60 + 27.5657 / 3600) * DEG_TO_RAD,
@@ -1272,16 +1241,21 @@ def get_CE() -> GroundBased2G:
         yarm_tilt=1.25e-5,
         elevation=142.554,
         modes="pc",
+        arm_length=4e4,
+        earth_rotation=earth_rotation,
+        finite_arm_length=finite_arm_length,
     )
 
 
-def get_detector_preset() -> dict[str, GroundBased2G | list[GroundBased2G]]:
+def get_detector_preset() -> dict[str, GroundBased2G | list[GroundBased3G]]:
     """Return a dictionary of pre-configured detector instances.
 
     Returns:
         dict: Mapping of detector name to detector object(s).
-            Keys are ``"H1"``, ``"L1"``, ``"V1"``, ``"CE"`` (single
-            [`GroundBased2G`][jimgw.core.single_event.detector.GroundBased2G]) and ``"ET"`` (list of three).
+            Keys are ``"H1"``, ``"L1"``, ``"V1"`` (single
+            [`GroundBased2G`][jimgw.core.single_event.detector.GroundBased2G]),
+            ``"CE"`` (single [`GroundBased3G`][jimgw.core.single_event.detector.GroundBased3G])
+            and ``"ET"`` (list of three).
     """
     return {
         "H1": get_H1(),

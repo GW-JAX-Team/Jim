@@ -5,7 +5,7 @@
     time_to_merger                          LALSimulation TaylorF2ReducedSpin chirp time (2PN)
     GroundBased3G (rotation)                bilby antenna response and geocentre delay at the
                                             exact GMST of each emission time
-    GroundBased3G (rotation + finite size)  bilby_xG frequency_dependent_antenna_response
+    GroundBased3G (rotation + finite arm)   bilby_xG frequency_dependent_antenna_response
 
 ``bilby_xG`` is installed with the ``cross-validation`` dependency group; it is
 not a runtime dependency of jimgw, and the comparison skips without it.
@@ -123,14 +123,14 @@ def test_rotating_response_matches_bilby_at_emission_times():
     assert np.max(np.abs(bilby_plus)) > 0.1
 
 
-@pytest.mark.parametrize("finite_size", [False, True])
-def test_response_matches_bilby_xg(finite_size):
+@pytest.mark.parametrize("finite_arm_length", [False, True])
+def test_response_matches_bilby_xg(finite_arm_length):
     """Full per-frequency response agrees with bilby_xG for a long BNS in one detector."""
     bilby_xg = pytest.importorskip("bilby_xG.interferometer")
     xg_utils = pytest.importorskip("bilby_xG.utils")
 
     det = GroundBased3G.from_detector(
-        get_ET()[0], arm_length=ARM_LENGTH, finite_size=finite_size
+        get_ET()[0], arm_length=ARM_LENGTH, finite_arm_length=finite_arm_length
     )
     jim_plus, jim_cross = _jim_response(det, _jim_params())
 
@@ -146,7 +146,7 @@ def test_response_matches_bilby_xg(finite_size):
         frequencies=FREQUENCIES,
         start_time=START_TIME,
         times_to_coalescence=tau,
-        finite_size=finite_size,
+        finite_size=finite_arm_length,
     )
 
     # bilby_xG takes the GMST rate from a one-day difference of the exact GMST

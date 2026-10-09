@@ -38,7 +38,7 @@ likelihood = TransientLikelihoodFD(
 | `detectors` | List of `Detector` objects with data and PSD already set |
 | `waveform` | A ripple waveform model instance |
 | `trigger_time` | GPS trigger time of the event |
-| `f_min` / `f_max` | Frequency range for the likelihood integral. Can be a single float (applied to all detectors) or a `dict[str, float]` keyed by detector name |
+| `f_min` / `f_max` | Frequency range for the likelihood integral |
 | `fixed_parameters` | Dictionary of parameter values to hold fixed during sampling |
 
 ### Analytic Marginalisation

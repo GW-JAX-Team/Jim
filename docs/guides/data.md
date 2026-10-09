@@ -22,7 +22,7 @@ detectors = get_detector_preset()  # {"H1": ..., "L1": ..., "V1": ..., "ET": ...
 H1 = detectors["H1"]
 ```
 
-Note that `get_ET()` returns a **list** of three `GroundBased2G` objects (one for each of ET's triangular arms), while all others return a single detector.
+Note that `get_ET()` returns a **list** of three detectors (one for each of ET's triangular arms), while all others return a single detector.
 
 Once you have a detector, you need to attach strain data and a PSD to it.
 
@@ -241,3 +241,23 @@ H1.inject_signal(
 ```
 
 Set `zero_noise=True` to get a noiseless injection.
+
+## Next-Generation Detectors
+
+`get_ET()` and `get_CE()` return `GroundBased3G` detectors, which respond like `GroundBased2G` unless you turn on one of two options:
+
+- `earth_rotation=True` follows the Earth's rotation while the signal is in band.
+  Turn it on for signals that stay in band for ten minutes or longer, such as binary neutron stars observed from about 10 Hz or lower, or for a few minutes if the signal is very loud.
+  It needs `M_c`, `eta`, `s1_z` and `s2_z` among the likelihood parameters.
+- `finite_arm_length=True` does not assume, as the usual antenna pattern does, that the arms are short compared to the gravitational wavelength.
+  The effect grows with frequency and arm length, so turn it on for loud signals (SNR of a few hundred or more) with power at high frequencies, more so for the 40 km arms of CE than for the 10 km arms of ET.
+  Unlike the rotation, it does not depend on the duration of the signal.
+
+```python
+from jimgw.core.single_event.detector import get_ET
+
+ET = get_ET(earth_rotation=True, finite_arm_length=True)
+```
+
+Both are off by default.
+Switching either on makes the likelihood more expensive.

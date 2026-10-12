@@ -6,7 +6,7 @@ name: Scheduled dev -> main PR
 
 on:
   schedule:
-    - cron: "0 3 * * 4"  # every Thursday, 03:00 UTC
+    - cron: "0 1 * * 4"  # every Thursday, 01:00 UTC
   workflow_dispatch:
 
 permissions:
@@ -34,10 +34,18 @@ jobs:
           fetch-depth: 0
           persist-credentials: false  # only local git reads + gh (GH_TOKEN) are used
 
-      - name: Open PR from jim-dev to main and request CodeRabbit review
+      - uses: actions/create-github-app-token@v3
+        id: app-token
+        if: steps.gate.outputs.run == 'true'
+        with:
+          client-id: ${{ secrets.AUTOMATION_APP_ID }}  # secret holds the App's Client ID (Iv23...)
+          private-key: ${{ secrets.AUTOMATION_APP_PRIVATE_KEY }}
+          permission-pull-requests: write  # scope the token: this workflow only opens/updates PRs
+
+      - name: Open or reuse the jim-dev -> main PR
         if: steps.gate.outputs.run == 'true'
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}  # App token: PRs it opens trigger CI without manual approval
         run: |
           pr_url=$(gh pr list --repo "$GITHUB_REPOSITORY" --base main --head jim-dev --state open --json url --jq '.[0].url // empty')
           if [ -z "$pr_url" ]; then
@@ -59,7 +67,3 @@ jobs:
               --title "Scheduled sync: jim-dev -> main ($(date -u +'%B %Y'))" \
               --body "Automated monthly pull request merging \`jim-dev\` into \`main\`.")
           fi
-
-          gh pr comment "$pr_url" \
-            --repo "$GITHUB_REPOSITORY" \
-            --body "@coderabbitai review"

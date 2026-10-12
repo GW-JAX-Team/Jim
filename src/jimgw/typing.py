@@ -1,4 +1,8 @@
-"""Convenience type aliases for jaxtyping scalar annotations."""
+"""Scalar JAX array annotations with explicit float, integer or complex dtypes.
+
+``FloatLike`` also accepts Python floats. Jaxtyping's ``Scalar`` and
+``ScalarLike`` accept other dtypes, so they cannot replace these aliases.
+"""
 
 from typing import TypeAlias
 

@@ -25,7 +25,6 @@ from jimgw.core.single_event.likelihood import TransientLikelihoodFD
 likelihood = TransientLikelihoodFD(
     detectors=[H1, L1],
     waveform=waveform,
-    trigger_time=gps_time,
     f_min=20.0,
     f_max=1024.0,
 )
@@ -37,7 +36,6 @@ likelihood = TransientLikelihoodFD(
 | --- | --- |
 | `detectors` | List of `Detector` objects with data and PSD already set |
 | `waveform` | A ripple waveform model instance |
-| `trigger_time` | GPS trigger time of the event |
 | `f_min` / `f_max` | Frequency range for the likelihood integral |
 | `fixed_parameters` | Dictionary of parameter values to hold fixed during sampling |
 
@@ -54,7 +52,6 @@ distance_prior = PowerLawPrior(xmin=100.0, xmax=5000.0, alpha=2.0, parameter_nam
 likelihood = TransientLikelihoodFD(
     detectors=[H1, L1],
     waveform=waveform,
-    trigger_time=gps_time,
     f_min=20.0,
     f_max=1024.0,
     time_marginalization={"tc_range": (-0.1, 0.1)},               # or time_marginalization=True for default range
@@ -81,7 +78,6 @@ To fix some parameters at known values (e.g. for testing or when marginalising e
 likelihood = TransientLikelihoodFD(
     detectors=[H1, L1],
     waveform=waveform,
-    trigger_time=gps_time,
     f_min=20.0,
     f_max=1024.0,
     fixed_parameters={
@@ -117,14 +113,11 @@ from jimgw.core.single_event.transforms import (
 )
 
 # Maps t_det -> t_c, conditional on (ra, dec)
-transform = GeocentricArrivalTimeToDetectorArrivalTimeTransform(
-    trigger_time=trigger_time, ifo=H1
-)
+transform = GeocentricArrivalTimeToDetectorArrivalTimeTransform(ifo=H1)
 
 likelihood = TransientLikelihoodFD(
     detectors=[H1, L1],
     waveform=waveform,
-    trigger_time=gps_time,
     f_min=20.0,
     f_max=1024.0,
     # transform.backward returns a dict; Jim extracts params["t_c"] automatically
@@ -137,7 +130,7 @@ Alternatively use a plain lambda:
 ```python
 from jimgw.core.single_event.time_utils import greenwich_mean_sidereal_time
 
-gmst = greenwich_mean_sidereal_time(trigger_time)
+gmst = greenwich_mean_sidereal_time(H1.data.trigger_time)
 t_det_value = 0.0  # the value you are fixing
 
 likelihood = TransientLikelihoodFD(
@@ -174,7 +167,6 @@ from jimgw.core.single_event.likelihood import HeterodynedTransientLikelihoodFD
 likelihood = HeterodynedTransientLikelihoodFD(
     detectors=[H1, L1],
     waveform=waveform,
-    trigger_time=gps_time,
     f_min=20.0,
     f_max=1024.0,
     reference_parameters=ref_params,  # dict with all waveform parameters
@@ -202,7 +194,6 @@ prior = CombinePrior([
 likelihood = HeterodynedTransientLikelihoodFD(
     detectors=[H1, L1],
     waveform=waveform,
-    trigger_time=gps_time,
     f_min=20.0,
     f_max=1024.0,
     prior=prior,
@@ -232,7 +223,6 @@ likelihood = MultibandedTransientLikelihoodFD(
     waveform=waveform,
     f_min=20.0,
     f_max=1024.0,
-    trigger_time=gps_time,
     prior=prior,
 )
 ```
@@ -245,7 +235,6 @@ likelihood = MultibandedTransientLikelihoodFD(
     waveform=waveform,
     f_min=20.0,
     f_max=1024.0,
-    trigger_time=gps_time,
     reference_chirp_mass=1.2,
 )
 ```

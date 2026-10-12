@@ -9,8 +9,10 @@ There is the new `jax_datetime` package, but it does not compute the year and mo
 See: https://github.com/google/jax-datetime/
 """
 
+import functools
+
 import jax.numpy as jnp
-from jax import config
+from jax import config, ensure_compile_time_eval
 from jaxtyping import Array, Bool, Int
 
 from jimgw.typing import FloatLike, FloatScalar, IntScalar
@@ -238,6 +240,25 @@ def greenwich_mean_sidereal_time(
         Float: Greenwich Mean Sidereal Time in radians.
     """
     return greenwich_sidereal_time(gps_time, 0.0)
+
+
+@functools.lru_cache(maxsize=128)
+def cached_greenwich_mean_sidereal_time(gps_time: float) -> FloatScalar:
+    """Compute the GMST from the GPS time, once per GPS time.
+
+    For a GPS time that is a known constant, such as the trigger time of an event.
+    It is evaluated while tracing, so inside ``jax.jit`` the result is a constant of
+    the compiled program and costs nothing per call.
+
+    Args:
+        gps_time (float): GPS time in seconds. It must be a concrete number, not a
+            traced value.
+
+    Returns:
+        Float: Greenwich Mean Sidereal Time in radians.
+    """
+    with ensure_compile_time_eval():
+        return greenwich_mean_sidereal_time(gps_time)
 
 
 def greenwich_sidereal_time(

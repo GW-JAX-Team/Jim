@@ -158,8 +158,6 @@ def run(
     )
     from jimgw.cli._waveform import build_waveform
 
-    trigger_time: float = cfg.data.trigger_time
-
     # Stage 2: waveform
     waveform = build_waveform(cfg.waveform)
 
@@ -188,7 +186,6 @@ def run(
     ns_aw = cfg.sampler.type == "blackjax-ns-aw"
     sample_transforms = infer_sample_transforms(
         prior_params,
-        trigger_time,
         ifos,
         cfg.sampling,
         unit_cube=ns_aw,
@@ -196,7 +193,6 @@ def run(
     )
     likelihood_transforms = infer_likelihood_transforms(
         prior_params,
-        trigger_time,
         ifos,
         cfg.sampling,
         cfg.waveform.f_ref,
@@ -208,7 +204,6 @@ def run(
         cfg.likelihood,
         ifos,
         waveform,
-        trigger_time,
         cfg.waveform.f_ref,
         prior=prior,
         likelihood_transforms=likelihood_transforms,

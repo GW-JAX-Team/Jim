@@ -103,10 +103,14 @@ PSD and ASD formats are described in the note on PSD and ASD files below.
 | --- | --- | --- | --- |
 | `detectors` | list[str] | — | Detector identifiers |
 | `trigger_time` | float | — | GPS trigger time |
-| `strain_files` | dict[str, path] | — | Map from detector name to strain file (any supported format) |
+| `strain_files` | dict[str, path] | — | Map from individual interferometer name to strain file (any supported format) |
 | `psd_files` | dict[str, path] | — | Map from detector name to PSD file. Exactly one of `psd_files` and `asd_files` is required. |
 | `asd_files` | dict[str, path] | — | Map from detector name to ASD file. Exactly one of `psd_files` and `asd_files` is required. |
 | `strain_channels` | dict[str, str] | `{}` | Channel name per detector for GWF/HDF5 files (e.g. `"H1:GDS-CALIB_STRAIN"`). If omitted, common LIGO/Virgo preset channel names are tried for `.gwf` files. |
+
+For `detectors = ["ET"]`, provide separate `strain_files` entries for `ET1`,
+`ET2` and `ET3`. Use those individual names in `strain_channels` too. The three
+interferometers share the `ET` entry in `psd_files` or `asd_files`.
 
 Example with `.npz` files (no channels required):
 

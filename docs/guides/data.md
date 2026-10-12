@@ -35,8 +35,8 @@ Use `Data.from_gwosc()` to download public strain data from the [Gravitational W
 ```python
 from jimgw.core.single_event.data import Data
 
-gps_start = 1126259446
-gps_end = 1126259478
+gps_start = 1126259432.4
+gps_end = 1126259464.4
 
 data = Data.from_gwosc("H1", gps_start, gps_end)
 H1.set_data(data)
@@ -86,9 +86,21 @@ data = Data.from_file("path/to/data.csv")
 H1.set_data(data)
 ```
 
+### Construct from Time-Domain Arrays
+
+Use `Data.from_td()` when you already have time-domain strain:
+
+```python
+gps_time = 1126259462.4
+data = Data.from_td(
+    td_strain, delta_t=1.0 / 4096, start_time=gps_start, trigger_time=gps_time
+)
+H1.set_data(data)
+```
+
 ### Construct from Frequency-Domain Arrays
 
-Use `Data.from_fd()` when you already have frequency-domain strain (e.g. from your own pipeline).
+Use `Data.from_fd()` when you already have frequency-domain strain.
 The frequency array must form a valid rfft grid:
 
 ```python
@@ -99,15 +111,10 @@ sampling_frequency = 2048.0
 n = int(duration * sampling_frequency)
 frequencies = jnp.fft.rfftfreq(n, 1.0 / sampling_frequency)
 
-fd_strain = jnp.zeros(len(frequencies), dtype=jnp.complex128)  # replace with your data
-data = Data.from_fd(fd_strain, frequencies, start_time=0.0)
+fd = jnp.zeros(len(frequencies), dtype=jnp.complex128)  # replace with your data
+data = Data.from_fd(fd, frequencies, start_time=0.0)
 H1.set_data(data)
 ```
-
-!!! warning
-    The frequency array **must** come from `jnp.fft.rfftfreq`.
-    Internally, `from_fd` reconstructs the full rfft grid and asserts it matches yours exactly.
-    `jnp.linspace` produces floating-point values via a different arithmetic path, so the equality check will fail even for a nominally identical grid.
 
 ## Time-domain windowing
 
@@ -206,10 +213,10 @@ frequencies = jnp.array(...)     # Frequencies in Hz
 H1.set_psd(PowerSpectrum(psd_values, frequencies))
 ```
 
-## Injecting a Simulated Signal
+## Injecting Simulated Signals
 
-For testing and validation, you can inject a waveform directly into a detector.
-Set the PSD and frequency bounds first, then call `inject_signal`.
+For testing and validation, you can inject waveforms directly into a detector.
+Set the PSD first, create the data segment, then call `inject_signal` once per signal.
 
 ```python
 import jax
@@ -228,16 +235,22 @@ injection_params = {
     "psi": 0.3, "ra": 1.5, "dec": 0.5,
 }
 
-H1.inject_signal(
+H1.simulate_and_set_noise(
     duration=4.0,
     sampling_frequency=2048.0,
     trigger_time=gps_time,
-    waveform_model=waveform,
-    parameters=injection_params,
     f_min=20.0,
     f_max=1024.0,
     rng_key=jax.random.key(0),
 )
+optimal_snr, match_filtered_snr = H1.inject_signal(waveform, injection_params)
 ```
 
-Set `zero_noise=True` to get a noiseless injection.
+Use `set_zero_noise` instead of `simulate_and_set_noise` for a noiseless injection.
+`inject_signal` returns the optimal SNR of the signal and its matched-filter SNR against all the data.
+Each call adds one signal to whatever the detector holds, so a second call adds an overlapping signal to the same data:
+
+```python
+second_params = {**injection_params, "M_c": 22.0, "eta": 0.2, "d_L": 300.0, "t_c": 0.2}
+H1.inject_signal(waveform, second_params)
+```

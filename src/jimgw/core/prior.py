@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from dataclasses import field
-from typing import Optional, cast
+from typing import Optional
 
 import equinox as eqx
 import jax
@@ -169,7 +169,12 @@ class LogisticDistribution(Prior):
 
     def __init__(self, parameter_names: list[str]):
         super().__init__(parameter_names)
-        assert self.n_dims == 1, "LogisticDistribution needs to be 1D distributions"
+        # --------------------------------------------------------------
+        # Validation
+        # --------------------------------------------------------------
+
+        if self.n_dims != 1:
+            raise ValueError("LogisticDistribution needs to be 1D distributions")
 
     def sample(
         self, rng_key: Key, n_samples: int
@@ -189,7 +194,9 @@ class LogisticDistribution(Prior):
 
     def log_prob(self, z: dict[str, Float]) -> FloatScalar:
         variable = z[self.parameter_names[0]]
-        return -variable - 2 * jnp.log(1 + jnp.exp(-variable))
+        magnitude = jnp.abs(variable)
+        # Symmetry keeps the exponential bounded without overflowing in either tail.
+        return -magnitude - 2 * jnp.log1p(jnp.exp(-magnitude))
 
 
 @jaxtyped(typechecker=typechecker)
@@ -205,9 +212,12 @@ class StandardNormalDistribution(Prior):
 
     def __init__(self, parameter_names: list[str]):
         super().__init__(parameter_names)
-        assert self.n_dims == 1, (
-            "StandardNormalDistribution needs to be 1D distributions"
-        )
+        # --------------------------------------------------------------
+        # Validation
+        # --------------------------------------------------------------
+
+        if self.n_dims != 1:
+            raise ValueError("StandardNormalDistribution needs to be 1D distributions")
 
     def sample(
         self, rng_key: Key, n_samples: int
@@ -245,7 +255,12 @@ class UniformDistribution(Prior):
 
     def __init__(self, parameter_names: list[str]):
         super().__init__(parameter_names)
-        assert self.n_dims == 1, "UniformDistribution needs to be 1D distributions"
+        # --------------------------------------------------------------
+        # Validation
+        # --------------------------------------------------------------
+
+        if self.n_dims != 1:
+            raise ValueError("UniformDistribution needs to be 1D distributions")
 
     def sample(
         self, rng_key: Key, n_samples: int
@@ -299,9 +314,12 @@ class SequentialTransformPrior(CompositePrior):
             transforms: Ordered list of bijective transforms to apply to
                 samples from the base prior.
         """
-        assert len(base_prior) == 1, (
-            "SequentialTransformPrior only takes one base prior"
-        )
+        # --------------------------------------------------------------
+        # Validation
+        # --------------------------------------------------------------
+
+        if len(base_prior) != 1:
+            raise ValueError("SequentialTransformPrior only takes one base prior")
         super().__init__(base_prior)
         self.transforms = tuple(transforms)
         for transform in self.transforms:
@@ -373,6 +391,7 @@ class BoundedMixin:
     implementation of `log_prob` in the base class.
     """
 
+    parameter_names: tuple[str, ...]
     xmin: float = -jnp.inf
     xmax: float = jnp.inf
 
@@ -381,9 +400,9 @@ class BoundedMixin:
         return False
 
     def log_prob(self, z: dict[str, Float]) -> FloatScalar:
-        prior = cast(Prior, self)
-        x = z[prior.parameter_names[0]]
-        base_log_prob = cast(Prior, super()).log_prob(z)
+        x = z[self.parameter_names[0]]
+        # The next class in the cooperative MRO supplies Prior.log_prob.
+        base_log_prob = super().log_prob(z)  # type: ignore[attr-defined]  # ty: ignore[unresolved-attribute]
         return jnp.where(
             jnp.logical_and(x >= self.xmin, x <= self.xmax),
             base_log_prob,
@@ -477,8 +496,18 @@ class UniformPrior(SequentialTransformPrior):
         xmax: float,
         parameter_names: list[str],
     ):
-        assert len(parameter_names) == 1, "UniformPrior needs to be 1D distributions"
-        assert xmin < xmax, "xmin must be less than xmax"
+        # --------------------------------------------------------------
+        # Validation
+        # --------------------------------------------------------------
+
+        if len(parameter_names) != 1:
+            raise ValueError("UniformPrior needs to be 1D distributions")
+        if not bool(jnp.isfinite(xmin) & jnp.isfinite(xmax)):
+            raise ValueError("UniformPrior bounds must be finite.")
+        if not xmin < xmax:
+            raise ValueError("xmin must be less than xmax")
+        if not bool(jnp.isfinite(xmax - xmin)):
+            raise ValueError("UniformPrior interval width must be finite.")
         self.xmax = xmax
         self.xmin = xmin
         super().__init__(
@@ -526,8 +555,16 @@ class GaussianPrior(SequentialTransformPrior):
             sigma: Standard deviation of the distribution.
             parameter_names: List with a single parameter name.
         """
-        assert len(parameter_names) == 1, "GaussianPrior needs to be 1D distributions"
-        assert sigma > 0, "sigma must be positive"
+        # --------------------------------------------------------------
+        # Validation
+        # --------------------------------------------------------------
+
+        if len(parameter_names) != 1:
+            raise ValueError("GaussianPrior needs to be 1D distributions")
+        if not bool(jnp.isfinite(mu) & jnp.isfinite(sigma)):
+            raise ValueError("GaussianPrior mu and sigma must be finite.")
+        if not sigma > 0:
+            raise ValueError("sigma must be positive")
         self.mu = mu
         self.sigma = sigma
         super().__init__(
@@ -563,7 +600,12 @@ class SinePrior(BoundedMixin, SequentialTransformPrior):
         return f"SinePrior(parameter_names={self.parameter_names})"
 
     def __init__(self, parameter_names: list[str]):
-        assert len(parameter_names) == 1, "SinePrior needs to be 1D distributions"
+        # --------------------------------------------------------------
+        # Validation
+        # --------------------------------------------------------------
+
+        if len(parameter_names) != 1:
+            raise ValueError("SinePrior needs to be 1D distributions")
         super().__init__(
             [UniformPrior(-1.0, 1.0, [f"cos({parameter_names[0]})"])],
             [
@@ -594,7 +636,12 @@ class CosinePrior(BoundedMixin, SequentialTransformPrior):
         return f"CosinePrior(parameter_names={self.parameter_names})"
 
     def __init__(self, parameter_names: list[str]):
-        assert len(parameter_names) == 1, "CosinePrior needs to be 1D distributions"
+        # --------------------------------------------------------------
+        # Validation
+        # --------------------------------------------------------------
+
+        if len(parameter_names) != 1:
+            raise ValueError("CosinePrior needs to be 1D distributions")
         super().__init__(
             [SinePrior([f"{parameter_names[0]}+pi/2"])],
             [
@@ -625,9 +672,16 @@ class UniformSpherePrior(CombinePrior):
                 Expands to ``<name>_mag``, ``<name>_theta``, ``<name>_phi``.
             max_mag: Maximum magnitude of the vector.
         """
-        assert len(parameter_names) == 1, (
-            "UniformSpherePrior only takes the name of the vector"
-        )
+        # --------------------------------------------------------------
+        # Validation
+        # --------------------------------------------------------------
+
+        if len(parameter_names) != 1:
+            raise ValueError("UniformSpherePrior only takes the name of the vector")
+        if not bool(jnp.isfinite(max_mag)):
+            raise ValueError("UniformSpherePrior max_mag must be finite.")
+        if not max_mag > 0:
+            raise ValueError("max_mag must be positive")
         parameter_names = [
             f"{parameter_names[0]}_{suffix}" for suffix in ("mag", "theta", "phi")
         ]
@@ -671,8 +725,16 @@ class RayleighPrior(BoundedMixin, SequentialTransformPrior):
             sigma: Scale parameter of the Rayleigh distribution.
             parameter_names: List with a single parameter name.
         """
-        assert len(parameter_names) == 1, "RayleighPrior needs to be 1D distributions"
-        assert sigma > 0, "sigma must be positive"
+        # --------------------------------------------------------------
+        # Validation
+        # --------------------------------------------------------------
+
+        if len(parameter_names) != 1:
+            raise ValueError("RayleighPrior needs to be 1D distributions")
+        if not bool(jnp.isfinite(sigma)):
+            raise ValueError("RayleighPrior sigma must be finite.")
+        if not sigma > 0:
+            raise ValueError("sigma must be positive")
         self.sigma = sigma
         super().__init__(
             [UniformPrior(0.0, 1.0, [f"{parameter_names[0]}_base"])],
@@ -716,12 +778,21 @@ class PowerLawPrior(SequentialTransformPrior):
             alpha: Power-law exponent.
             parameter_names: List with a single parameter name.
         """
-        assert len(parameter_names) == 1, "Power law needs to be 1D distributions"
+        # --------------------------------------------------------------
+        # Validation
+        # --------------------------------------------------------------
+
+        if len(parameter_names) != 1:
+            raise ValueError("Power law needs to be 1D distributions")
+        if not bool(jnp.isfinite(xmin) & jnp.isfinite(xmax) & jnp.isfinite(alpha)):
+            raise ValueError("PowerLawPrior bounds and alpha must be finite.")
+        if not xmin < xmax:
+            raise ValueError("xmin must be less than xmax")
+        if not xmin > 0.0:
+            raise ValueError("x must be positive")
         self.xmax = xmax
         self.xmin = xmin
         self.alpha = alpha
-        assert self.xmin < self.xmax, "xmin must be less than xmax"
-        assert self.xmin > 0.0, "x must be positive"
         super().__init__(
             [UniformDistribution([f"{parameter_names[0]}_base"])],
             [
@@ -738,7 +809,11 @@ class PowerLawPrior(SequentialTransformPrior):
         )
 
 
+# ----------------------------------------------------------------------
 # Module-level prior utilities
+# ----------------------------------------------------------------------
+
+
 def find_specific_prior(prior: Prior, parameter_name: str) -> Optional[Prior]:
     """Return the component prior that governs ``parameter_name``.
 

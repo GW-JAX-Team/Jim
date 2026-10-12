@@ -10,7 +10,7 @@ from collections.abc import Callable, Mapping
 from typing import TypeAlias
 
 import jax.numpy as jnp
-from jaxtyping import Array, Float
+from jaxtyping import Array, Float, Inexact
 
 from jimgw.typing import ComplexScalar, FloatLike, FloatScalar
 
@@ -66,11 +66,11 @@ def apply_fixed_parameters(
 
 
 def complex_inner_product(
-    h1: Float[Array, " n_freq"],
-    h2: Float[Array, " n_freq"],
+    h1: Inexact[Array, " n_freq"],
+    h2: Inexact[Array, " n_freq"],
     psd: Float[Array, " n_freq"],
     df: FloatLike,
-) -> ComplexScalar:
+) -> FloatScalar | ComplexScalar:
     """Compute the complex noise-weighted inner product of two frequency-domain waveforms.
 
     The first waveform ``h1`` is complex-conjugated. The result is:
@@ -80,22 +80,23 @@ def complex_inner_product(
     $$
 
     Args:
-        h1 (Float[Array, " n_freq"]): First waveform (complex array).
-        h2 (Float[Array, " n_freq"]): Second waveform (complex array).
+        h1 (Inexact[Array, " n_freq"]): First waveform (real or complex array).
+        h2 (Inexact[Array, " n_freq"]): Second waveform (real or complex array).
         psd (Float[Array, " n_freq"]): One-sided power spectral density at each
             frequency bin.
         df (Float): Frequency bin spacing in Hz.
 
     Returns:
-        Complex: Complex noise-weighted inner product. When ``h2`` is the detector
-            data, this is the complex match-filtered SNR.
+        FloatScalar | ComplexScalar: Noise-weighted inner product, real when both
+            inputs are real. When ``h2`` is the detector data, this is the complex
+            match-filtered SNR.
     """
     return 4.0 * jnp.sum(jnp.conj(h1) * h2 / psd) * df
 
 
 def inner_product(
-    h1: Float[Array, " n_freq"],
-    h2: Float[Array, " n_freq"],
+    h1: Inexact[Array, " n_freq"],
+    h2: Inexact[Array, " n_freq"],
     psd: Float[Array, " n_freq"],
     df: FloatLike,
 ) -> FloatScalar:
@@ -110,8 +111,8 @@ def inner_product(
     $$
 
     Args:
-        h1 (Float[Array, " n_freq"]): First waveform (complex array).
-        h2 (Float[Array, " n_freq"]): Second waveform (complex array).
+        h1 (Inexact[Array, " n_freq"]): First waveform (real or complex array).
+        h2 (Inexact[Array, " n_freq"]): Second waveform (real or complex array).
         psd (Float[Array, " n_freq"]): One-sided power spectral density at each
             frequency bin.
         df (Float): Frequency bin spacing in Hz.
@@ -120,4 +121,5 @@ def inner_product(
         Float: Real noise-weighted inner product. When both waveforms are equal,
             this equals the optimal SNR squared.
     """
-    return complex_inner_product(h1, h2, psd, df).real
+    # Discard the imaginary part before the reduction; only a real sum is needed.
+    return 4.0 * jnp.sum((jnp.conj(h1) * h2 / psd).real) * df

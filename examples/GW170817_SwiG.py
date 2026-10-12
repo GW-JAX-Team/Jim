@@ -4,32 +4,33 @@ import time
 from pathlib import Path
 
 import corner
-import numpy as np
 import jax
 import jax.numpy as jnp
+import numpy as np
 
 jax.config.update("jax_enable_x64", True)
 
 from jimgw.core.jim import Jim
 from jimgw.core.prior import (
     CombinePrior,
-    UniformPrior,
     CosinePrior,
-    SinePrior,
     PowerLawPrior,
+    SinePrior,
+    UniformPrior,
 )
+from jimgw.core.single_event.data import Data
 from jimgw.core.single_event.detector import get_H1, get_L1, get_V1
 from jimgw.core.single_event.likelihood import TransientLikelihoodFD
-from jimgw.core.single_event.data import Data
-from jimgw.core.single_event.waveform import RippleIMRPhenomD_NRTidalv2
 from jimgw.core.single_event.transforms import (
-    SkyFrameToDetectorFrameSkyPositionTransform,
     MassRatioToSymmetricMassRatioTransform,
+    SkyFrameToDetectorFrameSkyPositionTransform,
 )
+from jimgw.core.single_event.waveform import RippleIMRPhenomD_NRTidalv2
 from jimgw.samplers.config import BlackJAXSwiGConfig
 
-
-# --- Fetch data ---
+# ----------------------------------------------------------------------
+# Fetch data
+# ----------------------------------------------------------------------
 
 gps = 1187008882.43
 duration = 128.0
@@ -51,12 +52,16 @@ for ifo in ifos:
     psd_data = Data.from_gwosc(ifo.name, psd_start, psd_end)
     ifo.set_psd(psd_data.to_psd(nperseg=int(data.duration * data.sampling_frequency)))
 
-# --- Waveform model ---
+# ----------------------------------------------------------------------
+# Waveform model
+# ----------------------------------------------------------------------
 
 # Ripple's built-in aligned-spin tidal model.
 waveform = RippleIMRPhenomD_NRTidalv2(f_ref=20.0)
 
-# --- Prior ---
+# ----------------------------------------------------------------------
+# Prior
+# ----------------------------------------------------------------------
 
 # t_c and phase_c are analytically marginalized below, so neither is a
 # sampled (or sampling-space) parameter and both are omitted here.
@@ -76,29 +81,34 @@ prior = CombinePrior(
     ]
 )
 
-# --- Transforms ---
+# ----------------------------------------------------------------------
+# Transforms
+# ----------------------------------------------------------------------
 
 sample_transforms = [
-    SkyFrameToDetectorFrameSkyPositionTransform(trigger_time=gps, ifos=ifos),
+    SkyFrameToDetectorFrameSkyPositionTransform(ifos=ifos),
 ]
 
 likelihood_transforms = [
     MassRatioToSymmetricMassRatioTransform,
 ]
 
-# --- Likelihood ---
+# ----------------------------------------------------------------------
+# Likelihood
+# ----------------------------------------------------------------------
 
 likelihood = TransientLikelihoodFD(
     ifos,
     waveform=waveform,
-    trigger_time=gps,
     f_min=fmin,
     f_max=fmax,
     phase_marginalization=True,
     time_marginalization={"tc_range": (-0.03, 0.03)},
 )
 
-# --- Sample ---
+# ----------------------------------------------------------------------
+# Sample
+# ----------------------------------------------------------------------
 
 # Blocks are given in sampling-space names: intrinsic/waveform-affecting
 # parameters ("M_c", "q", "lambda_1", "lambda_2", "iota", "d_L") refresh the
@@ -135,7 +145,9 @@ jim.sample()
 end_time = time.time()
 print(f"Sampling took {(end_time - start_time) / 60:.2f} mins")
 
-# --- Results ---
+# ----------------------------------------------------------------------
+# Results
+# ----------------------------------------------------------------------
 
 diagnostics = jim.get_diagnostics()
 print(f"log Z = {diagnostics['log_Z']:.2f} ± {diagnostics['log_Z_error']:.2f}")

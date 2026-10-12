@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 import jax
+from jax.experimental.compilation_cache import compilation_cache
 from jaxtyping import Key
 
 from jimgw.samplers.base import Sampler
@@ -192,5 +193,8 @@ def remove_checkpoint_and_jax_cache(
     if checkpoint_path is not None:
         checkpoint_path.unlink(missing_ok=True)
     if config.checkpoint_dir is not None:
-        shutil.rmtree(config.checkpoint_dir / "jax_cache", ignore_errors=True)
-        jax.config.update("jax_compilation_cache_dir", None)
+        cache_dir = config.checkpoint_dir / "jax_cache"
+        if jax.config.jax_compilation_cache_dir == str(cache_dir):
+            jax.config.update("jax_compilation_cache_dir", None)
+            compilation_cache.reset_cache()
+        shutil.rmtree(cache_dir, ignore_errors=True)

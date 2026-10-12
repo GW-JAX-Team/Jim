@@ -11,7 +11,7 @@ kernel within blackjax-ns", arXiv:2509.04336 (Sep 2025).
 """
 
 from functools import partial
-from typing import NamedTuple, cast
+from typing import NamedTuple
 
 import jax
 import jax.flatten_util
@@ -230,29 +230,20 @@ def _update_bilby_walks(
     default_n_accept_total = jnp.array(0, dtype=jnp.int32)
     default_current_walks = jnp.array(100, dtype=jnp.int32)
 
-    walks_float = cast(
-        FloatScalar,
-        jnp.where(
-            is_uninitialized,
-            default_walks_float,
-            prev_params.walks_float.astype(jnp.float32),
-        ),
+    walks_float = jnp.where(
+        is_uninitialized,
+        default_walks_float,
+        prev_params.walks_float.astype(jnp.float32),
     )
-    n_accept_total = cast(
-        IntScalar,
-        jnp.where(
-            is_uninitialized,
-            default_n_accept_total,
-            prev_params.n_accept_total.astype(jnp.int32),
-        ),
+    n_accept_total = jnp.where(
+        is_uninitialized,
+        default_n_accept_total,
+        prev_params.n_accept_total.astype(jnp.int32),
     )
-    current_walks = cast(
-        IntScalar,
-        jnp.where(
-            is_uninitialized,
-            default_current_walks,
-            prev_params.num_walks.astype(jnp.int32),
-        ),
+    current_walks = jnp.where(
+        is_uninitialized,
+        default_current_walks,
+        prev_params.num_walks.astype(jnp.int32),
     )
 
     leaves = jax.tree_util.tree_leaves(ns_state.particles)
@@ -265,9 +256,7 @@ def _update_bilby_walks(
         1.0, current_walks
     )
     new_walks_float = (walks_float * delay + n_target / accept_prob) / (delay + 1)
-    new_walks_float = cast(
-        FloatScalar, jnp.where(n_accept_total == 0, walks_float, new_walks_float)
-    )
+    new_walks_float = jnp.where(n_accept_total == 0, walks_float, new_walks_float)
     num_walks_int = jnp.minimum(jnp.ceil(new_walks_float).astype(jnp.int32), max_mcmc)
 
     example_particle = jax.tree_util.tree_map(
@@ -329,10 +318,7 @@ def bilby_adaptive_de_sampler(
         particles = state.particles
         loglikelihoods = particles.loglikelihood
         weights = (loglikelihoods > loglikelihood_0).astype(jnp.float32)
-        weights = cast(
-            Float[Array, " n_live"],
-            jnp.where(weights.sum() > 0.0, weights, jnp.ones_like(weights)),
-        )
+        weights = jnp.where(weights.sum() > 0.0, weights, jnp.ones_like(weights))
         start_idx = jax.random.choice(
             choice_key,
             weights.shape[0],

@@ -79,7 +79,7 @@ custom_fences = [{name = "mermaid", class = "mermaid", format = "pymdownx.superf
 
 [project.markdown_extensions.toc]
 permalink = "¤"
-toc_depth = 4
+toc_depth = 3
 
 [project.plugins.mkdocstrings.handlers.python]
 paths = ["src"]
@@ -97,4 +97,4 @@ show_if_no_docstring = false
 show_signature_annotations = true
 show_source = false
 members_order = ["__all__", "alphabetical"]
-heading_level = 3
+heading_level = 2

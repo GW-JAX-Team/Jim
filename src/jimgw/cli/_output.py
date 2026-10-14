@@ -143,6 +143,13 @@ def _save_corner(
 ) -> None:
     labels = list(samples.keys())
     if param_names:
+        missing = [p for p in param_names if p not in samples]
+        if missing:
+            logger.warning(
+                "corner_parameters %s are not among the sampled parameters (%s).",
+                missing,
+                ", ".join(samples),
+            )
         filtered = [p for p in param_names if p in samples]
         if filtered:
             labels = filtered

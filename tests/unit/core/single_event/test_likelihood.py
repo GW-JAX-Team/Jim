@@ -39,7 +39,7 @@ from jimgw.core.single_event.transforms import (
     GeocentricArrivalTimeToDetectorArrivalTimeTransform,
     MassRatioToSymmetricMassRatioTransform,
 )
-from jimgw.core.single_event.waveform import RippleIMRPhenomD
+from jimgw.core.single_event.waveform import RippleIMRPhenomD, RippleSineGaussian
 from jimgw.core.utils import log_i0
 from jimgw.samplers.config import BlackJAXSwiGConfig
 from tests.utils import assert_all_finite, common_keys_allclose
@@ -405,6 +405,23 @@ class TestTransientLikelihoodFD:
             TransientLikelihoodFD(
                 detectors=ifos + [extra], waveform=waveform, f_min=fmin, f_max=fmax
             )
+
+    @pytest.mark.parametrize(
+        "likelihood_class",
+        [
+            TransientLikelihoodFD,
+            HeterodynedTransientLikelihoodFD,
+            MultibandedTransientLikelihoodFD,
+        ],
+    )
+    def test_time_domain_waveform_raises(
+        self, detectors_and_waveform, likelihood_class
+    ):
+        # On the frequencies, taken as times, such a model is zero and so is the likelihood.
+        ifos, _waveform, fmin, fmax, _gps = detectors_and_waveform
+        with pytest.raises(ValueError, match="frequency-domain waveform model"):
+            likelihood_class(ifos, RippleSineGaussian(), f_min=fmin, f_max=fmax)
+        assert not any(ifo.is_frozen for ifo in ifos)
 
     def test_evaluation(self, detectors_and_waveform):
         ifos, waveform, fmin, fmax, _gps = detectors_and_waveform

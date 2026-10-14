@@ -78,14 +78,21 @@ class SingleEventLikelihood(LikelihoodBase):
                 likelihood evaluation.
 
         Raises:
-            ValueError: If any detector has uninitialized data or PSD, if the data of
-                the detectors do not carry one trigger time inside them, or if the
-                frequency range of the likelihood is invalid.
+            ValueError: If the waveform is a time-domain model, if any detector has
+                uninitialized data or PSD, if the data of the detectors do not carry
+                one trigger time inside them, or if the frequency range of the
+                likelihood is invalid.
         """
         # --------------------------------------------------------------
         # Validation
         # --------------------------------------------------------------
 
+        # Check that the waveform is frequency-domain
+        if getattr(waveform, "waveform_metadata", {}).get("domain") == "TD":
+            raise ValueError(
+                "The likelihood requires a frequency-domain waveform model, "
+                f"got the time-domain {waveform!r}."
+            )
         # Check that at least one detector is provided
         if len(detectors) == 0:
             raise ValueError("A likelihood needs at least one detector.")

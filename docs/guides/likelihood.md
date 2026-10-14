@@ -13,7 +13,7 @@ from jimgw.core.single_event.waveform import RippleIMRPhenomD
 waveform = RippleIMRPhenomD(f_ref=20.0)
 ```
 
-See the [ripple documentation](https://gw-jax-team.github.io/ripple/) for the full list of available waveforms (aligned-spin, precessing, tidal, burst, etc.).
+See the [ripple documentation](https://gw-jax-team.github.io/ripple/) for the full list of available waveforms (aligned-spin, precessing, tidal, etc.).
 
 ## TransientLikelihoodFD
 

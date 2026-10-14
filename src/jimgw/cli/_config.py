@@ -236,7 +236,6 @@ Approximant = Literal[
     "IMRPhenomXP",
     "IMRPhenomXP_NRTidalv3",
     "IMRPhenomXPHM",
-    "SineGaussian",
 ]
 
 

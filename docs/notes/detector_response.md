@@ -1,5 +1,21 @@
 # Detector Response Conventions
 
+## Sidereal angle
+
+The sky position is rotated into the Earth-fixed frame with the Greenwich mean sidereal time (GMST) at the trigger time of the data.
+This one angle sets both the antenna pattern and the delay between the geocentre and the detector.
+The coalescence time offset `t_c` only shifts the arrival time, so the angle is not advanced by `t_c`: for a signal with a non-zero `t_c` it is off by $\omega_\oplus t_c$, where $\omega_\oplus = 7.29 \times 10^{-5}$ rad/s is the rotation rate of the Earth.
+Bilby evaluates the angle at the arrival time at the geocentre, the trigger time plus `t_c`.
+For $|t_c| \lesssim 0.1$ s the difference is below $10^{-5}$ rad.
+
+`GroundBased3G` detectors with `earth_rotation=True` follow the rotation across the signal.
+Each frequency then uses the angle at the time it was emitted,
+
+$$\mathrm{GMST}(f) = \mathrm{GMST}_{\text{trigger}} + \omega_\oplus\,\bigl(t_c - \tau(f)\bigr),$$
+
+with $\tau(f)$ the time to merger of that frequency (`GroundBased3G.time_to_merger`).
+Here `t_c` is included.
+
 ## Finite-arm-length phase convention
 
 The finite-arm-length response multiplies each arm's antenna pattern by a transfer function ([Baral et al. 2023](https://arxiv.org/abs/2304.09889), Eq. 7), normalised so that it tends to one at low frequency.

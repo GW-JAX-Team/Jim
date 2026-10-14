@@ -1683,18 +1683,10 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         f_high: FloatLike,
         chi: float = 1.0,
     ) -> Float[Array, " n_freq"]:
-        """
-        Compute the cumulative phase difference used for bin construction.
-
-        Uses 5 physically-motivated PN/IMR terms from arXiv:1806.08792:
-        gamma ∈ {-5/3, -2/3, 1, 5/3, 7/3}, covering the dominant Newtonian
-        chirp (0PN), spin-orbit (1.5PN), coalescence time, and phenomenological
-        IMR contributions.  Each term is normalised by so that its individual
-        contribution spans exactly ``chi * 2π`` rad across [f_low, f_high].
-        The returned array starts at 0 (cumulative from f_low).
-
-        See also Eq.(7) in arXiv:2302.05333.
-        """
+        """Cumulative phase difference of the reference signal, starting at 0 at ``f_low``."""
+        # Five power laws in frequency (arXiv:1806.08792) for the Newtonian chirp, the
+        # spin-orbit term, the coalescence time and the merger-ringdown; see also
+        # Eq. (7) of arXiv:2302.05333.
         gamma = jnp.array([-5.0, -2.0, 3.0, 5.0, 7.0]) / 3
         freq_2D = jax.lax.broadcast_in_dim(freqs, (freqs.size, gamma.size), [0])
         f_star = jnp.where(gamma >= 0, f_high, f_low)
@@ -2150,11 +2142,7 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
     def _find_starting_frequency(
         self, duration: float, f_now: float
     ) -> tuple[Optional[Float], Optional[Float]]:
-        """Find starting frequency of next band via bisection search.
-
-        Finds frequency satisfying conditions (10) and (51) of arXiv:2104.07813:
-        - Time containment: tau(f) + L * sqrt(-dtau/df) < duration - time_offset
-        - Smooth transition: f - 1/sqrt(-dtau/df) > f_now
+        """Find the starting frequency of the next band by bisection.
 
         Parameters
         ----------
@@ -2170,6 +2158,8 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
         """
 
         def _is_above_fnext(f):
+            # Conditions (10) and (51) of arXiv:2104.07813: the signal fits in the
+            # band, and the transition from the current band is smooth.
             tau, dtaudf = self._compute_tau_dtaudf(f)
             cond1 = (
                 duration

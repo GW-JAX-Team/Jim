@@ -32,6 +32,10 @@ nav = [
     {"Technical Notes" = [
         "notes/index.md",
         {"Detector Response Conventions" = "notes/detector_response.md"},
+        {"Detector Presets" = "notes/detector_presets.md"},
+        {"Likelihood Details" = "notes/likelihood_details.md"},
+        {"Signal-Duration Check" = "notes/signal_duration.md"},
+        {"Sampler Details" = "notes/samplers.md"},
     ]},
     {"FAQ" = "FAQ.md"},
     {"Citing Jim" = "citing.md"},

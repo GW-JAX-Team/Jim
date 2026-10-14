@@ -268,14 +268,13 @@ def greenwich_sidereal_time(
     Compute the Greenwich mean sidereal time from the GPS time and equation of
     equinoxes.
 
-    Based on XLALGreenwichSiderealTime in lalsuite/lal/lib/XLALSiderealTime.c.
-
     Args:
         gps_time (float): The GPS time to convert
         equation_of_equinoxes (float): The equation of equinoxes
     Returns:
         float: The Greenwich sidereal time in radians.
     """
+    # As XLALGreenwichSiderealTime in LAL's XLALSiderealTime.c.
     julian_day = gps_to_julian_day(gps_time)
     t_hi = (julian_day - EPOCH_J2000_0_JD) / 36525.0
     t_lo = (gps_time % 1) / (36525.0 * 86400.0)

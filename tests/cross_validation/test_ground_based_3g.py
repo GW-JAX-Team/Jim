@@ -1,7 +1,7 @@
 """Cross-validation of the Earth-rotating detector response.
 
     Jim                                     Reference
-    ──────────────────────────────────────  ────────────────────────────────────────────────
+    --------------------------------------  ------------------------------------------------
     GroundBased3G.time_to_merger            LALSimulation TaylorF2ReducedSpin chirp time (2PN)
     GroundBased3G (rotation)                bilby antenna response and geocentre delay at the
                                             exact GMST of each emission time

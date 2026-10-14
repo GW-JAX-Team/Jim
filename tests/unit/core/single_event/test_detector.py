@@ -954,7 +954,7 @@ class TestInjectionArguments:
         det = make_detector()
         det.set_data(real_h1_data())
         before = state_of(det)
-        with pytest.raises(ValueError, match="not defined at 0 Hz"):
+        with pytest.raises(ValueError, match="data.frequency_bounds"):
             self.inject(det)
         assert_untouched(det, before)
         det.data.frequency_bounds = (F_MIN, F_MAX)
@@ -1592,9 +1592,9 @@ class TestET:
             )
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Next-generation detectors (GroundBased3G)
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 ROTATION_TRIGGER_TIME = 1400000000.0

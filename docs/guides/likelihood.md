@@ -62,7 +62,7 @@ likelihood = TransientLikelihoodFD(
 
 Marginalising over these parameters reduces the effective dimensionality of the problem and can significantly speed up sampling.
 
-- `time_marginalization` — marginalises over `t_c` within the range set by `tc_range` (default `(-0.1, 0.1)`).
+- `time_marginalization` — marginalises over `t_c` within the range set by `tc_range` (default `(-0.1, 0.1)`), with a uniform prior on `t_c` in that range; see the [technical notes](../notes/likelihood_details.md#time-marginalisation) for the normalisation.
   Pass `{}` to use the default range, or `{"tc_range": (lo, hi)}` for a custom range.
 - `phase_marginalization` — marginalises over `phase_c`.
   Pass `True`, `{}`, or a `PhaseMargConfig()` instance.
@@ -148,6 +148,7 @@ Callables are evaluated in **insertion order**, so later entries in `fixed_param
 
 `HeterodynedTransientLikelihoodFD` and `MultibandedTransientLikelihoodFD` are both approximations that trade exactness for speed.
 They are suitable when the full likelihood is computationally expensive (e.g., long duration signals) and the signal is well-approximated by the underlying assumptions of the method.
+The [technical notes](../notes/likelihood_details.md#heterodyning-relative-binning) describe how each method chooses its bins and bands.
 
 | Likelihood | Method |
 | --- | --- |

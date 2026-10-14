@@ -448,12 +448,11 @@ class GroundBased2G(Detector):
     def vertex(self) -> Float[Array, "3"]:
         """Detector vertex coordinates in the reference celestial frame.
 
-        Based on arXiv:gr-qc/0008066 Eqs. (B11-B13) except for a typo in the
-        definition of the local radius; see Section 2.1 of LIGO-T980044-10.
-
         Returns:
             Float[Array, "3"]: Detector vertex coordinates in geocentric Cartesian coordinates.
         """
+        # Eqs. (B11-B13) of arXiv:gr-qc/0008066, except for a typo in the definition
+        # of the local radius; see Section 2.1 of LIGO-T980044-10.
         # get detector and Earth parameters
         lat = self.latitude
         lon = self.longitude
@@ -551,9 +550,6 @@ class GroundBased2G(Detector):
     ) -> FloatScalar:
         """Calculate time delay between two detectors in geocentric coordinates.
 
-        Based on XLALArrivaTimeDiff in TimeDelay.c
-        https://lscsoft.docs.ligo.org/lalsuite/lal/group___time_delay__h.html
-
         Args:
             ra (Float): Right ascension of the source in radians.
             dec (Float): Declination of the source in radians.
@@ -562,6 +558,7 @@ class GroundBased2G(Detector):
         Returns:
             Float: Time delay from Earth center in seconds.
         """
+        # As XLALArrivalTimeDiff in LAL's TimeDelay.c.
         delta_d = -self.vertex
         omega = self._source_direction(ra, dec, gmst)
         return jnp.einsum("i...,i->...", omega, delta_d) / C_SI
@@ -886,11 +883,11 @@ class GroundBased2G(Detector):
         frequency domain to whatever the detector holds: zero data, noise, real data
         or earlier signals. Call it again to add more signals.
 
-        Note: The detector needs a PSD and data beforehand; ``set_zero_noise`` and
-        ``simulate_and_set_noise`` create them. The trigger time is that of the data
-        (``Data.trigger_time``), by default 2 s before their end. The frequency range
-        of the data must start above 0 Hz: set ``data.frequency_bounds`` for real
-        data.
+        Note: The detector needs a PSD and data beforehand. ``set_zero_noise`` and
+        ``simulate_and_set_noise`` create the data with the frequency range that the
+        injection needs; for other data, such as real data, set
+        ``data.frequency_bounds`` first. The trigger time is that of the data
+        (``Data.trigger_time``), by default 2 s before their end.
 
         Args:
             waveform_model: The frequency-domain waveform model to be injected.
@@ -1021,13 +1018,9 @@ class GroundBased2G(Detector):
         trigger_time: float,
         allow_wraparound: bool,
     ) -> None:
-        """Check a rough, conservative CBC duration without evaluating the waveform.
+        """Check that the signal fits the segment around its peak, without evaluating the waveform.
 
-        Use LAL's positive 2PN chirp-time terms with the larger spin magnitude of the
-        two components (the maximal physical spin if the waveform has no spin
-        parameters), then add rounded merger/ringdown bounds, one low-frequency
-        cycle and the maximum geocenter delay. This estimates physical duration, not Fourier-cut tails.
-        See ``XLALSimInspiralChirpTimeBound`` in LALSimInspiral.c.
+        The estimate is described in the technical notes of the documentation.
         """
         # --------------------------------------------------------------
         # Validation
@@ -1068,6 +1061,7 @@ class GroundBased2G(Detector):
                 self.data.frequency_bounds[0] * 2 / metadata.get("highest_mode", 2)
             )
             v = (jnp.pi * mass_seconds * f_start) ** (1 / 3)
+            # XLALSimInspiralChirpTimeBound in LAL's LALSimInspiral.c.
             newtonian = 5 * mass_seconds / (256 * eta * v**8)
             chirp_time = newtonian * (
                 1
@@ -1186,6 +1180,10 @@ class GroundBased3G(GroundBased2G):
 
     _geometry_names = (*GroundBased2G._geometry_names, "arm_length")
 
+    # ------------------------------------------------------------------
+    # Construction
+    # ------------------------------------------------------------------
+
     def __init__(
         self,
         name: str,
@@ -1222,6 +1220,10 @@ class GroundBased3G(GroundBased2G):
         Raises:
             ValueError: If ``finite_arm_length`` is True and ``arm_length`` is not positive.
         """
+        # --------------------------------------------------------------
+        # Validation
+        # --------------------------------------------------------------
+
         if finite_arm_length and not arm_length > 0:
             raise ValueError(
                 f"finite_arm_length=True needs a positive arm_length, got {arm_length}."
@@ -1279,6 +1281,10 @@ class GroundBased3G(GroundBased2G):
             finite_arm_length=finite_arm_length,
         )
 
+    # ------------------------------------------------------------------
+    # Earth rotation
+    # ------------------------------------------------------------------
+
     @staticmethod
     def time_to_merger(
         frequency: Float[Array, " n_sample"],
@@ -1305,6 +1311,10 @@ class GroundBased3G(GroundBased2G):
         Raises:
             ValueError: If ``mode`` is 0, for which the mapping is undefined.
         """
+        # --------------------------------------------------------------
+        # Validation
+        # --------------------------------------------------------------
+
         if mode == 0:
             raise ValueError(
                 "mode must be a non-zero azimuthal number: an m = 0 mode has no "
@@ -1367,6 +1377,10 @@ class GroundBased3G(GroundBased2G):
         # across its range (about 7e-6 rad for 0.1 s).
         return gmst + EARTH_ROTATION_RATE * (params["t_c"] - tau)
 
+    # ------------------------------------------------------------------
+    # Finite arm length
+    # ------------------------------------------------------------------
+
     @staticmethod
     def _arm_transfer_function(x: Float, y: Float) -> Complex:
         """Single-arm transfer function, equal to one when ``x`` is zero.
@@ -1413,6 +1427,10 @@ class GroundBased3G(GroundBased2G):
                 transfer[0] * arm_patterns[0] - transfer[1] * arm_patterns[1]
             )
         return antenna_patterns
+
+    # ------------------------------------------------------------------
+    # Detector response
+    # ------------------------------------------------------------------
 
     def fd_response(
         self,
@@ -1507,10 +1525,8 @@ def get_ET(
 ) -> list[GroundBased3G]:
     """Return a list of three [`GroundBased3G`][jimgw.core.single_event.detector.GroundBased3G] instances for Einstein Telescope (ET).
 
-    ET is modelled as a triangle of three interferometers at adjacent vertices,
-    with arms rotated by 120° relative to each other. Vertex positions are
-    propagated using the spherical forward-azimuth (haversine) formula with a
-    latitude-dependent Earth radius derived from the WGS-84 ellipsoid.
+    ET is modelled as a triangle of three interferometers with 10 km arms at the
+    Virgo site.
 
     Args:
         earth_rotation (bool, optional): Follow the Earth's rotation. Turn on for

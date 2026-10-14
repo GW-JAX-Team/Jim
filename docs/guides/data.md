@@ -143,6 +143,15 @@ time_data.set_tukey_window(roll_off=0.2)  # seconds on each side
 # time_data.set_tukey_window(alpha=0.1)   # direct scipy Tukey parameter
 ```
 
+## Frequency range of the data
+
+Each detector's data carry a frequency range, the range of frequencies on which they are used.
+`set_zero_noise` and `simulate_and_set_noise` set it from their `f_min` and `f_max` arguments.
+Data from GWOSC or from `Data.from_td` do not restrict it, so for them you give `f_min` and `f_max` to the likelihood; a `.npz` file written by `to_file` keeps the range it was saved with.
+Only injecting into such data needs the range on the data, see [Injecting Simulated Signals](#injecting-simulated-signals).
+A likelihood takes its `f_min` and `f_max` from the range of the data unless you pass them, and they may be narrower than the range of the data but not wider.
+Because waveforms are not defined at 0 Hz, data without a range need a positive `f_min` in the likelihood.
+
 ## PSD
 
 Before you can evaluate a likelihood, each detector also needs a power spectral density (PSD).
@@ -163,6 +172,7 @@ H1.load_and_set_psd()
 | CE | Cosmic Explorer 40 km | CE-T2000017 (Cosmic Explorer Project) |
 
 Links, versions, frequency ranges and checksums are in the [noise curve README](https://github.com/GW-JAX-Team/Jim/blob/main/src/jimgw/core/single_event/noise_curves/README.md).
+Outside the frequency range of a curve, the value at its nearest end is used, so keep the frequency range of your data inside it.
 Please cite the source documents when you use these curves.
 
 ### Load from a file
@@ -257,6 +267,13 @@ optimal_snr, match_filtered_snr = H1.inject_signal(waveform, injection_params)
 ```
 
 Use `set_zero_noise` instead of `simulate_and_set_noise` for a noiseless injection.
+`inject_signal` cuts the signal to the frequency range of the data, which these two functions set.
+To inject into other data, such as data from GWOSC, set the range first (rarely needed):
+
+```python
+H1.data.frequency_bounds = (20.0, 1024.0)
+H1.inject_signal(waveform, injection_params)
+```
 `inject_signal` returns the optimal SNR of the signal and its matched-filter SNR against all the data.
 Each call adds one signal to whatever the detector holds, so a second call adds an overlapping signal to the same data:
 

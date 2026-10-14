@@ -2270,6 +2270,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#jimgw.core.single_event.detector.get_ET_2L" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        get_ET_2L
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#jimgw.core.single_event.detector.get_H1" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -3817,6 +3828,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#jimgw.core.single_event.detector.get_ET_2L" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        get_ET_2L
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#jimgw.core.single_event.detector.get_H1" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -3907,18 +3929,26 @@
       </thead>
       <tbody>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="get_CE(earth_rotation: bool = False, finite_arm_length: bool = False) -&gt; GroundBased3G (jimgw.core.single_event.detector.get_CE)" href="./#jimgw.core.single_event.detector.get_CE">get_CE</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="get_CE(*, earth_rotation: bool = False, finite_arm_length: bool = False) -&gt; GroundBased3G (jimgw.core.single_event.detector.get_CE)" href="./#jimgw.core.single_event.detector.get_CE">get_CE</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Return a <a class="autorefs autorefs-internal" href="./#jimgw.core.single_event.detector.GroundBased3G"><code>GroundBased3G</code></a> instance for Cosmic Explorer (CE).</p>
+                  <p>Return a instance for Cosmic Explorer (CE).</p>
                 </div>
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="get_ET(earth_rotation: bool = False, finite_arm_length: bool = False) -&gt; list[GroundBased3G] (jimgw.core.single_event.detector.get_ET)" href="./#jimgw.core.single_event.detector.get_ET">get_ET</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="get_ET(*, earth_rotation: bool = False, finite_arm_length: bool = False) -&gt; list[GroundBased3G] (jimgw.core.single_event.detector.get_ET)" href="./#jimgw.core.single_event.detector.get_ET">get_ET</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Return a list of three <a class="autorefs autorefs-internal" href="./#jimgw.core.single_event.detector.GroundBased3G"><code>GroundBased3G</code></a> instances for Einstein Telescope (ET).</p>
+                  <p>Return a list of three instances for the triangular Einstein Telescope (ET).</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="get_ET_2L(*, alignment_angle: float = 42.5, earth_rotation: bool = False, finite_arm_length: bool = False) -&gt; list[GroundBased3G] (jimgw.core.single_event.detector.get_ET_2L)" href="./#jimgw.core.single_event.detector.get_ET_2L">get_ET_2L</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Return the two L-shaped detectors of the Einstein Telescope 2L design.</p>
                 </div>
               </td>
             </tr>
@@ -3926,7 +3956,7 @@
               <td><code><a class="autorefs autorefs-internal" title="get_H1() -&gt; GroundBased2G (jimgw.core.single_event.detector.get_H1)" href="./#jimgw.core.single_event.detector.get_H1">get_H1</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Return a <a class="autorefs autorefs-internal" href="./#jimgw.core.single_event.detector.GroundBased2G"><code>GroundBased2G</code></a> instance for LIGO Hanford (H1).</p>
+                  <p>Return a instance for LIGO Hanford (H1).</p>
                 </div>
               </td>
             </tr>
@@ -3934,7 +3964,7 @@
               <td><code><a class="autorefs autorefs-internal" title="get_L1() -&gt; GroundBased2G (jimgw.core.single_event.detector.get_L1)" href="./#jimgw.core.single_event.detector.get_L1">get_L1</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Return a <a class="autorefs autorefs-internal" href="./#jimgw.core.single_event.detector.GroundBased2G"><code>GroundBased2G</code></a> instance for LIGO Livingston (L1).</p>
+                  <p>Return a instance for LIGO Livingston (L1).</p>
                 </div>
               </td>
             </tr>
@@ -3942,7 +3972,7 @@
               <td><code><a class="autorefs autorefs-internal" title="get_V1() -&gt; GroundBased2G (jimgw.core.single_event.detector.get_V1)" href="./#jimgw.core.single_event.detector.get_V1">get_V1</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Return a <a class="autorefs autorefs-internal" href="./#jimgw.core.single_event.detector.GroundBased2G"><code>GroundBased2G</code></a> instance for Virgo (V1).</p>
+                  <p>Return a instance for Virgo (V1).</p>
                 </div>
               </td>
             </tr>
@@ -7407,14 +7437,14 @@ Defaults to 2.</p>
 
 
 <h2 id="jimgw.core.single_event.detector.get_CE" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">get_CE</span><span class="p">(</span><span class="n">earth_rotation</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">finite_arm_length</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GroundBased3G</span></code>
+            <code class="highlight language-python"><span class="n">get_CE</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">earth_rotation</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">finite_arm_length</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GroundBased3G</span></code>
 
 <a href="#jimgw.core.single_event.detector.get_CE" class="headerlink" title="Permanent link">¤</a></h2>
 
 
     <div class="doc doc-contents ">
 
-        <p>Return a <a class="autorefs autorefs-internal" href="./#jimgw.core.single_event.detector.GroundBased3G"><code>GroundBased3G</code></a> instance for Cosmic Explorer (CE).</p>
+        <p>Return a instance for Cosmic Explorer (CE).</p>
 <p>CE shares the LIGO Hanford site geometry and has 40 km arms.</p>
 
 
@@ -7476,16 +7506,16 @@ high frequencies. Defaults to False.</p>
 
 
 <h2 id="jimgw.core.single_event.detector.get_ET" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">get_ET</span><span class="p">(</span><span class="n">earth_rotation</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">finite_arm_length</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">GroundBased3G</span><span class="p">]</span></code>
+            <code class="highlight language-python"><span class="n">get_ET</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">earth_rotation</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">finite_arm_length</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">GroundBased3G</span><span class="p">]</span></code>
 
 <a href="#jimgw.core.single_event.detector.get_ET" class="headerlink" title="Permanent link">¤</a></h2>
 
 
     <div class="doc doc-contents ">
 
-        <p>Return a list of three <a class="autorefs autorefs-internal" href="./#jimgw.core.single_event.detector.GroundBased3G"><code>GroundBased3G</code></a> instances for Einstein Telescope (ET).</p>
-<p>ET is modelled as a triangle of three interferometers with 10 km arms at the
-Virgo site.</p>
+        <p>Return a list of three instances for the triangular Einstein Telescope (ET).</p>
+<p>The design is a triangle of three interferometers with 10 km arms at the
+Euregio Meuse-Rhine site, with the arm azimuths of the Virgo arms.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -7545,6 +7575,97 @@ high frequencies. Defaults to False.</p>
 <div class="doc doc-object doc-function">
 
 
+<h2 id="jimgw.core.single_event.detector.get_ET_2L" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">get_ET_2L</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">alignment_angle</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">42.5</span><span class="p">,</span> <span class="n">earth_rotation</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">finite_arm_length</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">GroundBased3G</span><span class="p">]</span></code>
+
+<a href="#jimgw.core.single_event.detector.get_ET_2L" class="headerlink" title="Permanent link">¤</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Return the two L-shaped detectors of the Einstein Telescope 2L design.</p>
+<p>The design has two L-shaped interferometers with 15 km arms, <code>ET_Sar</code> in
+Sardinia and <code>ET_EMR</code> in the Euregio Meuse-Rhine. The arms of <code>ET_Sar</code> have
+the azimuths of the Virgo arms. The arms of <code>ET_EMR</code> are rotated from those
+of <code>ET_Sar</code> by <code>alignment_angle</code>, a difference of azimuths, each measured
+against the local axes of its site rather than the great circle between them.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>alignment_angle</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Rotation of the arms of <code>ET_EMR</code> from
+those of <code>ET_Sar</code>, in degrees. Zero gives parallel arms; 45 degrees is
+the misaligned case. Defaults to 42.5.</p>
+              </div>
+            </td>
+            <td>
+                  <code>42.5</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>earth_rotation</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Follow the Earth's rotation. Turn on for
+signals that stay in band for ten minutes or longer. Defaults to False.</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>finite_arm_length</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Account for the arms' finite length
+relative to the wavelength. Turn on for loud signals with power at
+high frequencies. Defaults to False.</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h2 id="jimgw.core.single_event.detector.get_H1" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">get_H1</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">GroundBased2G</span></code>
 
@@ -7553,7 +7674,7 @@ high frequencies. Defaults to False.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Return a <a class="autorefs autorefs-internal" href="./#jimgw.core.single_event.detector.GroundBased2G"><code>GroundBased2G</code></a> instance for LIGO Hanford (H1).</p>
+        <p>Return a instance for LIGO Hanford (H1).</p>
 
 
     </div>
@@ -7571,7 +7692,7 @@ high frequencies. Defaults to False.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Return a <a class="autorefs autorefs-internal" href="./#jimgw.core.single_event.detector.GroundBased2G"><code>GroundBased2G</code></a> instance for LIGO Livingston (L1).</p>
+        <p>Return a instance for LIGO Livingston (L1).</p>
 
 
     </div>
@@ -7589,7 +7710,7 @@ high frequencies. Defaults to False.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Return a <a class="autorefs autorefs-internal" href="./#jimgw.core.single_event.detector.GroundBased2G"><code>GroundBased2G</code></a> instance for Virgo (V1).</p>
+        <p>Return a instance for Virgo (V1).</p>
 
 
     </div>

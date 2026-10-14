@@ -3587,7 +3587,7 @@ Each call adds one signal to whatever the detector holds, so a second call adds 
 <span class="n">H1</span><span class="o">.</span><span class="n">inject_signal</span><span class="p">(</span><span class="n">waveform</span><span class="p">,</span> <span class="n">second_params</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="next-generation-detectors">Next-Generation Detectors<a class="headerlink" href="#next-generation-detectors" title="Permanent link">¤</a></h2>
-<p><code>get_ET()</code> and <code>get_CE()</code> return <code>GroundBased3G</code> detectors, which respond like <code>GroundBased2G</code> unless you turn on one of two options:</p>
+<p><code>get_ET()</code>, <code>get_ET_2L()</code> and <code>get_CE()</code> return <code>GroundBased3G</code> detectors, which respond like <code>GroundBased2G</code> unless you turn on one of two options:</p>
 <ul>
 <li><code>earth_rotation=True</code> follows the Earth's rotation while the signal is in band.
   Turn it on for signals that stay in band for ten minutes or longer, such as binary neutron stars observed from about 10 Hz or lower, or for a few minutes if the signal is very loud.

@@ -4,7 +4,7 @@ Public API:
 
 * [`Sampler`][jimgw.samplers.base.Sampler] — ABC every backend subclasses.
 * `SamplerConfig` — discriminated-union annotation of concrete configs.
-* [`build_sampler`][jimgw.samplers.build_sampler] — factory that dispatches to the right concrete class.
+* [`build_sampler`][jimgw.samplers.build_sampler] — factory that dispatches to the right sampler builder.
 
 The registry uses loaders to defer concrete sampler construction until the
 caller requests a backend via `build_sampler`.
@@ -22,13 +22,14 @@ from jimgw.samplers.config import BlackJAXSwiGConfig as BlackJAXSwiGConfig
 from jimgw.samplers.config import FlowMCConfig as FlowMCConfig
 from jimgw.samplers.config import SamplerConfig as SamplerConfig
 
-# Each entry is a zero-arg loader returning a concrete sampler class.
+# A builder is a `Sampler` subclass or a factory function (as for SMC); each
+# entry is a zero-arg loader returning one.
 SamplerBuilder = Callable[..., Sampler]
 _REGISTRY: dict[str, Callable[[], SamplerBuilder]] = {}
 
 
 def register_sampler(type_str: str, lazy_loader: Callable[[], SamplerBuilder]) -> None:
-    """Register a concrete [`Sampler`][jimgw.samplers.base.Sampler] class under ``type_str``.
+    """Register a sampler builder (a [`Sampler`][jimgw.samplers.base.Sampler] subclass or factory function) under ``type_str``.
 
     ``lazy_loader`` is called (with no args) only when `build_sampler`
     dispatches to this type.
@@ -63,7 +64,7 @@ def build_sampler(
             indices by Jim.  For flowMC/NSS/SwiG/SMC this is a
             ``dict[int, (lo, hi)]``; for NS AW it is a ``list[int]``.
         **backend_kwargs: Backend-specific construction arguments. They are
-            passed directly to the selected sampler class.
+            passed directly to the selected sampler builder.
 
     Raises:
         KeyError: If no sampler is registered for ``config.type``.

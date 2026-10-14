@@ -90,9 +90,12 @@ def adapt_prior_for_ns_time(
     # Case 2: t_det in prior + geocentric sampling → adapt to t_c prior.
     if has_t_det and sampling_cfg.time_frame == "geocentric":
         t_det_spec = prior_cfg.root["t_det"]
-        assert isinstance(t_det_spec, UniformSpec), (
-            "NS AW validation should ensure t_det is UniformSpec"
-        )
+        # --------------------------------------------------------------
+        # Time prior validation
+        # --------------------------------------------------------------
+
+        if t_det_spec.type != "uniform":
+            raise ValueError("NS AW time adaptation requires a uniform t_det prior.")
         logger.warning(
             "NS AW sampler: replacing t_det ~ Uniform(%.4f, %.4f) in [prior] with "
             "t_c ~ Uniform(%.4f, %.4f) (same relative-offset bounds). "
@@ -113,9 +116,12 @@ def adapt_prior_for_ns_time(
 
     # Case 1: t_c in prior + detector time_frame → adapt to t_det prior.
     t_c_spec = prior_cfg.root["t_c"]
-    assert isinstance(t_c_spec, UniformSpec), (
-        "NS AW validation should ensure t_c is UniformSpec"
-    )
+    # ------------------------------------------------------------------
+    # Time prior validation
+    # ------------------------------------------------------------------
+
+    if t_c_spec.type != "uniform":
+        raise ValueError("NS AW time adaptation requires a uniform t_c prior.")
     logger.warning(
         "NS AW sampler: replacing t_c ~ Uniform(%.4f, %.4f) in [prior] with "
         "t_det ~ Uniform(%.4f, %.4f) (same relative-offset bounds). "

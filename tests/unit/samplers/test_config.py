@@ -19,6 +19,94 @@ from jimgw.samplers.config import (
     SamplerConfig,
 )
 
+# ----------------------------------------------------------------------
+# Integer count validation
+# ----------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("config_cls", "fields", "kwargs"),
+    [
+        (
+            FlowMCConfig,
+            (
+                "n_chains",
+                "n_local_steps",
+                "n_global_steps",
+                "n_training_loops",
+                "n_production_loops",
+                "n_epochs",
+                "rq_spline_n_bins",
+                "rq_spline_n_layers",
+                "n_NFproposal_batch_size",
+                "batch_size",
+                "n_max_examples",
+                "history_window",
+                "chain_batch_size",
+                "local_thinning",
+                "global_thinning",
+                "early_stopping_patience",
+            ),
+            {},
+        ),
+        (ParallelTemperingConfig, ("n_temperatures", "n_tempered_steps"), {}),
+        (HMCConfig, ("n_leapfrog_steps",), {}),
+        (BlackJAXNSAWConfig, ("n_live", "n_target", "max_mcmc"), {}),
+        (BlackJAXNSSConfig, ("n_live", "n_devices", "num_inner_steps_per_dim"), {}),
+        (
+            BlackJAXSwiGConfig,
+            ("n_live", "n_devices", "num_gibbs_sweeps", "num_inner_steps_per_dim"),
+            {"blocks": [["x"]]},
+        ),
+        (
+            BlackJAXSMCConfig,
+            ("n_particles", "n_mcmc_steps_per_dim", "target_ess", "batch_size"),
+            {},
+        ),
+    ],
+)
+@pytest.mark.parametrize("value", [True, 2.0, "2", np.int64(2)])
+def test_sampler_configuration_counts_require_python_integers(
+    config_cls, fields, kwargs, value
+):
+    for field in fields:
+        with pytest.raises(ValidationError) as exc:
+            config_cls.model_validate({**kwargs, field: value})
+        assert any(
+            error["loc"] == (field,) and error["type"] == "int_type"
+            for error in exc.value.errors()
+        ), (field, exc.value.errors())
+
+
+@pytest.mark.parametrize(
+    ("config_cls", "field", "kwargs"),
+    [
+        (ParallelTemperingConfig, "max_temperature", {}),
+        (MALAConfig, "step_size", {}),
+        (HMCConfig, "step_size", {}),
+        (HMCConfig, "condition_matrix", {}),
+        (GRWConfig, "step_size", {}),
+        (FlowMCConfig, "learning_rate", {}),
+        (FlowMCConfig, "early_stopping_tolerance", {}),
+        (BlackJAXNSAWConfig, "termination_dlogz", {}),
+        (BlackJAXNSSConfig, "termination_dlogz", {}),
+        (BlackJAXSwiGConfig, "termination_dlogz", {"blocks": [["x"]]}),
+        (BlackJAXSMCConfig, "target_ess_fraction", {}),
+        (BlackJAXSMCConfig, "initial_cov_scale", {}),
+        (BlackJAXSMCConfig, "scale_adaptation_gain", {}),
+    ],
+)
+@pytest.mark.parametrize("value", [float("nan"), float("inf")])
+def test_sampler_configuration_floats_must_be_finite(config_cls, field, kwargs, value):
+    with pytest.raises(ValidationError, match=field):
+        config_cls.model_validate({**kwargs, field: value})
+
+
+@pytest.mark.parametrize("value", [True, 2.0, "2", 0, -1])
+def test_flowmc_hidden_units_require_positive_integers(value):
+    with pytest.raises(ValidationError, match="rq_spline_hidden_units"):
+        FlowMCConfig.model_validate({"rq_spline_hidden_units": [128, value]})
+
 
 def test_discriminated_union_dispatch_flowmc():
     cfg = FlowMCConfig.model_validate({"type": "flowmc", "n_chains": 500})
@@ -131,9 +219,9 @@ def test_base_config_requires_sampler_type():
         BaseSamplerConfig[str]()
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # B1: FlowMC kernel/PT warning validator
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 def test_flowmc_pt_off_by_default():
@@ -208,9 +296,9 @@ def test_flowmc_local_kernel_rejects_unknown_field():
         FlowMCConfig(local_kernel={"kernel": "HMC", "step_siz": 0.5})  # typo
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # B2: BlackJAXSMCConfig temperature ladder validator
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 def test_smc_config_defaults():
@@ -246,9 +334,9 @@ def test_smc_temperature_ladder_warns_ess():
     assert any("ESS" in str(x.message) for x in w)
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # B2b: BlackJAXSMCConfig ESS XOR validator
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 def test_smc_default_ess_fraction():
@@ -308,9 +396,9 @@ def test_smc_fraction_warns_with_fixed_ladder():
     )
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # C: New kernel sub-config features (array step sizes, condition_matrix)
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 def test_mala_step_size_scalar():
@@ -348,9 +436,9 @@ def test_hmc_defaults():
     assert cfg.n_leapfrog_steps == 10
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # D: Config classes no longer have a periodic field
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 def test_flowmc_config_has_no_periodic_field():
@@ -386,9 +474,9 @@ def test_smc_resolve_target_ess_fraction():
     assert cfg2._resolve_target_ess_fraction() == pytest.approx(0.5)
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # E: checkpoint_dir / checkpoint_interval validators
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 def test_checkpoint_dir_accepts_string(tmp_path):
@@ -409,15 +497,21 @@ def test_checkpoint_interval_without_dir_raises():
         BlackJAXNSAWConfig(checkpoint_interval=600.0)
 
 
+def test_write_checkpoint_requires_directory():
+    cfg = BlackJAXNSAWConfig()
+    with pytest.raises(ValueError, match="checkpoint_dir must be set"):
+        cfg.write_checkpoint({}, "test")
+
+
 def test_checkpoint_interval_with_dir_ok(tmp_path):
     cfg = BlackJAXNSAWConfig(checkpoint_dir=tmp_path, checkpoint_interval=600.0)
     assert cfg.checkpoint_dir == tmp_path
     assert cfg.checkpoint_interval == 600.0
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # F: configure_jax_cache
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 def test_configure_jax_cache_sets_dir(tmp_path):

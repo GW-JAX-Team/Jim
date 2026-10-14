@@ -4,33 +4,34 @@ import time
 from pathlib import Path
 
 import corner
-import numpy as np
 import jax
 import jax.numpy as jnp
+import numpy as np
 
 jax.config.update("jax_enable_x64", True)
 
 from jimgw.core.jim import Jim
 from jimgw.core.prior import (
     CombinePrior,
-    UniformPrior,
     CosinePrior,
-    SinePrior,
     PowerLawPrior,
+    SinePrior,
+    UniformPrior,
 )
+from jimgw.core.single_event.data import Data
 from jimgw.core.single_event.detector import get_H1, get_L1, get_V1
 from jimgw.core.single_event.likelihood import HeterodynedTransientLikelihoodFD
-from jimgw.core.single_event.data import Data
-from jimgw.core.single_event.waveform import RippleIMRPhenomXAS_NRTidalv3
 from jimgw.core.single_event.transforms import (
-    SkyFrameToDetectorFrameSkyPositionTransform,
-    MassRatioToSymmetricMassRatioTransform,
     GeocentricArrivalTimeToDetectorArrivalTimeTransform,
+    MassRatioToSymmetricMassRatioTransform,
+    SkyFrameToDetectorFrameSkyPositionTransform,
 )
+from jimgw.core.single_event.waveform import RippleIMRPhenomXAS_NRTidalv3
 from jimgw.samplers.config import FlowMCConfig
 
-
-# --- Fetch data ---
+# ----------------------------------------------------------------------
+# Fetch data
+# ----------------------------------------------------------------------
 
 # fetch a 128s segment centered on GW170817
 gps = 1187008882.43
@@ -55,14 +56,20 @@ for ifo in ifos:
     ifo.set_data(strain_data)
     psd_data = Data.from_gwosc(ifo.name, psd_start, psd_end)
     ifo.set_psd(
-        psd_data.to_psd(nperseg=int(strain_data.duration * strain_data.sampling_frequency))
+        psd_data.to_psd(
+            nperseg=int(strain_data.duration * strain_data.sampling_frequency)
+        )
     )
 
-# --- Waveform model ---
+# ----------------------------------------------------------------------
+# Waveform model
+# ----------------------------------------------------------------------
 
 waveform = RippleIMRPhenomXAS_NRTidalv3(f_ref=20)
 
-# --- Prior ---
+# ----------------------------------------------------------------------
+# Prior
+# ----------------------------------------------------------------------
 
 prior = CombinePrior(
     [
@@ -82,24 +89,27 @@ prior = CombinePrior(
     ]
 )
 
-# --- Transforms ---
+# ----------------------------------------------------------------------
+# Transforms
+# ----------------------------------------------------------------------
 
 sample_transforms = [
-    GeocentricArrivalTimeToDetectorArrivalTimeTransform(trigger_time=gps, ifo=ifos[0]),
-    SkyFrameToDetectorFrameSkyPositionTransform(trigger_time=gps, ifos=ifos),
+    GeocentricArrivalTimeToDetectorArrivalTimeTransform(ifo=ifos[0]),
+    SkyFrameToDetectorFrameSkyPositionTransform(ifos=ifos),
 ]
 
 likelihood_transforms = [
     MassRatioToSymmetricMassRatioTransform,
 ]
 
-# --- Likelihood ---
+# ----------------------------------------------------------------------
+# Likelihood
+# ----------------------------------------------------------------------
 
 likelihood = HeterodynedTransientLikelihoodFD(
     ifos,
     waveform=waveform,
     n_bins=1000,
-    trigger_time=gps,
     f_min=fmin,
     f_max=fmax,
     prior=prior,
@@ -109,7 +119,9 @@ likelihood = HeterodynedTransientLikelihoodFD(
 
 prior = CombinePrior([p for p in prior.base_prior if p.parameter_names[0] != "phase_c"])
 
-# --- Sample ---
+# ----------------------------------------------------------------------
+# Sample
+# ----------------------------------------------------------------------
 
 jim = Jim(
     likelihood,
@@ -137,7 +149,9 @@ jim.sample()
 end_time = time.time()
 print(f"Sampling took {(end_time - start_time) / 60:.2f} mins")
 
-# --- Results ---
+# ----------------------------------------------------------------------
+# Results
+# ----------------------------------------------------------------------
 
 diagnostics = jim.get_diagnostics()
 print(f"Likelihood evaluations: {diagnostics['n_likelihood_evaluations']:,}")

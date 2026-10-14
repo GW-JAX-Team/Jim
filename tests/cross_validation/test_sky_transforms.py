@@ -19,7 +19,7 @@ import jax.numpy as jnp
 import numpy as np
 import pytest
 
-from tests.utils import assert_all_finite
+from tests.utils import assert_all_finite, attach_data
 
 pytest.importorskip("bilby")
 pytest.importorskip("bilby_cython")
@@ -94,9 +94,9 @@ class TestSkyFrameToDetectorFrameHighLevel:
                 bilby_ra = jnp.array(bilby_ra)
                 bilby_dec = jnp.array(bilby_dec)
 
+                attach_data(gps_time, list(ifo_pair))
                 transform = SkyFrameToDetectorFrameSkyPositionTransform(
-                    trigger_time=gps_time,
-                    ifos=list(ifo_pair),
+                    ifos=list(ifo_pair)
                 )
 
                 # Step 3: Jim inverse (zenith/azimuth → ra/dec) matches bilby
@@ -306,9 +306,8 @@ class TestFullTransform:
             zenith = jax.random.uniform(subkeys[0], (1,), minval=0, maxval=jnp.pi)
             azimuth = jax.random.uniform(subkeys[1], (1,), minval=0, maxval=2 * jnp.pi)
 
-            jim_transform = SkyFrameToDetectorFrameSkyPositionTransform(
-                trigger_time=gps_time, ifos=jim_ifos
-            )
+            attach_data(gps_time, jim_ifos)
+            jim_transform = SkyFrameToDetectorFrameSkyPositionTransform(ifos=jim_ifos)
             jim_outputs = jim_transform.backward({"zenith": zenith, "azimuth": azimuth})
             bilby_ra, bilby_dec = bilby_zenith_azimuth_to_ra_dec(
                 zenith[0], azimuth[0], gps_time, bilby_ifos

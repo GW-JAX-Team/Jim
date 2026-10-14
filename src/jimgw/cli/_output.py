@@ -74,7 +74,6 @@ def write_outputs(jim, cfg) -> None:
                 cfg.data.injection_parameters,
                 jim.likelihood_transforms,
                 cfg.waveform.f_ref,
-                trigger_time=cfg.data.trigger_time,
                 ifos=list(jim.likelihood.detectors),
                 time_frame=cfg.sampling.time_frame,
                 jim=jim,
@@ -89,7 +88,6 @@ def _injection_truths_in_prior_space(
     injection_parameters: dict[str, float],
     likelihood_transforms: list[NtoMTransform],
     waveform_f_ref: float,
-    trigger_time: float,
     ifos: list[GroundBased2G],
     time_frame: str,
     jim,
@@ -105,7 +103,6 @@ def _injection_truths_in_prior_space(
     p: dict = to_likelihood_space(
         injection_parameters,
         waveform_f_ref,
-        trigger_time=trigger_time,
         ifos=ifos,
         time_frame=time_frame,
     )

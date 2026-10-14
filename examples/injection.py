@@ -4,36 +4,39 @@ import time
 from pathlib import Path
 
 import corner
-import numpy as np
 import jax
 import jax.numpy as jnp
+import numpy as np
 
 jax.config.update("jax_enable_x64", True)
 
 from jimgw.core.jim import Jim
 from jimgw.core.prior import (
     CombinePrior,
-    UniformPrior,
     CosinePrior,
-    SinePrior,
     PowerLawPrior,
+    SinePrior,
+    UniformPrior,
 )
 from jimgw.core.single_event.detector import get_H1, get_L1
 from jimgw.core.single_event.likelihood import TransientLikelihoodFD
-from jimgw.core.single_event.waveform import RippleIMRPhenomXAS
 from jimgw.core.single_event.transforms import (
-    SkyFrameToDetectorFrameSkyPositionTransform,
-    MassRatioToSymmetricMassRatioTransform,
     GeocentricArrivalTimeToDetectorArrivalTimeTransform,
+    MassRatioToSymmetricMassRatioTransform,
+    SkyFrameToDetectorFrameSkyPositionTransform,
 )
+from jimgw.core.single_event.waveform import RippleIMRPhenomXAS
 from jimgw.samplers.config import FlowMCConfig
 
-
-# --- Waveform model ---
+# ----------------------------------------------------------------------
+# Waveform model
+# ----------------------------------------------------------------------
 
 waveform = RippleIMRPhenomXAS(f_ref=20)
 
-# --- Inject signal ---
+# ----------------------------------------------------------------------
+# Inject signal
+# ----------------------------------------------------------------------
 
 gps = 1126259462.4
 random_samples = jax.random.uniform(jax.random.key(0), (3,), maxval=jnp.pi)
@@ -69,20 +72,20 @@ ifos = [get_H1(), get_L1()]
 for ifo in ifos:
     ifo.load_and_set_psd()
 
-    # inject the signal
-    ifo.inject_signal(
+    # simulate the noise and inject the signal
+    ifo.simulate_and_set_noise(
         duration=duration,
         sampling_frequency=sampling_frequency,
         trigger_time=gps,
-        waveform_model=waveform,
-        parameters=injection_parameters,
         f_min=f_min,
         f_max=f_max,
-        zero_noise=False,
         rng_key=noise_key,
     )
+    ifo.inject_signal(waveform, injection_parameters)
 
-# --- Prior ---
+# ----------------------------------------------------------------------
+# Prior
+# ----------------------------------------------------------------------
 
 prior = CombinePrior(
     [
@@ -99,29 +102,34 @@ prior = CombinePrior(
     ]
 )
 
-# --- Transforms ---
+# ----------------------------------------------------------------------
+# Transforms
+# ----------------------------------------------------------------------
 
 sample_transforms = [
-    GeocentricArrivalTimeToDetectorArrivalTimeTransform(trigger_time=gps, ifo=ifos[0]),
-    SkyFrameToDetectorFrameSkyPositionTransform(trigger_time=gps, ifos=ifos),
+    GeocentricArrivalTimeToDetectorArrivalTimeTransform(ifo=ifos[0]),
+    SkyFrameToDetectorFrameSkyPositionTransform(ifos=ifos),
 ]
 
 likelihood_transforms = [
     MassRatioToSymmetricMassRatioTransform,
 ]
 
-# --- Likelihood ---
+# ----------------------------------------------------------------------
+# Likelihood
+# ----------------------------------------------------------------------
 
 likelihood = TransientLikelihoodFD(
     ifos,
     waveform=waveform,
-    trigger_time=gps,
     f_min=f_min,
     f_max=f_max,
     phase_marginalization=True,
 )
 
-# --- Sample ---
+# ----------------------------------------------------------------------
+# Sample
+# ----------------------------------------------------------------------
 
 jim = Jim(
     likelihood,
@@ -149,7 +157,9 @@ jim.sample()
 end_time = time.time()
 print(f"Sampling took {(end_time - start_time) / 60:.2f} mins")
 
-# --- Results ---
+# ----------------------------------------------------------------------
+# Results
+# ----------------------------------------------------------------------
 
 diagnostics = jim.get_diagnostics()
 print(f"Likelihood evaluations: {diagnostics['n_likelihood_evaluations']:,}")

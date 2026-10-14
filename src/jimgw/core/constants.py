@@ -26,6 +26,11 @@ EARTH_SEMI_MINOR_AXIS = 6356752.314  # in m
 EARTH_RADIUS_LIGHT_S = EARTH_SEMI_MAJOR_AXIS / C_SI  # equatorial radius / c, in seconds
 
 DAYSID_SI = 86164.09053133354
+""" Mean sidereal day, s """
+
+EARTH_ROTATION_RATE = 2 * jnp.pi / DAYSID_SI
+""" Sidereal rotation rate of the Earth (rate of change of GMST), rad/s """
+
 DAYJUL_SI: int = 86400
 
 DEG_TO_RAD = jnp.pi / 180

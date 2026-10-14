@@ -1,5 +1,6 @@
 """Pydantic configuration models for Jim's samplers.
 
+Integer counts require Python integers; booleans, floats and strings are rejected.
 Each sampler has its own ``*Config`` class discriminated by a ``type`` literal;
 `SamplerConfig` is the discriminated-union annotation a caller passes to
 ``Jim(..., sampler_config=...)``.
@@ -14,6 +15,7 @@ from typing import Annotated, Generic, Literal, Optional, Self, TypeVar, Union
 
 import jax
 import numpy as np
+from jax.experimental.compilation_cache import compilation_cache
 from pydantic import BaseModel, Discriminator, Field, field_validator, model_validator
 
 logger = logging.getLogger(__name__)
@@ -24,13 +26,17 @@ _SamplerType = TypeVar("_SamplerType", bound=str)
 class BaseSamplerConfig(BaseModel, Generic[_SamplerType]):
     """Fields shared by all sampler configs."""
 
-    model_config = {"extra": "forbid", "arbitrary_types_allowed": True}
+    model_config = {
+        "extra": "forbid",
+        "arbitrary_types_allowed": True,
+        "allow_inf_nan": False,
+    }
     type: _SamplerType
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Checkpoint mixin — included by the three BlackJAX configs that support it
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 class _CheckpointMixin(BaseModel):
@@ -50,6 +56,10 @@ class _CheckpointMixin(BaseModel):
 
     checkpoint_dir: Optional[Path] = None
     checkpoint_interval: float = Field(default=0.0, ge=0.0)
+
+    # ------------------------------------------------------------------
+    # Validation
+    # ------------------------------------------------------------------
 
     @field_validator("checkpoint_dir", mode="before")
     @classmethod
@@ -81,7 +91,12 @@ class _CheckpointMixin(BaseModel):
             Wall-clock time of the write (``time.perf_counter()``), suitable
             for resetting the caller's ``last_checkpoint_write_time`` timer.
         """
-        assert self.checkpoint_dir is not None
+        # --------------------------------------------------------------
+        # Checkpoint validation
+        # --------------------------------------------------------------
+
+        if self.checkpoint_dir is None:
+            raise ValueError("checkpoint_dir must be set to write a checkpoint.")
         checkpoint_path = self.checkpoint_dir / "checkpoint.pkl"
         checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
         temporary_path = checkpoint_path.with_suffix(".pkl.tmp")
@@ -112,27 +127,36 @@ class _CheckpointMixin(BaseModel):
 
         cache_dir = self.checkpoint_dir / "jax_cache"
         cache_dir.mkdir(parents=True, exist_ok=True)
-        jax.config.update("jax_compilation_cache_dir", str(cache_dir))
+        if jax.config.jax_compilation_cache_dir != str(cache_dir):
+            # Changing the setting alone leaves JAX's previous cache handle open.
+            compilation_cache.reset_cache()
+            jax.config.update("jax_compilation_cache_dir", str(cache_dir))
         jax.config.update("jax_persistent_cache_min_compile_time_secs", 0.0)
 
 
 class _ShardingMixin(BaseModel):
     """Single-host device sharding — included by NSS and SwiG (not NS AW)."""
 
-    n_devices: int = Field(default=1, ge=1)
+    n_devices: int = Field(default=1, ge=1, strict=True)
 
 
-# ---------------------------------------------------------------------------
-# Live-set mixin — shared by the nested samplers (NS AW, NSS, SwiG) that
-# maintain a live-particle set and delete/replace a fraction of it each step
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
+# Live-set mixin
+# ----------------------------------------------------------------------
+
+# NS AW, NSS and SwiG maintain a live-particle set and delete/replace a fraction
+# of it each step.
 
 
 class _LiveSetConfigMixin(BaseModel):
     """Shared ``n_live``/``n_delete_frac`` fields and validation for nested samplers."""
 
-    n_live: int
+    n_live: int = Field(strict=True)
     n_delete_frac: float
+
+    # ------------------------------------------------------------------
+    # Validation
+    # ------------------------------------------------------------------
 
     @field_validator("n_delete_frac")
     @classmethod
@@ -162,9 +186,9 @@ class _LiveSetConfigMixin(BaseModel):
         return self
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # flowMC sub-configs
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 class ParallelTemperingConfig(BaseModel):
@@ -174,11 +198,11 @@ class ParallelTemperingConfig(BaseModel):
     Use ``True`` to enable with all defaults, ``False`` / ``None`` to disable.
     """
 
-    model_config = {"extra": "forbid"}
+    model_config = {"extra": "forbid", "allow_inf_nan": False}
 
-    n_temperatures: int = Field(default=5, ge=1)
+    n_temperatures: int = Field(default=5, ge=1, strict=True)
     max_temperature: float = Field(default=10.0, gt=0.0)
-    n_tempered_steps: int = Field(default=5, ge=1)
+    n_tempered_steps: int = Field(default=5, ge=1, strict=True)
 
 
 class MALAConfig(BaseModel):
@@ -189,7 +213,11 @@ class MALAConfig(BaseModel):
     per-dimension step sizes.
     """
 
-    model_config = {"extra": "forbid", "arbitrary_types_allowed": True}
+    model_config = {
+        "extra": "forbid",
+        "arbitrary_types_allowed": True,
+        "allow_inf_nan": False,
+    }
 
     kernel: Literal["MALA"] = "MALA"
     step_size: float | np.ndarray = 2e-3
@@ -204,12 +232,16 @@ class HMCConfig(BaseModel):
     as the mass matrix / preconditioning for HMC leapfrog steps.
     """
 
-    model_config = {"extra": "forbid", "arbitrary_types_allowed": True}
+    model_config = {
+        "extra": "forbid",
+        "arbitrary_types_allowed": True,
+        "allow_inf_nan": False,
+    }
 
     kernel: Literal["HMC"] = "HMC"
     step_size: float = 2e-3
     condition_matrix: float | np.ndarray = 1.0
-    n_leapfrog_steps: int = Field(default=10, ge=1)
+    n_leapfrog_steps: int = Field(default=10, ge=1, strict=True)
 
 
 class GRWConfig(BaseModel):
@@ -220,7 +252,11 @@ class GRWConfig(BaseModel):
     per-dimension step sizes.
     """
 
-    model_config = {"extra": "forbid", "arbitrary_types_allowed": True}
+    model_config = {
+        "extra": "forbid",
+        "arbitrary_types_allowed": True,
+        "allow_inf_nan": False,
+    }
 
     kernel: Literal["GRW"] = "GRW"
     step_size: float | np.ndarray = 2e-3
@@ -261,35 +297,41 @@ class FlowMCConfig(BaseSamplerConfig[Literal["flowmc"]], _CheckpointMixin):
 
     type: Literal["flowmc"] = "flowmc"
 
-    n_chains: int = Field(default=1000, ge=1)
-    n_local_steps: int = Field(default=100, ge=1)
-    n_global_steps: int = Field(default=1000, ge=1)
-    n_training_loops: int = Field(default=20, ge=1)
-    n_production_loops: int = Field(default=10, ge=1)
-    n_epochs: int = Field(default=20, ge=1)
+    n_chains: int = Field(default=1000, ge=1, strict=True)
+    n_local_steps: int = Field(default=100, ge=1, strict=True)
+    n_global_steps: int = Field(default=1000, ge=1, strict=True)
+    n_training_loops: int = Field(default=20, ge=1, strict=True)
+    n_production_loops: int = Field(default=10, ge=1, strict=True)
+    n_epochs: int = Field(default=20, ge=1, strict=True)
 
     local_kernel: LocalKernelConfig = Field(default_factory=MALAConfig)
     parallel_tempering: Optional[ParallelTemperingConfig] = None
 
-    rq_spline_hidden_units: list[int] = Field(default_factory=lambda: [128, 128])
-    rq_spline_n_bins: int = Field(default=10, ge=1)
-    rq_spline_n_layers: int = Field(default=8, ge=1)
-    n_NFproposal_batch_size: int = Field(default=1000, ge=1)
+    rq_spline_hidden_units: list[Annotated[int, Field(strict=True, ge=1)]] = Field(
+        default_factory=lambda: [128, 128]
+    )
+    rq_spline_n_bins: int = Field(default=10, ge=1, strict=True)
+    rq_spline_n_layers: int = Field(default=8, ge=1, strict=True)
+    n_NFproposal_batch_size: int = Field(default=1000, ge=1, strict=True)
 
     learning_rate: float = Field(default=1e-3, gt=0.0)
-    batch_size: int = Field(default=10000, ge=1)
-    n_max_examples: int = Field(default=30000, ge=1)
-    history_window: int = Field(default=100, ge=1)
+    batch_size: int = Field(default=10000, ge=1, strict=True)
+    n_max_examples: int = Field(default=30000, ge=1, strict=True)
+    history_window: int = Field(default=100, ge=1, strict=True)
 
     # chain_batch_size=0 means "full batch" (flowMC's off sentinel), not a lower bound of 1.
-    chain_batch_size: int = Field(default=0, ge=0)
-    local_thinning: int = Field(default=1, ge=1)
-    global_thinning: int = Field(default=100, ge=1)
+    chain_batch_size: int = Field(default=0, ge=0, strict=True)
+    local_thinning: int = Field(default=1, ge=1, strict=True)
+    global_thinning: int = Field(default=100, ge=1, strict=True)
 
     early_stopping: bool = True
     early_stopping_tolerance: float = Field(default=0.1, ge=0.0)
-    early_stopping_patience: int = Field(default=3, ge=1)
+    early_stopping_patience: int = Field(default=3, ge=1, strict=True)
     early_stopping_min_acceptance: float = Field(default=0.1, ge=0.0, le=1.0)
+
+    # ------------------------------------------------------------------
+    # Validation
+    # ------------------------------------------------------------------
 
     @field_validator("local_kernel", mode="before")
     @classmethod
@@ -336,11 +378,10 @@ class BlackJAXNSAWConfig(
 
     type: Literal["blackjax-ns-aw"] = "blackjax-ns-aw"
 
-    n_live: int = 1000
+    n_live: int = Field(default=1000, strict=True)
     n_delete_frac: float = 0.5
-    n_target: int = Field(default=60, ge=1)
-    max_mcmc: int = Field(default=5000, ge=1)
-    max_proposals: int = Field(default=1000, ge=1)
+    n_target: int = Field(default=60, ge=1, strict=True)
+    max_mcmc: int = Field(default=5000, ge=1, strict=True)
     termination_dlogz: float = Field(default=0.1, gt=0.0)
 
 
@@ -359,9 +400,9 @@ class BlackJAXNSSConfig(
 
     type: Literal["blackjax-nss"] = "blackjax-nss"
 
-    n_live: int = 2000
+    n_live: int = Field(default=2000, strict=True)
     n_delete_frac: float = 0.5
-    num_inner_steps_per_dim: int = Field(default=20, ge=1)
+    num_inner_steps_per_dim: int = Field(default=20, ge=1, strict=True)
     termination_dlogz: float = Field(default=0.1, gt=0.0)
 
 
@@ -381,11 +422,15 @@ class BlackJAXSwiGConfig(
     type: Literal["blackjax-swig"] = "blackjax-swig"
 
     blocks: list[list[str]]
-    n_live: int = 500
+    n_live: int = Field(default=500, strict=True)
     n_delete_frac: float = 0.5
-    num_gibbs_sweeps: int = Field(default=2, ge=1)
-    num_inner_steps_per_dim: int = Field(default=1, ge=1)
+    num_gibbs_sweeps: int = Field(default=2, ge=1, strict=True)
+    num_inner_steps_per_dim: int = Field(default=1, ge=1, strict=True)
     termination_dlogz: float = Field(default=0.1, gt=0.0)
+
+    # ------------------------------------------------------------------
+    # Validation
+    # ------------------------------------------------------------------
 
     @field_validator("blocks")
     @classmethod
@@ -420,18 +465,22 @@ class BlackJAXSMCConfig(BaseSamplerConfig[Literal["blackjax-smc"]], _CheckpointM
 
     type: Literal["blackjax-smc"] = "blackjax-smc"
 
-    n_particles: int = Field(default=5000, ge=1)
-    n_mcmc_steps_per_dim: int = Field(default=100, ge=1)
-    target_ess: Optional[int] = None
+    n_particles: int = Field(default=5000, ge=1, strict=True)
+    n_mcmc_steps_per_dim: int = Field(default=100, ge=1, strict=True)
+    target_ess: Optional[int] = Field(default=None, strict=True)
     target_ess_fraction: Optional[float] = None
     # 0 = full vmap; >0 = lax.map batch size to reduce peak memory
-    batch_size: int = Field(default=0, ge=0)
+    batch_size: int = Field(default=0, ge=0, strict=True)
     initial_cov_scale: float = Field(default=0.5, gt=0.0)
     target_acceptance_rate: float = Field(default=0.234, gt=0.0, lt=1.0)
     scale_adaptation_gain: float = Field(default=3.0, gt=0.0)
 
     persistent_sampling: bool = True
     temperature_ladder: Optional[list[float]] = None
+
+    # ------------------------------------------------------------------
+    # Validation
+    # ------------------------------------------------------------------
 
     @field_validator("temperature_ladder")
     @classmethod

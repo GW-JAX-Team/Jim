@@ -24,6 +24,7 @@ It pairs differentiable waveform models from [ripple](https://github.com/GW-JAX-
 - **[Quick Start](quickstart.md)** — Run your first analysis with `jim-run`
 - **[Tutorials](tutorials/index.md)** — Hands-on worked examples
 - **[Guides](guides/index.md)** — In-depth coverage of each module and the CLI config reference
+- **[Technical Notes](notes/index.md)** — Conventions and implementation details behind the results
 - **[FAQ](FAQ.md)** — Answers to common questions
 - **[Citing Jim](citing.md)** — How to cite Jim
 - **[Contributing to Jim](contributing.md)** — How to contribute to Jim

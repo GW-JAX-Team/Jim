@@ -98,6 +98,19 @@ def test_time_to_merger_matches_lal_at_2pn(m1, m2):
         np.testing.assert_allclose(actual, expected, rtol=1e-6, atol=0.0)
 
 
+@pytest.mark.parametrize("chi1, chi2", [(0.5, 0.4), (0.5, -0.4)])
+def test_spinning_time_to_merger_matches_bilby_xg(chi1, chi2):
+    """Aligned-spin 2PN chirp time agrees with bilby_xG's, spin-spin term included."""
+    xg_utils = pytest.importorskip("bilby_xG.utils")
+    expected = xg_utils.calculate_time_to_merger_for_any_mode(
+        FREQUENCIES, M1, M2, chi1, chi2, mode=2
+    )
+    actual = np.asarray(time_to_merger(jnp.asarray(FREQUENCIES), M_C, ETA, chi1, chi2))
+    # Both evaluate the same closed form and agree to ~1e-15; the spin-spin
+    # term is at least ~4e-6 of tau over this band, so 1e-12 resolves it.
+    np.testing.assert_allclose(actual, expected, rtol=1e-12, atol=0.0)
+
+
 def test_rotating_response_matches_bilby_at_emission_times():
     """Each frequency sees bilby's response at the exact GMST of its emission time."""
     det = GroundBased3G.from_detector(get_ET()[0])

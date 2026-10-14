@@ -29,6 +29,10 @@ nav = [
         {"Samplers" = "guides/samplers.md"},
         {"Transforms" = "guides/transforms.md"},
     ]},
+    {"Technical Notes" = [
+        "notes/index.md",
+        {"Detector Response Conventions" = "notes/detector_response.md"},
+    ]},
     {"FAQ" = "FAQ.md"},
     {"Citing Jim" = "citing.md"},
     {"Contributing" = "contributing.md"},

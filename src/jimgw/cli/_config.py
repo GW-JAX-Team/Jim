@@ -23,7 +23,6 @@ from pydantic import (
 
 from jimgw.cli._utils import (
     CARTESIAN_SPIN_PARAMS,
-    DEFAULT_ASD_DETECTORS,
     DETECTOR_SKY_PARAMS,
     EQUATORIAL_SKY_PARAMS,
     J_FRAME_SPIN_PARAMS,
@@ -161,18 +160,6 @@ class InjectionDataConfig(_PSDSourceBase):
             )
         if not self.zero_noise and self.noise_seed is None:
             raise ValueError("noise_seed is required when zero_noise = false.")
-        return self
-
-    @model_validator(mode="after")
-    def _check_built_in_psd_available(self) -> "InjectionDataConfig":
-        if self.psd_files is None and self.asd_files is None:
-            no_default = [d for d in self.detectors if d not in DEFAULT_ASD_DETECTORS]
-            if no_default:
-                raise ValueError(
-                    f"No built-in PSD for detector(s) {no_default} (built-in "
-                    f"defaults: {sorted(DEFAULT_ASD_DETECTORS)}). Set psd_files "
-                    "or asd_files, naming every detector."
-                )
         return self
 
 

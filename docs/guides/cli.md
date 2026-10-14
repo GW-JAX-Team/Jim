@@ -51,7 +51,7 @@ Fetches public LIGO/Virgo/KAGRA strain and PSD from the Gravitational-Wave Open 
 
 Injects a waveform into simulated Gaussian noise drawn from the detector PSD.
 
-By default the PSD is the built-in O3 ASD, available for `H1`, `L1` and `V1`.
+By default the PSD is the design-sensitivity ASD Jim ships for each detector; see [Default design-sensitivity ASD](data.md#default-design-sensitivity-asd).
 To use your own, set `psd_files` or `asd_files`; see the note on PSD and ASD files below.
 
 | Field | Type | Default | Description |
@@ -63,7 +63,7 @@ To use your own, set `psd_files` or `asd_files`; see the note on PSD and ASD fil
 | `injection_parameters` | dict[str, float] | — | Signal parameters to inject |
 | `zero_noise` | bool | `false` | If `true`, inject into zero noise. |
 | `noise_seed` | int | — | Seed for the injected noise. Required unless `zero_noise = true`. |
-| `psd_files` | dict[str, path] | — | Map from detector name to PSD file. Mutually exclusive with `asd_files`. Omit both to use the built-in O3 ASD. |
+| `psd_files` | dict[str, path] | — | Map from detector name to PSD file. Mutually exclusive with `asd_files`. Omit both to use the built-in design-sensitivity ASD. |
 | `asd_files` | dict[str, path] | — | Map from detector name to ASD file. Mutually exclusive with `psd_files`. |
 
 Example:

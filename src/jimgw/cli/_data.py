@@ -122,8 +122,6 @@ def _load_injection(
         # likelihood reads it back, so both always use the same PSD.
         psd = _read_psd(cfg, config_name[ifo.name])
         if psd is None:
-            # Config validation guarantees a built-in default exists here.
-            logger.info("Loading built-in O3 ASD for %s", ifo.name)
             ifo.load_and_set_psd()
         else:
             ifo.set_psd(psd)

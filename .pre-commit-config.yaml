@@ -49,4 +49,5 @@ repos:
         entry: uv run --no-sync pyright
         language: system
         files: src/
+        types_or: [python, pyi]
         require_serial: true

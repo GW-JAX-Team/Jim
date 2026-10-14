@@ -1,13 +1,11 @@
 import copy
 import logging
-import os
-import tempfile
 import zlib
 from abc import ABC, abstractmethod
+from importlib import resources
 
 import jax
 import jax.numpy as jnp
-import requests
 from beartype import beartype as typechecker
 from jaxtyping import Array, Complex, Float, Key, jaxtyped
 
@@ -32,11 +30,16 @@ from jimgw.typing import ComplexScalar, FloatScalar
 
 logger = logging.getLogger(__name__)
 
-# TODO: Need to expand this list. Currently it is only O3.
-asd_file_dict = {
-    "H1": "https://dcc.ligo.org/public/0169/P2000251/001/O3-H1-C01_CLEAN_SUB60HZ-1251752040.0_sensitivity_strain_asd.txt",
-    "L1": "https://dcc.ligo.org/public/0169/P2000251/001/O3-L1-C01_CLEAN_SUB60HZ-1240573680.0_sensitivity_strain_asd.txt",
-    "V1": "https://dcc.ligo.org/public/0169/P2000251/001/O3-V1_sensitivity_strain_asd.txt",
+# Design-sensitivity ASD packaged for each interferometer; the sources are
+# credited in noise_curves/README.md.
+default_asd_files = {
+    "H1": "aLIGO_design_asd.txt",
+    "L1": "aLIGO_design_asd.txt",
+    "V1": "AdV_design_asd.txt",
+    "ET1": "ET_D_asd.txt",
+    "ET2": "ET_D_asd.txt",
+    "ET3": "ET_D_asd.txt",
+    "CE": "CE_40km_asd.txt",
 }
 
 
@@ -633,8 +636,8 @@ class GroundBased2G(Detector):
 
     @jaxtyped(typechecker=typechecker)
     def load_and_set_psd(self, psd_file: str = "", asd_file: str = "") -> PowerSpectrum:
-        """Load power spectral density (PSD) from file or default GWTC-2 catalog,
-            and set it to the detector.
+        """Load power spectral density (PSD) from file or the built-in design
+            sensitivity, and set it to the detector.
 
         Supported formats: .npz, .txt, .dat, .csv.
         Pass ``asd_file`` (or ``is_asd=True`` via :meth:`PowerSpectrum.from_file`)
@@ -642,14 +645,16 @@ class GroundBased2G(Detector):
         ($\\mathrm{Hz}^{-1/2}$); they are squared internally to produce a PSD.
 
         Args:
-            psd_file (str, optional): Path to a PSD file ($\\mathrm{Hz}^{-1}$). If empty, uses GWTC-2 ASD.
+            psd_file (str, optional): Path to a PSD file ($\\mathrm{Hz}^{-1}$). If neither file is given,
+                the design-sensitivity ASD packaged for this detector is used (see ``noise_curves/README.md``).
             asd_file (str, optional): Path to an ASD file ($\\mathrm{Hz}^{-1/2}$). Values are squared.
 
         Returns:
             PowerSpectrum: The loaded PSD, already set on the detector.
 
         Raises:
-            ValueError: If both ``psd_file`` and ``asd_file`` are given.
+            ValueError: If both ``psd_file`` and ``asd_file`` are given, or if neither is
+                given and the detector has no built-in PSD.
         """
         self._check_mutable()
         # --------------------------------------------------------------
@@ -665,19 +670,19 @@ class GroundBased2G(Detector):
         elif asd_file:
             _loaded_psd = PowerSpectrum.from_file(asd_file, is_asd=True)
         else:
-            logger.info("Grabbing GWTC-2 PSD for " + self.name)
-            url = asd_file_dict[self.name]
-            response = requests.get(url, timeout=30)
-            response.raise_for_status()
-            fd, tmp_file_name = tempfile.mkstemp(
-                suffix=".txt", prefix=f"jim_asd_{self.name}_"
+            if self.name not in default_asd_files:
+                raise ValueError(
+                    f"No built-in PSD for detector {self.name}; pass psd_file or "
+                    f"asd_file. Built-in: {sorted(default_asd_files)}."
+                )
+            logger.info("Loading the design-sensitivity ASD for %s", self.name)
+            curve = (
+                resources.files("jimgw.core.single_event")
+                / "noise_curves"
+                / default_asd_files[self.name]
             )
-            try:
-                with os.fdopen(fd, "wb") as _fh:
-                    _fh.write(response.content)
-                _loaded_psd = PowerSpectrum.from_file(tmp_file_name, is_asd=True)
-            finally:
-                os.unlink(tmp_file_name)
+            with resources.as_file(curve) as path:
+                _loaded_psd = PowerSpectrum.from_file(str(path), is_asd=True)
         _loaded_psd.name = f"{self.name}_psd"
         self.set_psd(_loaded_psd)
         return self.psd

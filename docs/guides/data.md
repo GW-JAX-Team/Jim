@@ -147,13 +147,23 @@ time_data.set_tukey_window(roll_off=0.2)  # seconds on each side
 
 Before you can evaluate a likelihood, each detector also needs a power spectral density (PSD).
 
-### Default GWTC-2 ASD
+### Default design-sensitivity ASD
 
-The simplest approach downloads and sets the default GWTC-2 ASD for the detector:
+With no arguments, `load_and_set_psd` sets the design-sensitivity ASD that Jim ships for the detector:
 
 ```python
 H1.load_and_set_psd()
 ```
+
+| Detector | Curve | Source |
+| --- | --- | --- |
+| H1, L1 | Advanced LIGO design | LIGO-T1800044 (Barsotti, Fritschel, Evans, Gras) |
+| V1 | Advanced Virgo design | LIGO-P1200087-v42 (LIGO Scientific Collaboration and Virgo Collaboration) |
+| ET1, ET2, ET3 | Einstein Telescope ET-D | LIGO-T1500293 (Evans, Sturani, Vitale, Hall); ET-D design: Hild et al. 2011 |
+| CE | Cosmic Explorer 40 km | CE-T2000017 (Cosmic Explorer Project) |
+
+Links, versions, frequency ranges and checksums are in the [noise curve README](https://github.com/GW-JAX-Team/Jim/blob/main/src/jimgw/core/single_event/noise_curves/README.md).
+Please cite the source documents when you use these curves.
 
 ### Load from a file
 

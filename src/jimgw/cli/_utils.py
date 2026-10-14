@@ -24,6 +24,3 @@ DETECTOR_SKY_PARAMS = frozenset({"azimuth", "zenith"})
 
 # Detector names supported by get_detector_preset()
 SUPPORTED_DETECTORS = frozenset({"H1", "L1", "V1", "ET", "CE"})
-
-# Detectors with a built-in default ASD
-DEFAULT_ASD_DETECTORS = frozenset({"H1", "L1", "V1"})

@@ -1,5 +1,6 @@
 import logging
 import time
+from importlib import resources
 from itertools import combinations
 from pathlib import Path
 from types import SimpleNamespace
@@ -13,7 +14,9 @@ from jimgw.core.constants import EARTH_SEMI_MAJOR_AXIS, EARTH_SEMI_MINOR_AXIS
 from jimgw.core.single_event.data import Data, PowerSpectrum
 from jimgw.core.single_event.detector import (
     GroundBased2G,
+    default_asd_files,
     get_CE,
+    get_detector_preset,
     get_ET,
     get_H1,
     get_L1,
@@ -840,6 +843,37 @@ class TestLoadAndSetPsd:
             det.load_and_set_psd(psd_file=path, asd_file=path)
         assert det.psd.is_empty
 
+    @staticmethod
+    def preset_interferometers():
+        return {
+            ifo.name: ifo
+            for value in get_detector_preset().values()
+            for ifo in (value if isinstance(value, list) else [value])
+        }
+
+    def test_every_preset_interferometer_has_a_default(self):
+        assert set(default_asd_files) == set(self.preset_interferometers())
+
+    @pytest.mark.parametrize("name", sorted(default_asd_files))
+    def test_default_is_the_packaged_design_asd(self, name):
+        psd = self.preset_interferometers()[name].load_and_set_psd()
+
+        curve = resources.files("jimgw.core.single_event") / "noise_curves"
+        frequencies, asd = np.genfromtxt(
+            str(curve / default_asd_files[name]), unpack=True
+        )
+        np.testing.assert_array_equal(np.asarray(psd.frequencies), frequencies)
+        np.testing.assert_array_equal(np.asarray(psd.values), asd**2)
+        in_range = (frequencies >= 20.0) & (frequencies <= 1024.0)
+        assert np.all(np.isfinite(asd[in_range]) & (asd[in_range] > 0.0))
+
+    def test_detector_without_a_default_asks_for_a_file(self):
+        det = get_H1()
+        det.name = "X1"
+        with pytest.raises(ValueError, match="No built-in PSD for detector X1"):
+            det.load_and_set_psd()
+        assert det.psd.is_empty
+
 
 class TestInjectionArguments:
     def inject(self, det, parameters=REFERENCE_PARAMS, **kwargs):
@@ -1467,7 +1501,6 @@ class TestDetectorFreezing:
         monkeypatch.setattr(PowerSpectrum, "__init__", unexpected)
         monkeypatch.setattr(PowerSpectrum, "from_file", unexpected)
         monkeypatch.setattr(type(det), "_zero_data", unexpected)
-        monkeypatch.setattr("jimgw.core.single_event.detector.requests.get", unexpected)
         args, kwargs = calls[method]
         with pytest.raises(RuntimeError, match="frozen"):
             getattr(det, method)(*args, **kwargs)

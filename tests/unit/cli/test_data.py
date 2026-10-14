@@ -6,8 +6,8 @@ injected noise and the likelihood read.
 """
 
 import time
+from importlib import resources
 from pathlib import Path
-from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -19,10 +19,9 @@ from jimgw.cli._config import (
     WaveformConfig,
 )
 from jimgw.cli._data import build_data
-from jimgw.cli._utils import DEFAULT_ASD_DETECTORS
 from jimgw.cli._waveform import build_waveform
 from jimgw.core.single_event.data import Data
-from jimgw.core.single_event.detector import asd_file_dict
+from jimgw.core.single_event.detector import GroundBased2G, default_asd_files
 from tests.utils import sliced_fd_data, sliced_frequencies, sliced_psd
 
 FIXTURES = Path(__file__).resolve().parents[2] / "fixtures"
@@ -82,17 +81,12 @@ def _fixture_psd(name):
         return np.asarray(f["frequencies"]), np.asarray(f["values"])
 
 
-def _no_network(*args, **kwargs):
-    raise AssertionError("the built-in ASD was fetched although a PSD file was set")
+def _no_built_in(*args, **kwargs):
+    raise AssertionError("the built-in ASD was loaded although a PSD file was set")
 
 
-def test_default_asd_detectors_match_detector_module():
-    # The JAX-free copy used by config validation must not drift from the real list.
-    assert DEFAULT_ASD_DETECTORS == frozenset(asd_file_dict)
-
-
-def test_injection_uses_psd_files_and_never_touches_the_network(waveform, monkeypatch):
-    monkeypatch.setattr("requests.get", _no_network)
+def test_injection_uses_psd_files_and_not_the_built_in_default(waveform, monkeypatch):
+    monkeypatch.setattr(GroundBased2G, "load_and_set_psd", _no_built_in)
     cfg = _injection_cfg(
         ("H1", "L1"),
         psd_files={
@@ -111,7 +105,7 @@ def test_injection_uses_psd_files_and_never_touches_the_network(waveform, monkey
 
 
 def test_injection_squares_asd_files(tmp_path, waveform, monkeypatch):
-    monkeypatch.setattr("requests.get", _no_network)
+    monkeypatch.setattr(GroundBased2G, "load_and_set_psd", _no_built_in)
     freqs = np.arange(1.0, 2048.0 + 0.25, 0.25)
     asd = 1e-23 * (1.0 + (30.0 / freqs) ** 2)
     asd_file = tmp_path / "h1_asd.txt"
@@ -161,7 +155,7 @@ def test_injected_noise_follows_each_detectors_psd_and_is_independent(waveform):
 
 def test_injection_squares_npz_asd_files(tmp_path, waveform, monkeypatch):
     # An .npz archive listed under asd_files is read as an ASD, like any other format.
-    monkeypatch.setattr("requests.get", _no_network)
+    monkeypatch.setattr(GroundBased2G, "load_and_set_psd", _no_built_in)
     freqs, values = _fixture_psd("H1")
     asd_file = tmp_path / "h1_asd.npz"
     np.savez(asd_file, values=np.sqrt(values), frequencies=freqs)
@@ -177,38 +171,27 @@ def test_injection_squares_npz_asd_files(tmp_path, waveform, monkeypatch):
     np.testing.assert_allclose(np.asarray(sliced_psd(ifo)), expected, rtol=1e-12)
 
 
-def test_injection_without_files_falls_back_to_built_in_asd(waveform, monkeypatch):
-    fetched = []
-
-    def fake_get(url, timeout=None):
-        fetched.append(url)
-        freqs = np.arange(1.0, 4096.0 + 0.25, 0.25)
-        text = "\n".join(f"{f} 1e-23" for f in freqs)
-        return SimpleNamespace(content=text.encode(), raise_for_status=lambda: None)
-
-    monkeypatch.setattr("requests.get", fake_get)
-
+@pytest.mark.parametrize("detector", ["H1", "L1", "V1", "ET", "CE"])
+def test_injection_without_files_uses_the_built_in_design_asd(detector, waveform):
     ifos = build_data(
-        # A flat PSD gives the sharp low-frequency cutoff more relative weight;
-        # leave enough pre-trigger data to contain its time-domain tails.
-        _injection_cfg(("H1", "L1"), duration=16.0),
-        f_min=F_MIN,
-        f_max=F_MAX,
-        waveform=waveform,
+        _injection_cfg((detector,)), f_min=F_MIN, f_max=F_MAX, waveform=waveform
     )
 
-    assert fetched == [asd_file_dict["H1"], asd_file_dict["L1"]]
     for ifo in ifos:
-        np.testing.assert_allclose(np.asarray(sliced_psd(ifo)), 1e-46, rtol=1e-12)
+        curve = resources.files("jimgw.core.single_event") / "noise_curves"
+        frequencies, asd = np.genfromtxt(
+            str(curve / default_asd_files[ifo.name]), unpack=True
+        )
+        expected = np.interp(np.asarray(sliced_frequencies(ifo)), frequencies, asd**2)
+        np.testing.assert_allclose(np.asarray(sliced_psd(ifo)), expected, rtol=1e-12)
 
 
 @pytest.mark.parametrize("detector, n_interferometers", [("CE", 1), ("ET", 3)])
 def test_injection_table_is_keyed_by_detector_name(
     detector, n_interferometers, waveform, monkeypatch
 ):
-    # CE and ET have no built-in PSD, so a file is the only way to inject.  One "ET"
-    # entry covers all three ET interferometers (ET1-ET3).
-    monkeypatch.setattr("requests.get", _no_network)
+    # One "ET" entry covers all three ET interferometers (ET1-ET3).
+    monkeypatch.setattr(GroundBased2G, "load_and_set_psd", _no_built_in)
     cfg = _injection_cfg(
         (detector,), psd_files={detector: FIXTURES / "GW150914_psd_H1.npz"}
     )
@@ -279,7 +262,7 @@ def test_file_data_carry_the_trigger_time():
 
 
 def test_file_data_load_each_et_interferometers_own_strain(tmp_path, monkeypatch):
-    monkeypatch.setattr("requests.get", _no_network)
+    monkeypatch.setattr(GroundBased2G, "load_and_set_psd", _no_built_in)
     trigger = 1126259462.4
     strain_files = {}
     for index, name in enumerate(("ET1", "ET2", "ET3"), start=1):

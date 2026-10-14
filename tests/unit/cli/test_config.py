@@ -466,29 +466,22 @@ def test_asd_files_must_name_every_detector():
         )
 
 
-def test_injection_without_files_uses_built_in_default_for_known_detectors():
-    cfg = InjectionDataConfig.model_validate(_injection_data(("H1", "L1", "V1")))
+def test_injection_without_files_uses_built_in_default_for_every_detector():
+    cfg = InjectionDataConfig.model_validate(
+        _injection_data(("H1", "L1", "V1", "ET", "CE"))
+    )
     assert cfg.psd_files is None
     assert cfg.asd_files is None
 
 
-@pytest.mark.parametrize("detector", ["CE", "ET"])
-def test_injection_without_files_rejects_detectors_without_default(detector):
-    # Caught at config time, instead of failing mid-run with no way to fix it.
-    with pytest.raises(
-        ValidationError, match=rf"No built-in PSD for detector\(s\) \['{detector}'\]"
-    ):
-        InjectionDataConfig.model_validate(_injection_data((detector,)))
-
-
-def test_injection_accepts_files_for_detectors_without_default():
+def test_injection_accepts_psd_files_for_ce():
     cfg = InjectionDataConfig.model_validate(
         _injection_data(("CE",), psd_files={"CE": "ce_psd.txt"})
     )
     assert cfg.psd_files == {"CE": Path("ce_psd.txt")}
 
 
-def test_injection_files_must_cover_detectors_that_have_a_default_too():
+def test_injection_files_must_cover_every_detector():
     # No silent fallback to the built-in default for a detector missing from the table.
     with pytest.raises(ValidationError, match=r"asd_files missing for: \['H1'\]"):
         InjectionDataConfig.model_validate(

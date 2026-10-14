@@ -35,7 +35,6 @@ dependencies = [
     "matplotlib>=3.10.7",
     "numpy>=1.26",
     "pydantic>=2",
-    "requests>=2.32.3",
     "ripplegw>=0.4.1",
     "scipy>=1.17.1",
     "tomli-w>=1.0",

@@ -11,7 +11,7 @@ from typing import get_args
 import pytest
 
 from jimgw.cli._config import Approximant, WaveformConfig
-from jimgw.cli._waveform import build_waveform
+from jimgw.cli._waveform import _REGISTRY, build_waveform
 
 
 @pytest.mark.parametrize("approximant", get_args(Approximant))
@@ -25,3 +25,8 @@ def test_build_waveform_resolves_every_approximant(approximant):
         assert not hasattr(waveform, "f_ref")
     else:
         assert waveform.f_ref == 17.0
+
+
+def test_the_config_and_the_builder_offer_the_same_approximants():
+    """A model added to one list but not the other is caught here."""
+    assert set(get_args(Approximant)) == set(_REGISTRY) | {"SineGaussian"}

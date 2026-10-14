@@ -24,15 +24,16 @@ lalsim = pytest.importorskip("lalsimulation")
 )
 @pytest.mark.parametrize("higher_modes", [False, True])
 @pytest.mark.parametrize("long_enough", [False, True])
+@pytest.mark.parametrize("spins", [(1.0, 1.0), (0.0, 0.0), (0.3, -0.6)])
 def test_conservative_duration_against_lal(
-    chirp_mass, eta, f_min, higher_modes, long_enough
+    chirp_mass, eta, f_min, higher_modes, long_enough, spins
 ):
     total_mass = chirp_mass / eta**0.6
     asymmetry = float(jnp.sqrt(1 - 4 * eta))
     m1 = total_mass * (1 + asymmetry) / 2 * lal.MSUN_SI
     m2 = total_mass * (1 - asymmetry) / 2 * lal.MSUN_SI
     f_start = f_min / 2 if higher_modes else f_min
-    chirp = lalsim.SimInspiralChirpTimeBound(f_start, m1, m2, 1.0, 1.0)
+    chirp = lalsim.SimInspiralChirpTimeBound(f_start, m1, m2, *spins)
     merger = lalsim.SimInspiralMergeTimeBound(m1, m2)
     ringdown = lalsim.SimInspiralRingdownTimeBound(m1 + m2, 0.998)
     padding = 3 / f_start + EARTH_RADIUS_LIGHT_S
@@ -50,7 +51,13 @@ def test_conservative_duration_against_lal(
     )
     factory = RippleIMRPhenomXHM if higher_modes else RippleIMRPhenomD
     model = factory(f_ref=f_min)
-    params = {"M_c": chirp_mass, "eta": eta, "t_c": 0.0}
+    params = {
+        "M_c": chirp_mass,
+        "eta": eta,
+        "s1_z": spins[0],
+        "s2_z": spins[1],
+        "t_c": 0.0,
+    }
     if long_enough:
         detector._check_signal_duration(model, params, 0.0, False)
     else:

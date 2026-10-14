@@ -1005,9 +1005,10 @@ class GroundBased2G(Detector):
     ) -> None:
         """Check a rough, conservative CBC duration without evaluating the waveform.
 
-        Use LAL's positive 2PN chirp-time terms with maximal physical spin, then
-        add rounded merger/ringdown bounds, one low-frequency cycle and the maximum
-        geocenter delay. This estimates physical duration, not Fourier-cut tails.
+        Use LAL's positive 2PN chirp-time terms with the larger spin magnitude of the
+        two components (the maximal physical spin if the waveform has no spin
+        parameters), then add rounded merger/ringdown bounds, one low-frequency
+        cycle and the maximum geocenter delay. This estimates physical duration, not Fourier-cut tails.
         See ``XLALSimInspiralChirpTimeBound`` in LALSimInspiral.c.
         """
         # --------------------------------------------------------------
@@ -1026,22 +1027,34 @@ class GroundBased2G(Detector):
                 raise ValueError("M_c must be finite and positive.")
             eta = float(params["eta"])
             mass_seconds = chirp_mass * MTSUN / eta**0.6
-            f_start = self.data.frequency_bounds[0]
-            # Current Ripple higher-mode models include harmonics through m=4;
-            # their earliest orbital frequency in the frequency range of the data is
-            # half that of m=2.
-            if type(waveform_model).__name__ in {
-                "IMRPhenomHM",
-                "IMRPhenomXHM",
-                "IMRPhenomXPHM",
-            }:
-                f_start /= 2
+            # LAL uses the larger spin magnitude; without spin parameters, assume 1.
+            names = waveform_model.parameter_names
+            spins = [
+                [
+                    float(params[f"s{body}_{axis}"])
+                    for axis in "xyz"
+                    if f"s{body}_{axis}" in names
+                ]
+                for body in "12"
+            ]
+            chi = (
+                max(sum(c**2 for c in spin) ** 0.5 for spin in spins)
+                if any(spins)
+                else 1.0
+            )
+            # The harmonic with the highest m enters the frequency range of the data
+            # at an orbital frequency of f_min / highest_mode, i.e. at a 22-mode
+            # frequency of 2 f_min / highest_mode.
+            metadata = getattr(waveform_model, "waveform_metadata", {})
+            f_start = (
+                self.data.frequency_bounds[0] * 2 / metadata.get("highest_mode", 2)
+            )
             v = (jnp.pi * mass_seconds * f_start) ** (1 / 3)
             newtonian = 5 * mass_seconds / (256 * eta * v**8)
             chirp_time = newtonian * (
                 1
                 + (743 / 252 + 11 * eta / 3) * v**2
-                + (226 / 15) * v**3
+                + (226 / 15) * chi * v**3
                 + (3058673 / 508032 + 5429 * eta / 504 + 617 * eta**2 / 72) * v**4
             )
             padding = 1 / f_start + EARTH_RADIUS_LIGHT_S

@@ -2,6 +2,7 @@ import logging
 import time
 from itertools import combinations
 from pathlib import Path
+from types import SimpleNamespace
 
 import jax
 import jax.numpy as jnp
@@ -1066,7 +1067,7 @@ class TestSignalMustFitTheSegment:
     def inject(self, det, waveform=WAVEFORM, **updates):
         return det.inject_signal(waveform, {**REFERENCE_PARAMS, **updates})
 
-    @pytest.mark.parametrize("t_c", [1.9, 3.0, 7.0, -0.6, -3.0, 64.0, -64.0])
+    @pytest.mark.parametrize("t_c", [1.9, 3.0, 7.0, -0.7, -3.0, 64.0, -64.0])
     def test_a_signal_placed_outside_the_segment_is_refused(self, t_c):
         det = zero_noise_detector()
         before = state_of(det)
@@ -1074,13 +1075,75 @@ class TestSignalMustFitTheSegment:
             self.inject(det, t_c=t_c)
         assert_untouched(det, before)
 
-    # The reference signal fits for t_c between about -0.47 s and +1.60 s: the
+    # The reference signal fits for t_c between about -0.65 s and +1.60 s: the
     # chirp needs time before the peak, and only the ringdown comes after it.
-    @pytest.mark.parametrize("t_c", [0.0, 0.03, -0.25, 1.2])
+    @pytest.mark.parametrize("t_c", [0.0, 0.03, -0.25, -0.55, 1.2])
     def test_a_signal_inside_the_segment_is_injected(self, t_c):
         det = zero_noise_detector()
         self.inject(det, t_c=t_c)
         assert holds_a_signal(det)
+
+    @pytest.mark.parametrize(
+        ("spins", "t_c", "fits"),
+        [
+            ((0.0, 0.0), -0.70, True),
+            ((0.0, 0.0), -0.75, False),
+            ((0.1, -0.3), -0.60, True),
+            ((0.1, -0.3), -0.70, False),
+            ((-1.0, 0.2), -0.40, True),
+            ((-1.0, 0.2), -0.55, False),
+        ],
+    )
+    def test_the_larger_spin_sets_the_time_needed_before_the_peak(
+        self, spins, t_c, fits
+    ):
+        # The earliest allowed t_c is about -0.73 s for zero spin, -0.65 s for a
+        # larger spin of 0.3 and -0.47 s for a spin of 1 (in either direction).
+        det = zero_noise_detector()
+        params = {**REFERENCE_PARAMS, "s1_z": spins[0], "s2_z": spins[1], "t_c": t_c}
+        if fits:
+            det._check_signal_duration(WAVEFORM, params, GPS_TIME, False)
+        else:
+            with pytest.raises(ValueError, match="does not fit the segment"):
+                det._check_signal_duration(WAVEFORM, params, GPS_TIME, False)
+
+    @pytest.mark.parametrize("spin", ["s1_x", "s1_z", "s2_y"])
+    def test_precessing_waveforms_count_the_whole_spin_vector(self, spin):
+        det = zero_noise_detector()
+        waveform = RippleIMRPhenomPv2(f_ref=20.0)
+        spins = {f"s{body}_{axis}": 0.0 for body in "12" for axis in "xyz"}
+        params = {**REFERENCE_PARAMS, **spins, "t_c": -0.62}
+        det._check_signal_duration(waveform, params, GPS_TIME, False)
+        with pytest.raises(ValueError, match="does not fit the segment"):
+            det._check_signal_duration(waveform, {**params, spin: 0.8}, GPS_TIME, False)
+
+    def test_a_waveform_without_spin_parameters_assumes_the_maximal_spin(self):
+        class NoSpin:
+            parameter_names = ("M_c", "eta")
+
+        det = zero_noise_detector()
+        params = {"M_c": 28.0, "eta": 0.24, "t_c": -0.40}
+        det._check_signal_duration(NoSpin(), params, GPS_TIME, False)
+        with pytest.raises(ValueError, match="does not fit the segment"):
+            det._check_signal_duration(
+                NoSpin(), {**params, "t_c": -0.55}, GPS_TIME, False
+            )
+
+    @pytest.mark.parametrize(("highest_mode", "fits"), [(2, True), (4, False)])
+    def test_the_highest_mode_of_the_waveform_sets_the_starting_frequency(
+        self, highest_mode, fits
+    ):
+        tagged = SimpleNamespace(
+            parameter_names=("M_c", "eta"),
+            waveform_metadata={"highest_mode": highest_mode},
+        )
+        det = zero_noise_detector()
+        params = {"M_c": 28.0, "eta": 0.24, "t_c": 0.0}
+        if fits:
+            det._check_signal_duration(tagged, params, GPS_TIME, False)
+        else:
+            with pytest.raises(ValueError, match="does not fit the segment"):
+                det._check_signal_duration(tagged, params, GPS_TIME, False)
 
     @pytest.mark.parametrize(
         ("chirp_mass", "fits"),

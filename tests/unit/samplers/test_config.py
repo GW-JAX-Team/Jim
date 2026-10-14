@@ -51,7 +51,7 @@ from jimgw.samplers.config import (
         ),
         (ParallelTemperingConfig, ("n_temperatures", "n_tempered_steps"), {}),
         (HMCConfig, ("n_leapfrog_steps",), {}),
-        (BlackJAXNSAWConfig, ("n_live", "n_target", "max_mcmc", "max_proposals"), {}),
+        (BlackJAXNSAWConfig, ("n_live", "n_target", "max_mcmc"), {}),
         (BlackJAXNSSConfig, ("n_live", "n_devices", "num_inner_steps_per_dim"), {}),
         (
             BlackJAXSwiGConfig,

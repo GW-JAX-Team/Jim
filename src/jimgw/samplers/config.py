@@ -382,7 +382,6 @@ class BlackJAXNSAWConfig(
     n_delete_frac: float = 0.5
     n_target: int = Field(default=60, ge=1, strict=True)
     max_mcmc: int = Field(default=5000, ge=1, strict=True)
-    max_proposals: int = Field(default=1000, ge=1, strict=True)
     termination_dlogz: float = Field(default=0.1, gt=0.0)
 
 

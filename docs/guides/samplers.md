@@ -122,7 +122,6 @@ jim = Jim(
         n_delete_frac=0.5,
         n_target=60,
         max_mcmc=5000,
-        max_proposals=1000,
         termination_dlogz=0.1,
     ),
     sample_transforms=sample_transforms,

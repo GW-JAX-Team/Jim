@@ -42,7 +42,6 @@ from jimgw.typing import FloatScalar, IntScalar
 
 class DEInfo(NamedTuple):
     is_accepted: Bool[Array, ""]
-    evals: IntScalar
     likelihood_evals: IntScalar
 
 
@@ -50,7 +49,6 @@ class DEWalkInfo(NamedTuple):
     n_accept: IntScalar
     walks_completed: IntScalar
     n_likelihood_evals: IntScalar
-    total_proposals: IntScalar
 
 
 class DEKernelParams(NamedTuple):
@@ -74,47 +72,38 @@ def _de_one_step(
     stepper_fn,
     num_survivors: int,
     top_indices: Int[Array, " num_survivors"],
-    max_proposals: int = 1000,
 ):
-    def body_fun(carry):
-        _is_valid, key, _pos, _logp, count = carry
-        key_a, key_b, key_mix, key_gamma, new_key = jax.random.split(key, 5)
+    key_a, key_b, key_mix, key_gamma = jax.random.split(rng_key, 4)
 
-        pos_a = jax.random.randint(key_a, (), 0, num_survivors)
-        pos_b_raw = jax.random.randint(key_b, (), 0, num_survivors - 1)
-        pos_b = jnp.where(pos_b_raw >= pos_a, pos_b_raw + 1, pos_b_raw)
+    pos_a = jax.random.randint(key_a, (), 0, num_survivors)
+    pos_b_raw = jax.random.randint(key_b, (), 0, num_survivors - 1)
+    pos_b = jnp.where(pos_b_raw >= pos_a, pos_b_raw + 1, pos_b_raw)
 
-        point_a = jax.tree_util.tree_map(
-            lambda x: x[top_indices[pos_a]], params.live_points
-        )
-        point_b = jax.tree_util.tree_map(
-            lambda x: x[top_indices[pos_b]], params.live_points
-        )
-        delta = jax.tree_util.tree_map(lambda a, b: a - b, point_a, point_b)
+    point_a = jax.tree_util.tree_map(
+        lambda x: x[top_indices[pos_a]], params.live_points
+    )
+    point_b = jax.tree_util.tree_map(
+        lambda x: x[top_indices[pos_b]], params.live_points
+    )
+    delta = jax.tree_util.tree_map(lambda a, b: a - b, point_a, point_b)
 
-        is_small_step = jax.random.uniform(key_mix) < params.mix
-        gamma = jnp.where(
-            is_small_step,
-            params.scale * jax.random.gamma(key_gamma, 4.0) * 0.25,
-            1.0,
-        )
-
-        new_pos = stepper_fn(state.position, delta, gamma)
-        new_logp = logprior_fn(new_pos)
-        new_is_valid = jnp.isfinite(new_logp)
-
-        return (new_is_valid, new_key, new_pos, new_logp, count + 1)
-
-    def cond_fun(carry):
-        is_valid, _, _, _, count = carry
-        return jnp.logical_and(jnp.logical_not(is_valid), count < max_proposals)
-
-    init = (jnp.array(False), rng_key, state.position, state.logdensity, jnp.array(0))
-    is_valid, _, pos_prop, logp_prop, n_proposals = jax.lax.while_loop(
-        cond_fun, body_fun, init
+    is_small_step = jax.random.uniform(key_mix) < params.mix
+    gamma = jnp.where(
+        is_small_step,
+        params.scale * jax.random.gamma(key_gamma, 4.0) * 0.25,
+        1.0,
     )
 
-    logl_prop = loglikelihood_fn(pos_prop)
+    pos_prop = stepper_fn(state.position, delta, gamma)
+    logp_prop = logprior_fn(pos_prop)
+    is_valid = jnp.isfinite(logp_prop)
+
+    # A proposal outside the unit cube is a spent step and the point stays where
+    # it is.  The likelihood is only evaluated at a valid position.
+    eval_pos = jax.tree_util.tree_map(
+        lambda p, c: jnp.where(is_valid, p, c), pos_prop, state.position
+    )
+    logl_prop = loglikelihood_fn(eval_pos)
     is_accepted = jnp.logical_and(is_valid, logl_prop > loglikelihood_0)
 
     final_pos = jax.tree_util.tree_map(
@@ -126,10 +115,7 @@ def _de_one_step(
     new_state = StateWithLogLikelihood(
         final_pos, final_logp, final_logl, loglikelihood_0
     )
-    likelihood_evals = is_valid.astype(jnp.int32)
-    info = DEInfo(
-        is_accepted=is_accepted, evals=n_proposals, likelihood_evals=likelihood_evals
-    )
+    info = DEInfo(is_accepted=is_accepted, likelihood_evals=is_valid.astype(jnp.int32))
 
     return new_state, info
 
@@ -143,17 +129,15 @@ def _de_walk(
     params: DEKernelParams,
     stepper_fn,
     num_survivors: int,
-    max_proposals: int = 1000,
     max_mcmc: int = 5000,
 ):
-    # top_indices is loop-invariant for the whole walk; compute it once here rather than inside _de_one_step's body_fun, since XLA won't hoist it out of the nested while_loops itself.
+    # top_indices is loop-invariant for the whole walk; compute it once here rather than inside _de_one_step, since XLA won't hoist it out of the while_loop itself.
     _, top_indices = jax.lax.top_k(params.loglikelihoods, num_survivors)
 
     one_step = partial(
         _de_one_step,
         num_survivors=num_survivors,
         top_indices=top_indices,
-        max_proposals=max_proposals,
     )
 
     def single_step(rng_key, state, loglikelihood_0):
@@ -168,9 +152,9 @@ def _de_walk(
         )
 
     def cond_fun(carry):
-        _, _, _, _, total_proposals, walks_completed = carry
+        _, _, _, _, walks_completed = carry
         return jnp.logical_and(
-            walks_completed < params.num_walks, total_proposals < max_mcmc
+            walks_completed < params.num_walks, walks_completed < max_mcmc
         )
 
     def body_fun(carry):
@@ -179,7 +163,6 @@ def _de_walk(
             current_state,
             n_accept,
             n_likelihood_evals,
-            total_proposals,
             walks_completed,
         ) = carry
         step_key, next_key = jax.random.split(key)
@@ -189,7 +172,6 @@ def _de_walk(
             new_state,
             n_accept + info.is_accepted,
             n_likelihood_evals + info.likelihood_evals,
-            total_proposals + info.evals,
             walks_completed + 1,
         )
 
@@ -199,18 +181,16 @@ def _de_walk(
         jnp.array(0, dtype=jnp.int32),
         jnp.array(0, dtype=jnp.int32),
         jnp.array(0, dtype=jnp.int32),
-        jnp.array(0, dtype=jnp.int32),
     )
 
-    _, final_state, n_accept, n_likelihood_evals, total_proposals, walks_completed = (
-        jax.lax.while_loop(cond_fun, body_fun, init_val)
+    _, final_state, n_accept, n_likelihood_evals, walks_completed = jax.lax.while_loop(
+        cond_fun, body_fun, init_val
     )
 
     info = DEWalkInfo(
         n_accept=n_accept,
         walks_completed=walks_completed,
         n_likelihood_evals=n_likelihood_evals,
-        total_proposals=total_proposals,
     )
     return final_state, info
 
@@ -287,7 +267,6 @@ def bilby_adaptive_de_sampler(
     max_mcmc: int = 5000,
     num_delete: int = 1,
     stepper_fn=None,
-    max_proposals: int = 1000,
 ) -> SamplingAlgorithm:
     """bilby/dynesty-style adaptive DE sampler for unit-hypercube nested sampling."""
     if stepper_fn is None:
@@ -339,7 +318,6 @@ def bilby_adaptive_de_sampler(
                 params=params,
                 stepper_fn=stepper_fn,
                 num_survivors=num_survivors,
-                max_proposals=max_proposals,
                 max_mcmc=max_mcmc,
             )
 

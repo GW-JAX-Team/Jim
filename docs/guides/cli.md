@@ -429,7 +429,6 @@ The CLI enforces this automatically.
 | `n_delete_frac` | `0.5` | Fraction of live points replaced per iteration |
 | `n_target` | `60` | Target number of accepted steps per replacement |
 | `max_mcmc` | `5000` | Maximum MCMC steps per replacement attempt |
-| `max_proposals` | `1000` | Maximum proposals per MCMC step |
 | `termination_dlogz` | `0.1` | Termination criterion on remaining log-evidence |
 | `checkpoint_dir` | `{output.dir}/` | Directory for `checkpoint.pkl`; set by the CLI automatically |
 | `checkpoint_interval` | `600.0` | Seconds between checkpoint writes; `0` disables checkpointing |

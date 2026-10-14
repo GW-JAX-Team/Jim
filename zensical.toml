@@ -29,6 +29,10 @@ nav = [
         {"Samplers" = "guides/samplers.md"},
         {"Transforms" = "guides/transforms.md"},
     ]},
+    {"How-to" = [
+        "how-to/index.md",
+        {"Reduce GPU Memory Use" = "how-to/reduce_gpu_memory.md"},
+    ]},
     {"Technical Notes" = [
         "notes/index.md",
         {"Detector Response Conventions" = "notes/detector_response.md"},
@@ -36,6 +40,9 @@ nav = [
         {"Likelihood Details" = "notes/likelihood_details.md"},
         {"Signal-Duration Check" = "notes/signal_duration.md"},
         {"Sampler Details" = "notes/samplers.md"},
+    ]},
+    {"Development" = [
+        "dev/index.md",
     ]},
     {"FAQ" = "FAQ.md"},
     {"Citing Jim" = "citing.md"},

@@ -1,6 +1,6 @@
 # Technical Notes
 
-These notes give the details behind Jim's results: conventions and implementation choices that matter when you compare Jim with another code, but that a how-to guide does not need.
+These notes give the details behind Jim's results: conventions and implementation choices that matter when you compare Jim with another code, but that the guides and how-tos do not need.
 
 - **[Detector Response Conventions](detector_response.md)** — The phase convention of the finite-arm-length response and how to convert from the other common one.
 - **[Detector Presets](detector_presets.md)** — How the Einstein Telescope and Cosmic Explorer geometries are built.

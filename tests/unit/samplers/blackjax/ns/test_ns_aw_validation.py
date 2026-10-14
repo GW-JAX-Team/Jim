@@ -7,7 +7,7 @@ import pytest
 
 blackjax = pytest.importorskip("blackjax")
 
-from jimgw.samplers.blackjax.ns_aw import BlackJAXNSAWSampler
+from jimgw.samplers.blackjax.ns.ns_aw import BlackJAXNSAWSampler
 from jimgw.samplers.config import BlackJAXNSAWConfig
 
 _CONFIG = BlackJAXNSAWConfig(n_live=50, termination_dlogz=0.5)

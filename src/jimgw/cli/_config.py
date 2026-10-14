@@ -8,6 +8,7 @@ Design intent: users specify *what* (prior bounds, waveform, sampler settings).
 The CLI figures out *how* (transforms, parameter conversions, consistency checks).
 """
 
+import logging
 from pathlib import Path
 from typing import Annotated, Literal, Optional, Union
 
@@ -22,6 +23,7 @@ from pydantic import (
 
 from jimgw.cli._utils import (
     CARTESIAN_SPIN_PARAMS,
+    DEFAULT_ASD_DETECTORS,
     DETECTOR_SKY_PARAMS,
     EQUATORIAL_SKY_PARAMS,
     J_FRAME_SPIN_PARAMS,
@@ -30,6 +32,8 @@ from jimgw.cli._utils import (
 
 # SamplerConfig is safe to import here — samplers/config.py only uses numpy.
 from jimgw.samplers.config import SamplerConfig
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Data section
@@ -67,21 +71,84 @@ class GWOSCDataConfig(_DataBase):
     psd_duration: float = Field(gt=0.0)
 
 
-class InjectionDataConfig(_DataBase):
-    """Synthetic injection into design-sensitivity noise."""
+# Formats read by ``PowerSpectrum.from_file``.
+_PSD_FILE_SUFFIXES = (".npz", ".txt", ".dat", ".csv")
+
+
+class _PSDSourceBase(_DataBase):
+    """PSD or ASD files, shared by the data types that read one from disk.
+
+    ``psd_files`` holds PSD values and ``asd_files`` holds ASD values (squared on
+    load); they are mutually exclusive.  Each maps a name from ``detectors`` to a
+    file in any format ``PowerSpectrum.from_file`` reads.  One ``ET`` entry covers
+    all three ET interferometers.
+    """
+
+    psd_files: Optional[dict[str, Path]] = None  # detector_name -> PSD file
+    asd_files: Optional[dict[str, Path]] = None  # detector_name -> ASD file
+
+    @model_validator(mode="after")
+    def _check_psd_source(self) -> "_PSDSourceBase":
+        if self.psd_files is not None and self.asd_files is not None:
+            raise ValueError(
+                "psd_files and asd_files are mutually exclusive; set at most one."
+            )
+        for field, table in (
+            ("psd_files", self.psd_files),
+            ("asd_files", self.asd_files),
+        ):
+            if table is None:
+                continue
+            missing = [d for d in self.detectors if d not in table]
+            if missing:
+                raise ValueError(f"{field} missing for: {missing}")
+            for detector, path in table.items():
+                if path.suffix.lower() not in _PSD_FILE_SUFFIXES:
+                    raise ValueError(
+                        f"{field}[{detector!r}]: expected a "
+                        f"{'/'.join(_PSD_FILE_SUFFIXES)} file, got {str(path)!r}"
+                    )
+        return self
+
+
+class InjectionDataConfig(_PSDSourceBase):
+    """Synthetic injection into Gaussian noise drawn from the detector PSD."""
 
     type: Literal["injection"] = "injection"
     duration: float = Field(gt=0.0)
     sampling_frequency: float = Field(gt=0.0)
     injection_parameters: dict[str, float]
     zero_noise: bool = False
+    noise_seed: Optional[int] = None
+
+    @model_validator(mode="after")
+    def _check_noise_seed(self) -> "InjectionDataConfig":
+        if self.zero_noise and self.noise_seed is not None:
+            logger.warning(
+                "noise_seed is ignored because zero_noise = true: no noise is drawn."
+            )
+        if not self.zero_noise and self.noise_seed is None:
+            raise ValueError("noise_seed is required when zero_noise = false.")
+        return self
+
+    @model_validator(mode="after")
+    def _check_built_in_psd_available(self) -> "InjectionDataConfig":
+        if self.psd_files is None and self.asd_files is None:
+            no_default = [d for d in self.detectors if d not in DEFAULT_ASD_DETECTORS]
+            if no_default:
+                raise ValueError(
+                    f"No built-in PSD for detector(s) {no_default} (built-in "
+                    f"defaults: {sorted(DEFAULT_ASD_DETECTORS)}). Set psd_files "
+                    "or asd_files, naming every detector."
+                )
+        return self
 
 
-class FileDataConfig(_DataBase):
+class FileDataConfig(_PSDSourceBase):
     """Load pre-saved strain and PSD from local files (useful for CI/offline use).
 
     Supported strain formats: ``.npz``, ``.gwf`` / ``.gwf.gz``, ``.hdf5`` / ``.h5``,
-    ``.csv``.  PSD files must be ``.npz`` archives.
+    ``.csv``.  Exactly one of ``psd_files`` and ``asd_files`` is required.
 
     For frame (``.gwf``) and HDF5 files a channel name is required.  Provide
     ``strain_channels`` to map detector names to channel strings; if omitted,
@@ -90,22 +157,17 @@ class FileDataConfig(_DataBase):
 
     type: Literal["file"] = "file"
     strain_files: dict[str, Path]  # detector_name -> strain file path
-    psd_files: dict[str, Path]  # detector_name -> .npz with 'values', 'frequencies'
     strain_channels: dict[str, str] = Field(
         default_factory=dict
     )  # detector_name -> channel (e.g. "H1:GDS-CALIB_STRAIN")
-    psd_is_asd: dict[str, bool] = Field(
-        default_factory=dict
-    )  # detector_name -> True when the psd_file contains ASD values (Hz^{-1/2})
 
     @model_validator(mode="after")
-    def _check_all_detectors_have_files(self) -> "FileDataConfig":
+    def _check_strain_and_psd_files(self) -> "FileDataConfig":
         missing_strain = [d for d in self.detectors if d not in self.strain_files]
-        missing_psd = [d for d in self.detectors if d not in self.psd_files]
         if missing_strain:
             raise ValueError(f"strain_files missing for: {missing_strain}")
-        if missing_psd:
-            raise ValueError(f"psd_files missing for: {missing_psd}")
+        if self.psd_files is None and self.asd_files is None:
+            raise ValueError("provide psd_files or asd_files (exactly one of the two)")
         return self
 
 

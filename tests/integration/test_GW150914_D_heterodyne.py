@@ -83,7 +83,7 @@ def test_runs():
             n_training_loops=1,
             n_production_loops=1,
             n_epochs=1,
-            mala={"step_size": 3e-3},
+            local_kernel={"kernel": "MALA", "step_size": 3e-3},
             learning_rate=1e-4,
             n_max_examples=30,
             batch_size=100,

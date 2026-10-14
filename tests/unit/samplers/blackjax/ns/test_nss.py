@@ -12,7 +12,7 @@ import pytest
 blackjax = pytest.importorskip("blackjax")
 
 from jimgw.core.prior import CombinePrior, UniformPrior
-from jimgw.samplers.blackjax.nss import BlackJAXNSSSampler
+from jimgw.samplers.blackjax.ns.nss import BlackJAXNSSSampler
 from jimgw.samplers.config import BlackJAXNSSConfig
 
 _SIGMA = 0.05

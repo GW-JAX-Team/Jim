@@ -1,5 +1,7 @@
 import logging
-from typing import assert_never
+from typing import Optional, assert_never
+
+import jax
 
 from jimgw.cli._config import (
     DataConfig,
@@ -9,11 +11,7 @@ from jimgw.cli._config import (
 )
 from jimgw.cli._transforms import to_likelihood_space
 from jimgw.core.single_event.data import Data, PowerSpectrum
-from jimgw.core.single_event.detector import (
-    GroundBased2G,
-    asd_file_dict,
-    get_detector_preset,
-)
+from jimgw.core.single_event.detector import GroundBased2G, get_detector_preset
 
 logger = logging.getLogger(__name__)
 
@@ -32,21 +30,29 @@ def build_data(
     preset = get_detector_preset()
 
     ifos: list[GroundBased2G] = []
+    # Interferometer name -> its name in ``data.detectors`` ("ET" covers ET1-ET3).
+    # PSD/ASD tables are keyed by the latter.
+    config_name: dict[str, str] = {}
     for name in data_cfg.detectors:
         val = preset[name]
-        if isinstance(val, list):
-            ifos.extend(val)
-        else:
-            ifos.append(val)
+        group = val if isinstance(val, list) else [val]
+        ifos.extend(group)
+        config_name.update({ifo.name: name for ifo in group})
 
     if isinstance(data_cfg, GWOSCDataConfig):
         _load_gwosc(ifos, data_cfg)
     elif isinstance(data_cfg, InjectionDataConfig):
         _load_injection(
-            ifos, data_cfg, waveform, f_min=f_min, f_max=f_max, time_frame=time_frame
+            ifos,
+            data_cfg,
+            waveform,
+            config_name=config_name,
+            f_min=f_min,
+            f_max=f_max,
+            time_frame=time_frame,
         )
     elif isinstance(data_cfg, FileDataConfig):
-        _load_files(ifos, data_cfg)
+        _load_files(ifos, data_cfg, config_name=config_name)
     else:
         assert_never(data_cfg)
 
@@ -81,11 +87,26 @@ def _load_gwosc(ifos: list[GroundBased2G], cfg: GWOSCDataConfig) -> None:
         ifo.set_psd(psd_data.to_psd(nperseg=nperseg))
 
 
+def _read_psd(
+    cfg: InjectionDataConfig | FileDataConfig, detector: str
+) -> Optional[PowerSpectrum]:
+    """Load the PSD or ASD configured for *detector*, or None if no file is set."""
+    if cfg.psd_files is not None:
+        path, is_asd = cfg.psd_files[detector], False
+    elif cfg.asd_files is not None:
+        path, is_asd = cfg.asd_files[detector], True
+    else:
+        return None
+    logger.info("Loading %s %s from %s", detector, "ASD" if is_asd else "PSD", path)
+    return PowerSpectrum.from_file(str(path), is_asd=is_asd)
+
+
 def _load_injection(
     ifos: list[GroundBased2G],
     cfg: InjectionDataConfig,
     waveform,
     *,
+    config_name: dict[str, str],
     f_min: float,
     f_max: float,
     time_frame: str = "detector",
@@ -98,15 +119,22 @@ def _load_injection(
         time_frame=time_frame,
     )
 
+    noise_key = None
+    if not cfg.zero_noise:
+        assert cfg.noise_seed is not None  # required by InjectionDataConfig
+        noise_key = jax.random.key(cfg.noise_seed)
+        logger.info("Injected noise seeded with noise_seed=%d", cfg.noise_seed)
+
     for ifo in ifos:
-        if ifo.name not in asd_file_dict:
-            raise ValueError(
-                f"No default ASD for detector '{ifo.name}'. "
-                f"Provide a PSD file via the config. "
-                f"Detectors with built-in defaults: {sorted(asd_file_dict)}."
-            )
-        logger.info("Loading design PSD for %s", ifo.name)
-        ifo.load_and_set_psd()
+        # The PSD is set once, here.  ``inject_signal`` draws the noise from it
+        # and the likelihood reads it back, so both always use the same PSD.
+        psd = _read_psd(cfg, config_name[ifo.name])
+        if psd is None:
+            # Config validation guarantees a built-in default exists here.
+            logger.info("Loading built-in O3 ASD for %s", ifo.name)
+            ifo.load_and_set_psd()
+        else:
+            ifo.set_psd(psd)
 
         logger.info("Injecting signal into %s", ifo.name)
         ifo.inject_signal(
@@ -118,18 +146,20 @@ def _load_injection(
             f_min=f_min,
             f_max=f_max,
             zero_noise=cfg.zero_noise,
+            rng_key=noise_key,
         )
 
 
-def _load_files(ifos: list[GroundBased2G], cfg: FileDataConfig) -> None:
+def _load_files(
+    ifos: list[GroundBased2G], cfg: FileDataConfig, *, config_name: dict[str, str]
+) -> None:
     for ifo in ifos:
         strain_path = cfg.strain_files[ifo.name]
-        psd_path = cfg.psd_files[ifo.name]
         channel = cfg.strain_channels.get(ifo.name)
-        is_asd = cfg.psd_is_asd.get(ifo.name, False)
 
         logger.info("Loading %s strain from %s", ifo.name, strain_path)
         ifo.set_data(Data.from_file(str(strain_path), channel=channel))
 
-        logger.info("Loading %s PSD from %s", ifo.name, psd_path)
-        ifo.set_psd(PowerSpectrum.from_file(str(psd_path), is_asd=is_asd))
+        psd = _read_psd(cfg, config_name[ifo.name])
+        assert psd is not None  # FileDataConfig requires psd_files or asd_files
+        ifo.set_psd(psd)

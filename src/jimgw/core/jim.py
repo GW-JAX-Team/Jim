@@ -79,10 +79,10 @@ class Jim:
                 (e.g. ``{"phase_c": (0.0, 6.2832)}``).  For the BlackJAX
                 NS AW sampler (unit-cube space), pass a ``list`` of parameter
                 names (bounds are implicit as ``[0, 1]``).
-            seed: Integer random seed. The key for the sampling run is derived
-                from this seed at construction time, so `sample` is
-                reproducible regardless of any intermediate operations (sanity
-                checks, initial-position draws, etc.).
+            seed: Integer random seed. The keys for sampling, the initial
+                positions and the posterior check are all derived from it at
+                construction time, so `sample` gives the same result
+                regardless of any calls made before it.
             verbose: Enable DEBUG-level logging for all ``jimgw`` components.
                 At ``False`` (default) INFO-level messages are always shown.
                 Pass ``True`` to also see per-step diagnostics and
@@ -134,11 +134,10 @@ class Jim:
             likelihood_transforms,
             sampler_config,
         )
-        root_key: Key = jax.random.key(seed)
-
-        # Reserve _sampler_key immediately so sampling is reproducible even if
-        # sanity checks or other internal splits consume _rng_key first.
-        self._rng_key, self._sampler_key = jax.random.split(root_key)
+        # All keys are fixed here, so no later call can change what `sample` does.
+        self._sampler_key, self._init_key, self._check_key = jax.random.split(
+            jax.random.key(seed), 3
+        )
         self._sampler_config = sampler_config
 
         # Resolve periodic parameter names → dimension indices.
@@ -431,8 +430,9 @@ class Jim:
             ValueError: If more than ``_NAN_FAIL_THRESHOLD`` out of
                 ``_NAN_TEST_POINTS`` test points return NaN posterior values.
         """
-        self._rng_key, check_key = jax.random.split(self._rng_key)
-        check_positions = self._draw_initial_positions(check_key, _NAN_TEST_POINTS)
+        check_positions = self._draw_initial_positions(
+            self._check_key, _NAN_TEST_POINTS
+        )
         log_posteriors = jax.vmap(self._log_posterior_fn)(check_positions)
         n_nan = int(jnp.sum(jnp.isnan(log_posteriors)))
         if n_nan > _NAN_FAIL_THRESHOLD:
@@ -516,20 +516,17 @@ class Jim:
     def sample_initial_positions(
         self,
         n_points: int,
-        rng_key: Optional[Key] = None,
+        rng_key: Key,
     ) -> Float[Array, "n_points n_dims"]:
         """Draw ``n_points`` initial positions from the prior in sampling space.
 
         Args:
             n_points: Number of positions to draw.
-            rng_key: Optional explicit PRNG key. If ``None``, Jim's internal
-                auxiliary key is advanced automatically.
+            rng_key: JAX PRNG key.
 
         Returns:
             Array of shape ``(n_points, n_dims)`` in sampling space.
         """
-        if rng_key is None:
-            self._rng_key, rng_key = jax.random.split(self._rng_key)
         return self._draw_initial_positions(rng_key, n_points)
 
     def sample(
@@ -538,9 +535,9 @@ class Jim:
     ) -> None:
         """Run the sampler.
 
-        The sampling key is pre-reserved at construction time from ``seed``,
-        so results are reproducible regardless of any calls made before this
-        method (e.g. the construction-time posterior verification).
+        Every key comes from ``seed`` at construction time, so the result does
+        not depend on any call made before this one. Calling it again on the
+        same ``Jim`` replays the run.
 
         Args:
             initial_position: Starting positions in sampling space, or
@@ -569,8 +566,7 @@ class Jim:
                     f"n_live, n_particles, found {list(counts)}"
                 )
             n = next(iter(counts.values()))
-            self._rng_key, init_key = jax.random.split(self._rng_key)
-            initial_position = self._draw_initial_positions(init_key, n)
+            initial_position = self._draw_initial_positions(self._init_key, n)
         self.sampler.sample(self._sampler_key, initial_position)
 
     def get_samples(

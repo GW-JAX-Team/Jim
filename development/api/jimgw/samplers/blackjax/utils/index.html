@@ -3230,10 +3230,10 @@ that shared mechanics; each sampler supplies the differences via callbacks.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="jimgw.samplers.blackjax.utils.load_or_initialize_checkpoint" class="doc doc-heading">
+<h2 id="jimgw.samplers.blackjax.utils.load_or_initialize_checkpoint" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">load_or_initialize_checkpoint</span><span class="p">(</span><span class="n">sampler</span><span class="p">:</span> <span class="n">Sampler</span><span class="p">,</span> <span class="n">checkpoint_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">],</span> <span class="n">config</span><span class="p">:</span> <span class="n">_CheckpointMixin</span><span class="p">,</span> <span class="n">rng_key</span><span class="p">:</span> <span class="n">Key</span><span class="p">,</span> <span class="n">initial_particles</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">initialize_state</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">initial_extra</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">load_extra</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">dict</span><span class="p">],</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="o">*</span><span class="p">,</span> <span class="n">log_label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">after_load</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">is_stale</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">bool</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">stale_message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'checkpoint exceeds current schedule'</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Key</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span></code>
 
-<a href="#jimgw.samplers.blackjax.utils.load_or_initialize_checkpoint" class="headerlink" title="Permanent link">¤</a></h3>
+<a href="#jimgw.samplers.blackjax.utils.load_or_initialize_checkpoint" class="headerlink" title="Permanent link">¤</a></h2>
 
 
     <div class="doc doc-contents ">
@@ -3258,10 +3258,10 @@ arbitrary code.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="jimgw.samplers.blackjax.utils.prepare_checkpointing" class="doc doc-heading">
+<h2 id="jimgw.samplers.blackjax.utils.prepare_checkpointing" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">prepare_checkpointing</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">_CheckpointMixin</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">],</span> <span class="nb">float</span><span class="p">]</span></code>
 
-<a href="#jimgw.samplers.blackjax.utils.prepare_checkpointing" class="headerlink" title="Permanent link">¤</a></h3>
+<a href="#jimgw.samplers.blackjax.utils.prepare_checkpointing" class="headerlink" title="Permanent link">¤</a></h2>
 
 
     <div class="doc doc-contents ">
@@ -3276,10 +3276,10 @@ arbitrary code.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="jimgw.samplers.blackjax.utils.remove_checkpoint_and_jax_cache" class="doc doc-heading">
+<h2 id="jimgw.samplers.blackjax.utils.remove_checkpoint_and_jax_cache" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">remove_checkpoint_and_jax_cache</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">_CheckpointMixin</span><span class="p">,</span> <span class="n">checkpoint_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span></code>
 
-<a href="#jimgw.samplers.blackjax.utils.remove_checkpoint_and_jax_cache" class="headerlink" title="Permanent link">¤</a></h3>
+<a href="#jimgw.samplers.blackjax.utils.remove_checkpoint_and_jax_cache" class="headerlink" title="Permanent link">¤</a></h2>
 
 
     <div class="doc doc-contents ">
@@ -3294,10 +3294,10 @@ arbitrary code.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="jimgw.samplers.blackjax.utils.save_checkpoint_if_due" class="doc doc-heading">
+<h2 id="jimgw.samplers.blackjax.utils.save_checkpoint_if_due" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">save_checkpoint_if_due</span><span class="p">(</span><span class="n">sampler</span><span class="p">:</span> <span class="n">Sampler</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">_CheckpointMixin</span><span class="p">,</span> <span class="n">checkpoint_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">],</span> <span class="n">last_checkpoint_write_time</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">run_start_time</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">rng_key</span><span class="p">:</span> <span class="n">Key</span><span class="p">,</span> <span class="n">n_completed_iterations</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">extra</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">log_label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">before_save</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Key</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Key</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span></code>
 
-<a href="#jimgw.samplers.blackjax.utils.save_checkpoint_if_due" class="headerlink" title="Permanent link">¤</a></h3>
+<a href="#jimgw.samplers.blackjax.utils.save_checkpoint_if_due" class="headerlink" title="Permanent link">¤</a></h2>
 
 
     <div class="doc doc-contents ">

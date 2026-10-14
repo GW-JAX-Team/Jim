@@ -3975,11 +3975,11 @@
 
 
 
-<h3 id="jimgw.core.single_event.detector.Detector" class="doc doc-heading">
+<h2 id="jimgw.core.single_event.detector.Detector" class="doc doc-heading">
             <code>Detector</code>
 
 
-<a href="#jimgw.core.single_event.detector.Detector" class="headerlink" title="Permanent link">¤</a></h3>
+<a href="#jimgw.core.single_event.detector.Detector" class="headerlink" title="Permanent link">¤</a></h2>
 
 
     <div class="doc doc-contents ">
@@ -4116,10 +4116,10 @@
 <div class="doc doc-object doc-function">
 
 
-<h4 id="jimgw.core.single_event.detector.Detector.clear_data_and_psd" class="doc doc-heading">
+<h3 id="jimgw.core.single_event.detector.Detector.clear_data_and_psd" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">clear_data_and_psd</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span></code>
 
-<a href="#jimgw.core.single_event.detector.Detector.clear_data_and_psd" class="headerlink" title="Permanent link">¤</a></h4>
+<a href="#jimgw.core.single_event.detector.Detector.clear_data_and_psd" class="headerlink" title="Permanent link">¤</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -4134,14 +4134,14 @@
 <div class="doc doc-object doc-function">
 
 
-<h4 id="jimgw.core.single_event.detector.Detector.fd_response" class="doc doc-heading">
+<h3 id="jimgw.core.single_event.detector.Detector.fd_response" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">fd_response</span><span class="p">(</span><span class="n">frequency</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_sample'</span><span class="p">],</span> <span class="n">h_sky</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_sample'</span><span class="p">]],</span> <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Complex</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_sample'</span><span class="p">]</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
   </span>
 
-<a href="#jimgw.core.single_event.detector.Detector.fd_response" class="headerlink" title="Permanent link">¤</a></h4>
+<a href="#jimgw.core.single_event.detector.Detector.fd_response" class="headerlink" title="Permanent link">¤</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -4249,10 +4249,10 @@ and values are complex strain arrays.</p>
 <div class="doc doc-object doc-function">
 
 
-<h4 id="jimgw.core.single_event.detector.Detector.slice_to_frequency_range" class="doc doc-heading">
+<h3 id="jimgw.core.single_event.detector.Detector.slice_to_frequency_range" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">slice_to_frequency_range</span><span class="p">(</span><span class="n">f_min</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">f_max</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_freq'</span><span class="p">],</span> <span class="n">Complex</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_freq'</span><span class="p">],</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_freq'</span><span class="p">]]</span></code>
 
-<a href="#jimgw.core.single_event.detector.Detector.slice_to_frequency_range" class="headerlink" title="Permanent link">¤</a></h4>
+<a href="#jimgw.core.single_event.detector.Detector.slice_to_frequency_range" class="headerlink" title="Permanent link">¤</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -4362,14 +4362,14 @@ positive in it, or if the range holds fewer than two frequencies.</p>
 <div class="doc doc-object doc-function">
 
 
-<h4 id="jimgw.core.single_event.detector.Detector.td_response" class="doc doc-heading">
+<h3 id="jimgw.core.single_event.detector.Detector.td_response" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">td_response</span><span class="p">(</span><span class="n">time</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_sample'</span><span class="p">],</span> <span class="n">h_sky</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_sample'</span><span class="p">]],</span> <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_sample'</span><span class="p">]</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
   </span>
 
-<a href="#jimgw.core.single_event.detector.Detector.td_response" class="headerlink" title="Permanent link">¤</a></h4>
+<a href="#jimgw.core.single_event.detector.Detector.td_response" class="headerlink" title="Permanent link">¤</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -4479,11 +4479,11 @@ positive in it, or if the range holds fewer than two frequencies.</p>
 
 
 
-<h3 id="jimgw.core.single_event.detector.GroundBased2G" class="doc doc-heading">
+<h2 id="jimgw.core.single_event.detector.GroundBased2G" class="doc doc-heading">
             <code>GroundBased2G</code>
 
 
-<a href="#jimgw.core.single_event.detector.GroundBased2G" class="headerlink" title="Permanent link">¤</a></h3>
+<a href="#jimgw.core.single_event.detector.GroundBased2G" class="headerlink" title="Permanent link">¤</a></h2>
 
 
     <div class="doc doc-contents ">
@@ -4774,14 +4774,14 @@ include non-GR modes.</p>
 
 
 
-<h4 id="jimgw.core.single_event.detector.GroundBased2G.arms" class="doc doc-heading">
+<h3 id="jimgw.core.single_event.detector.GroundBased2G.arms" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">arms</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="mi">3</span><span class="p">]]</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-property"><code>property</code></small>
   </span>
 
-<a href="#jimgw.core.single_event.detector.GroundBased2G.arms" class="headerlink" title="Permanent link">¤</a></h4>
+<a href="#jimgw.core.single_event.detector.GroundBased2G.arms" class="headerlink" title="Permanent link">¤</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -4821,14 +4821,14 @@ include non-GR modes.</p>
 
 
 
-<h4 id="jimgw.core.single_event.detector.GroundBased2G.tensor" class="doc doc-heading">
+<h3 id="jimgw.core.single_event.detector.GroundBased2G.tensor" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">tensor</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">'3 3'</span><span class="p">]</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-property"><code>property</code></small>
   </span>
 
-<a href="#jimgw.core.single_event.detector.GroundBased2G.tensor" class="headerlink" title="Permanent link">¤</a></h4>
+<a href="#jimgw.core.single_event.detector.GroundBased2G.tensor" class="headerlink" title="Permanent link">¤</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -4871,14 +4871,14 @@ D_{ij} = \left(x_i x_j - y_i y_j\right)/2
 
 
 
-<h4 id="jimgw.core.single_event.detector.GroundBased2G.vertex" class="doc doc-heading">
+<h3 id="jimgw.core.single_event.detector.GroundBased2G.vertex" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">vertex</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-property"><code>property</code></small>
   </span>
 
-<a href="#jimgw.core.single_event.detector.GroundBased2G.vertex" class="headerlink" title="Permanent link">¤</a></h4>
+<a href="#jimgw.core.single_event.detector.GroundBased2G.vertex" class="headerlink" title="Permanent link">¤</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -4916,14 +4916,14 @@ D_{ij} = \left(x_i x_j - y_i y_j\right)/2
 
 
 
-<h4 id="jimgw.core.single_event.detector.GroundBased2G.whitened_frequency_domain_data" class="doc doc-heading">
+<h3 id="jimgw.core.single_event.detector.GroundBased2G.whitened_frequency_domain_data" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">whitened_frequency_domain_data</span><span class="p">:</span> <span class="n">Complex</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_sample'</span><span class="p">]</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-property"><code>property</code></small>
   </span>
 
-<a href="#jimgw.core.single_event.detector.GroundBased2G.whitened_frequency_domain_data" class="headerlink" title="Permanent link">¤</a></h4>
+<a href="#jimgw.core.single_event.detector.GroundBased2G.whitened_frequency_domain_data" class="headerlink" title="Permanent link">¤</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -4992,14 +4992,14 @@ D_{ij} = \left(x_i x_j - y_i y_j\right)/2
 
 
 
-<h4 id="jimgw.core.single_event.detector.GroundBased2G.whitened_time_domain_data" class="doc doc-heading">
+<h3 id="jimgw.core.single_event.detector.GroundBased2G.whitened_time_domain_data" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">whitened_time_domain_data</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_sample'</span><span class="p">]</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-property"><code>property</code></small>
   </span>
 
-<a href="#jimgw.core.single_event.detector.GroundBased2G.whitened_time_domain_data" class="headerlink" title="Permanent link">¤</a></h4>
+<a href="#jimgw.core.single_event.detector.GroundBased2G.whitened_time_domain_data" class="headerlink" title="Permanent link">¤</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -5070,10 +5070,10 @@ D_{ij} = \left(x_i x_j - y_i y_j\right)/2
 <div class="doc doc-object doc-function">
 
 
-<h4 id="jimgw.core.single_event.detector.GroundBased2G.__init__" class="doc doc-heading">
+<h3 id="jimgw.core.single_event.detector.GroundBased2G.__init__" class="doc doc-heading">
             <code class="highlight language-python"><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">latitude</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">longitude</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">elevation</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">xarm_azimuth</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">yarm_azimuth</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">xarm_tilt</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">yarm_tilt</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">modes</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'pc'</span><span class="p">)</span></code>
 
-<a href="#jimgw.core.single_event.detector.GroundBased2G.__init__" class="headerlink" title="Permanent link">¤</a></h4>
+<a href="#jimgw.core.single_event.detector.GroundBased2G.__init__" class="headerlink" title="Permanent link">¤</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -5247,10 +5247,10 @@ D_{ij} = \left(x_i x_j - y_i y_j\right)/2
 <div class="doc doc-object doc-function">
 
 
-<h4 id="jimgw.core.single_event.detector.GroundBased2G.antenna_pattern" class="doc doc-heading">
+<h3 id="jimgw.core.single_event.detector.GroundBased2G.antenna_pattern" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">antenna_pattern</span><span class="p">(</span><span class="n">ra</span><span class="p">:</span> <span class="n">FloatScalar</span><span class="p">,</span> <span class="n">dec</span><span class="p">:</span> <span class="n">FloatScalar</span><span class="p">,</span> <span class="n">psi</span><span class="p">:</span> <span class="n">FloatScalar</span><span class="p">,</span> <span class="n">gmst</span><span class="p">:</span> <span class="n">FloatScalar</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Complex</span><span class="p">]</span></code>
 
-<a href="#jimgw.core.single_event.detector.GroundBased2G.antenna_pattern" class="headerlink" title="Permanent link">¤</a></h4>
+<a href="#jimgw.core.single_event.detector.GroundBased2G.antenna_pattern" class="headerlink" title="Permanent link">¤</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -5370,10 +5370,10 @@ tensor and the corresponding polarization tensor.</p>
 <div class="doc doc-object doc-function">
 
 
-<h4 id="jimgw.core.single_event.detector.GroundBased2G.delay_from_geocenter" class="doc doc-heading">
+<h3 id="jimgw.core.single_event.detector.GroundBased2G.delay_from_geocenter" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">delay_from_geocenter</span><span class="p">(</span><span class="n">ra</span><span class="p">:</span> <span class="n">FloatScalar</span><span class="p">,</span> <span class="n">dec</span><span class="p">:</span> <span class="n">FloatScalar</span><span class="p">,</span> <span class="n">gmst</span><span class="p">:</span> <span class="n">FloatScalar</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FloatScalar</span></code>
 
-<a href="#jimgw.core.single_event.detector.GroundBased2G.delay_from_geocenter" class="headerlink" title="Permanent link">¤</a></h4>
+<a href="#jimgw.core.single_event.detector.GroundBased2G.delay_from_geocenter" class="headerlink" title="Permanent link">¤</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -5474,10 +5474,10 @@ tensor and the corresponding polarization tensor.</p>
 <div class="doc doc-object doc-function">
 
 
-<h4 id="jimgw.core.single_event.detector.GroundBased2G.fd_response" class="doc doc-heading">
+<h3 id="jimgw.core.single_event.detector.GroundBased2G.fd_response" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">fd_response</span><span class="p">(</span><span class="n">frequency</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_sample'</span><span class="p">],</span> <span class="n">h_sky</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_sample'</span><span class="p">]],</span> <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Complex</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_sample'</span><span class="p">]</span></code>
 
-<a href="#jimgw.core.single_event.detector.GroundBased2G.fd_response" class="headerlink" title="Permanent link">¤</a></h4>
+<a href="#jimgw.core.single_event.detector.GroundBased2G.fd_response" class="headerlink" title="Permanent link">¤</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -5586,10 +5586,10 @@ and values are complex strain arrays.</p>
 <div class="doc doc-object doc-function">
 
 
-<h4 id="jimgw.core.single_event.detector.GroundBased2G.get_whitened_frequency_domain_strain" class="doc doc-heading">
+<h3 id="jimgw.core.single_event.detector.GroundBased2G.get_whitened_frequency_domain_strain" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">get_whitened_frequency_domain_strain</span><span class="p">(</span><span class="n">frequency_series</span><span class="p">:</span> <span class="n">Complex</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_freq'</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Complex</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_freq'</span><span class="p">]</span></code>
 
-<a href="#jimgw.core.single_event.detector.GroundBased2G.get_whitened_frequency_domain_strain" class="headerlink" title="Permanent link">¤</a></h4>
+<a href="#jimgw.core.single_event.detector.GroundBased2G.get_whitened_frequency_domain_strain" class="headerlink" title="Permanent link">¤</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -5608,10 +5608,10 @@ Returns:
 <div class="doc doc-object doc-function">
 
 
-<h4 id="jimgw.core.single_event.detector.GroundBased2G.inject_signal" class="doc doc-heading">
+<h3 id="jimgw.core.single_event.detector.GroundBased2G.inject_signal" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">inject_signal</span><span class="p">(</span><span class="n">waveform_model</span><span class="p">,</span> <span class="n">parameters</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="n">allow_wraparound</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">FloatScalar</span><span class="p">,</span> <span class="n">ComplexScalar</span><span class="p">]</span></code>
 
-<a href="#jimgw.core.single_event.detector.GroundBased2G.inject_signal" class="headerlink" title="Permanent link">¤</a></h4>
+<a href="#jimgw.core.single_event.detector.GroundBased2G.inject_signal" class="headerlink" title="Permanent link">¤</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -5758,10 +5758,10 @@ estimated. The detector is unchanged then.</p>
 <div class="doc doc-object doc-function">
 
 
-<h4 id="jimgw.core.single_event.detector.GroundBased2G.load_and_set_psd" class="doc doc-heading">
+<h3 id="jimgw.core.single_event.detector.GroundBased2G.load_and_set_psd" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">load_and_set_psd</span><span class="p">(</span><span class="n">psd_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">''</span><span class="p">,</span> <span class="n">asd_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">''</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PowerSpectrum</span></code>
 
-<a href="#jimgw.core.single_event.detector.GroundBased2G.load_and_set_psd" class="headerlink" title="Permanent link">¤</a></h4>
+<a href="#jimgw.core.single_event.detector.GroundBased2G.load_and_set_psd" class="headerlink" title="Permanent link">¤</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -5876,10 +5876,10 @@ given and the detector has no built-in PSD.</p>
 <div class="doc doc-object doc-function">
 
 
-<h4 id="jimgw.core.single_event.detector.GroundBased2G.set_data" class="doc doc-heading">
+<h3 id="jimgw.core.single_event.detector.GroundBased2G.set_data" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">set_data</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">Data</span> <span class="o">|</span> <span class="n">Array</span><span class="p">,</span> <span class="o">**</span><span class="n">kws</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span></code>
 
-<a href="#jimgw.core.single_event.detector.GroundBased2G.set_data" class="headerlink" title="Permanent link">¤</a></h4>
+<a href="#jimgw.core.single_event.detector.GroundBased2G.set_data" class="headerlink" title="Permanent link">¤</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -5943,10 +5943,10 @@ or as a timeseries array.</p>
 <div class="doc doc-object doc-function">
 
 
-<h4 id="jimgw.core.single_event.detector.GroundBased2G.set_psd" class="doc doc-heading">
+<h3 id="jimgw.core.single_event.detector.GroundBased2G.set_psd" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">set_psd</span><span class="p">(</span><span class="n">psd</span><span class="p">:</span> <span class="n">PowerSpectrum</span> <span class="o">|</span> <span class="n">Array</span><span class="p">,</span> <span class="o">**</span><span class="n">kws</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span></code>
 
-<a href="#jimgw.core.single_event.detector.GroundBased2G.set_psd" class="headerlink" title="Permanent link">¤</a></h4>
+<a href="#jimgw.core.single_event.detector.GroundBased2G.set_psd" class="headerlink" title="Permanent link">¤</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -6010,10 +6010,10 @@ object or as a timeseries array.</p>
 <div class="doc doc-object doc-function">
 
 
-<h4 id="jimgw.core.single_event.detector.GroundBased2G.set_zero_noise" class="doc doc-heading">
+<h3 id="jimgw.core.single_event.detector.GroundBased2G.set_zero_noise" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">set_zero_noise</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">duration</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">sampling_frequency</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">trigger_time</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">f_min</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">f_max</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">post_trigger_duration</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DEFAULT_POST_TRIGGER_DURATION</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span></code>
 
-<a href="#jimgw.core.single_event.detector.GroundBased2G.set_zero_noise" class="headerlink" title="Permanent link">¤</a></h4>
+<a href="#jimgw.core.single_event.detector.GroundBased2G.set_zero_noise" class="headerlink" title="Permanent link">¤</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -6171,10 +6171,10 @@ The detector is unchanged then.</p>
 <div class="doc doc-object doc-function">
 
 
-<h4 id="jimgw.core.single_event.detector.GroundBased2G.simulate_and_set_noise" class="doc doc-heading">
+<h3 id="jimgw.core.single_event.detector.GroundBased2G.simulate_and_set_noise" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">simulate_and_set_noise</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">duration</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">sampling_frequency</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">trigger_time</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">f_min</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">f_max</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">rng_key</span><span class="p">:</span> <span class="n">Key</span><span class="p">,</span> <span class="n">post_trigger_duration</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DEFAULT_POST_TRIGGER_DURATION</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span></code>
 
-<a href="#jimgw.core.single_event.detector.GroundBased2G.simulate_and_set_noise" class="headerlink" title="Permanent link">¤</a></h4>
+<a href="#jimgw.core.single_event.detector.GroundBased2G.simulate_and_set_noise" class="headerlink" title="Permanent link">¤</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -6348,10 +6348,10 @@ detector is unchanged then.</p>
 <div class="doc doc-object doc-function">
 
 
-<h4 id="jimgw.core.single_event.detector.GroundBased2G.td_response" class="doc doc-heading">
+<h3 id="jimgw.core.single_event.detector.GroundBased2G.td_response" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">td_response</span><span class="p">(</span><span class="n">time</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_sample'</span><span class="p">],</span> <span class="n">h_sky</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_sample'</span><span class="p">]],</span> <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span></code>
 
-<a href="#jimgw.core.single_event.detector.GroundBased2G.td_response" class="headerlink" title="Permanent link">¤</a></h4>
+<a href="#jimgw.core.single_event.detector.GroundBased2G.td_response" class="headerlink" title="Permanent link">¤</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -6452,10 +6452,10 @@ detector is unchanged then.</p>
 <div class="doc doc-object doc-function">
 
 
-<h4 id="jimgw.core.single_event.detector.GroundBased2G.whitened_frequency_to_time_domain_strain" class="doc doc-heading">
+<h3 id="jimgw.core.single_event.detector.GroundBased2G.whitened_frequency_to_time_domain_strain" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">whitened_frequency_to_time_domain_strain</span><span class="p">(</span><span class="n">whitened_frequency_series</span><span class="p">:</span> <span class="n">Complex</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_time // 2 + 1'</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_time'</span><span class="p">]</span></code>
 
-<a href="#jimgw.core.single_event.detector.GroundBased2G.whitened_frequency_to_time_domain_strain" class="headerlink" title="Permanent link">¤</a></h4>
+<a href="#jimgw.core.single_event.detector.GroundBased2G.whitened_frequency_to_time_domain_strain" class="headerlink" title="Permanent link">¤</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -6484,11 +6484,11 @@ Returns:
 
 
 
-<h3 id="jimgw.core.single_event.detector.GroundBased3G" class="doc doc-heading">
+<h2 id="jimgw.core.single_event.detector.GroundBased3G" class="doc doc-heading">
             <code>GroundBased3G</code>
 
 
-<a href="#jimgw.core.single_event.detector.GroundBased3G" class="headerlink" title="Permanent link">¤</a></h3>
+<a href="#jimgw.core.single_event.detector.GroundBased3G" class="headerlink" title="Permanent link">¤</a></h2>
 
 
     <div class="doc doc-contents ">
@@ -6642,10 +6642,10 @@ high frequencies. Its phase convention is given in the technical notes of the do
 <div class="doc doc-object doc-function">
 
 
-<h4 id="jimgw.core.single_event.detector.GroundBased3G.__init__" class="doc doc-heading">
+<h3 id="jimgw.core.single_event.detector.GroundBased3G.__init__" class="doc doc-heading">
             <code class="highlight language-python"><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">latitude</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">longitude</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">elevation</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">xarm_azimuth</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">yarm_azimuth</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">xarm_tilt</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">yarm_tilt</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">modes</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'pc'</span><span class="p">,</span> <span class="n">arm_length</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">earth_rotation</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">finite_arm_length</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span></code>
 
-<a href="#jimgw.core.single_event.detector.GroundBased3G.__init__" class="headerlink" title="Permanent link">¤</a></h4>
+<a href="#jimgw.core.single_event.detector.GroundBased3G.__init__" class="headerlink" title="Permanent link">¤</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -6892,10 +6892,10 @@ Defaults to False.</p>
 <div class="doc doc-object doc-function">
 
 
-<h4 id="jimgw.core.single_event.detector.GroundBased3G.fd_response" class="doc doc-heading">
+<h3 id="jimgw.core.single_event.detector.GroundBased3G.fd_response" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">fd_response</span><span class="p">(</span><span class="n">frequency</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_sample'</span><span class="p">],</span> <span class="n">h_sky</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_sample'</span><span class="p">]],</span> <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Complex</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_sample'</span><span class="p">]</span></code>
 
-<a href="#jimgw.core.single_event.detector.GroundBased3G.fd_response" class="headerlink" title="Permanent link">¤</a></h4>
+<a href="#jimgw.core.single_event.detector.GroundBased3G.fd_response" class="headerlink" title="Permanent link">¤</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -6999,14 +6999,14 @@ rotation is switched on.</p>
 <div class="doc doc-object doc-function">
 
 
-<h4 id="jimgw.core.single_event.detector.GroundBased3G.from_detector" class="doc doc-heading">
+<h3 id="jimgw.core.single_event.detector.GroundBased3G.from_detector" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">from_detector</span><span class="p">(</span><span class="n">detector</span><span class="p">:</span> <span class="n">GroundBased2G</span><span class="p">,</span> <span class="n">arm_length</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">earth_rotation</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">finite_arm_length</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
   </span>
 
-<a href="#jimgw.core.single_event.detector.GroundBased3G.from_detector" class="headerlink" title="Permanent link">¤</a></h4>
+<a href="#jimgw.core.single_event.detector.GroundBased3G.from_detector" class="headerlink" title="Permanent link">¤</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -7126,10 +7126,10 @@ Defaults to False.</p>
 <div class="doc doc-object doc-function">
 
 
-<h4 id="jimgw.core.single_event.detector.GroundBased3G.gmst_at_frequency" class="doc doc-heading">
+<h3 id="jimgw.core.single_event.detector.GroundBased3G.gmst_at_frequency" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">gmst_at_frequency</span><span class="p">(</span><span class="n">frequency</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_sample'</span><span class="p">],</span> <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_sample'</span><span class="p">]</span></code>
 
-<a href="#jimgw.core.single_event.detector.GroundBased3G.gmst_at_frequency" class="headerlink" title="Permanent link">¤</a></h4>
+<a href="#jimgw.core.single_event.detector.GroundBased3G.gmst_at_frequency" class="headerlink" title="Permanent link">¤</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -7217,14 +7217,14 @@ which have no emission time, are assigned the merger time.</p>
 <div class="doc doc-object doc-function">
 
 
-<h4 id="jimgw.core.single_event.detector.GroundBased3G.time_to_merger" class="doc doc-heading">
+<h3 id="jimgw.core.single_event.detector.GroundBased3G.time_to_merger" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">time_to_merger</span><span class="p">(</span><span class="n">frequency</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_sample'</span><span class="p">],</span> <span class="n">M_c</span><span class="p">:</span> <span class="n">FloatLike</span><span class="p">,</span> <span class="n">eta</span><span class="p">:</span> <span class="n">FloatLike</span><span class="p">,</span> <span class="n">s1_z</span><span class="p">:</span> <span class="n">FloatLike</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">s2_z</span><span class="p">:</span> <span class="n">FloatLike</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_sample'</span><span class="p">]</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-staticmethod"><code>staticmethod</code></small>
   </span>
 
-<a href="#jimgw.core.single_event.detector.GroundBased3G.time_to_merger" class="headerlink" title="Permanent link">¤</a></h4>
+<a href="#jimgw.core.single_event.detector.GroundBased3G.time_to_merger" class="headerlink" title="Permanent link">¤</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -7406,10 +7406,10 @@ Defaults to 2.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="jimgw.core.single_event.detector.get_CE" class="doc doc-heading">
+<h2 id="jimgw.core.single_event.detector.get_CE" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">get_CE</span><span class="p">(</span><span class="n">earth_rotation</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">finite_arm_length</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GroundBased3G</span></code>
 
-<a href="#jimgw.core.single_event.detector.get_CE" class="headerlink" title="Permanent link">¤</a></h3>
+<a href="#jimgw.core.single_event.detector.get_CE" class="headerlink" title="Permanent link">¤</a></h2>
 
 
     <div class="doc doc-contents ">
@@ -7475,10 +7475,10 @@ high frequencies. Defaults to False.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="jimgw.core.single_event.detector.get_ET" class="doc doc-heading">
+<h2 id="jimgw.core.single_event.detector.get_ET" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">get_ET</span><span class="p">(</span><span class="n">earth_rotation</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">finite_arm_length</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">GroundBased3G</span><span class="p">]</span></code>
 
-<a href="#jimgw.core.single_event.detector.get_ET" class="headerlink" title="Permanent link">¤</a></h3>
+<a href="#jimgw.core.single_event.detector.get_ET" class="headerlink" title="Permanent link">¤</a></h2>
 
 
     <div class="doc doc-contents ">
@@ -7545,10 +7545,10 @@ high frequencies. Defaults to False.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="jimgw.core.single_event.detector.get_H1" class="doc doc-heading">
+<h2 id="jimgw.core.single_event.detector.get_H1" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">get_H1</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">GroundBased2G</span></code>
 
-<a href="#jimgw.core.single_event.detector.get_H1" class="headerlink" title="Permanent link">¤</a></h3>
+<a href="#jimgw.core.single_event.detector.get_H1" class="headerlink" title="Permanent link">¤</a></h2>
 
 
     <div class="doc doc-contents ">
@@ -7563,10 +7563,10 @@ high frequencies. Defaults to False.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="jimgw.core.single_event.detector.get_L1" class="doc doc-heading">
+<h2 id="jimgw.core.single_event.detector.get_L1" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">get_L1</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">GroundBased2G</span></code>
 
-<a href="#jimgw.core.single_event.detector.get_L1" class="headerlink" title="Permanent link">¤</a></h3>
+<a href="#jimgw.core.single_event.detector.get_L1" class="headerlink" title="Permanent link">¤</a></h2>
 
 
     <div class="doc doc-contents ">
@@ -7581,10 +7581,10 @@ high frequencies. Defaults to False.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="jimgw.core.single_event.detector.get_V1" class="doc doc-heading">
+<h2 id="jimgw.core.single_event.detector.get_V1" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">get_V1</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">GroundBased2G</span></code>
 
-<a href="#jimgw.core.single_event.detector.get_V1" class="headerlink" title="Permanent link">¤</a></h3>
+<a href="#jimgw.core.single_event.detector.get_V1" class="headerlink" title="Permanent link">¤</a></h2>
 
 
     <div class="doc doc-contents ">
@@ -7599,10 +7599,10 @@ high frequencies. Defaults to False.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="jimgw.core.single_event.detector.get_detector_preset" class="doc doc-heading">
+<h2 id="jimgw.core.single_event.detector.get_detector_preset" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">get_detector_preset</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">GroundBased2G</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="n">GroundBased3G</span><span class="p">]]</span></code>
 
-<a href="#jimgw.core.single_event.detector.get_detector_preset" class="headerlink" title="Permanent link">¤</a></h3>
+<a href="#jimgw.core.single_event.detector.get_detector_preset" class="headerlink" title="Permanent link">¤</a></h2>
 
 
     <div class="doc doc-contents ">

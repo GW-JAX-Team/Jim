@@ -3394,14 +3394,14 @@ Each sampler has its own <code>*Config</code> class discriminated by a <code>typ
 
 
 
-<h3 id="jimgw.samplers.config.LocalKernelConfig" class="doc doc-heading">
+<h2 id="jimgw.samplers.config.LocalKernelConfig" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">LocalKernelConfig</span> <span class="o">=</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">MALAConfig</span><span class="p">,</span> <span class="n">HMCConfig</span><span class="p">,</span> <span class="n">GRWConfig</span><span class="p">],</span> <span class="n">Discriminator</span><span class="p">(</span><span class="s1">'kernel'</span><span class="p">)]</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
   </span>
 
-<a href="#jimgw.samplers.config.LocalKernelConfig" class="headerlink" title="Permanent link">¤</a></h3>
+<a href="#jimgw.samplers.config.LocalKernelConfig" class="headerlink" title="Permanent link">¤</a></h2>
 
 
     <div class="doc doc-contents ">
@@ -3419,14 +3419,14 @@ separate selector field to fall out of sync with it.</p>
 
 
 
-<h3 id="jimgw.samplers.config.SamplerConfig" class="doc doc-heading">
+<h2 id="jimgw.samplers.config.SamplerConfig" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">SamplerConfig</span> <span class="o">=</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">FlowMCConfig</span><span class="p">,</span> <span class="n">BlackJAXNSAWConfig</span><span class="p">,</span> <span class="n">BlackJAXNSSConfig</span><span class="p">,</span> <span class="n">BlackJAXSwiGConfig</span><span class="p">,</span> <span class="n">BlackJAXSMCConfig</span><span class="p">],</span> <span class="n">Discriminator</span><span class="p">(</span><span class="s1">'type'</span><span class="p">)]</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
   </span>
 
-<a href="#jimgw.samplers.config.SamplerConfig" class="headerlink" title="Permanent link">¤</a></h3>
+<a href="#jimgw.samplers.config.SamplerConfig" class="headerlink" title="Permanent link">¤</a></h2>
 
 
     <div class="doc doc-contents ">
@@ -3443,11 +3443,11 @@ separate selector field to fall out of sync with it.</p>
 
 
 
-<h3 id="jimgw.samplers.config.BaseSamplerConfig" class="doc doc-heading">
+<h2 id="jimgw.samplers.config.BaseSamplerConfig" class="doc doc-heading">
             <code>BaseSamplerConfig</code>
 
 
-<a href="#jimgw.samplers.config.BaseSamplerConfig" class="headerlink" title="Permanent link">¤</a></h3>
+<a href="#jimgw.samplers.config.BaseSamplerConfig" class="headerlink" title="Permanent link">¤</a></h2>
 
 
     <div class="doc doc-contents ">
@@ -3493,11 +3493,11 @@ separate selector field to fall out of sync with it.</p>
 
 
 
-<h3 id="jimgw.samplers.config.BlackJAXNSAWConfig" class="doc doc-heading">
+<h2 id="jimgw.samplers.config.BlackJAXNSAWConfig" class="doc doc-heading">
             <code>BlackJAXNSAWConfig</code>
 
 
-<a href="#jimgw.samplers.config.BlackJAXNSAWConfig" class="headerlink" title="Permanent link">¤</a></h3>
+<a href="#jimgw.samplers.config.BlackJAXNSAWConfig" class="headerlink" title="Permanent link">¤</a></h2>
 
 
     <div class="doc doc-contents ">
@@ -3556,11 +3556,11 @@ parameter names.</p>
 
 
 
-<h3 id="jimgw.samplers.config.BlackJAXNSSConfig" class="doc doc-heading">
+<h2 id="jimgw.samplers.config.BlackJAXNSSConfig" class="doc doc-heading">
             <code>BlackJAXNSSConfig</code>
 
 
-<a href="#jimgw.samplers.config.BlackJAXNSSConfig" class="headerlink" title="Permanent link">¤</a></h3>
+<a href="#jimgw.samplers.config.BlackJAXNSSConfig" class="headerlink" title="Permanent link">¤</a></h2>
 
 
     <div class="doc doc-contents ">
@@ -3611,11 +3611,11 @@ argument to <a class="autorefs autorefs-internal" href="../../core/jim/#jimgw.co
 
 
 
-<h3 id="jimgw.samplers.config.BlackJAXSMCConfig" class="doc doc-heading">
+<h2 id="jimgw.samplers.config.BlackJAXSMCConfig" class="doc doc-heading">
             <code>BlackJAXSMCConfig</code>
 
 
-<a href="#jimgw.samplers.config.BlackJAXSMCConfig" class="headerlink" title="Permanent link">¤</a></h3>
+<a href="#jimgw.samplers.config.BlackJAXSMCConfig" class="headerlink" title="Permanent link">¤</a></h2>
 
 
     <div class="doc doc-contents ">
@@ -3625,7 +3625,7 @@ argument to <a class="autorefs autorefs-internal" href="../../core/jim/#jimgw.co
 
 
         <p>Configuration for the BlackJAX SMC sampler.</p>
-<h5 id="jimgw.samplers.config.BlackJAXSMCConfig--parameters">Parameters<a class="headerlink" href="#jimgw.samplers.config.BlackJAXSMCConfig--parameters" title="Permanent link">¤</a></h5>
+<h4 id="jimgw.samplers.config.BlackJAXSMCConfig--parameters">Parameters<a class="headerlink" href="#jimgw.samplers.config.BlackJAXSMCConfig--parameters" title="Permanent link">¤</a></h4>
 <p>batch_size : int, optional
     Number of particles to process per sequential batch during the MCMC
     update step. When <code>batch_size &gt; 0</code>, the sampler uses <code>jax.lax.map</code>
@@ -3673,11 +3673,11 @@ argument to <a class="autorefs autorefs-internal" href="../../core/jim/#jimgw.co
 
 
 
-<h3 id="jimgw.samplers.config.BlackJAXSwiGConfig" class="doc doc-heading">
+<h2 id="jimgw.samplers.config.BlackJAXSwiGConfig" class="doc doc-heading">
             <code>BlackJAXSwiGConfig</code>
 
 
-<a href="#jimgw.samplers.config.BlackJAXSwiGConfig" class="headerlink" title="Permanent link">¤</a></h3>
+<a href="#jimgw.samplers.config.BlackJAXSwiGConfig" class="headerlink" title="Permanent link">¤</a></h2>
 
 
     <div class="doc doc-contents ">
@@ -3726,11 +3726,11 @@ identifies which blocks refresh its cache.</p>
 
 
 
-<h3 id="jimgw.samplers.config.FlowMCConfig" class="doc doc-heading">
+<h2 id="jimgw.samplers.config.FlowMCConfig" class="doc doc-heading">
             <code>FlowMCConfig</code>
 
 
-<a href="#jimgw.samplers.config.FlowMCConfig" class="headerlink" title="Permanent link">¤</a></h3>
+<a href="#jimgw.samplers.config.FlowMCConfig" class="headerlink" title="Permanent link">¤</a></h2>
 
 
     <div class="doc doc-contents ">
@@ -3796,11 +3796,11 @@ parameter names to dimension indices and passes them to the sampler.</p>
 
 
 
-<h3 id="jimgw.samplers.config.GRWConfig" class="doc doc-heading">
+<h2 id="jimgw.samplers.config.GRWConfig" class="doc doc-heading">
             <code>GRWConfig</code>
 
 
-<a href="#jimgw.samplers.config.GRWConfig" class="headerlink" title="Permanent link">¤</a></h3>
+<a href="#jimgw.samplers.config.GRWConfig" class="headerlink" title="Permanent link">¤</a></h2>
 
 
     <div class="doc doc-contents ">
@@ -3849,11 +3849,11 @@ per-dimension step sizes.</p>
 
 
 
-<h3 id="jimgw.samplers.config.HMCConfig" class="doc doc-heading">
+<h2 id="jimgw.samplers.config.HMCConfig" class="doc doc-heading">
             <code>HMCConfig</code>
 
 
-<a href="#jimgw.samplers.config.HMCConfig" class="headerlink" title="Permanent link">¤</a></h3>
+<a href="#jimgw.samplers.config.HMCConfig" class="headerlink" title="Permanent link">¤</a></h2>
 
 
     <div class="doc doc-contents ">
@@ -3903,11 +3903,11 @@ as the mass matrix / preconditioning for HMC leapfrog steps.</p>
 
 
 
-<h3 id="jimgw.samplers.config.MALAConfig" class="doc doc-heading">
+<h2 id="jimgw.samplers.config.MALAConfig" class="doc doc-heading">
             <code>MALAConfig</code>
 
 
-<a href="#jimgw.samplers.config.MALAConfig" class="headerlink" title="Permanent link">¤</a></h3>
+<a href="#jimgw.samplers.config.MALAConfig" class="headerlink" title="Permanent link">¤</a></h2>
 
 
     <div class="doc doc-contents ">
@@ -3956,11 +3956,11 @@ per-dimension step sizes.</p>
 
 
 
-<h3 id="jimgw.samplers.config.ParallelTemperingConfig" class="doc doc-heading">
+<h2 id="jimgw.samplers.config.ParallelTemperingConfig" class="doc doc-heading">
             <code>ParallelTemperingConfig</code>
 
 
-<a href="#jimgw.samplers.config.ParallelTemperingConfig" class="headerlink" title="Permanent link">¤</a></h3>
+<a href="#jimgw.samplers.config.ParallelTemperingConfig" class="headerlink" title="Permanent link">¤</a></h2>
 
 
     <div class="doc doc-contents ">

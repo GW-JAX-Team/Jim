@@ -63,6 +63,7 @@ test = [
 cross-validation = [
     "lalsuite>=7.26.4",
     "bilby[gw]>=2.8.0",
+    "bilby-xg",
 ]
 doc = [
     "nbconvert",
@@ -79,6 +80,7 @@ Changelog = "https://github.com/GW-JAX-Team/Jim/releases"
 
 [tool.uv.sources]
 jimgw = { workspace = true }
+bilby-xg = { git = "https://github.com/Pratyusava/bilby_xG", rev = "11ee11607a531b2d7f286eb438d2c971d4c045cf" }
 
 [build-system]
 requires = ["hatchling", "hatch-vcs"]

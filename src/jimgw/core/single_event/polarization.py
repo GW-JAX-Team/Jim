@@ -72,8 +72,8 @@ class Polarization(eqx.Module):
             Float[Array, "3 3"]: 3x3 polarization tensor.
         """
         gmst = jnp.mod(gmst, 2 * jnp.pi)
-        phi = ra - gmst
-        theta = jnp.pi / 2 - dec
+        # Broadcast so that an array of gmst gives one tensor per element.
+        phi, theta = jnp.broadcast_arrays(ra - gmst, jnp.pi / 2 - dec)
 
         u = jnp.array(
             [

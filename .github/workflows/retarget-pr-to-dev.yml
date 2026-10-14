@@ -1,0 +1,30 @@
+name: Retarget PRs to jim-dev
+
+# New changes go to jim-dev first. A pull request opened against main is moved to
+# jim-dev, except the scheduled jim-dev -> main one. A maintainer can change the base
+# back afterwards: only opened and reopened pull requests are handled.
+#
+# pull_request_target runs this file from main, with a token that can write to
+# pull requests from forks. It never checks out or runs the pull request.
+
+on:
+  pull_request_target:
+    types: [opened, reopened]
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  retarget:
+    if: ${{ github.actor != 'dependabot[bot]' && !(github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'jim-dev') }}
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Move the pull request to jim-dev
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          gh pr edit "$PR_URL" --base jim-dev
+          gh pr comment "$PR_URL" --body "New changes go to \`jim-dev\` first, so the base branch of this pull request was changed from \`main\` to \`jim-dev\`."

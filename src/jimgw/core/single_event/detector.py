@@ -621,8 +621,8 @@ class GroundBased2G(Detector):
         The PSD is interpolated onto the frequencies of the new data.
 
         Args:
-            data (Data | Array): Data to be added to the detector, either as a `Data` object
-                or as a timeseries array.
+            data (Data | Array): The new data, either as a `Data` object or as a
+                timeseries array, for which ``delta_t`` must be passed as a keyword.
             **kws (dict): Additional keyword arguments to pass to `Data.from_td`.
         """
         self._check_mutable()
@@ -636,8 +636,8 @@ class GroundBased2G(Detector):
         It is interpolated onto the frequencies of the data.
 
         Args:
-            psd (PowerSpectrum | Array): PSD to be added to the detector, either as a `PowerSpectrum`
-                object or as a timeseries array.
+            psd (PowerSpectrum | Array): The new PSD, either as a `PowerSpectrum` object
+                or as an array of PSD values, for which ``frequencies`` must be passed as a keyword.
             **kws (dict): Additional keyword arguments to pass to `PowerSpectrum` constructor.
         """
         self._check_mutable()

@@ -124,6 +124,9 @@
         <loc>https://gw-jax-team.github.io/Jim/development/contributing/</loc>
       </url>
       <url>
+        <loc>https://gw-jax-team.github.io/Jim/development/dev/</loc>
+      </url>
+      <url>
         <loc>https://gw-jax-team.github.io/Jim/development/guides/</loc>
       </url>
       <url>
@@ -143,6 +146,12 @@
       </url>
       <url>
         <loc>https://gw-jax-team.github.io/Jim/development/guides/transforms/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/development/how-to/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/development/how-to/reduce_gpu_memory/</loc>
       </url>
       <url>
         <loc>https://gw-jax-team.github.io/Jim/development/installation/</loc>

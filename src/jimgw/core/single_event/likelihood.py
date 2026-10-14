@@ -134,6 +134,22 @@ class SingleEventLikelihood(LikelihoodBase):
         for detector in self.detectors:
             detector._freeze()
 
+    def _warn_if_phase_marginalization_is_inexact(self) -> None:
+        """Warn that phase marginalization needs a signal with the (2, 2) mode alone."""
+        metadata = getattr(self.waveform, "waveform_metadata", {})
+        reasons = []
+        if metadata.get("is_precessing"):
+            reasons.append("precession")
+        if (metadata.get("highest_mode") or 2) > 2:
+            reasons.append(f"modes up to m = {metadata['highest_mode']}")
+        if reasons:
+            logger.warning(
+                "phase_marginalization assumes a signal with only the (2, 2) mode, "
+                "but %r has %s, so the marginalized likelihood may be inaccurate.",
+                self.waveform,
+                " and ".join(reasons),
+            )
+
     # ------------------------------------------------------------------
     # Properties
     # ------------------------------------------------------------------
@@ -791,6 +807,17 @@ class TransientLikelihoodFD(SingleEventLikelihood):
                 "tc_range does not contain any time-marginalization samples."
             )
         self._time_selection = self._static_selection(time_indices)
+        grid_low = float(sorted_times[0])
+        grid_high = grid_low + 1 / float(self.df)
+        if float(low) < grid_low or float(high) > grid_high:
+            logger.warning(
+                "tc_range (%s, %s) extends beyond the time grid of the data, "
+                "(%s, %s) s, so the marginalized likelihood may be inaccurate.",
+                float(low),
+                float(high),
+                grid_low,
+                grid_high,
+            )
         # t_c has a uniform prior over tc_range: a sample of the time grid
         # weighs (time spacing) / (width of tc_range), and the time spacing is
         # 1 / (n_fft * df).
@@ -824,6 +851,7 @@ class TransientLikelihoodFD(SingleEventLikelihood):
             raise ValueError(
                 "Cannot have phase_c fixed while marginalizing over phase_c"
             )
+        self._warn_if_phase_marginalization_is_inexact()
 
     def _reduce_phase(
         self,
@@ -1114,6 +1142,8 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
             raise ValueError(
                 "Cannot have phase_c fixed while marginalizing over phase_c"
             )
+        if self.phase_marginalization:
+            self._warn_if_phase_marginalization_is_inexact()
 
         # --------------------------------------------------------------
         # Heterodyne setup

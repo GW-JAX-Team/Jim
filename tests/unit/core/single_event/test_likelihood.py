@@ -39,7 +39,13 @@ from jimgw.core.single_event.transforms import (
     GeocentricArrivalTimeToDetectorArrivalTimeTransform,
     MassRatioToSymmetricMassRatioTransform,
 )
-from jimgw.core.single_event.waveform import RippleIMRPhenomD, RippleSineGaussian
+from jimgw.core.single_event.waveform import (
+    RippleIMRPhenomD,
+    RippleIMRPhenomHM,
+    RippleIMRPhenomPv2,
+    RippleIMRPhenomXPHM,
+    RippleSineGaussian,
+)
 from jimgw.core.utils import log_i0
 from jimgw.samplers.config import BlackJAXSwiGConfig
 from tests.utils import assert_all_finite, common_keys_allclose
@@ -3978,3 +3984,98 @@ class TestGroundBased3GDetectors:
         full = shift("full")
         assert full > 1e-3
         assert shift(kind) == pytest.approx(full, abs=1e-4)
+
+
+class TestMarginalizationAssumptions:
+    """The log-likelihood is wrong, silently, where the assumptions of a marginalization break."""
+
+    @pytest.fixture
+    def warnings(self, caplog, monkeypatch):
+        # The "jimgw" logger does not propagate to the root logger, where caplog listens.
+        monkeypatch.setattr(logging.getLogger("jimgw"), "propagate", True)
+        with caplog.at_level("WARNING"):
+            yield lambda: " ".join(record.message for record in caplog.records)
+
+    @pytest.mark.parametrize(
+        "make_waveform, reason",
+        [
+            (RippleIMRPhenomHM, "modes up to m = 4"),
+            (RippleIMRPhenomPv2, "precession"),
+            (RippleIMRPhenomXPHM, "precession and modes up to m = 4"),
+        ],
+    )
+    def test_phase_marginalization_warns_if_the_signal_is_not_the_22_mode_alone(
+        self, detectors_and_waveform, warnings, make_waveform, reason
+    ):
+        ifos, _waveform, fmin, fmax, _gps = detectors_and_waveform
+        TransientLikelihoodFD(
+            ifos,
+            make_waveform(f_ref=20.0),
+            f_min=fmin,
+            f_max=fmax,
+            phase_marginalization=True,
+        )
+        assert f"has {reason}, so the marginalized likelihood may be inaccurate" in (
+            warnings()
+        )
+
+    def test_phase_marginalization_is_silent_for_the_22_mode_alone(
+        self, detectors_and_waveform, warnings
+    ):
+        ifos, waveform, fmin, fmax, _gps = detectors_and_waveform
+        TransientLikelihoodFD(
+            ifos, waveform, f_min=fmin, f_max=fmax, phase_marginalization=True
+        )
+        assert "phase_marginalization assumes" not in warnings()
+
+    def test_the_warning_needs_phase_marginalization(
+        self, detectors_and_waveform, warnings
+    ):
+        ifos, _waveform, fmin, fmax, _gps = detectors_and_waveform
+        TransientLikelihoodFD(
+            ifos, RippleIMRPhenomHM(f_ref=20.0), f_min=fmin, f_max=fmax
+        )
+        assert "phase_marginalization assumes" not in warnings()
+
+    def test_the_heterodyned_likelihood_warns_too(
+        self, detectors_and_waveform, warnings
+    ):
+        ifos, _waveform, fmin, fmax, _gps = detectors_and_waveform
+        HeterodynedTransientLikelihoodFD(
+            ifos,
+            RippleIMRPhenomHM(f_ref=20.0),
+            f_min=fmin,
+            f_max=fmax,
+            reference_parameters=example_params(),
+            phase_marginalization=True,
+        )
+        assert "has modes up to m = 4" in warnings()
+
+    def test_time_marginalization_warns_if_tc_range_exceeds_the_time_grid(
+        self, detectors_and_waveform, warnings
+    ):
+        ifos, waveform, fmin, fmax, _gps = detectors_and_waveform
+        duration = float(ifos[0].data.duration)
+        # Twice as wide as the time grid, which spans the duration of the data.
+        TransientLikelihoodFD(
+            ifos,
+            waveform,
+            f_min=fmin,
+            f_max=fmax,
+            time_marginalization={"tc_range": (-duration, duration)},
+        )
+        assert "extends beyond the time grid of the data" in warnings()
+        assert "may be inaccurate" in warnings()
+
+    def test_time_marginalization_is_silent_inside_the_time_grid(
+        self, detectors_and_waveform, warnings
+    ):
+        ifos, waveform, fmin, fmax, _gps = detectors_and_waveform
+        TransientLikelihoodFD(
+            ifos,
+            waveform,
+            f_min=fmin,
+            f_max=fmax,
+            time_marginalization={"tc_range": (-0.1, 0.1)},
+        )
+        assert "extends beyond the time grid" not in warnings()

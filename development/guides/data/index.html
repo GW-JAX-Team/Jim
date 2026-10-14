@@ -1022,6 +1022,34 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#next-generation-detectors" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Next-Generation Detectors
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Next-Generation Detectors">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#finite-arm-length-phase-convention" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Finite-arm-length phase convention
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2900,6 +2928,34 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#next-generation-detectors" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Next-Generation Detectors
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Next-Generation Detectors">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#finite-arm-length-phase-convention" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Finite-arm-length phase convention
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2936,7 +2992,7 @@ Jim ships with convenience constructors for common detectors — LIGO Hanford (<
 <span class="n">detectors</span> <span class="o">=</span> <span class="n">get_detector_preset</span><span class="p">()</span>  <span class="c1"># {"H1": ..., "L1": ..., "V1": ..., "ET": ..., "CE": ...}</span>
 <span class="n">H1</span> <span class="o">=</span> <span class="n">detectors</span><span class="p">[</span><span class="s2">"H1"</span><span class="p">]</span>
 </code></pre></div>
-<p>Note that <code>get_ET()</code> returns a <strong>list</strong> of three <code>GroundBased2G</code> objects (one for each of ET's triangular arms), while all others return a single detector.</p>
+<p>Note that <code>get_ET()</code> returns a <strong>list</strong> of three detectors (one for each of ET's triangular arms), while all others return a single detector.</p>
 <p>Once you have a detector, you need to attach strain data and a PSD to it.</p>
 <h2 id="loading-data">Loading Data<a class="headerlink" href="#loading-data" title="Permanent link">¤</a></h2>
 <h3 id="fetch-from-gwosc">Fetch from GWOSC<a class="headerlink" href="#fetch-from-gwosc" title="Permanent link">¤</a></h3>
@@ -3116,6 +3172,40 @@ Set the PSD and frequency bounds first, then call <code>inject_signal</code>.</p
 <span class="p">)</span>
 </code></pre></div>
 <p>Set <code>zero_noise=True</code> to get a noiseless injection.</p>
+<h2 id="next-generation-detectors">Next-Generation Detectors<a class="headerlink" href="#next-generation-detectors" title="Permanent link">¤</a></h2>
+<p><code>get_ET()</code> and <code>get_CE()</code> return <code>GroundBased3G</code> detectors, which respond like <code>GroundBased2G</code> unless you turn on one of two options:</p>
+<ul>
+<li><code>earth_rotation=True</code> follows the Earth's rotation while the signal is in band.
+  Turn it on for signals that stay in band for ten minutes or longer, such as binary neutron stars observed from about 10 Hz or lower, or for a few minutes if the signal is very loud.
+  It needs <code>M_c</code>, <code>eta</code>, <code>s1_z</code> and <code>s2_z</code> among the likelihood parameters.</li>
+<li><code>finite_arm_length=True</code> does not assume, as the usual antenna pattern does, that the arms are short compared to the gravitational wavelength.
+  The effect grows with frequency and arm length, so turn it on for loud signals (SNR of a few hundred or more) with power at high frequencies, more so for the 40 km arms of CE than for the 10 km arms of ET.
+  Unlike the rotation, it does not depend on the duration of the signal.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.single_event.detector</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_ET</span>
+
+<span class="n">ET</span> <span class="o">=</span> <span class="n">get_ET</span><span class="p">(</span><span class="n">earth_rotation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">finite_arm_length</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+<p>Both are off by default.
+Switching either on makes the likelihood more expensive.</p>
+<h3 id="finite-arm-length-phase-convention">Finite-arm-length phase convention<a class="headerlink" href="#finite-arm-length-phase-convention" title="Permanent link">¤</a></h3>
+<p>The finite-arm-length response multiplies each arm's antenna pattern by a transfer function (<a href="https://arxiv.org/abs/2304.09889">Baral et al. 2023</a>, Eq. 7), normalised so that it tends to one at low frequency.
+Its overall phase depends on which instant of the light's round trip in the arm the detector output is assigned to, and different codes make different choices.
+Jim uses this one:</p>
+<ul>
+<li>The gravitational wave is referenced at the detector vertex, as for <code>GroundBased2G</code>.</li>
+<li>The output is assigned to the time the light reaches the <strong>end mirror</strong>, i.e. half-way through its round trip, not to the time it returns to the beam splitter.</li>
+</ul>
+<p>With <span class="arithmatex">\(x = fL/c\)</span> for arm length <span class="arithmatex">\(L\)</span>, <span class="arithmatex">\(y = \mathbf{k}\cdot\mathbf{n}\)</span> the projection of the propagation direction <span class="arithmatex">\(\mathbf{k}\)</span> onto the arm <span class="arithmatex">\(\mathbf{n}\)</span>, and Jim's Fourier convention, in which a time delay <span class="arithmatex">\(\tau\)</span> multiplies the frequency-domain signal by <span class="arithmatex">\(e^{-2\pi i f \tau}\)</span>, the transfer function is</p>
+<div class="arithmatex">\[T(f) = \frac{1}{2}\left[e^{-i\pi x(1+y)}\,\mathrm{sinc}\,x(1-y) + e^{i\pi x(1-y)}\,\mathrm{sinc}\,x(1+y)\right],\]</div>
+<p>with <span class="arithmatex">\(\mathrm{sinc}\,z = \sin(\pi z)/(\pi z)\)</span>.
+At low frequency <span class="arithmatex">\(T \approx 1 - i\pi x y\)</span>, so it adds no direction-independent time delay to the long-wavelength response: injections made with or without the finite-arm-length response share the same time reference.</p>
+<p>Codes that assign the output to the light's return at the beam splitter, following the round-trip construction of <a href="https://arxiv.org/abs/0808.3805">Rakhmanov et al. (2008)</a>, use</p>
+<div class="arithmatex">\[T_{\text{return}}(f) = e^{-2\pi i f L/c}\, T(f),\]</div>
+<p>which delays the signal by <span class="arithmatex">\(L/c\)</span>: about 33 μs for the 10 km arms of ET and 133 μs for the 40 km arms of CE.
+For one detector, or a network with equal arm lengths, the difference is absorbed into <span class="arithmatex">\(t_c\)</span>.
+For a network with unequal arm lengths, such as ET with CE, it changes the relative arrival times by about 100 μs and can shift the inferred sky position.
+Injecting and recovering with <code>GroundBased3G</code> is consistent; when the data come from another code, check which convention it uses and apply the factor above if they differ.</p>
 
 
 

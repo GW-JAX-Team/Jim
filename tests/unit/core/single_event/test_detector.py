@@ -1,7 +1,9 @@
 import logging
 import time
+from importlib import resources
 from itertools import combinations
 from pathlib import Path
+from types import SimpleNamespace
 
 import jax
 import jax.numpy as jnp
@@ -20,29 +22,72 @@ from jimgw.core.single_event.data import Data, PowerSpectrum
 from jimgw.core.single_event.detector import (
     GroundBased2G,
     GroundBased3G,
+    default_asd_files,
     get_CE,
+    get_detector_preset,
     get_ET,
     get_H1,
     get_L1,
     get_V1,
-    time_to_merger,
 )
 from jimgw.core.single_event.time_utils import (
     greenwich_mean_sidereal_time as compute_gmst,
 )
-from jimgw.core.single_event.waveform import RippleIMRPhenomD
-from tests.utils import assert_all_in_range
+from jimgw.core.single_event.utils import complex_inner_product, inner_product
+from jimgw.core.single_event.waveform import (
+    RippleIMRPhenomD,
+    RippleIMRPhenomHM,
+    RippleIMRPhenomPv2,
+    RippleIMRPhenomXHM,
+    RippleIMRPhenomXPHM,
+    RippleSineGaussian,
+)
+from tests.utils import (
+    assert_all_in_range,
+    sliced_fd_data,
+    sliced_frequencies,
+    sliced_psd,
+)
 
 FIXTURES_DIR = Path(__file__).parent.parent.parent.parent / "fixtures"
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Shared helpers
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 GPS_TIME = 1126259462.0
 DURATION = 4.0
 F_MIN, F_MAX = 20.0, 1024.0
 SAMPLING_FREQUENCY = F_MAX * 2
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "latitude",
+        "longitude",
+        "elevation",
+        "xarm_azimuth",
+        "yarm_azimuth",
+        "xarm_tilt",
+        "yarm_tilt",
+    ],
+)
+@pytest.mark.parametrize("bad", [float("nan"), float("inf"), -float("inf")])
+def test_detector_geometry_must_be_finite(field, bad):
+    with pytest.raises(ValueError, match=f"{field} must be a finite real scalar"):
+        GroundBased2G("test", **{field: bad})
+
+
+def test_static_detector_factory_remains_usable_inside_jit():
+    def pattern(ra):
+        return get_H1().antenna_pattern(ra, 0.2, 0.3, 0.4)
+
+    expected = pattern(jnp.asarray(0.1))
+    compiled = jax.jit(pattern)(jnp.asarray(0.1))
+    for mode in expected:
+        assert jnp.allclose(compiled[mode], expected[mode])
+
 
 # Likelihood-space (fully expanded) parameters used as the reference injection.
 REFERENCE_PARAMS = {
@@ -63,6 +108,16 @@ REFERENCE_PARAMS = {
     "t_c": 0.0,
 }
 
+# Overrides of REFERENCE_PARAMS for a second, different signal.
+SECOND_SIGNAL = {
+    "M_c": 22.0,
+    "eta": 0.2,
+    "d_L": 300.0,
+    "t_c": 0.2,
+    "ra": 2.0,
+    "psi": 1.0,
+}
+
 
 def make_detector(getter=get_H1):
     """A detector from *getter*, carrying the H1 fixture PSD whatever its name."""
@@ -75,31 +130,27 @@ def make_detector(getter=get_H1):
 def inject_reference(det, trigger_time=GPS_TIME, **overrides):
     """Inject the reference signal (zero noise) into *det*."""
     params = {**REFERENCE_PARAMS, **overrides}
-    det.inject_signal(
+    det.set_zero_noise(
         duration=DURATION,
         sampling_frequency=SAMPLING_FREQUENCY,
         trigger_time=trigger_time,
-        waveform_model=RippleIMRPhenomD(f_ref=20.0),
-        parameters=params,
         f_min=F_MIN,
         f_max=F_MAX,
-        zero_noise=True,
     )
+    return det.inject_signal(RippleIMRPhenomD(f_ref=20.0), params)
 
 
 def inject_noisy(det, rng_key):
     """Inject the reference signal plus noise drawn with *rng_key* into *det*."""
-    det.inject_signal(
+    det.simulate_and_set_noise(
         duration=DURATION,
         sampling_frequency=SAMPLING_FREQUENCY,
         trigger_time=GPS_TIME,
-        waveform_model=RippleIMRPhenomD(f_ref=20.0),
-        parameters=dict(REFERENCE_PARAMS),
         f_min=F_MIN,
         f_max=F_MAX,
-        zero_noise=False,
         rng_key=rng_key,
     )
+    return det.inject_signal(RippleIMRPhenomD(f_ref=20.0), dict(REFERENCE_PARAMS))
 
 
 def injected_noise(getter, rng_key):
@@ -108,12 +159,12 @@ def injected_noise(getter, rng_key):
     inject_reference(clean)
     noisy = make_detector(getter)
     inject_noisy(noisy, rng_key)
-    return np.asarray(noisy.sliced_fd_data - clean.sliced_fd_data), noisy
+    return np.asarray(sliced_fd_data(noisy) - sliced_fd_data(clean)), noisy
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # inject_signal tests
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 class TestInjectSignal:
@@ -132,19 +183,19 @@ class TestInjectSignal:
         assert len(det.data.td) == int(DURATION * SAMPLING_FREQUENCY)
         assert det.data.start_time == GPS_TIME - DURATION + 2.0
 
-    def test_zero_noise_signal_nonzero_in_band(self):
-        """Injected signal is non-zero inside the frequency band."""
+    def test_zero_noise_signal_nonzero_in_frequency_range(self):
+        """Injected signal is non-zero inside the frequency range."""
         det = make_detector()
         inject_reference(det)
 
-        assert jnp.any(jnp.abs(det.sliced_fd_data) > 0)
+        assert jnp.any(jnp.abs(sliced_fd_data(det)) > 0)
 
     def test_zero_noise_frequency_bounds_respected(self):
-        """Sliced frequencies lie within the requested band."""
+        """Sliced frequencies lie within the requested frequency range."""
         det = make_detector()
         inject_reference(det)
 
-        assert_all_in_range(det.sliced_frequencies, F_MIN, F_MAX)
+        assert_all_in_range(sliced_frequencies(det), F_MIN, F_MAX)
 
     def test_noisy_injection_differs_from_zero_noise(self):
         """Adding noise produces data that differs from the zero-noise case."""
@@ -152,65 +203,212 @@ class TestInjectSignal:
         inject_reference(det_clean)
 
         det_noisy = make_detector()
-        params = dict(REFERENCE_PARAMS)
-        det_noisy.inject_signal(
-            duration=DURATION,
-            sampling_frequency=SAMPLING_FREQUENCY,
-            trigger_time=GPS_TIME,
-            waveform_model=RippleIMRPhenomD(f_ref=20.0),
-            parameters=params,
-            f_min=F_MIN,
-            f_max=F_MAX,
-            zero_noise=False,
-            rng_key=jax.random.key(42),
-        )
+        inject_noisy(det_noisy, jax.random.key(42))
 
         assert not jnp.allclose(
-            det_clean.sliced_fd_data,
-            det_noisy.sliced_fd_data,
+            sliced_fd_data(det_clean),
+            sliced_fd_data(det_noisy),
             rtol=1e-05,
             atol=1e-23,
         )
 
 
-# ---------------------------------------------------------------------------
+class TestSegmentCreators:
+    """``set_zero_noise`` and ``simulate_and_set_noise`` create the data segment."""
+
+    def test_set_zero_noise_creates_a_segment_of_zeros(self):
+        det = make_detector()
+        det.set_zero_noise(
+            duration=DURATION,
+            sampling_frequency=SAMPLING_FREQUENCY,
+            trigger_time=GPS_TIME,
+            f_min=F_MIN,
+            f_max=F_MAX,
+        )
+
+        assert len(det.data.td) == int(DURATION * SAMPLING_FREQUENCY)
+        assert det.data.start_time == GPS_TIME - DURATION + 2.0
+        assert det.data.frequency_bounds == (F_MIN, F_MAX)
+        assert not jnp.any(det.data.td)
+
+    def test_the_segment_ends_post_trigger_duration_after_the_trigger(self):
+        det = make_detector()
+        det.set_zero_noise(
+            duration=DURATION,
+            sampling_frequency=SAMPLING_FREQUENCY,
+            trigger_time=GPS_TIME,
+            f_min=F_MIN,
+            f_max=F_MAX,
+            post_trigger_duration=1.0,
+        )
+        assert det.data.start_time + DURATION == GPS_TIME + 1.0
+
+    def test_segments_shorter_than_the_default_taper_can_be_created(self):
+        # The default taper needs 0.8 s; the zero and simulated data carry no taper.
+        zero, noisy = make_detector(), make_detector()
+        short = {
+            "duration": 0.5,
+            "sampling_frequency": SAMPLING_FREQUENCY,
+            "trigger_time": GPS_TIME,
+            "f_min": F_MIN,
+            "f_max": F_MAX,
+            "post_trigger_duration": 0.25,
+        }
+        zero.set_zero_noise(**short)
+        noisy.simulate_and_set_noise(**short, rng_key=jax.random.key(0))
+        assert zero.data.duration == noisy.data.duration == 0.5
+
+    def test_the_creators_store_the_trigger_time_in_the_data(self):
+        zero, noisy = make_detector(), make_detector()
+        zero.set_zero_noise(
+            duration=DURATION,
+            sampling_frequency=SAMPLING_FREQUENCY,
+            trigger_time=GPS_TIME,
+            f_min=F_MIN,
+            f_max=F_MAX,
+        )
+        noisy.simulate_and_set_noise(
+            duration=DURATION,
+            sampling_frequency=SAMPLING_FREQUENCY,
+            trigger_time=GPS_TIME,
+            f_min=F_MIN,
+            f_max=F_MAX,
+            rng_key=jax.random.key(0),
+        )
+        assert zero.data.trigger_time == noisy.data.trigger_time == GPS_TIME
+
+    def test_injecting_keeps_the_trigger_time_in_the_data(self):
+        det = make_detector()
+        inject_reference(det)
+        assert det.data.trigger_time == GPS_TIME
+
+    def test_the_trigger_time_is_not_the_default_when_the_segment_ends_elsewhere(
+        self,
+    ):
+        det = make_detector()
+        det.set_zero_noise(
+            duration=DURATION,
+            sampling_frequency=SAMPLING_FREQUENCY,
+            trigger_time=GPS_TIME,
+            f_min=F_MIN,
+            f_max=F_MAX,
+            post_trigger_duration=1.0,  # the default would be 2 s before the end
+        )
+        det.inject_signal(RippleIMRPhenomD(f_ref=20.0), dict(REFERENCE_PARAMS))
+        assert det.data.trigger_time == GPS_TIME
+
+    def test_noise_is_cut_to_the_frequency_range(self):
+        det = make_detector()
+        det.simulate_and_set_noise(
+            duration=DURATION,
+            sampling_frequency=SAMPLING_FREQUENCY,
+            trigger_time=GPS_TIME,
+            f_min=F_MIN,
+            f_max=F_MAX,
+            rng_key=jax.random.key(0),
+        )
+
+        fd = np.asarray(det.data.fd)
+        inside = np.asarray(det.data.frequency_mask)
+        assert np.all(fd[~inside] == 0)
+        assert np.all(fd[inside] != 0)
+        assert det.data.frequency_bounds == (F_MIN, F_MAX)
+
+
+class TestSeveralSignals:
+    """Each call to ``inject_signal`` adds one signal; the noise is drawn once."""
+
+    KEY = jax.random.key(7)
+
+    @staticmethod
+    def inject_second(det):
+        return det.inject_signal(
+            RippleIMRPhenomD(f_ref=20.0), {**REFERENCE_PARAMS, **SECOND_SIGNAL}
+        )
+
+    def test_signals_add_up(self):
+        both = make_detector()
+        inject_reference(both)
+        self.inject_second(both)
+        first, second = make_detector(), make_detector()
+        inject_reference(first)
+        inject_reference(second, **SECOND_SIGNAL)
+
+        np.testing.assert_array_equal(
+            sliced_fd_data(both), sliced_fd_data(first) + sliced_fd_data(second)
+        )
+
+    def test_the_noise_is_drawn_once(self):
+        noise = make_detector()
+        noise.simulate_and_set_noise(
+            duration=DURATION,
+            sampling_frequency=SAMPLING_FREQUENCY,
+            trigger_time=GPS_TIME,
+            f_min=F_MIN,
+            f_max=F_MAX,
+            rng_key=self.KEY,
+        )
+        noise_fd = np.asarray(sliced_fd_data(noise))
+        noisy = make_detector()
+        inject_noisy(noisy, self.KEY)
+        self.inject_second(noisy)
+        signals = make_detector()
+        inject_reference(signals)
+        self.inject_second(signals)
+
+        np.testing.assert_allclose(
+            np.asarray(sliced_fd_data(noisy)) - noise_fd,
+            np.asarray(sliced_fd_data(signals)),
+            rtol=1e-9,
+            atol=1e-12 * np.max(np.abs(noise_fd)),
+        )
+
+    def test_inject_signal_returns_the_snrs(self):
+        det = make_detector()
+        optimal_snr, match_filtered_snr = inject_reference(det)
+
+        # Without noise the data are the signal, so both SNRs are its norm.
+        data, psd = sliced_fd_data(det), sliced_psd(det)
+        norm = float(inner_product(data, data, psd, 1 / DURATION) ** 0.5)
+        assert float(optimal_snr) == pytest.approx(norm)
+        assert complex(match_filtered_snr) == pytest.approx(norm)
+
+    def test_the_matched_filter_snr_is_measured_against_all_the_data(self):
+        first, second = make_detector(), make_detector()
+        inject_reference(first)
+        optimal_second, _ = inject_reference(second, **SECOND_SIGNAL)
+        det = make_detector()
+        inject_reference(det)
+        optimal_snr, match_filtered_snr = self.inject_second(det)
+
+        # (second | first + second) / |second|
+        overlap = complex_inner_product(
+            sliced_fd_data(second), sliced_fd_data(first), sliced_psd(det), 1 / DURATION
+        )
+        expected = (overlap + optimal_second**2) / optimal_second
+        assert float(optimal_snr) == pytest.approx(float(optimal_second))
+        assert complex(match_filtered_snr) == pytest.approx(complex(expected))
+
+
+# ----------------------------------------------------------------------
 # Injected noise: a function of (rng_key, detector name) and nothing else
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 class TestInjectedNoise:
     KEY = jax.random.key(42)
 
-    def test_noisy_injection_requires_rng_key(self):
-        det = make_detector()
-        psd = det.psd
-        with pytest.raises(ValueError, match="rng_key is required"):
-            det.inject_signal(
-                duration=DURATION,
-                sampling_frequency=SAMPLING_FREQUENCY,
-                trigger_time=GPS_TIME,
-                waveform_model=RippleIMRPhenomD(f_ref=20.0),
-                parameters=dict(REFERENCE_PARAMS),
-                f_min=F_MIN,
-                f_max=F_MAX,
-                zero_noise=False,
-            )
-        # The failed call must leave the detector as it was.
-        assert det.data.is_empty
-        assert det.psd is psd
-        assert det.frequency_bounds == (0.0, jnp.inf)
-
     def test_same_key_gives_identical_data(self):
         a, b = make_detector(), make_detector()
         inject_noisy(a, self.KEY)
         inject_noisy(b, self.KEY)
-        np.testing.assert_array_equal(a.sliced_fd_data, b.sliced_fd_data)
+        np.testing.assert_array_equal(sliced_fd_data(a), sliced_fd_data(b))
 
     def test_different_keys_give_different_noise(self):
         a, b = make_detector(), make_detector()
         inject_noisy(a, jax.random.key(1))
         inject_noisy(b, jax.random.key(2))
-        assert np.max(np.abs(np.asarray(a.sliced_fd_data - b.sliced_fd_data))) > 0
+        assert np.max(np.abs(np.asarray(sliced_fd_data(a) - sliced_fd_data(b)))) > 0
 
     def test_data_does_not_depend_on_the_clock(self, monkeypatch):
         a, b = make_detector(), make_detector()
@@ -218,7 +416,7 @@ class TestInjectedNoise:
         inject_noisy(a, self.KEY)
         monkeypatch.setattr(time, "time", lambda: 2.0e9)
         inject_noisy(b, self.KEY)
-        np.testing.assert_array_equal(a.sliced_fd_data, b.sliced_fd_data)
+        np.testing.assert_array_equal(sliced_fd_data(a), sliced_fd_data(b))
 
     def test_one_key_gives_every_detector_its_own_noise(self):
         # All four detectors carry the same PSD here, so identical random draws would
@@ -228,7 +426,7 @@ class TestInjectedNoise:
         whitened = {}
         for getter in (get_H1, get_L1, get_V1, get_CE):
             noise, det = injected_noise(getter, self.KEY)
-            whitened[getter.__name__] = noise / np.sqrt(np.asarray(det.sliced_psd))
+            whitened[getter.__name__] = noise / np.sqrt(np.asarray(sliced_psd(det)))
         for (name_a, a), (name_b, b) in combinations(whitened.items(), 2):
             correlation = np.abs(np.vdot(a, b)) / (
                 np.linalg.norm(a) * np.linalg.norm(b)
@@ -241,7 +439,7 @@ class TestInjectedNoise:
             for getter in getters:
                 det = make_detector(getter)
                 inject_noisy(det, self.KEY)
-                data[getter.__name__] = np.asarray(det.sliced_fd_data)
+                data[getter.__name__] = np.asarray(sliced_fd_data(det))
             return data
 
         forward = inject_in_order([get_H1, get_L1])
@@ -253,69 +451,1073 @@ class TestInjectedNoise:
         # Whitened by the PSD the likelihood uses (sliced_psd), the injected noise has
         # unit variance in its real and imaginary parts: noise and analysis share a PSD.
         noise, det = injected_noise(get_H1, self.KEY)
-        whitened = noise / np.sqrt(np.asarray(det.sliced_psd) * DURATION / 4)
+        whitened = noise / np.sqrt(np.asarray(sliced_psd(det)) * DURATION / 4)
         assert np.var(whitened.real) == pytest.approx(1.0, abs=0.1)
         assert np.var(whitened.imag) == pytest.approx(1.0, abs=0.1)
 
 
-class TestInjectionRequirements:
-    """What inject_signal needs, with and without noise."""
+class TestWhitenedTimeDomainData:
+    @pytest.mark.parametrize(("duration", "rate"), [(4.0, 2048.0), (3.0, 2047.0)])
+    def test_every_sample_is_kept_and_the_noise_has_unit_variance(self, duration, rate):
+        det = make_detector()
+        kwargs = {
+            **CREATOR_KWARGS,
+            "duration": duration,
+            "sampling_frequency": rate,
+            "f_max": 1000.0,
+        }
+        det.simulate_and_set_noise(**kwargs, rng_key=jax.random.key(0))
+        whitened = det.whitened_time_domain_data
+        assert whitened.shape == (det.data.n_time,)
+        assert float(jnp.var(whitened)) == pytest.approx(1.0, abs=0.1)
 
-    @pytest.mark.parametrize("zero_noise", [True, False])
-    def test_psd_is_required_in_both_noise_modes(self, zero_noise):
+
+class TestInjectionRequirements:
+    """What the creators and inject_signal need."""
+
+    @staticmethod
+    def inject(det):
+        return det.inject_signal(RippleIMRPhenomD(f_ref=20.0), dict(REFERENCE_PARAMS))
+
+    def test_noise_needs_a_psd(self):
         det = get_H1()  # no PSD set
         with pytest.raises(ValueError, match="No PSD is set on detector H1"):
-            det.inject_signal(
+            det.simulate_and_set_noise(
                 duration=DURATION,
                 sampling_frequency=SAMPLING_FREQUENCY,
                 trigger_time=GPS_TIME,
-                waveform_model=RippleIMRPhenomD(f_ref=20.0),
-                parameters=dict(REFERENCE_PARAMS),
                 f_min=F_MIN,
                 f_max=F_MAX,
-                zero_noise=zero_noise,
-                rng_key=None if zero_noise else jax.random.key(0),
+                rng_key=jax.random.key(0),
             )
         # The failed call must leave the detector as it was.
         assert det.data.is_empty
-        assert det.frequency_bounds == (0.0, jnp.inf)
+        assert det.data.frequency_bounds == (0.0, jnp.inf)
 
-    def test_zero_noise_needs_no_rng_key(self, caplog, monkeypatch):
-        # The "jimgw" logger does not propagate, which hides records from caplog.
-        monkeypatch.setattr(logging.getLogger("jimgw"), "propagate", True)
+    def test_inject_signal_needs_a_psd(self):
+        det = get_H1()  # no PSD set
+        det.set_zero_noise(
+            duration=DURATION,
+            sampling_frequency=SAMPLING_FREQUENCY,
+            trigger_time=GPS_TIME,
+            f_min=F_MIN,
+            f_max=F_MAX,
+        )
+        data = det.data
+        with pytest.raises(ValueError, match="No PSD is set on detector H1"):
+            self.inject(det)
+        assert det.data is data
+
+    def test_inject_signal_needs_data(self):
+        det = make_detector()  # PSD, but no data
+        with pytest.raises(ValueError, match="No data is set on detector H1"):
+            self.inject(det)
+        assert det.data.is_empty
+
+    def test_real_data_inject_at_the_default_trigger_time(self):
         det = make_detector()
-        with caplog.at_level("WARNING"):
-            inject_reference(det)  # zero_noise=True and no key
-        assert not [r for r in caplog.records if "rng_key" in r.message]
-        assert not det.data.is_empty
+        det.set_data(real_h1_data())  # data that no creator made
+        det.data.frequency_bounds = (F_MIN, F_MAX)
+        optimal_snr, _ = self.inject(det)
+        assert float(optimal_snr) > 0
+        # 2 s before the end of the data
+        assert det.data.trigger_time == det.data.start_time + det.data.duration - 2.0
 
-    def test_rng_key_with_zero_noise_is_ignored_with_a_warning(
-        self, caplog, monkeypatch
+    def test_inject_signal_needs_the_trigger_time_inside_the_data(self):
+        det = make_detector()
+        data = real_h1_data()
+        data.trigger_time = GPS_TIME + 1000.0
+        det.set_data(data)
+        det.data.frequency_bounds = (F_MIN, F_MAX)
+        with pytest.raises(ValueError, match="outside the data of detector 'H1'"):
+            self.inject(det)
+
+    def test_new_data_does_not_keep_the_old_trigger_time(self):
+        det = make_detector()
+        det.set_zero_noise(
+            duration=DURATION,
+            sampling_frequency=SAMPLING_FREQUENCY,
+            trigger_time=GPS_TIME + 1000.0,
+            f_min=F_MIN,
+            f_max=F_MAX,
+        )
+        det.set_data(real_h1_data())
+        det.data.frequency_bounds = (F_MIN, F_MAX)
+        data = det.data
+        assert data.trigger_time == data.start_time + data.duration - 2.0
+        assert data.trigger_time != GPS_TIME + 1000.0
+
+    def test_real_data_takes_a_trigger_time_set_by_hand(self):
+        det = make_detector()
+        data = real_h1_data()
+        data.trigger_time = GPS_TIME
+        det.set_data(data)
+        det.data.frequency_bounds = (F_MIN, F_MAX)
+        optimal_snr, _ = self.inject(det)
+        assert float(optimal_snr) > 0
+
+
+# ----------------------------------------------------------------------
+# Slices of the data and the PSD
+# ----------------------------------------------------------------------
+
+
+def real_h1_data():
+    return Data.from_file(str(FIXTURES_DIR / "GW150914_strain_H1.npz"))
+
+
+class TestSlices:
+    """The detector slices its data and PSD to a frequency range."""
+
+    def test_reading_the_slices_fixes_the_data(self):
+        real = real_h1_data()
+        det = make_detector()
+        det.set_data(real)
+        det.data.frequency_bounds = (F_MIN, F_MAX)
+        assert len(sliced_fd_data(det)) > 0
+        assert real.has_fd
+        with pytest.raises(RuntimeError, match="frequency-domain data have been fixed"):
+            real.set_tukey_window(alpha=0.2)
+
+    def test_whitened_data_is_not_zero_when_nothing_has_transformed_the_data(self):
+        # Setting the frequency range does not Fourier transform the data as a side
+        # effect, so the whitened data must do it itself instead of reading an
+        # all-zero array.
+        det = make_detector()
+        det.set_data(real_h1_data())
+        det.data.frequency_bounds = (F_MIN, F_MAX)
+        assert jnp.any(jnp.abs(det.whitened_frequency_domain_data) > 0)
+
+    def test_slices_follow_the_current_data(self):
+        det = make_detector()
+        inject_reference(det)  # 4 s at 2048 Hz, frequency range 20-1024 Hz
+        assert len(sliced_frequencies(det)) == 4017
+        # A longer segment has a finer frequency grid: the slice must follow it at once.
+        longer = Data.from_td(
+            td=jnp.zeros(16384), delta_t=1 / 2048.0, start_time=GPS_TIME
+        )
+        longer.frequency_bounds = (F_MIN, F_MAX)
+        det.set_data(longer)
+        assert len(sliced_frequencies(det)) == 8033  # (1024 - 20) / 0.125 + 1
+        assert len(sliced_fd_data(det)) == len(sliced_psd(det)) == 8033
+
+    def test_slices_follow_a_new_psd(self):
+        det = make_detector()
+        inject_reference(det)
+        before = np.asarray(sliced_psd(det))
+        det.set_psd(PowerSpectrum(det.psd.values * 4.0, det.psd.frequencies))
+        np.testing.assert_allclose(np.asarray(sliced_psd(det)), 4.0 * before)
+
+    def test_slice_to_frequency_range_returns_the_range_and_leaves_the_detector_alone(
+        self,
     ):
-        # No noise is drawn, so the key is useless: warn, and leave the data alone.
-        monkeypatch.setattr(logging.getLogger("jimgw"), "propagate", True)
-        with_key, without_key = make_detector(), make_detector()
-        inject_reference(without_key)
-        with caplog.at_level("WARNING"):
-            with_key.inject_signal(
-                duration=DURATION,
-                sampling_frequency=SAMPLING_FREQUENCY,
-                trigger_time=GPS_TIME,
-                waveform_model=RippleIMRPhenomD(f_ref=20.0),
-                parameters=dict(REFERENCE_PARAMS),
-                f_min=F_MIN,
-                f_max=F_MAX,
-                zero_noise=True,
+        det = make_detector()
+        inject_reference(det)
+        frequencies, fd_data, psd = det.slice_to_frequency_range(30.0, 512.0)
+        assert float(frequencies[0]) == 30.0
+        assert float(frequencies[-1]) == 512.0
+        assert fd_data.shape == frequencies.shape == psd.shape
+        assert det.data.frequency_bounds == (F_MIN, F_MAX)
+
+    @pytest.mark.parametrize(("f_min", "f_max"), [(10.0, 512.0), (30.0, 2000.0)])
+    def test_slice_to_frequency_range_refuses_a_range_wider_than_the_data(
+        self, f_min, f_max
+    ):
+        det = make_detector()
+        inject_reference(det)
+        with pytest.raises(
+            ValueError, match="wider than the frequency range of the data"
+        ):
+            det.slice_to_frequency_range(f_min, f_max)
+
+    def test_slice_to_frequency_range_needs_data_and_a_psd(self):
+        with pytest.raises(ValueError, match="needs both data and a PSD"):
+            get_H1().slice_to_frequency_range(20.0, 512.0)
+
+    def test_slice_rejects_psd_whose_reciprocal_overflows(self):
+        det = zero_noise_detector()
+        frequencies = det.psd.frequencies
+        index = int(jnp.argmin(jnp.abs(frequencies - 100.0)))
+        values = (
+            jnp.asarray(det.psd.values).at[index].set(jnp.finfo(jnp.float64).tiny / 16)
+        )
+        det.set_psd(PowerSpectrum(values, frequencies))
+        with pytest.raises(ValueError, match="finite reciprocal"):
+            det.slice_to_frequency_range(30.0, 512.0)
+
+    def test_psd_reciprocal_overflow_outside_the_frequency_range_remains_allowed(self):
+        det = zero_noise_detector()
+        frequencies = det.psd.frequencies
+        index = int(jnp.argmin(jnp.abs(frequencies - 10.0)))
+        values = (
+            jnp.asarray(det.psd.values).at[index].set(jnp.finfo(jnp.float64).tiny / 16)
+        )
+        det.set_psd(PowerSpectrum(values, frequencies))
+        _, fd_data, psd = det.slice_to_frequency_range(30.0, 512.0)
+        assert jnp.all(jnp.isfinite(fd_data))
+        assert jnp.all(jnp.isfinite(1 / psd))
+
+
+# ----------------------------------------------------------------------
+# Weird usage: every bad call raises before anything changes
+# ----------------------------------------------------------------------
+
+DETECTOR_LOGGER = "jimgw.core.single_event.detector"
+CREATOR_KWARGS = {
+    "duration": DURATION,
+    "sampling_frequency": SAMPLING_FREQUENCY,
+    "trigger_time": GPS_TIME,
+    "f_min": F_MIN,
+    "f_max": F_MAX,
+}
+CREATORS = ["set_zero_noise", "simulate_and_set_noise"]
+WAVEFORM = RippleIMRPhenomD(f_ref=20.0)
+
+
+def state_of(det):
+    """What a failing call must leave alone."""
+    return det.data, det.psd, det.data.frequency_bounds, det.data.has_fd
+
+
+def assert_untouched(det, state):
+    data, psd, bounds, has_fd = state
+    assert det.data is data
+    assert det.psd is psd
+    assert det.data.frequency_bounds == bounds
+    assert det.data.has_fd == has_fd  # the window can only change while this is False
+
+
+def create(det, creator, **overrides):
+    kwargs = {**CREATOR_KWARGS, **overrides}
+    if creator == "simulate_and_set_noise":
+        kwargs.setdefault("rng_key", jax.random.key(0))
+    return getattr(det, creator)(**kwargs)
+
+
+def zero_noise_detector():
+    det = make_detector()
+    det.set_zero_noise(**CREATOR_KWARGS)
+    return det
+
+
+def holds_a_signal(det):
+    """Zero-noise data are nonzero somewhere exactly when a signal was injected."""
+    return bool(jnp.any(det.data.fd != 0))
+
+
+@pytest.mark.parametrize("creator", CREATORS)
+class TestCreatorArguments:
+    @pytest.mark.parametrize(
+        ("overrides", "match"),
+        [
+            ({"duration": 0.0}, "must be positive"),
+            ({"duration": -4.0}, "must be positive"),
+            ({"duration": jnp.nan}, "must be positive"),
+            ({"duration": jnp.inf}, "must be positive"),
+            ({"sampling_frequency": 0.0}, "must be positive"),
+            ({"sampling_frequency": jnp.nan}, "must be positive"),
+            ({"sampling_frequency": jnp.inf}, "must be positive"),
+            ({"trigger_time": jnp.nan}, "trigger_time must be finite"),
+            ({"trigger_time": jnp.inf}, "trigger_time must be finite"),
+            ({"post_trigger_duration": -1.0}, "post_trigger_duration must be between"),
+            ({"post_trigger_duration": DURATION + 1}, "post_trigger_duration must be"),
+            ({"post_trigger_duration": jnp.nan}, "post_trigger_duration must be"),
+            ({"f_min": -5.0}, "must not be negative"),
+            ({"f_min": jnp.nan}, "must not be NaN"),
+            ({"f_min": 500.0, "f_max": 400.0}, "below f_max"),
+            ({"f_max": 5000.0}, "Nyquist"),
+            ({"f_min": 20.0, "f_max": 20.1}, "at least two"),
+            (
+                {
+                    "duration": 1.0,
+                    "sampling_frequency": 1.0,
+                    "post_trigger_duration": 0.5,
+                },
+                "at least two time samples",
+            ),
+        ],
+    )
+    def test_a_bad_argument_raises_and_changes_nothing(self, creator, overrides, match):
+        det = zero_noise_detector()
+        before = state_of(det)
+        with pytest.raises(ValueError, match=match):
+            create(det, creator, **overrides)
+        assert_untouched(det, before)
+
+    def test_the_default_post_trigger_duration_must_fit_a_short_segment(self, creator):
+        det = zero_noise_detector()
+        before = state_of(det)
+        with pytest.raises(ValueError, match="post_trigger_duration must be between"):
+            create(det, creator, duration=1.0)  # the default 2 s is longer
+        assert_untouched(det, before)
+
+    def test_an_odd_number_of_samples_works(self, creator):
+        det = make_detector()
+        create(
+            det,
+            creator,
+            duration=3.0,
+            sampling_frequency=2047.0,
+            f_max=1000.0,
+            post_trigger_duration=1.0,
+        )
+        assert det.data.n_time == 6141
+        det.inject_signal(WAVEFORM, dict(REFERENCE_PARAMS))
+
+    def test_replaces_whatever_the_detector_held(self, creator):
+        det = make_detector()
+        inject_reference(det)
+        first = det.data
+        create(det, creator, trigger_time=GPS_TIME + 10.0)
+        assert det.data is not first
+        assert det.data.trigger_time == GPS_TIME + 10.0
+
+    @pytest.mark.parametrize("duration", [4.0001, 4.0004])
+    @pytest.mark.parametrize("post", [0.0, 2.0])
+    def test_fractional_sample_durations_use_the_actual_buffer_length(
+        self, creator, duration, post
+    ):
+        det = make_detector()
+        create(det, creator, duration=duration, post_trigger_duration=post)
+        assert det.data.start_time + float(det.data.duration) == GPS_TIME + post
+        assert (
+            det.data.start_time <= GPS_TIME <= det.data.start_time + det.data.duration
+        )
+
+    def test_rounding_must_not_put_the_trigger_before_the_segment(self, creator):
+        det = zero_noise_detector()
+        before = state_of(det)
+        with pytest.raises(ValueError, match="rounded segment duration"):
+            create(det, creator, duration=4.0001, post_trigger_duration=4.0001)
+        assert_untouched(det, before)
+
+
+class TestNoiseCreatorInputs:
+    @pytest.mark.parametrize("bad", [0.0, -1.0, jnp.nan, jnp.inf])
+    def test_invalid_psd_outside_the_frequency_range_of_the_data_does_not_change_noise(
+        self, bad
+    ):
+        frequencies = jnp.arange(9.0) / 4
+        clean, outside_invalid = get_H1(), get_H1()
+        clean.set_psd(PowerSpectrum(jnp.ones(9), frequencies))
+        outside_invalid.set_psd(PowerSpectrum(jnp.ones(9).at[1].set(bad), frequencies))
+        for detector in (clean, outside_invalid):
+            detector.simulate_and_set_noise(
+                duration=4.0,
+                sampling_frequency=4.0,
+                trigger_time=100.0,
+                f_min=0.5,
+                f_max=1.5,
                 rng_key=jax.random.key(0),
             )
+
+        np.testing.assert_array_equal(outside_invalid.data.fd, clean.data.fd)
+        assert bool(jnp.all(jnp.isfinite(outside_invalid.data.fd)))
         np.testing.assert_array_equal(
-            with_key.sliced_fd_data, without_key.sliced_fd_data
+            np.asarray(outside_invalid.psd.values[1]), np.asarray(bad)
+        )
+
+    def test_a_wrong_rng_key_changes_nothing(self):
+        det = zero_noise_detector()
+        before = state_of(det)
+        with pytest.raises(TypeError):
+            det.simulate_and_set_noise(**CREATOR_KWARGS, rng_key=0)
+        assert_untouched(det, before)
+
+    @pytest.mark.parametrize("key", [jax.random.key(0), jax.random.PRNGKey(0)])
+    def test_both_kinds_of_jax_key_work(self, key):
+        det = make_detector()
+        det.simulate_and_set_noise(**CREATOR_KWARGS, rng_key=key)
+        assert bool(jnp.any(det.data.fd != 0))  # noise was drawn
+
+    @pytest.mark.parametrize("bad", [0.0, -1.0, jnp.nan, jnp.inf])
+    def test_the_psd_must_be_finite_and_positive_in_the_range(self, bad):
+        det = make_detector()
+        index = int(jnp.argmin(jnp.abs(det.psd.frequencies - 100.0)))
+        det.set_psd(
+            PowerSpectrum(det.psd.values.at[index].set(bad), det.psd.frequencies)
+        )
+        before = state_of(det)
+        with pytest.raises(ValueError, match="not finite and positive"):
+            det.simulate_and_set_noise(**CREATOR_KWARGS, rng_key=jax.random.key(0))
+        assert_untouched(det, before)
+
+
+class TestLoadAndSetPsd:
+    def test_psd_file_and_asd_file_are_mutually_exclusive(self):
+        det = get_H1()
+        path = str(FIXTURES_DIR / "GW150914_psd_H1.npz")
+        with pytest.raises(ValueError, match="mutually exclusive"):
+            det.load_and_set_psd(psd_file=path, asd_file=path)
+        assert det.psd.is_empty
+
+    @staticmethod
+    def preset_interferometers():
+        return {
+            ifo.name: ifo
+            for value in get_detector_preset().values()
+            for ifo in (value if isinstance(value, list) else [value])
+        }
+
+    def test_every_preset_interferometer_has_a_default(self):
+        assert set(default_asd_files) == set(self.preset_interferometers())
+
+    @pytest.mark.parametrize("name", sorted(default_asd_files))
+    def test_default_is_the_packaged_design_asd(self, name):
+        psd = self.preset_interferometers()[name].load_and_set_psd()
+
+        curve = resources.files("jimgw.core.single_event") / "noise_curves"
+        frequencies, asd = np.genfromtxt(
+            str(curve / default_asd_files[name]), unpack=True
+        )
+        np.testing.assert_array_equal(np.asarray(psd.frequencies), frequencies)
+        np.testing.assert_array_equal(np.asarray(psd.values), asd**2)
+        in_range = (frequencies >= 20.0) & (frequencies <= 1024.0)
+        assert np.all(np.isfinite(asd[in_range]) & (asd[in_range] > 0.0))
+
+    def test_detector_without_a_default_asks_for_a_file(self):
+        det = get_H1()
+        det.name = "X1"
+        with pytest.raises(ValueError, match="No built-in PSD for detector X1"):
+            det.load_and_set_psd()
+        assert det.psd.is_empty
+
+
+class TestInjectionArguments:
+    def inject(self, det, parameters=REFERENCE_PARAMS, **kwargs):
+        return det.inject_signal(WAVEFORM, parameters, **kwargs)
+
+    def assert_refused(self, det, error, match, **kwargs):
+        before = state_of(det)
+        with pytest.raises(error, match=match):
+            self.inject(det, **kwargs)
+        assert_untouched(det, before)
+
+    @pytest.mark.parametrize("key", ["ra", "dec", "psi", "t_c", "M_c", "eta", "d_L"])
+    def test_a_missing_parameter_is_named(self, key):
+        parameters = {k: v for k, v in REFERENCE_PARAMS.items() if k != key}
+        self.assert_refused(
+            zero_noise_detector(),
+            ValueError,
+            rf"missing \['{key}'\]",
+            parameters=parameters,
+        )
+
+    @pytest.mark.parametrize(
+        ("key", "value"),
+        [
+            ("d_L", jnp.nan),
+            ("d_L", 0.0),
+            ("M_c", jnp.inf),
+            ("M_c", -5.0),
+            ("ra", jnp.nan),
+            ("t_c", jnp.inf),
+        ],
+    )
+    def test_a_parameter_that_gives_no_finite_signal_is_refused(self, key, value):
+        self.assert_refused(
+            zero_noise_detector(),
+            ValueError,
+            "not finite at",
+            parameters={**REFERENCE_PARAMS, key: value},
+        )
+
+    @pytest.mark.parametrize("eta", [0.3, 0.8, 0.0, -0.1, jnp.nan])
+    def test_eta_must_not_exceed_a_quarter(self, eta):
+        # The waveform stays finite for an eta above 1/4, e.g. a mass ratio given as eta.
+        self.assert_refused(
+            zero_noise_detector(),
+            ValueError,
+            "eta must be in",
+            parameters={**REFERENCE_PARAMS, "eta": eta},
+        )
+
+    @pytest.mark.parametrize("bad", [0.0, -1.0, jnp.nan, jnp.inf])
+    def test_the_psd_must_be_finite_and_positive_in_the_range(self, bad):
+        det = zero_noise_detector()
+        index = int(jnp.argmin(jnp.abs(det.psd.frequencies - 100.0)))
+        values = jnp.asarray(det.psd.values).at[index].set(bad)
+        det.set_psd(PowerSpectrum(values, det.psd.frequencies))
+        self.assert_refused(det, ValueError, "not finite and positive")
+
+    def test_equal_masses_are_accepted(self):
+        det = zero_noise_detector()
+        self.inject(det, {**REFERENCE_PARAMS, "eta": 0.25 + 1e-12})
+        assert holds_a_signal(det)
+
+    def test_extra_parameters_are_allowed(self):
+        det = zero_noise_detector()
+        self.inject(det, {**REFERENCE_PARAMS, "something_else": "ignored"})
+        assert holds_a_signal(det)
+
+    def test_real_data_need_a_frequency_range_first(self):
+        det = make_detector()
+        det.set_data(real_h1_data())
+        before = state_of(det)
+        with pytest.raises(ValueError, match="data.frequency_bounds"):
+            self.inject(det)
+        assert_untouched(det, before)
+        det.data.frequency_bounds = (F_MIN, F_MAX)
+        data = det.data
+        self.inject(det)
+        assert det.data is not data
+
+    def test_a_range_with_fewer_than_two_frequencies_is_refused(self):
+        det = zero_noise_detector()
+        with pytest.raises(ValueError, match="at least two"):
+            det.slice_to_frequency_range(F_MIN, F_MIN + 0.1)
+
+    def test_a_signal_that_is_not_finite_is_refused(self):
+        class NotANumber:
+            parameter_names = ("M_c",)
+
+            def __call__(self, frequency, params):
+                nan = jnp.full(frequency.shape, jnp.nan, dtype=complex)
+                return {"p": nan, "c": nan}
+
+        det = zero_noise_detector()
+        before = state_of(det)
+        parameters = {
+            k: REFERENCE_PARAMS[k] for k in ("M_c", "ra", "dec", "psi", "t_c")
+        }
+        with pytest.raises(ValueError, match="not finite at"):
+            det.inject_signal(NotANumber(), parameters)
+        assert_untouched(det, before)
+
+    def test_zero_amplitude_is_refused_without_freezing_the_original_window(self):
+        class ZeroSignal:
+            parameter_names = ()
+
+            def __call__(self, frequency, params):
+                zero = jnp.zeros(frequency.shape, dtype=complex)
+                return {"p": zero, "c": zero}
+
+        det = zero_noise_detector()
+        before = state_of(det)
+        parameters = {k: REFERENCE_PARAMS[k] for k in ("ra", "dec", "psi", "t_c")}
+        with pytest.raises(ValueError, match="positive signal-to-noise power"):
+            det.inject_signal(ZeroSignal(), parameters)
+        assert_untouched(det, before)
+        det.data.set_tukey_window(alpha=0.1)
+
+    @pytest.mark.parametrize("failure", ["signal", "psd", "grid", "containment"])
+    def test_failed_injection_keeps_real_data_uncached_and_its_window_editable(
+        self, failure
+    ):
+        det = make_detector()
+        det.set_data(real_h1_data())
+        det.data.frequency_bounds = (F_MIN, F_MAX)
+        parameters = dict(REFERENCE_PARAMS)
+        if failure == "signal":
+            parameters["d_L"] = jnp.nan
+        elif failure == "psd":
+            values = jnp.asarray(det.psd.values).at[400].set(jnp.nan)
+            det.set_psd(PowerSpectrum(values, det.psd.frequencies))
+        elif failure == "grid":
+            det.psd = PowerSpectrum(det.psd.values, det.psd.frequencies + 0.01)
+        else:
+            parameters["t_c"] = 3.0
+        before = state_of(det)
+        with pytest.raises(ValueError):
+            self.inject(det, parameters)
+        assert_untouched(det, before)
+        det.data.set_tukey_window(alpha=0.1)
+
+    def test_even_nyquist_injection_and_reported_snr_use_the_same_real_signal(self):
+        class HighFrequencyPacket:
+            parameter_names = ()
+
+            def __call__(self, frequency, params):
+                hp = jnp.exp(-0.5 * ((frequency - 900.0) / 50.0) ** 2) * (1 + 1j)
+                return {"p": hp, "c": jnp.zeros_like(hp)}
+
+        det = zero_noise_detector()
+        parameters = {k: REFERENCE_PARAMS[k] for k in ("ra", "dec", "psi", "t_c")}
+        rho, matched = det.inject_signal(
+            HighFrequencyPacket(), parameters, allow_wraparound=True
+        )
+        signal = sliced_fd_data(det)
+        norm = inner_product(signal, signal, sliced_psd(det), 1 / DURATION) ** 0.5
+        assert float(rho) == pytest.approx(float(norm))
+        assert complex(matched) == pytest.approx(float(norm))
+        assert det.data.fd[-1].imag == 0
+        np.testing.assert_allclose(det.data.fft(), det.data.fd, rtol=1e-12, atol=1e-13)
+
+    def test_the_range_survives_an_injection(self):
+        det = zero_noise_detector()
+        self.inject(det)
+        assert det.data.frequency_bounds == (F_MIN, F_MAX)
+
+    def test_user_data_with_an_odd_number_of_samples_keep_their_grid(self):
+        det = make_detector()
+        data = Data.from_td(
+            td=jnp.zeros(8193), delta_t=1 / 2048.0, start_time=GPS_TIME - 2.0
+        )
+        data.frequency_bounds = (F_MIN, F_MAX)
+        det.set_data(data)
+        psd = det.psd
+        self.inject(det)
+        assert det.data.n_time == 8193
+        assert det.data.delta_t == 1 / 2048.0
+        assert jnp.array_equal(det.data.frequencies, data.frequencies)
+        assert det.psd is psd
+
+    def test_injecting_into_real_data_adds_the_signal_to_its_windowed_fft(self):
+        windowed = real_h1_data().fd  # an identical copy gives the same windowed FFT
+        det = make_detector()
+        det.set_data(real_h1_data())
+        det.data.frequency_bounds = (F_MIN, F_MAX)
+        self.inject(det)
+        grid = det.data.frequencies
+        projected = det.fd_response(
+            grid,
+            WAVEFORM(grid, dict(REFERENCE_PARAMS)),
+            dict(REFERENCE_PARAMS),
+        )
+        expected = windowed + jnp.where(det.data.frequency_mask, projected, 0.0)
+        np.testing.assert_array_equal(det.data.fd, expected)
+
+    def test_the_order_of_the_signals_does_not_matter(self):
+        ab, ba = zero_noise_detector(), zero_noise_detector()
+        second = {**REFERENCE_PARAMS, **SECOND_SIGNAL}
+        self.inject(ab)
+        self.inject(ab, second)
+        self.inject(ba, second)
+        self.inject(ba)
+        np.testing.assert_array_equal(ab.data.fd, ba.data.fd)
+
+    def test_the_total_snr_squared_of_two_signals(self):
+        # (A+B | A+B) = rho_A^2 + rho_B^2 + 2 Re (A|B)
+        second = {**REFERENCE_PARAMS, **SECOND_SIGNAL}
+        both, only_a, only_b = (zero_noise_detector() for _ in range(3))
+        rho_a, _ = self.inject(both)
+        rho_b, _ = self.inject(both, second)
+        self.inject(only_a)
+        self.inject(only_b, second)
+        a, b = sliced_fd_data(only_a), sliced_fd_data(only_b)
+        psd, df = sliced_psd(both), 1 / DURATION
+        total = inner_product(sliced_fd_data(both), sliced_fd_data(both), psd, df)
+        overlap = complex_inner_product(a, b, psd, df).real
+        assert float(total) == pytest.approx(
+            float(rho_a) ** 2 + float(rho_b) ** 2 + 2 * float(overlap), rel=1e-9
         )
 
 
-# ---------------------------------------------------------------------------
+class TestSignalMustFitTheSegment:
+    """A conservative duration estimate catches short or badly placed injections."""
+
+    def inject(self, det, waveform=WAVEFORM, **updates):
+        return det.inject_signal(waveform, {**REFERENCE_PARAMS, **updates})
+
+    @pytest.mark.parametrize("t_c", [1.9, 3.0, 7.0, -0.7, -3.0, 64.0, -64.0])
+    def test_a_signal_placed_outside_the_segment_is_refused(self, t_c):
+        det = zero_noise_detector()
+        before = state_of(det)
+        with pytest.raises(ValueError, match="does not fit the segment"):
+            self.inject(det, t_c=t_c)
+        assert_untouched(det, before)
+
+    # The reference signal fits for t_c between about -0.65 s and +1.60 s: the
+    # chirp needs time before the peak, and only the ringdown comes after it.
+    @pytest.mark.parametrize("t_c", [0.0, 0.03, -0.25, -0.55, 1.2])
+    def test_a_signal_inside_the_segment_is_injected(self, t_c):
+        det = zero_noise_detector()
+        self.inject(det, t_c=t_c)
+        assert holds_a_signal(det)
+
+    @pytest.mark.parametrize(
+        ("spins", "t_c", "fits"),
+        [
+            ((0.0, 0.0), -0.70, True),
+            ((0.0, 0.0), -0.75, False),
+            ((0.1, -0.3), -0.60, True),
+            ((0.1, -0.3), -0.70, False),
+            ((-1.0, 0.2), -0.40, True),
+            ((-1.0, 0.2), -0.55, False),
+        ],
+    )
+    def test_the_larger_spin_sets_the_time_needed_before_the_peak(
+        self, spins, t_c, fits
+    ):
+        # The earliest allowed t_c is about -0.73 s for zero spin, -0.65 s for a
+        # larger spin of 0.3 and -0.47 s for a spin of 1 (in either direction).
+        det = zero_noise_detector()
+        params = {**REFERENCE_PARAMS, "s1_z": spins[0], "s2_z": spins[1], "t_c": t_c}
+        if fits:
+            det._check_signal_duration(WAVEFORM, params, GPS_TIME, False)
+        else:
+            with pytest.raises(ValueError, match="does not fit the segment"):
+                det._check_signal_duration(WAVEFORM, params, GPS_TIME, False)
+
+    @pytest.mark.parametrize("spin", ["s1_x", "s1_z", "s2_y"])
+    def test_precessing_waveforms_count_the_whole_spin_vector(self, spin):
+        det = zero_noise_detector()
+        waveform = RippleIMRPhenomPv2(f_ref=20.0)
+        spins = {f"s{body}_{axis}": 0.0 for body in "12" for axis in "xyz"}
+        params = {**REFERENCE_PARAMS, **spins, "t_c": -0.62}
+        det._check_signal_duration(waveform, params, GPS_TIME, False)
+        with pytest.raises(ValueError, match="does not fit the segment"):
+            det._check_signal_duration(waveform, {**params, spin: 0.8}, GPS_TIME, False)
+
+    def test_a_waveform_without_spin_parameters_assumes_the_maximal_spin(self):
+        class NoSpin:
+            parameter_names = ("M_c", "eta")
+
+        det = zero_noise_detector()
+        params = {"M_c": 28.0, "eta": 0.24, "t_c": -0.40}
+        det._check_signal_duration(NoSpin(), params, GPS_TIME, False)
+        with pytest.raises(ValueError, match="does not fit the segment"):
+            det._check_signal_duration(
+                NoSpin(), {**params, "t_c": -0.55}, GPS_TIME, False
+            )
+
+    @pytest.mark.parametrize(("highest_mode", "fits"), [(2, True), (4, False)])
+    def test_the_highest_mode_of_the_waveform_sets_the_starting_frequency(
+        self, highest_mode, fits
+    ):
+        tagged = SimpleNamespace(
+            parameter_names=("M_c", "eta"),
+            waveform_metadata={"highest_mode": highest_mode},
+        )
+        det = zero_noise_detector()
+        params = {"M_c": 28.0, "eta": 0.24, "t_c": 0.0}
+        if fits:
+            det._check_signal_duration(tagged, params, GPS_TIME, False)
+        else:
+            with pytest.raises(ValueError, match="does not fit the segment"):
+                det._check_signal_duration(tagged, params, GPS_TIME, False)
+
+    @pytest.mark.parametrize(
+        ("chirp_mass", "fits"),
+        [(28.0, True), (25.0, True), (20.0, False), (7.0, False)],
+    )
+    def test_a_long_signal_needs_a_long_segment(self, chirp_mass, fits):
+        det = zero_noise_detector()
+        if fits:
+            self.inject(det, M_c=chirp_mass)
+            assert holds_a_signal(det)
+        else:
+            before = state_of(det)
+            with pytest.raises(ValueError, match="does not fit the segment"):
+                self.inject(det, M_c=chirp_mass)
+            assert_untouched(det, before)
+
+    def test_a_longer_segment_fits_a_long_signal(self):
+        det = make_detector()
+        det.set_zero_noise(
+            **{**CREATOR_KWARGS, "duration": 16.0, "post_trigger_duration": 2.0}
+        )
+        self.inject(det, M_c=7.0)
+        assert holds_a_signal(det)
+
+    def test_lowering_the_frequency_cutoff_requires_more_time(self):
+        det = zero_noise_detector()
+        det.data.frequency_bounds = (10.0, F_MAX)
+        before = state_of(det)
+        with pytest.raises(ValueError, match="does not fit the segment"):
+            self.inject(det)
+        assert_untouched(det, before)
+        det.set_zero_noise(**{**CREATOR_KWARGS, "duration": 16.0, "f_min": 10.0})
+        self.inject(det)
+        assert holds_a_signal(det)
+
+    @pytest.mark.parametrize(
+        "factory", [RippleIMRPhenomHM, RippleIMRPhenomXHM, RippleIMRPhenomXPHM]
+    )
+    def test_higher_modes_need_a_longer_segment(self, factory):
+        det = zero_noise_detector()
+        waveform = factory(f_ref=20.0)
+        with pytest.raises(ValueError, match="does not fit the segment"):
+            det._check_signal_duration(waveform, REFERENCE_PARAMS, GPS_TIME, False)
+        det.set_zero_noise(**{**CREATOR_KWARGS, "duration": 16.0})
+        det._check_signal_duration(waveform, REFERENCE_PARAMS, GPS_TIME, False)
+
+    @pytest.mark.parametrize("width", [0.1, 1.0])
+    def test_unknown_duration_needs_an_explicit_override(self, width, caplog):
+        class Packet:
+            parameter_names = ()
+
+            def __call__(self, frequency, params):
+                hp = jnp.exp(-0.5 * ((frequency - 100.0) / width) ** 2) * (1e-23 + 0j)
+                return {"p": hp, "c": jnp.zeros_like(hp)}
+
+        det = zero_noise_detector()
+        before = state_of(det)
+        # Incidental mass values must not turn a burst into a CBC duration estimate.
+        parameters = dict(REFERENCE_PARAMS)
+        with pytest.raises(ValueError, match="Cannot estimate the signal duration"):
+            det.inject_signal(Packet(), parameters)
+        assert_untouched(det, before)
+        with caplog.at_level(logging.WARNING, logger=DETECTOR_LOGGER):
+            det.inject_signal(Packet(), parameters, allow_wraparound=True)
+        assert "Cannot estimate the signal duration" in caplog.text
+        assert holds_a_signal(det)
+
+    @pytest.mark.parametrize("allow_wraparound", [False, True])
+    def test_time_domain_models_cannot_be_injected_as_frequency_domain(
+        self, allow_wraparound
+    ):
+        det = zero_noise_detector()
+        before = state_of(det)
+        with pytest.raises(ValueError, match="requires a frequency-domain waveform"):
+            det.inject_signal(
+                RippleSineGaussian(), {}, allow_wraparound=allow_wraparound
+            )
+        assert_untouched(det, before)
+
+    @pytest.mark.parametrize("bad", [0.0, -1.0, jnp.nan, jnp.inf])
+    def test_invalid_psd_outside_the_frequency_range_of_the_data_does_not_contaminate_the_check(
+        self, bad
+    ):
+        det = zero_noise_detector()
+        values = jnp.asarray(det.psd.values).at[79].set(bad)  # 19.75 Hz
+        det.set_psd(PowerSpectrum(values, det.psd.frequencies))
+        self.inject(det)
+        assert holds_a_signal(det)
+
+    def test_allow_wraparound_injects_with_a_warning(self, caplog):
+        det = zero_noise_detector()
+        with caplog.at_level(logging.WARNING, logger=DETECTOR_LOGGER):
+            det.inject_signal(
+                WAVEFORM, {**REFERENCE_PARAMS, "t_c": 3.0}, allow_wraparound=True
+            )
+        assert "does not fit the segment" in caplog.text
+        assert holds_a_signal(det)
+
+    def test_a_precessing_waveform_at_ordinary_parameters_fits(self):
+        det = zero_noise_detector()
+        parameters = {**REFERENCE_PARAMS, "iota": 0.8}
+        det.inject_signal(RippleIMRPhenomPv2(f_ref=20.0), parameters)
+        assert holds_a_signal(det)
+
+    def test_duration_check_does_not_evaluate_or_differentiate_the_waveform(
+        self, caplog
+    ):
+        class Opaque:
+            parameter_names = WAVEFORM.parameter_names
+            calls = 0
+
+            def __call__(self, frequency, params):
+                self.calls += 1
+                float(frequency[0])  # fails if the checker tries to trace it
+                return WAVEFORM(frequency, params)
+
+        waveform = Opaque()
+        det = zero_noise_detector()
+        with caplog.at_level(logging.WARNING, logger=DETECTOR_LOGGER):
+            self.inject(det, waveform=waveform)
+        assert not caplog.records
+        assert waveform.calls == 1
+        assert holds_a_signal(det)
+
+
+class TestResponseGmst:
+    """``fd_response`` reads its reference timing from the attached data."""
+
+    def test_gmst_is_that_of_the_trigger_time(self):
+        params = {"ra": 1.5, "dec": 0.5, "psi": 0.3, "t_c": 0.1}
+        det = make_detector()
+        det.set_data(
+            Data.from_td(
+                td=jnp.zeros(8192), delta_t=1 / 2048.0, start_time=GPS_TIME - 2.0
+            )
+        )
+        gmst = compute_gmst(GPS_TIME)
+        antenna = det.antenna_pattern(1.5, 0.5, 0.3, gmst)
+        h_sky = {
+            name: jnp.ones(len(det.data.frequencies), dtype=complex) for name in antenna
+        }
+        delay = det.delay_from_geocenter(1.5, 0.5, gmst)
+        shift = delay + (GPS_TIME - det.data.start_time + params["t_c"])
+        expected = sum(h_sky[name] * antenna[name] for name in antenna) * jnp.exp(
+            -2j * jnp.pi * det.data.frequencies * shift
+        )
+
+        response = det.fd_response(det.data.frequencies, h_sky, params)
+        np.testing.assert_allclose(response, expected)
+
+    def test_mutable_response_tracks_the_current_trigger_and_start(self):
+        det = zero_noise_detector()
+        params = {"ra": 1.5, "dec": 0.5, "psi": 0.3, "t_c": 0.1}
+        frequency = det.data.frequencies
+        h_sky = {"p": jnp.ones_like(frequency), "c": 1j * jnp.ones_like(frequency)}
+        original = det.fd_response(frequency, h_sky, params)
+
+        det.data.start_time -= 0.125
+        shifted = det.fd_response(frequency, h_sky, params)
+        np.testing.assert_allclose(
+            shifted, original * jnp.exp(-2j * jnp.pi * frequency * 0.125), atol=1e-12
+        )
+
+        det.data.trigger_time = GPS_TIME + 100.0
+        gmst = compute_gmst(det.data.trigger_time)
+        antenna = det.antenna_pattern(params["ra"], params["dec"], params["psi"], gmst)
+        delay = det.delay_from_geocenter(params["ra"], params["dec"], gmst)
+        shift = delay + (det.data.trigger_time - det.data.start_time + params["t_c"])
+        expected = sum(h_sky[name] * antenna[name] for name in antenna) * jnp.exp(
+            -2j * jnp.pi * frequency * shift
+        )
+        np.testing.assert_allclose(det.fd_response(frequency, h_sky, params), expected)
+
+
+class TestDataAndPsdSetters:
+    def test_clear_data_and_psd_empties_both(self):
+        det = zero_noise_detector()
+        det.clear_data_and_psd()
+        assert det.data.is_empty and det.psd.is_empty
+
+    def test_set_data_passes_keywords_to_from_td(self):
+        det = make_detector()
+        det.set_data(jnp.zeros(8), delta_t=0.5, start_time=10.0)
+        assert det.data.delta_t == 0.5
+        assert det.data.start_time == 10.0
+
+    def test_set_psd_passes_keywords_to_the_constructor(self):
+        det = zero_noise_detector()
+        frequencies = det.data.frequencies
+        det.set_psd(jnp.ones_like(frequencies), frequencies=frequencies, name="own")
+        assert det.psd.name == "own"
+
+
+class TestDetectorFreezing:
+    """Likelihood-owned detectors and their shared inputs become immutable."""
+
+    def test_freezing_is_in_place_and_idempotent(self):
+        det = zero_noise_detector()
+        data, psd = det.data, det.psd
+        det._freeze()
+        fd = data.fd
+        tensor = det.tensor
+        det._freeze()
+
+        assert det.is_frozen
+        assert det.data is data and det.psd is psd
+        assert data.is_frozen and psd.is_frozen
+        assert data.fd is fd
+        np.testing.assert_array_equal(det.tensor, tensor)
+        assert isinstance(det.polarization_mode, tuple)
+        _, sliced, _ = det.slice_to_frequency_range(F_MIN, F_MAX)
+        np.testing.assert_array_equal(sliced, fd[data.frequency_mask])
+
+    @pytest.mark.parametrize(
+        "attribute",
+        [
+            "name",
+            "data",
+            "psd",
+            "latitude",
+            "polarization_mode",
+            "_frozen",
+        ],
+    )
+    def test_frozen_detector_rejects_attribute_changes(self, attribute):
+        det = zero_noise_detector()
+        det._freeze()
+        with pytest.raises(RuntimeError, match="frozen"):
+            setattr(det, attribute, getattr(det, attribute))
+        with pytest.raises(RuntimeError, match="frozen"):
+            delattr(det, attribute)
+
+    def test_tensor_tracks_geometry_until_freezing(self):
+        det = zero_noise_detector()
+        original = det.tensor
+        det.xarm_azimuth += 0.25
+        updated = det.tensor
+        assert not bool(jnp.allclose(updated, original))
+
+        det._freeze()
+        np.testing.assert_array_equal(det.tensor, updated)
+
+    def test_geometry_and_polarization_aliases_cannot_change_a_frozen_response(self):
+        det = zero_noise_detector()
+        geometry = {}
+        for name in (
+            "latitude",
+            "longitude",
+            "elevation",
+            "xarm_azimuth",
+            "yarm_azimuth",
+            "xarm_tilt",
+            "yarm_tilt",
+        ):
+            geometry[name] = np.array(getattr(det, name))
+            setattr(det, name, geometry[name])
+        modes = det.polarization_mode
+        det._freeze()
+        frequency = det.data.frequencies
+        h_sky = {"p": jnp.ones_like(frequency), "c": 1j * jnp.ones_like(frequency)}
+        expected = det.fd_response(frequency, h_sky, REFERENCE_PARAMS)
+
+        for value in geometry.values():
+            value[...] = 0.0
+        modes.clear()
+        assert all(isinstance(getattr(det, name), float) for name in geometry)
+        assert len(det.polarization_mode) == 2
+        np.testing.assert_array_equal(
+            det.fd_response(frequency, h_sky, REFERENCE_PARAMS), expected
+        )
+
+    def test_freezing_does_not_change_the_response(self):
+        det = zero_noise_detector()
+        frequency = det.data.frequencies
+        h_sky = {"p": jnp.ones_like(frequency), "c": 1j * jnp.ones_like(frequency)}
+        expected = det.fd_response(frequency, h_sky, REFERENCE_PARAMS)
+        det._freeze()
+
+        np.testing.assert_array_equal(
+            det.fd_response(frequency, h_sky, REFERENCE_PARAMS), expected
+        )
+        compiled = jax.jit(lambda params: det.fd_response(frequency, h_sky, params))
+        np.testing.assert_allclose(compiled(REFERENCE_PARAMS), expected, atol=1e-12)
+
+    @pytest.mark.parametrize(
+        "method",
+        [
+            "clear_data_and_psd",
+            "set_data",
+            "set_psd",
+            "load_and_set_psd",
+            "set_zero_noise",
+            "simulate_and_set_noise",
+            "inject_signal",
+        ],
+    )
+    def test_mutators_reject_frozen_detectors_before_work(self, method, monkeypatch):
+        det = zero_noise_detector()
+        det._freeze()
+        data, psd = det.data, det.psd
+        calls = {
+            "clear_data_and_psd": ((), {}),
+            "set_data": ((jnp.zeros(8),), {"delta_t": 0.1}),
+            "set_psd": ((jnp.ones(5),), {"delta_f": 1.0}),
+            "load_and_set_psd": ((), {}),
+            "set_zero_noise": ((), CREATOR_KWARGS),
+            "simulate_and_set_noise": (
+                (),
+                {**CREATOR_KWARGS, "rng_key": jax.random.key(0)},
+            ),
+            "inject_signal": ((object(), {}), {}),
+        }
+
+        def unexpected(*args, **kwargs):
+            raise AssertionError(
+                "Frozen mutators must fail before constructing or loading inputs."
+            )
+
+        monkeypatch.setattr(Data, "__init__", unexpected)
+        monkeypatch.setattr(Data, "from_td", unexpected)
+        monkeypatch.setattr(PowerSpectrum, "__init__", unexpected)
+        monkeypatch.setattr(PowerSpectrum, "from_file", unexpected)
+        monkeypatch.setattr(type(det), "_zero_data", unexpected)
+        args, kwargs = calls[method]
+        with pytest.raises(RuntimeError, match="frozen"):
+            getattr(det, method)(*args, **kwargs)
+        assert det.data is data and det.psd is psd
+
+
+# ----------------------------------------------------------------------
 # ET geometry tests
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 class TestET:
@@ -390,9 +1592,9 @@ class TestET:
             )
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Next-generation detectors (GroundBased3G)
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 ROTATION_TRIGGER_TIME = 1400000000.0
@@ -407,16 +1609,31 @@ BNS_PARAMS = {
     "dec": -0.4,
     "psi": 0.7,
     "t_c": 0.3,
-    "trigger_time": ROTATION_TRIGGER_TIME,
-    # Wrapped, so that shifting it by 2 pi is exact to rounding of order one.
-    "gmst": float(compute_gmst(ROTATION_TRIGGER_TIME)) % (2 * np.pi),
 }
+
+# The sidereal angle at the trigger time of the data, wrapped, so that shifting it
+# by 2 pi is exact to rounding of order one.
+BNS_GMST = float(compute_gmst(ROTATION_TRIGGER_TIME)) % (2 * np.pi)
 
 
 def _start_at(det, start_time):
-    """Give *det* an empty data segment beginning at *start_time*."""
-    det.set_data(Data(td=jnp.zeros(8), delta_t=1.0, start_time=start_time))
+    """Give *det* a data segment beginning at *start_time* and triggered at ROTATION_TRIGGER_TIME."""
+    det.set_data(
+        Data.from_td(
+            jnp.zeros(8),
+            1.0,
+            start_time=start_time,
+            trigger_time=ROTATION_TRIGGER_TIME,
+        )
+    )
     return det
+
+
+def _sidereal_angle_at_trigger(monkeypatch, gmst):
+    """Make every detector see *gmst* as the sidereal angle at the trigger time."""
+    monkeypatch.setattr(
+        detector_module, "cached_greenwich_mean_sidereal_time", lambda _: gmst
+    )
 
 
 def _as_2g(det):
@@ -472,13 +1689,13 @@ class TestTimeToMerger:
 
     def test_bns_time_to_merger_from_5_hz(self):
         """A 1.22 M_sun chirp mass BNS spends about 107 min above 5 Hz (arXiv:2503.09627)."""
-        tau = float(time_to_merger(jnp.array(5.0), 1.22, 0.25)) / 60
+        tau = float(GroundBased3G.time_to_merger(jnp.array(5.0), 1.22, 0.25)) / 60
         assert 106.0 < tau < 108.0, f"tau(5 Hz) = {tau:.2f} min"
 
     def test_reduces_to_newtonian_at_low_frequency(self):
         """The PN series tends to the leading-order chirp time as f -> 0."""
         f = jnp.array(1e-4)
-        tau = float(time_to_merger(f, 1.22, 0.2495, 0.3, 0.2))
+        tau = float(GroundBased3G.time_to_merger(f, 1.22, 0.2495, 0.3, 0.2))
         tau_n = _newtonian_time_to_merger(1e-4, 1.22)
         np.testing.assert_allclose(tau, tau_n, rtol=1e-4, atol=0.0)
 
@@ -489,7 +1706,7 @@ class TestTimeToMerger:
         # Low enough that the 1.5PN term, relatively O(x^1/2), stays below 1e-3.
         f = 1e-9
         x = (np.pi * M * MTSUN * f) ** (2 / 3)
-        tau = float(time_to_merger(jnp.array(f), M_c, eta))
+        tau = float(GroundBased3G.time_to_merger(jnp.array(f), M_c, eta))
         measured = (tau / _newtonian_time_to_merger(f, M_c) - 1) / x
         expected = 4 / 3 * (743 / 336 + 11 / 4 * eta)
         np.testing.assert_allclose(measured, expected, rtol=1e-3, atol=0.0)
@@ -497,15 +1714,15 @@ class TestTimeToMerger:
     def test_aligned_spins_lengthen_the_inspiral(self):
         """Spins aligned with the orbit slow the inspiral (orbital hang-up)."""
         f = jnp.array(10.0)
-        aligned = float(time_to_merger(f, 1.22, 0.2495, 0.5, 0.5))
-        non_spinning = float(time_to_merger(f, 1.22, 0.2495))
-        anti_aligned = float(time_to_merger(f, 1.22, 0.2495, -0.5, -0.5))
+        aligned = float(GroundBased3G.time_to_merger(f, 1.22, 0.2495, 0.5, 0.5))
+        non_spinning = float(GroundBased3G.time_to_merger(f, 1.22, 0.2495))
+        anti_aligned = float(GroundBased3G.time_to_merger(f, 1.22, 0.2495, -0.5, -0.5))
         assert anti_aligned < non_spinning < aligned
 
     def test_decreases_with_frequency(self):
         """Higher frequencies are emitted later, closer to merger."""
         f = jnp.geomspace(2.0, 2048.0, 4000)
-        tau = time_to_merger(f, 1.22, 0.2495, 0.03, -0.02)
+        tau = GroundBased3G.time_to_merger(f, 1.22, 0.2495, 0.03, -0.02)
         assert jnp.all(jnp.diff(tau) < 0)
         assert jnp.all(tau > 0)
 
@@ -514,8 +1731,8 @@ class TestTimeToMerger:
         """tau_m(f) = tau_22(2 f / |m|)."""
         f = jnp.geomspace(5.0, 500.0, 50)
         np.testing.assert_allclose(
-            time_to_merger(f, 1.22, 0.2495, 0.1, 0.0, mode=mode),
-            time_to_merger(2 * f / abs(mode), 1.22, 0.2495, 0.1, 0.0),
+            GroundBased3G.time_to_merger(f, 1.22, 0.2495, 0.1, 0.0, mode=mode),
+            GroundBased3G.time_to_merger(2 * f / abs(mode), 1.22, 0.2495, 0.1, 0.0),
             rtol=1e-14,
             atol=0.0,
         )
@@ -523,7 +1740,7 @@ class TestTimeToMerger:
     def test_zero_mode_is_rejected(self):
         """m = 0 has no frequency-to-time mapping; it must not divide by zero."""
         with pytest.raises(ValueError, match="non-zero"):
-            time_to_merger(jnp.array([10.0]), 1.22, 0.2495, mode=0)
+            GroundBased3G.time_to_merger(jnp.array([10.0]), 1.22, 0.2495, mode=0)
 
 
 class TestGroundBased3G:
@@ -601,7 +1818,9 @@ class TestEarthRotation:
         assert diff[0] > 0.1
         assert diff[-1] < 1e-2 * diff[0]
 
-    def test_each_frequency_uses_the_2g_response_at_its_sidereal_angle(self):
+    def test_each_frequency_uses_the_2g_response_at_its_sidereal_angle(
+        self, monkeypatch
+    ):
         """The response at f is the 2G response with gmst replaced by GMST(f)."""
         det_3g = _et1_3g()
         det_2g = _start_at(_as_2g(get_ET()[0]), ROTATION_TRIGGER_TIME - 100)
@@ -611,14 +1830,15 @@ class TestEarthRotation:
         for i in [0, 100, 300, 511]:
             f_i = self.frequency[i : i + 1]
             h_i = {k: v[i : i + 1] for k, v in h_sky.items()}
-            expected = det_2g.fd_response(f_i, h_i, {**BNS_PARAMS, "gmst": gmst_f[i]})
+            _sidereal_angle_at_trigger(monkeypatch, gmst_f[i])
+            expected = det_2g.fd_response(f_i, h_i, BNS_PARAMS)
             np.testing.assert_allclose(response[i], expected[0], rtol=1e-12, atol=0.0)
 
     def test_sidereal_angle_matches_gmst_at_emission(self):
         """GMST(f) agrees with the GMST of the emission time t_trigger + t_c - tau(f)."""
         det = _et1_3g()
         gmst_f = det.gmst_at_frequency(self.frequency, BNS_PARAMS)
-        tau = time_to_merger(
+        tau = GroundBased3G.time_to_merger(
             self.frequency,
             BNS_PARAMS["M_c"],
             BNS_PARAMS["eta"],
@@ -637,10 +1857,7 @@ class TestEarthRotation:
         """Later emission means a larger sidereal angle, anchored at merger."""
         det = _et1_3g()
         gmst_f = det.gmst_at_frequency(self.frequency, BNS_PARAMS)
-        at_merger = (
-            np.mod(BNS_PARAMS["gmst"], 2 * np.pi)
-            + EARTH_ROTATION_RATE * BNS_PARAMS["t_c"]
-        )
+        at_merger = BNS_GMST + EARTH_ROTATION_RATE * BNS_PARAMS["t_c"]
         assert jnp.all(jnp.diff(gmst_f) > 0)
         assert jnp.all(gmst_f < at_merger)
         # The zero-frequency bin has no emission time; it is put at merger.
@@ -648,31 +1865,30 @@ class TestEarthRotation:
         assert jnp.all(jnp.isfinite(dc))
         np.testing.assert_allclose(dc[0], at_merger, rtol=1e-15, atol=0.0)
 
-    def test_full_turn_of_gmst_leaves_the_response_unchanged(self):
+    def test_full_turn_of_gmst_leaves_the_response_unchanged(self, monkeypatch):
         """The response is 2 pi periodic in the sidereal angle."""
         det = _et1_3g(finite_arm_length=True, arm_length=1e4)
         h_sky = _unit_polarizations(self.frequency)
-        shifted = {**BNS_PARAMS, "gmst": BNS_PARAMS["gmst"] + 2 * np.pi}
+        reference = det.fd_response(self.frequency, h_sky, BNS_PARAMS)
+        _sidereal_angle_at_trigger(monkeypatch, BNS_GMST + 2 * np.pi)
         np.testing.assert_allclose(
-            det.fd_response(self.frequency, h_sky, shifted),
             det.fd_response(self.frequency, h_sky, BNS_PARAMS),
+            reference,
             rtol=1e-11,
             atol=0.0,
         )
 
-    def test_only_the_hour_angle_matters(self):
+    def test_only_the_hour_angle_matters(self, monkeypatch):
         """Rotating the sky and the Earth together leaves the response unchanged."""
         det = _et1_3g(finite_arm_length=True, arm_length=1e4)
         h_sky = _unit_polarizations(self.frequency)
+        reference = det.fd_response(self.frequency, h_sky, BNS_PARAMS)
         delta = 0.9
-        shifted = {
-            **BNS_PARAMS,
-            "ra": BNS_PARAMS["ra"] + delta,
-            "gmst": BNS_PARAMS["gmst"] + delta,
-        }
+        shifted = {**BNS_PARAMS, "ra": BNS_PARAMS["ra"] + delta}
+        _sidereal_angle_at_trigger(monkeypatch, BNS_GMST + delta)
         np.testing.assert_allclose(
             det.fd_response(self.frequency, h_sky, shifted),
-            det.fd_response(self.frequency, h_sky, BNS_PARAMS),
+            reference,
             rtol=1e-11,
             atol=0.0,
         )

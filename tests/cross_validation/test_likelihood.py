@@ -33,7 +33,10 @@ bilby = pytest.importorskip("bilby")
 
 FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
 
-# ─── GW150914 parameters ──────────────────────────────────────────────────────
+# ----------------------------------------------------------------------
+# GW150914 parameters
+# ----------------------------------------------------------------------
+
 GPS = 1126259462.4
 F_MIN = 20.0
 F_MAX = 1024.0
@@ -61,7 +64,10 @@ BILBY_PARAMS = {
     "psi": 2.659,
 }
 
-# ─── Helpers ──────────────────────────────────────────────────────────────────
+
+# ----------------------------------------------------------------------
+# Helpers
+# ----------------------------------------------------------------------
 
 
 def bilby_to_jim_params(bilby_params: dict) -> dict:
@@ -122,6 +128,7 @@ def load_jim_detectors():
     ifos = [get_H1(), get_L1()]
     for ifo in ifos:
         data = Data.from_file(str(FIXTURES_DIR / f"GW150914_strain_{ifo.name}.npz"))
+        data.trigger_time = GPS
         ifo.set_data(data)
         psd = PowerSpectrum.from_file(
             str(FIXTURES_DIR / f"GW150914_psd_{ifo.name}.npz")
@@ -138,9 +145,6 @@ def build_bilby_ifo_from_jim(jim_ifo, f_min: float, f_max: float):
     already has the Tukey window applied, bilby sees a window factor of 1,
     so the inner-product normalisations are identical.
     """
-    # Trigger the FFT if not already done
-    jim_ifo.data.fft()
-
     fd_strain_full = np.array(jim_ifo.data.fd, dtype=complex)
     frequencies_full = np.array(jim_ifo.data.frequencies, dtype=float)
     duration = float(jim_ifo.data.duration)
@@ -149,7 +153,7 @@ def build_bilby_ifo_from_jim(jim_ifo, f_min: float, f_max: float):
 
     # Zero out contributions outside [f_min, f_max].  bilby's time-marginalization
     # FFT runs over the *full* one-sided frequency array without a frequency mask,
-    # so keeping out-of-band data would add spurious contributions absent in jim
+    # so keeping data outside the frequency range would add spurious contributions absent in jim
     # (which pads those bins with zeros).  Zeroing here makes both FFTs identical.
     out_of_band = (frequencies_full < f_min) | (frequencies_full > f_max)
     fd_strain_full[out_of_band] = 0.0
@@ -300,7 +304,9 @@ def build_bilby_waveform_generator(duration: float, sampling_frequency: float):
     )
 
 
-# ─── Shared fixtures ──────────────────────────────────────────────────────────
+# ----------------------------------------------------------------------
+# Shared fixtures
+# ----------------------------------------------------------------------
 
 
 @pytest.fixture(scope="module")
@@ -309,9 +315,9 @@ def setup():
     from jimgw.core.single_event.waveform import RippleIMRPhenomPv2
 
     jim_ifos = load_jim_detectors()
-    # Set frequency bounds required by TransientLikelihoodFD
+    # Set the frequency range of the data
     for ifo in jim_ifos:
-        ifo.set_frequency_bounds(F_MIN, F_MAX)
+        ifo.data.frequency_bounds = (F_MIN, F_MAX)
 
     bilby_ifos = [build_bilby_ifo_from_jim(ifo, F_MIN, F_MAX) for ifo in jim_ifos]
 
@@ -333,7 +339,9 @@ def setup():
     }
 
 
-# ─── Tests ────────────────────────────────────────────────────────────────────
+# ----------------------------------------------------------------------
+# Tests
+# ----------------------------------------------------------------------
 
 
 class TestTransientLikelihoodFD:
@@ -348,7 +356,6 @@ class TestTransientLikelihoodFD:
             waveform=setup["waveform"],
             f_min=F_MIN,
             f_max=F_MAX,
-            trigger_time=GPS,
         ).evaluate(setup["jim_params"].copy())
 
         bilby_ll = bilby.gw.likelihood.GravitationalWaveTransient(
@@ -390,7 +397,6 @@ class TestTransientLikelihoodFD:
             waveform=setup["waveform"],
             f_min=F_MIN,
             f_max=F_MAX,
-            trigger_time=GPS,
             phase_marginalization=True,
         ).evaluate(jim_params_ph0)
 
@@ -417,38 +423,35 @@ class TestTransientLikelihoodFD:
     def test_time_marginalized(self, setup):
         """Time marginalization.
 
-        To get exact normalisation agreement we make both sides integrate over the
-        **full segment** [start_time, start_time+duration]:
+        Both sides integrate over a uniform prior on the coalescence time: Jim over
+        ``tc_range`` around the trigger time, bilby over a uniform prior of the same
+        width. Each sample of the time grid then weighs its spacing divided by the
+        width of the range in both codes.
 
-        * Jim uses ``tc_range = (-duration/2 - margin, duration/2 + margin)`` so
-          that every FFT bin is in range and the denominator is ``-log(N_fft)``.
-        * bilby gets a ``Uniform(start_time, start_time+duration)`` prior, which gives the
-          same weight ``log(dt / duration) = -log(N_fft)`` per bin.
+        bilby is given ``geocent_time = GPS``, the trigger time, as the reference of its
+        waveform. It then labels the shifts of the time grid from the start of the data,
+        so the prior window is ``tc_range`` counted from ``start_time``.
 
-        Out-of-band FD strain is zeroed in ``build_bilby_ifo_from_jim`` so that
-        bilby's unmasked FFT sees the same in-band-only data as jim.
+        FD strain outside the frequency range is zeroed in ``build_bilby_ifo_from_jim``
+        so that bilby's unmasked FFT sees the same data as jim.
         """
         from jimgw.core.single_event.likelihood import TransientLikelihoodFD
 
-        duration = float(setup["jim_ifos"][0].data.duration)
+        tc_range = (-0.1, 0.1)
         start_time = float(setup["jim_ifos"][0].data.start_time)
-        # Cover the full FFT window so jim's denominator is -log(N_fft), matching
-        # bilby's log(dt/duration) = -log(N_fft) normalisation.
-        tc_range = (-duration / 2 - 0.1, duration / 2 + 0.1)
 
         jim_ll = TransientLikelihoodFD(
             detectors=setup["jim_ifos"],
             waveform=setup["waveform"],
             f_min=F_MIN,
             f_max=F_MAX,
-            trigger_time=GPS,
             time_marginalization={"tc_range": tc_range},
         ).evaluate(setup["jim_params"].copy())
 
         priors = bilby.core.prior.PriorDict()
         priors["geocent_time"] = bilby.core.prior.Uniform(
-            minimum=start_time,
-            maximum=start_time + duration,
+            minimum=start_time + tc_range[0],
+            maximum=start_time + tc_range[1],
             name="geocent_time",
         )
 
@@ -492,7 +495,6 @@ class TestTransientLikelihoodFD:
             waveform=setup["waveform"],
             f_min=F_MIN,
             f_max=F_MAX,
-            trigger_time=GPS,
             distance_marginalization={
                 "distance_prior": jim_distance_prior,
                 "n_dist_points": 10000,
@@ -555,7 +557,6 @@ class TestTransientLikelihoodFD:
             waveform=setup["waveform"],
             f_min=F_MIN,
             f_max=F_MAX,
-            trigger_time=GPS,
             phase_marginalization=True,
             distance_marginalization={
                 "distance_prior": jim_distance_prior,
@@ -605,32 +606,29 @@ class TestTransientLikelihoodFD:
         must be derived with phase=0 so that the cartesian spins and the phase_c=0
         that TransientLikelihoodFD.evaluate() enforces are consistent.
 
-        Same time-normalisation fix as test_time_marginalized: use the full
-        segment as the time prior so jim and bilby share the same -log(N_fft) norm.
+        Same time prior as test_time_marginalized: uniform over ``tc_range`` in both codes.
         """
         from jimgw.core.single_event.likelihood import TransientLikelihoodFD
 
         bilby_params_ph0 = {**setup["bilby_params"], "phase": 0.0}
         jim_params_ph0 = bilby_to_jim_params(bilby_params_ph0)
 
-        duration = float(setup["jim_ifos"][0].data.duration)
+        tc_range = (-0.1, 0.1)
         start_time = float(setup["jim_ifos"][0].data.start_time)
-        tc_range = (-duration / 2 - 0.1, duration / 2 + 0.1)
 
         jim_ll = TransientLikelihoodFD(
             detectors=setup["jim_ifos"],
             waveform=setup["waveform"],
             f_min=F_MIN,
             f_max=F_MAX,
-            trigger_time=GPS,
             time_marginalization={"tc_range": tc_range},
             phase_marginalization=True,
         ).evaluate(jim_params_ph0)
 
         priors = bilby.core.prior.PriorDict()
         priors["geocent_time"] = bilby.core.prior.Uniform(
-            minimum=start_time,
-            maximum=start_time + duration,
+            minimum=start_time + tc_range[0],
+            maximum=start_time + tc_range[1],
             name="geocent_time",
         )
         priors["phase"] = bilby.core.prior.Uniform(
@@ -693,7 +691,6 @@ class TestHeterodynedTransientLikelihoodFD:
             waveform=setup["waveform"],
             f_min=F_MIN,
             f_max=F_MAX,
-            trigger_time=GPS,
             epsilon=0.5,
             reference_parameters=jim_ref_params,
         )
@@ -754,7 +751,6 @@ class TestHeterodynedTransientLikelihoodFD:
             waveform=setup["waveform"],
             f_min=F_MIN,
             f_max=F_MAX,
-            trigger_time=GPS,
             epsilon=0.5,
             reference_parameters=jim_ref_params,
             phase_marginalization=True,
@@ -805,7 +801,6 @@ class TestMultibandedTransientLikelihoodFD:
             waveform=setup["waveform"],
             f_min=F_MIN,
             f_max=F_MAX,
-            trigger_time=GPS,
             accuracy_factor=5.0,
             reference_chirp_mass=REFERENCE_CHIRP_MASS,
             time_offset=2.12,

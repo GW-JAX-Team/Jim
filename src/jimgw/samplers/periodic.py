@@ -1,7 +1,7 @@
 """Adapters that translate Jim's periodic-parameter spec into the form each
 sampler backend expects.
 
-    periodic_index = {1: (0.0, 2 * math.pi), ...}   # key = dimension index
+    periodic_index = {1: (0.0, 2 * jnp.pi), ...}   # key = dimension index
 
 Each backend wants a different shape: flowMC already accepts an index-keyed dict
 directly; BlackJAX NS AW needs a stepper function on flat arrays; BlackJAX NSS
@@ -13,13 +13,14 @@ All adapters operate on flat JAX arrays of shape ``(n_dims,)``.
 """
 
 from collections.abc import Callable
+from numbers import Integral
 from typing import Optional
 
 import jax.numpy as jnp
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Shared helpers
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 def _build_masks_arrays(
@@ -37,7 +38,7 @@ def _build_masks_arrays(
     period = jnp.ones(n_dims)
 
     for i, (lo, hi) in periodic_index.items():
-        if not isinstance(i, int):
+        if not isinstance(i, Integral):
             raise TypeError(
                 f"periodic_index keys must be integers, got {type(i).__name__!r} for key {i!r}."
             )
@@ -54,16 +55,19 @@ def _build_masks_arrays(
             raise ValueError(
                 f"Periodic bounds for dimension {i} must satisfy hi > lo, got ({lo_f}, {hi_f})."
             )
+        period_f = hi_f - lo_f
+        if not jnp.isfinite(period_f):
+            raise ValueError(f"Periodic interval for dimension {i} must be finite.")
         mask = mask.at[i].set(True)
         lower = lower.at[i].set(lo_f)
-        period = period.at[i].set(hi_f - lo_f)
+        period = period.at[i].set(period_f)
 
     return mask, lower, period
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # BlackJAX NS AW
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 def to_unit_cube_stepper(
@@ -80,7 +84,7 @@ def to_unit_cube_stepper(
     """
     mask = jnp.zeros(n_dims, dtype=bool)
     for i in periodic_index or []:
-        if not isinstance(i, int):
+        if not isinstance(i, Integral):
             raise TypeError(
                 f"periodic_index entries must be integers, got {type(i).__name__!r} for {i!r}."
             )
@@ -99,9 +103,9 @@ def to_unit_cube_stepper(
     return stepper
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # BlackJAX NSS
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 def to_prior_space_proposal(
@@ -134,9 +138,9 @@ def to_prior_space_proposal(
     return proposal
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # BlackJAX SMC
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 def to_displacement_wrapper(

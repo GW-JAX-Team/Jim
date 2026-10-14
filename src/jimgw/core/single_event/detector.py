@@ -1,50 +1,57 @@
+import copy
 import logging
-import os
-import tempfile
 import zlib
 from abc import ABC, abstractmethod
-from typing import Optional, Self
+from importlib import resources
+from typing import Self
 
 import jax
 import jax.numpy as jnp
-import requests
 from beartype import beartype as typechecker
-from jaxtyping import Array, Bool, Complex, Float, Key, jaxtyped
+from jaxtyping import Array, Complex, Float, Key, jaxtyped
 
 from jimgw.core.constants import (
     C_SI,
     DEG_TO_RAD,
+    EARTH_RADIUS_LIGHT_S,
     EARTH_ROTATION_RATE,
     EARTH_SEMI_MAJOR_AXIS,
     EARTH_SEMI_MINOR_AXIS,
     MTSUN,
 )
-from jimgw.core.single_event.data import Data, PowerSpectrum
-from jimgw.core.single_event.polarization import Polarization
-from jimgw.core.single_event.time_utils import (
-    greenwich_mean_sidereal_time as compute_gmst,
+from jimgw.core.single_event.data import (
+    DEFAULT_POST_TRIGGER_DURATION,
+    Data,
+    PowerSpectrum,
 )
+from jimgw.core.single_event.mixins import _Freezable
+from jimgw.core.single_event.polarization import Polarization
+from jimgw.core.single_event.time_utils import cached_greenwich_mean_sidereal_time
 from jimgw.core.single_event.utils import complex_inner_product, inner_product
-from jimgw.typing import FloatLike, FloatScalar
+from jimgw.typing import ComplexScalar, FloatLike, FloatScalar
 
 logger = logging.getLogger(__name__)
 
-# TODO: Need to expand this list. Currently it is only O3.
-asd_file_dict = {
-    "H1": "https://dcc.ligo.org/public/0169/P2000251/001/O3-H1-C01_CLEAN_SUB60HZ-1251752040.0_sensitivity_strain_asd.txt",
-    "L1": "https://dcc.ligo.org/public/0169/P2000251/001/O3-L1-C01_CLEAN_SUB60HZ-1240573680.0_sensitivity_strain_asd.txt",
-    "V1": "https://dcc.ligo.org/public/0169/P2000251/001/O3-V1_sensitivity_strain_asd.txt",
+# Design-sensitivity ASD packaged for each interferometer; the sources are
+# credited in noise_curves/README.md.
+default_asd_files = {
+    "H1": "aLIGO_design_asd.txt",
+    "L1": "aLIGO_design_asd.txt",
+    "V1": "AdV_design_asd.txt",
+    "ET1": "ET_D_asd.txt",
+    "ET2": "ET_D_asd.txt",
+    "ET3": "ET_D_asd.txt",
+    "CE": "CE_40km_asd.txt",
 }
 
 
-class Detector(ABC):
+class Detector(_Freezable, ABC):
     """Base class for all detectors.
 
     Attributes:
         name (str): Name of the detector.
         data (Data): Detector data object.
         psd (PowerSpectrum): Power spectral density object.
-        frequency_bounds (tuple[float, float]): Lower and upper frequency bounds.
     """
 
     name: str
@@ -54,33 +61,35 @@ class Detector(ABC):
     data: Data
     psd: PowerSpectrum
 
-    frequency_bounds: tuple[float, float] = (0.0, jnp.inf)
+    # ------------------------------------------------------------------
+    # Construction
+    # ------------------------------------------------------------------
 
-    _sliced_frequencies: Float[Array, " n_sample"] = jnp.array([])
-    _sliced_fd_data: Float[Array, " n_sample"] = jnp.array([])
-    _sliced_psd: Float[Array, " n_sample"] = jnp.array([])
+    def __init__(self):
+        if not jax.config.read("jax_enable_x64"):
+            raise RuntimeError(
+                "Detector requires JAX to run in 64-bit (float64) mode, "
+                "but jax_enable_x64 is currently False.\n\n"
+                "Please enable float64 before creating any Detector by putting at the very top of your script:\n"
+                "    import jax\n"
+                "    jax.config.update('jax_enable_x64', True)\n"
+                "and then re-run."
+            )
 
-    @property
-    def start_time(self) -> float:
-        """GPS start time of the data segment."""
-        return self.data.start_time
+    def _validate_geometry(self) -> None:
+        """Validate detector-specific geometry before likelihood ownership freezes."""
 
-    @property
-    def times(self) -> Float[Array, " n_sample"]:
-        return self.data.times
+    def _freeze(self) -> None:
+        """Freeze the detector and its attached data and PSD in place."""
+        if self.is_frozen:
+            return
+        self.data._freeze()
+        self.psd._freeze()
+        super()._freeze()
 
-    @property
-    def frequencies(self) -> Float[Array, " n_sample"]:
-        return self.data.frequencies
-
-    @property
-    def duration(self) -> FloatLike:
-        return self.data.duration
-
-    @property
-    def frequency_mask(self) -> Bool[Array, " n_sample"]:
-        f_min, f_max = self.frequency_bounds
-        return (f_min <= self.frequencies) & (self.frequencies <= f_max)
+    # ------------------------------------------------------------------
+    # Detector response
+    # ------------------------------------------------------------------
 
     @abstractmethod
     def fd_response(
@@ -100,9 +109,9 @@ class Detector(ABC):
                 - ra (Float): Right ascension in radians
                 - dec (Float): Declination in radians
                 - psi (Float): Polarization angle in radians
-                - trigger_time (Float): The trigger time in sec
                 - t_c (Float): The difference between peak time and trigger time in sec
-                - gmst (Float): The greenwich mean sidereal time at the trigger time in radian
+
+        The trigger and segment start are read from the attached data.
 
         Returns:
             Complex[Array, "n_sample"]: Complex strain measured by the detector in frequency domain.
@@ -126,83 +135,105 @@ class Detector(ABC):
             Array of detector response in time domain.
         """
 
-    def set_frequency_bounds(
-        self, f_min: Optional[float] = None, f_max: Optional[float] = None
-    ) -> None:
-        """Set the frequency bounds for the detector.
-        This also set the sliced frequencies, data and psd.
+    # ------------------------------------------------------------------
+    # Data and PSD
+    # ------------------------------------------------------------------
+
+    def clear_data_and_psd(self) -> None:
+        """Clear the data and PSD of the detector."""
+        self._check_mutable()
+        self.data = Data()
+        self.psd = PowerSpectrum()
+
+    def slice_to_frequency_range(
+        self, f_min: float, f_max: float
+    ) -> tuple[
+        Float[Array, " n_freq"], Complex[Array, " n_freq"], Float[Array, " n_freq"]
+    ]:
+        """Slice the data and the PSD to the given frequency range.
 
         Args:
             f_min: Minimum frequency.
             f_max: Maximum frequency.
-        """
-        bounds = list(self.frequency_bounds)
-        if f_min is not None:
-            bounds[0] = f_min
-        if f_max is not None:
-            bounds[1] = f_max
-        self.frequency_bounds = (bounds[0], bounds[1])
-
-        # Compute sliced frequencies, data and psd.
-        data, freqs_1 = self.data.frequency_slice(*self.frequency_bounds)
-        psd, freqs_2 = self.psd.frequency_slice(*self.frequency_bounds)
-
-        assert jnp.array_equal(freqs_1, freqs_2), (
-            f"The {self.name} data and PSD must have same frequencies"
-        )
-
-        self._sliced_frequencies = freqs_1
-        self._sliced_fd_data = data
-        self._sliced_psd = psd
-
-    def clear_data_and_psd(self) -> None:
-        """Clear the data and PSD of the detector."""
-        self.data = Data()
-        self.psd = PowerSpectrum()
-        self.frequency_bounds = (0.0, jnp.inf)
-        self._sliced_frequencies = jnp.array([])
-        self._sliced_fd_data = jnp.array([])
-        self._sliced_psd = jnp.array([])
-        self.optimal_snr = None
-        self.match_filtered_snr = None
-
-    @property
-    def sliced_frequencies(self) -> Float[Array, " n_freq"]:
-        """Get frequency-domain data slice based on frequency bounds.
 
         Returns:
-            Float[Array, "n_sample"]: Sliced frequency-domain data.
-            Float[Array, "n_sample"]: Frequency array.
+            tuple: The frequencies, the frequency-domain data and the PSD in the range.
+
+        Raises:
+            ValueError: If the detector has no data or no PSD, if the range is wider
+                than the frequency range of the data, if the PSD is not finite and
+                positive in it, or if the range holds fewer than two frequencies.
         """
-        return self._sliced_frequencies
+        return self._slice_data_to_frequency_range(self.data, f_min, f_max)
 
-    @property
-    def sliced_fd_data(self) -> Complex[Array, " n_freq"]:
-        """Get frequency-domain data slice based on frequency bounds.
+    def _slice_data_to_frequency_range(
+        self, data: Data, f_min: float, f_max: float
+    ) -> tuple[
+        Float[Array, " n_freq"], Complex[Array, " n_freq"], Float[Array, " n_freq"]
+    ]:
+        """Slice a supplied segment, so injections can validate a copy atomically."""
+        # --------------------------------------------------------------
+        # Validation
+        # --------------------------------------------------------------
 
-        Returns:
-            Complex[Array, "n_freq"]: Sliced frequency-domain data.
+        if data.is_empty or self.psd.is_empty:
+            raise ValueError(
+                f"Detector {self.name} needs both data and a PSD before it can be "
+                "sliced to a frequency range."
+            )
+        data_f_min, data_f_max = data.frequency_bounds
+        if f_min < data_f_min or f_max > data_f_max:
+            raise ValueError(
+                f"The frequency range [{f_min}, {f_max}] Hz is wider than the "
+                f"frequency range of the data of detector {self.name}, "
+                f"[{data_f_min}, {data_f_max}] Hz. Choose f_min and f_max inside it."
+            )
+        nyquist = float(data.sampling_frequency) / 2
+        self._check_psd_in_range(self.psd, f_min, min(f_max, nyquist))
+        freqs_data, fd_data = data.frequency_slice(f_min, f_max)
+        freqs_psd, psd = self.psd.frequency_slice(f_min, f_max)
+        if not jnp.array_equal(freqs_data, freqs_psd):
+            raise ValueError(
+                f"The {self.name} data and PSD must have the same frequencies."
+            )
+        if len(freqs_data) < 2:
+            raise ValueError(
+                f"The frequency range [{f_min}, {f_max}] Hz holds {len(freqs_data)} "
+                f"frequencies of the data of detector {self.name}. It needs at "
+                "least two."
+            )
+        return freqs_data, fd_data, psd
+
+    def _matched_psd(self, data: Data, psd: PowerSpectrum) -> PowerSpectrum:
+        """Return ``psd`` on the frequencies of ``data``, interpolated if they differ.
+
+        Nothing is changed in the detector.
         """
-        return self._sliced_fd_data
+        if psd.is_empty or data.is_empty:
+            return psd
+        if psd.n_freq == data.n_freq and bool(
+            (psd.frequencies == data.frequencies).all()
+        ):
+            return psd
+        return psd.interpolate(data.frequencies)
 
-    @property
-    def sliced_psd(self) -> Float[Array, " n_freq"]:
-        """Get PSD slice based on frequency bounds.
+    def _check_psd_in_range(
+        self, psd: PowerSpectrum, f_min: float, f_max: float
+    ) -> None:
+        """Require finite, positive PSD values and finite weights between f_min and f_max."""
+        # --------------------------------------------------------------
+        # Validation
+        # --------------------------------------------------------------
 
-        Returns:
-            Float[Array, "n_freq"]: Sliced power spectral density.
-        """
-        return self._sliced_psd
-
-    def __init__(self):
-        if not jax.config.read("jax_enable_x64"):
-            raise RuntimeError(
-                "Detector requires JAX to run in 64-bit (float64) mode, "
-                "but jax_enable_x64 is currently False.\n\n"
-                "Please enable float64 before creating any Detector by putting at the very top of your script:\n"
-                "    import jax\n"
-                "    jax.config.update('jax_enable_x64', True)\n"
-                "and then re-run."
+        frequencies, values = psd.frequency_slice(f_min, f_max)
+        values = jnp.asarray(values)
+        invalid = ~(jnp.isfinite(values) & (values > 0) & jnp.isfinite(1 / values))
+        if bool(jnp.any(invalid)):
+            raise ValueError(
+                f"The PSD of detector {self.name} is not finite and positive with "
+                "a finite reciprocal at "
+                f"{int(jnp.sum(invalid))} frequencies in [{f_min}, {f_max}] Hz, the "
+                f"first at {float(frequencies[invalid][0])} Hz."
             )
 
 
@@ -224,11 +255,11 @@ class GroundBased2G(Detector):
         polarization_mode (list[Polarization]): List of polarization modes (`pc` for plus and cross) to be used in
             computing antenna patterns; in the future, this could be expanded to
             include non-GR modes.
-        data (Data): Array of Fourier-domain strain data.
+        data (Data): Array of frequency-domain strain data.
         psd (PowerSpectrum): Power spectral density object.
     """
 
-    polarization_mode: list[Polarization]
+    polarization_mode: list[Polarization] | tuple[Polarization, ...]
     data: Data
     psd: PowerSpectrum
 
@@ -240,11 +271,19 @@ class GroundBased2G(Detector):
     yarm_tilt: float = 0
     elevation: float = 0
 
-    optimal_snr: Optional[FloatScalar] = None
-    match_filtered_snr: Optional[Complex] = None
+    _geometry_names: tuple[str, ...] = (
+        "latitude",
+        "longitude",
+        "elevation",
+        "xarm_azimuth",
+        "yarm_azimuth",
+        "xarm_tilt",
+        "yarm_tilt",
+    )
 
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.name})"
+    # ------------------------------------------------------------------
+    # Construction
+    # ------------------------------------------------------------------
 
     def __init__(
         self,
@@ -286,6 +325,57 @@ class GroundBased2G(Detector):
         self.polarization_mode = [Polarization(m) for m in modes]
         self.data = Data()
         self.psd = PowerSpectrum()
+        self._validate_geometry()
+
+    # ------------------------------------------------------------------
+    # Geometry validation
+    # ------------------------------------------------------------------
+
+    def _validate_geometry(self) -> None:
+        """Reject unusable mutable geometry before any detector is frozen."""
+        with jax.ensure_compile_time_eval():
+            for name in self._geometry_names:
+                try:
+                    value = jnp.asarray(getattr(self, name))
+                    valid = (
+                        value.ndim == 0
+                        and jnp.issubdtype(value.dtype, jnp.number)
+                        and not jnp.iscomplexobj(value)
+                        and bool(jnp.isfinite(value))
+                    )
+                except (TypeError, ValueError):
+                    valid = False
+                if not valid:
+                    raise ValueError(
+                        f"Detector {self.name} {name} must be a finite real scalar."
+                    )
+            if not bool(jnp.all(jnp.isfinite(self.tensor))) or not bool(
+                jnp.all(jnp.isfinite(self.vertex))
+            ):
+                raise ValueError(
+                    f"Detector {self.name} geometry must yield finite responses."
+                )
+
+    # ------------------------------------------------------------------
+    # Freezing
+    # ------------------------------------------------------------------
+
+    def _freeze(self) -> None:
+        """Own scalar geometry before freezing."""
+        if self.is_frozen:
+            return
+        self._validate_geometry()
+        for name in self._geometry_names:
+            setattr(self, name, float(getattr(self, name)))
+        self.polarization_mode = tuple(self.polarization_mode)
+        super()._freeze()
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.name})"
+
+    # ------------------------------------------------------------------
+    # Geometry
+    # ------------------------------------------------------------------
 
     @staticmethod
     def _get_arm(
@@ -358,12 +448,11 @@ class GroundBased2G(Detector):
     def vertex(self) -> Float[Array, "3"]:
         """Detector vertex coordinates in the reference celestial frame.
 
-        Based on arXiv:gr-qc/0008066 Eqs. (B11-B13) except for a typo in the
-        definition of the local radius; see Section 2.1 of LIGO-T980044-10.
-
         Returns:
             Float[Array, "3"]: Detector vertex coordinates in geocentric Cartesian coordinates.
         """
+        # Eqs. (B11-B13) of arXiv:gr-qc/0008066, except for a typo in the definition
+        # of the local radius; see Section 2.1 of LIGO-T980044-10.
         # get detector and Earth parameters
         lat = self.latitude
         lon = self.longitude
@@ -377,6 +466,10 @@ class GroundBased2G(Detector):
         y = (r + h) * jnp.cos(lat) * jnp.sin(lon)
         z = ((minor / major) ** 2 * r + h) * jnp.sin(lat)
         return jnp.array([x, y, z])
+
+    # ------------------------------------------------------------------
+    # Detector response
+    # ------------------------------------------------------------------
 
     def fd_response(
         self,
@@ -395,15 +488,16 @@ class GroundBased2G(Detector):
                 - ra (Float): Right ascension in radians
                 - dec (Float): Declination in radians
                 - psi (Float): Polarization angle in radians
-                - trigger_time (Float): The trigger time in sec
                 - t_c (Float): The difference between peak time and trigger time in sec
-                - gmst (Float): The greenwich mean sidereal time at the trigger time in radian
+
+        The attached data supply the trigger and segment start.
 
         Returns:
             Array: Complex strain measured by the detector in frequency domain, obtained by
                   combining the antenna patterns for each polarization mode.
         """
-        ra, dec, psi, gmst = params["ra"], params["dec"], params["psi"], params["gmst"]
+        ra, dec, psi = params["ra"], params["dec"], params["psi"]
+        gmst = cached_greenwich_mean_sidereal_time(self.data.trigger_time)
         antenna_pattern = self.antenna_pattern(ra, dec, psi, gmst)
         time_shift = self.delay_from_geocenter(ra, dec, gmst)
         return self._project(frequency, h_sky, antenna_pattern, time_shift, params)
@@ -418,7 +512,7 @@ class GroundBased2G(Detector):
     ) -> Complex[Array, " n_sample"]:
         """Combine the polarizations with the antenna pattern and shift them in time."""
         time_shift = geocenter_delay + (
-            params["trigger_time"] - self.start_time + params["t_c"]
+            self.data.trigger_time - self.data.start_time + params["t_c"]
         )
 
         h_detector = jax.tree_util.tree_map(
@@ -456,9 +550,6 @@ class GroundBased2G(Detector):
     ) -> FloatScalar:
         """Calculate time delay between two detectors in geocentric coordinates.
 
-        Based on XLALArrivaTimeDiff in TimeDelay.c
-        https://lscsoft.docs.ligo.org/lalsuite/lal/group___time_delay__h.html
-
         Args:
             ra (Float): Right ascension of the source in radians.
             dec (Float): Declination of the source in radians.
@@ -467,6 +558,7 @@ class GroundBased2G(Detector):
         Returns:
             Float: Time delay from Earth center in seconds.
         """
+        # As XLALArrivalTimeDiff in LAL's TimeDelay.c.
         delta_d = -self.vertex
         omega = self._source_direction(ra, dec, gmst)
         return jnp.einsum("i...,i->...", omega, delta_d) / C_SI
@@ -519,10 +611,43 @@ class GroundBased2G(Detector):
 
         return antenna_patterns
 
+    # ------------------------------------------------------------------
+    # Data and PSD
+    # ------------------------------------------------------------------
+
+    def set_data(self, data: Data | Array, **kws) -> None:
+        """Replace the data of the detector.
+
+        The PSD is interpolated onto the frequencies of the new data.
+
+        Args:
+            data (Data | Array): Data to be added to the detector, either as a `Data` object
+                or as a timeseries array.
+            **kws (dict): Additional keyword arguments to pass to `Data.from_td`.
+        """
+        self._check_mutable()
+        new = data if isinstance(data, Data) else Data.from_td(data, **kws)
+        psd = self._matched_psd(new, self.psd)
+        self.data, self.psd = new, psd
+
+    def set_psd(self, psd: PowerSpectrum | Array, **kws) -> None:
+        """Replace the PSD of the detector.
+
+        It is interpolated onto the frequencies of the data.
+
+        Args:
+            psd (PowerSpectrum | Array): PSD to be added to the detector, either as a `PowerSpectrum`
+                object or as a timeseries array.
+            **kws (dict): Additional keyword arguments to pass to `PowerSpectrum` constructor.
+        """
+        self._check_mutable()
+        new = psd if isinstance(psd, PowerSpectrum) else PowerSpectrum(psd, **kws)
+        self.psd = self._matched_psd(self.data, new)
+
     @jaxtyped(typechecker=typechecker)
     def load_and_set_psd(self, psd_file: str = "", asd_file: str = "") -> PowerSpectrum:
-        """Load power spectral density (PSD) from file or default GWTC-2 catalog,
-            and set it to the detector.
+        """Load power spectral density (PSD) from file or the built-in design
+            sensitivity, and set it to the detector.
 
         Supported formats: .npz, .txt, .dat, .csv.
         Pass ``asd_file`` (or ``is_asd=True`` via :meth:`PowerSpectrum.from_file`)
@@ -530,225 +655,441 @@ class GroundBased2G(Detector):
         ($\\mathrm{Hz}^{-1/2}$); they are squared internally to produce a PSD.
 
         Args:
-            psd_file (str, optional): Path to a PSD file ($\\mathrm{Hz}^{-1}$). If empty, uses GWTC-2 ASD.
+            psd_file (str, optional): Path to a PSD file ($\\mathrm{Hz}^{-1}$). If neither file is given,
+                the design-sensitivity ASD packaged for this detector is used (see ``noise_curves/README.md``).
             asd_file (str, optional): Path to an ASD file ($\\mathrm{Hz}^{-1/2}$). Values are squared.
 
         Returns:
             PowerSpectrum: The loaded PSD, already set on the detector.
+
+        Raises:
+            ValueError: If both ``psd_file`` and ``asd_file`` are given, or if neither is
+                given and the detector has no built-in PSD.
         """
+        self._check_mutable()
+        # --------------------------------------------------------------
+        # Validation
+        # --------------------------------------------------------------
+
+        if psd_file and asd_file:
+            raise ValueError(
+                "psd_file and asd_file are mutually exclusive; set at most one."
+            )
         if psd_file:
             _loaded_psd = PowerSpectrum.from_file(psd_file, is_asd=False)
         elif asd_file:
             _loaded_psd = PowerSpectrum.from_file(asd_file, is_asd=True)
         else:
-            logger.info("Grabbing GWTC-2 PSD for " + self.name)
-            url = asd_file_dict[self.name]
-            response = requests.get(url, timeout=30)
-            response.raise_for_status()
-            fd, tmp_file_name = tempfile.mkstemp(
-                suffix=".txt", prefix=f"jim_asd_{self.name}_"
+            if self.name not in default_asd_files:
+                raise ValueError(
+                    f"No built-in PSD for detector {self.name}; pass psd_file or "
+                    f"asd_file. Built-in: {sorted(default_asd_files)}."
+                )
+            logger.info("Loading the design-sensitivity ASD for %s", self.name)
+            curve = (
+                resources.files("jimgw.core.single_event")
+                / "noise_curves"
+                / default_asd_files[self.name]
             )
-            try:
-                with os.fdopen(fd, "wb") as _fh:
-                    _fh.write(response.content)
-                _loaded_psd = PowerSpectrum.from_file(tmp_file_name, is_asd=True)
-            finally:
-                os.unlink(tmp_file_name)
+            with resources.as_file(curve) as path:
+                _loaded_psd = PowerSpectrum.from_file(str(path), is_asd=True)
         _loaded_psd.name = f"{self.name}_psd"
         self.set_psd(_loaded_psd)
         return self.psd
 
-    def _equal_data_psd_frequencies(self) -> Bool:
-        """Check if the frequencies of the data and PSD match.
-        A helper function for `set_data` and `set_psd`.
+    # ------------------------------------------------------------------
+    # Simulated data
+    # ------------------------------------------------------------------
 
-        Return:
-            Bool: True if the frequencies match, False otherwise.
-        """
-        if self.psd.is_empty or self.data.is_empty:
-            # In this case, we simply skip the check
-            return True
-        if self.psd.n_freq != self.data.n_freq:
-            # Cannot proceed comparison, needs interpolation
-            return False
-        return (self.psd.frequencies == self.data.frequencies).all()
-
-    def set_data(self, data: Data | Array, **kws) -> None:
-        """Add data to the detector.
-
-        Args:
-            data (Data | Array): Data to be added to the detector, either as a `Data` object
-                or as a timeseries array.
-            **kws (dict): Additional keyword arguments to pass to `Data` constructor.
-
-        Returns:
-            None
-        """
-        if isinstance(data, Data):
-            self.data = data
-        else:
-            self.data = Data(data, **kws)
-        # Assert PSD frequencies agree with data
-        if not ((self.psd is None) or self._equal_data_psd_frequencies()):
-            self.psd = self.psd.interpolate(self.data.frequencies)
-
-    def set_psd(self, psd: PowerSpectrum | Array, **kws) -> None:
-        """Add PSD to the detector.
-
-        Args:
-            psd (PowerSpectrum | Array): PSD to be added to the detector, either as a `PowerSpectrum`
-                object or as a timeseries array.
-            **kws (dict): Additional keyword arguments to pass to `PowerSpectrum` constructor.
-
-        Returns:
-            None
-        """
-        if isinstance(psd, PowerSpectrum):
-            self.psd = psd
-        else:
-            # not clear if we want to support this
-            self.psd = PowerSpectrum(psd, **kws)
-        # Assert PSD frequencies agree with data frequencies
-        if not ((self.data is None) or self._equal_data_psd_frequencies()):
-            self.psd = self.psd.interpolate(self.data.frequencies)
-
-    def inject_signal(
+    def _zero_data(
         self,
+        *,
         duration: float,
         sampling_frequency: float,
         trigger_time: float,
-        waveform_model,
-        parameters: dict[str, float],
         f_min: float,
         f_max: float,
-        start_time: Optional[float] = None,
-        zero_noise: bool = False,
-        rng_key: Optional[Key] = None,
-    ) -> None:
-        """Inject a signal into the detector data.
+        post_trigger_duration: float,
+    ) -> Data:
+        """Return a segment of zeros."""
+        # --------------------------------------------------------------
+        # Validation
+        # --------------------------------------------------------------
 
-        Note: The power spectral density must be set beforehand.
+        if not (
+            jnp.isfinite(duration)
+            and jnp.isfinite(sampling_frequency)
+            and duration > 0
+            and sampling_frequency > 0
+        ):
+            raise ValueError(
+                "duration and sampling_frequency must be positive and finite, got "
+                f"{duration} s and {sampling_frequency} Hz."
+            )
+        if not 0 <= post_trigger_duration <= duration:
+            raise ValueError(
+                f"post_trigger_duration must be between 0 and duration ({duration} s) "
+                f"so that the trigger lies inside the segment, got {post_trigger_duration}."
+            )
+        sample_count = duration * sampling_frequency
+        if not jnp.isfinite(sample_count):
+            raise ValueError("duration times sampling_frequency must be finite.")
+        n_times = round(sample_count)
+        effective_duration = n_times / sampling_frequency
+        if n_times < 2:
+            raise ValueError("The segment must contain at least two time samples.")
+        if post_trigger_duration > effective_duration:
+            raise ValueError(
+                "post_trigger_duration must be between 0 and the rounded segment "
+                f"duration ({effective_duration} s), got {post_trigger_duration}."
+            )
+        if not jnp.isfinite(trigger_time):
+            raise ValueError("trigger_time must be finite.")
+        data = Data.from_td(
+            name=f"{self.name}_zero",
+            td=jnp.zeros(n_times),
+            delta_t=1 / sampling_frequency,
+            window=jnp.ones(n_times),
+            start_time=trigger_time - effective_duration + post_trigger_duration,
+            trigger_time=trigger_time,
+        )
+        data.frequency_bounds = (f_min, f_max)
+        return data
+
+    def set_zero_noise(
+        self,
+        *,
+        duration: float,
+        sampling_frequency: float,
+        trigger_time: float,
+        f_min: float,
+        f_max: float,
+        post_trigger_duration: float = DEFAULT_POST_TRIGGER_DURATION,
+    ) -> None:
+        """Replace the data by a segment of zeros.
+
+        The segment ends ``post_trigger_duration`` seconds after the trigger.
+        ``[f_min, f_max]`` becomes the frequency range of the data: signals injected
+        later are cut to it. The trigger time is stored in the data, where
+        ``inject_signal`` reads it.
 
         Args:
             duration (float): Duration of the data segment in seconds.
             sampling_frequency (float): Sampling frequency in Hz.
-            trigger_time (float): GPS time of the event trigger. Used to stamp
-                ``trigger_time`` and derive ``gmst`` for the waveform projection,
-                mirroring the behavior of ``TransientLikelihoodFD``.
-            waveform_model: The waveform model to be injected.
-            parameters (dict): Dictionary of likelihood-space source parameters.
-            f_min (float): Minimum frequency in Hz. The waveform is zeroed below
-                this frequency.
-            f_max (float): Maximum frequency in Hz. Should be set to the same
-                value used in the likelihood.
-            start_time (Optional[float], optional): GPS start time of the
-                data buffer in seconds. If None, defaults to
-                ``trigger_time - duration + 2.0`` (2 s of data after the trigger).
-                Defaults to None.
-            zero_noise (bool, optional): If True, inject into zero noise.
-                Defaults to False.
-            rng_key (Optional[Key], optional): PRNG key for the injected noise.
-                Required unless ``zero_noise`` is True.
-
-        Returns:
-            None
+            trigger_time (float): GPS time of the event trigger.
+            f_min (float): Minimum frequency of the data in Hz.
+            f_max (float): Maximum frequency of the data in Hz.
+            post_trigger_duration (float, optional): Time in seconds from the
+                trigger to the end of the segment. Defaults to 2.0.
 
         Raises:
-            ValueError: If no PSD is set on the detector, or if ``zero_noise`` is
-                False and ``rng_key`` is None.
+            ValueError: If ``duration`` or ``sampling_frequency`` is not positive, if
+                ``post_trigger_duration`` puts the trigger outside the segment, or if
+                f_min and f_max are not a valid frequency range of the data (see
+                ``Data.frequency_bounds``).
+                The detector is unchanged then.
         """
-        # Check the inputs first, so a bad call leaves the detector untouched.
+        self._check_mutable()
+        data = self._zero_data(
+            duration=duration,
+            sampling_frequency=sampling_frequency,
+            trigger_time=trigger_time,
+            f_min=f_min,
+            f_max=f_max,
+            post_trigger_duration=post_trigger_duration,
+        )
+        psd = self._matched_psd(data, self.psd)
+        self.data, self.psd = data, psd
+
+    def simulate_and_set_noise(
+        self,
+        *,
+        duration: float,
+        sampling_frequency: float,
+        trigger_time: float,
+        f_min: float,
+        f_max: float,
+        rng_key: Key,
+        post_trigger_duration: float = DEFAULT_POST_TRIGGER_DURATION,
+    ) -> None:
+        """Replace the data by noise drawn from the PSD.
+
+        The noise is cut to ``[f_min, f_max]``, which becomes the frequency range of
+        the data. It depends only on ``rng_key`` and the name of the detector, so
+        every detector gets its own noise from one key. The segment ends
+        ``post_trigger_duration`` seconds after the trigger.
+
+        Note: The power spectral density must be set beforehand, and it must be
+        finite and positive over ``[f_min, f_max]``.
+
+        Args:
+            duration (float): Duration of the data segment in seconds.
+            sampling_frequency (float): Sampling frequency in Hz.
+            trigger_time (float): GPS time of the event trigger.
+            f_min (float): Minimum frequency of the data in Hz.
+            f_max (float): Maximum frequency of the data in Hz.
+            rng_key (Key): PRNG key for the noise, such as ``jax.random.key(0)``.
+            post_trigger_duration (float, optional): Time in seconds from the
+                trigger to the end of the segment. Defaults to 2.0.
+
+        Raises:
+            ValueError: If no PSD is set, if it is not finite and positive over the
+                frequency range of the data, or for any reason given at ``set_zero_noise``. The
+                detector is unchanged then.
+        """
+        self._check_mutable()
+        # --------------------------------------------------------------
+        # Validation
+        # --------------------------------------------------------------
+
+        if self.psd.is_empty:
+            raise ValueError(
+                f"No PSD is set on detector {self.name}. Call set_psd() or "
+                "load_and_set_psd() before simulate_and_set_noise."
+            )
+        data = self._zero_data(
+            duration=duration,
+            sampling_frequency=sampling_frequency,
+            trigger_time=trigger_time,
+            f_min=f_min,
+            f_max=f_max,
+            post_trigger_duration=post_trigger_duration,
+        )
+        psd = self._matched_psd(data, self.psd)
+        self._check_psd_in_range(psd, *data.frequency_bounds)
+        # Derive a unique noise key for this detector based on its name
+        noise_key = jax.random.fold_in(rng_key, zlib.crc32(self.name.encode("utf-8")))
+        noise_psd = PowerSpectrum(
+            jnp.where(data.frequency_mask, psd.values, 1.0), psd.frequencies, psd.name
+        )
+        noise = noise_psd.simulate_data(noise_key)
+        noisy = data.add_fd(jnp.where(data.frequency_mask, noise, 0.0 + 0.0j))
+        noisy.name = f"{self.name}_noise"
+        self.data, self.psd = noisy, psd
+
+    # ------------------------------------------------------------------
+    # Injection
+    # ------------------------------------------------------------------
+
+    def inject_signal(
+        self,
+        waveform_model,
+        parameters: dict[str, float],
+        allow_wraparound: bool = False,
+    ) -> tuple[FloatScalar, ComplexScalar]:
+        """Add a signal to the data of the detector.
+
+        The signal is cut to the frequency range of the data and added in the
+        frequency domain to whatever the detector holds: zero data, noise, real data
+        or earlier signals. Call it again to add more signals.
+
+        Note: The detector needs a PSD and data beforehand. ``set_zero_noise`` and
+        ``simulate_and_set_noise`` create the data with the frequency range that the
+        injection needs; for other data, such as real data, set
+        ``data.frequency_bounds`` first. The trigger time is that of the data
+        (``Data.trigger_time``), by default 2 s before their end.
+
+        Args:
+            waveform_model: The frequency-domain waveform model to be injected.
+            parameters (dict): Likelihood-space source parameters: those of the
+                waveform model (``waveform_model.parameter_names``) and ``ra``,
+                ``dec``, ``psi`` and ``t_c``.
+            allow_wraparound (bool): The waveform has no time axis, so a signal that
+                does not fit the segment wraps around in it. By default that is an
+                error; with True it is a warning. A conservative inspiral-duration
+                estimate and merger margins check compact-binary signals requiring
+                ``M_c`` and ``eta``. Other models need an explicit override because
+                their duration cannot be estimated this way.
+                Defaults to False.
+
+        Returns:
+            tuple: The optimal SNR of the signal, and its matched-filter SNR against
+                the data including the signal, noise and earlier signals.
+
+        Raises:
+            ValueError: If the detector has no PSD or no data, if the PSD is not
+                finite and positive over the frequency range of the data, if the
+                range does not start above 0 Hz or holds fewer than two frequencies,
+                if the trigger time of the data is not inside them, if a parameter is
+                missing or ``eta`` is not in (0, 0.25], if the signal has no finite,
+                positive signal-to-noise power, if a time-domain model is supplied,
+                or if its estimated duration does not fit the segment or cannot be
+                estimated. The detector is unchanged then.
+        """
+        self._check_mutable()
+        # Check everything first, so a bad call leaves the detector untouched.
+        # --------------------------------------------------------------
+        # Validation
+        # --------------------------------------------------------------
+
+        if getattr(waveform_model, "waveform_metadata", {}).get("domain") == "TD":
+            raise ValueError(
+                "inject_signal requires a frequency-domain waveform model."
+            )
+        required = [*waveform_model.parameter_names, "ra", "dec", "psi", "t_c"]
+        missing = [key for key in required if key not in parameters]
+        if missing:
+            raise ValueError(f"parameters is missing {missing}.")
+        eta = parameters.get("eta")
+        if eta is not None and not 0 < eta <= 0.25 + 1e-9:
+            raise ValueError(f"eta must be in (0, 0.25], got {eta}.")
         if self.psd.is_empty:
             raise ValueError(
                 f"No PSD is set on detector {self.name}. Call set_psd() or "
                 "load_and_set_psd() before inject_signal."
             )
-        noise_key: Optional[Key] = None
-        if zero_noise:
-            if rng_key is not None:
-                logger.warning(
-                    "rng_key is ignored because zero_noise=True: no noise is drawn."
-                )
-        else:
-            if rng_key is None:
-                raise ValueError(
-                    "rng_key is required when zero_noise=False."
-                    "Pass zero_noise=True for a noiseless injection."
-                )
-            # Derive a unique noise key for this detector based on its name
-            noise_key = jax.random.fold_in(
-                rng_key, zlib.crc32(self.name.encode("utf-8"))
+        if self.data.is_empty:
+            raise ValueError(
+                f"No data is set on detector {self.name}. Call set_zero_noise(), "
+                "simulate_and_set_noise() or set_data() before inject_signal."
+            )
+        parameters = parameters.copy()
+        data = copy.copy(self.data)
+        f_min, f_max = data.frequency_bounds
+        if not f_min > 0:
+            raise ValueError(
+                f"The frequency range of the data of detector {self.name} starts at "
+                f"{f_min} Hz, and waveforms are not defined at 0 Hz. Set "
+                "data.frequency_bounds = (f_min, f_max) first."
+            )
+        trigger_time = data.trigger_time
+        start_time = float(data.start_time)
+        end_time = data.end_time
+        if not start_time <= trigger_time <= end_time:
+            raise ValueError(
+                f"The trigger time {trigger_time} is outside the data of detector "
+                f"'{self.name}', which span [{start_time}, {end_time}]. Check "
+                "data.trigger_time and data.start_time."
             )
 
-        # Derive start_time if not provided
-        if start_time is None:
-            start_time = trigger_time - duration + 2.0
-            logger.info(
-                "start_time not provided. Defaulting to trigger_time - duration + 2.0 = %.3f s.",
-                start_time,
+        # Read the FFT on a copy: failures must not freeze the original data's window.
+        frequencies, fd_data, psd = self._slice_data_to_frequency_range(
+            data, f_min, f_max
+        )
+
+        # 1. Compute the projected strain from parameters
+        grid = data.frequencies
+        polarisations = waveform_model(grid, parameters)
+        projected_strain = self.fd_response(grid, polarisations, parameters)
+        mask = data.frequency_mask
+        masked_signal = projected_strain[mask]
+        invalid = ~jnp.isfinite(masked_signal)
+        if bool(jnp.any(invalid)):
+            raise ValueError(
+                f"The signal is not finite at {int(jnp.sum(invalid))} of "
+                f"{len(masked_signal)} frequencies in [{f_min}, {f_max}] Hz, the first "
+                f"at {float(grid[mask][invalid][0])} Hz. Check the source parameters."
             )
-
-        # Make a copy of the parameters to avoid modifying the original dictionary
-        params = parameters.copy()
-
-        # Stamp trigger_time and gmst — mirrors TransientLikelihoodFD.evaluate()
-        params["trigger_time"] = float(trigger_time)
-        params["gmst"] = float(compute_gmst(trigger_time))
-
-        # 1. Set empty data to initialize the detector
-        n_times = int(jnp.round(duration * sampling_frequency))
-        self.set_data(
-            Data(
-                name=f"{self.name}_empty",
-                td=jnp.zeros(n_times),
-                delta_t=1 / sampling_frequency,
-                start_time=start_time,
+        projected_strain = data.normalize_fd(
+            jnp.where(mask, projected_strain, 0.0 + 0.0j)
+        )
+        masked_signal = projected_strain[mask]
+        df = frequencies[1] - frequencies[0]
+        optimal_snr_squared = inner_product(masked_signal, masked_signal, psd, df)
+        if not (bool(jnp.isfinite(optimal_snr_squared)) and optimal_snr_squared > 0):
+            raise ValueError(
+                "The signal must have finite, positive signal-to-noise power."
             )
+        self._check_signal_duration(
+            waveform_model, parameters, trigger_time, allow_wraparound
         )
 
-        # Set frequency bounds before evaluating the waveform
-        self.set_frequency_bounds(f_min, f_max)
+        # 2. Add it to the copied data
+        injected = data.add_fd(projected_strain)
+        injected.name = f"{self.name}_injected"
 
-        # 2. Compute the projected strain from parameters
-        polarisations = waveform_model(self.frequencies, params)
-        projected_strain = self.fd_response(self.frequencies, polarisations, params)
-
-        # 3. Set the new data
-        strain_data = jnp.where(self.frequency_mask, projected_strain, 0.0 + 0.0j)
-        if noise_key is not None:
-            noise = self.psd.simulate_data(noise_key)
-            strain_data += jnp.where(self.frequency_mask, noise, 0.0 + 0.0j)
-
-        self.set_data(
-            Data.from_fd(
-                name=f"{self.name}_injected",
-                fd_strain=strain_data,
-                frequencies=self.frequencies,
-                start_time=self.data.start_time,
-            )
+        # 3. Measure the SNRs of the injected signal in the frequency range of the data
+        optimal_snr = optimal_snr_squared**0.5
+        match_filtered_snr = (
+            complex_inner_product(masked_signal, fd_data + masked_signal, psd, df)
+            / optimal_snr
         )
-
-        # 4. Update the sliced data and psd with the (potentially) new frequency bounds
-        self.set_frequency_bounds()
-        masked_signal = projected_strain[self.frequency_mask]
-
-        df = self.sliced_frequencies[1] - self.sliced_frequencies[0]
-        _optimal_snr_sq = inner_product(
-            masked_signal, masked_signal, self.sliced_psd, df
-        )
-        optimal_snr = _optimal_snr_sq**0.5
-        match_filtered_snr = complex_inner_product(
-            masked_signal, self.sliced_fd_data, self.sliced_psd, df
-        )
-        match_filtered_snr /= optimal_snr
-
-        # Save as attributes
-        self.optimal_snr = optimal_snr
-        self.match_filtered_snr = match_filtered_snr
+        self.data = injected
 
         logger.info(f"For detector {self.name}, the injected signal has:")
         logger.info(f"  - Optimal SNR: {optimal_snr:.4f}")
         logger.info(f"  - Match filtered SNR: {match_filtered_snr:.4f}")
+        return optimal_snr, match_filtered_snr
+
+    def _check_signal_duration(
+        self,
+        waveform_model,
+        params: dict,
+        trigger_time: float,
+        allow_wraparound: bool,
+    ) -> None:
+        """Check that the signal fits the segment around its peak, without evaluating the waveform.
+
+        The estimate is described in the technical notes of the documentation.
+        """
+        # --------------------------------------------------------------
+        # Validation
+        # --------------------------------------------------------------
+
+        if not {"M_c", "eta"}.issubset(waveform_model.parameter_names):
+            message = (
+                f"Cannot estimate the signal duration for detector {self.name}: "
+                "the waveform model does not declare M_c and eta. Check the "
+                "duration yourself and pass allow_wraparound=True to inject it."
+            )
+        else:
+            chirp_mass = float(params["M_c"])
+            if not (jnp.isfinite(chirp_mass) and chirp_mass > 0):
+                raise ValueError("M_c must be finite and positive.")
+            eta = float(params["eta"])
+            mass_seconds = chirp_mass * MTSUN / eta**0.6
+            # LAL uses the larger spin magnitude; without spin parameters, assume 1.
+            names = waveform_model.parameter_names
+            spins = [
+                [
+                    float(params[f"s{body}_{axis}"])
+                    for axis in "xyz"
+                    if f"s{body}_{axis}" in names
+                ]
+                for body in "12"
+            ]
+            chi = (
+                max(sum(c**2 for c in spin) ** 0.5 for spin in spins)
+                if any(spins)
+                else 1.0
+            )
+            # The harmonic with the highest m enters the frequency range of the data
+            # at an orbital frequency of f_min / highest_mode, i.e. at a 22-mode
+            # frequency of 2 f_min / highest_mode.
+            metadata = getattr(waveform_model, "waveform_metadata", {})
+            f_start = (
+                self.data.frequency_bounds[0] * 2 / metadata.get("highest_mode", 2)
+            )
+            v = (jnp.pi * mass_seconds * f_start) ** (1 / 3)
+            # XLALSimInspiralChirpTimeBound in LAL's LALSimInspiral.c.
+            newtonian = 5 * mass_seconds / (256 * eta * v**8)
+            chirp_time = newtonian * (
+                1
+                + (743 / 252 + 11 * eta / 3) * v**2
+                + (226 / 15) * chi * v**3
+                + (3058673 / 508032 + 5429 * eta / 504 + 617 * eta**2 / 72) * v**4
+            )
+            padding = 1 / f_start + EARTH_RADIUS_LIGHT_S
+            before = chirp_time + 200 * mass_seconds + padding
+            after = 1000 * mass_seconds + padding
+            peak = trigger_time - self.data.start_time + float(params["t_c"])
+            if peak >= before and peak + after <= float(self.data.duration):
+                return
+            message = (
+                f"The estimated signal duration does not fit the segment of detector "
+                f"{self.name}: conservatively allow {before:.2f} s before and "
+                f"{after:.2f} s after the peak, which is {peak:.2f} s into the "
+                f"{float(self.data.duration):g} s segment. Move the signal (t_c or "
+                "the trigger time), lengthen the segment, or pass "
+                "allow_wraparound=True to inject it anyway."
+            )
+        if not allow_wraparound:
+            raise ValueError(message)
+        logger.warning(message)
+
+    # ------------------------------------------------------------------
+    # Whitening
+    # ------------------------------------------------------------------
 
     def get_whitened_frequency_domain_strain(
         self, frequency_series: Complex[Array, " n_freq"]
@@ -759,8 +1100,8 @@ class GroundBased2G(Detector):
         Returns:
             Complex[Array, "n_freq"]: Whitened frequency-domain strain.
         """
-        scaled_asd = jnp.sqrt(self.psd.values * self.duration / 4)
-        return (frequency_series / scaled_asd) * self.frequency_mask
+        scaled_asd = jnp.sqrt(self.psd.values * self.data.duration / 4)
+        return (frequency_series / scaled_asd) * self.data.frequency_mask
 
     def whitened_frequency_to_time_domain_strain(
         self, whitened_frequency_series: Complex[Array, " n_time // 2 + 1"]
@@ -772,10 +1113,12 @@ class GroundBased2G(Detector):
         Returns:
             Float[Array, "n_time"]: Whitened time-domain strain/signal.
         """
-        freq_mask_ratio = len(self.frequency_mask) / jnp.sqrt(
-            jnp.sum(self.frequency_mask)
+        mask = self.data.frequency_mask
+        freq_mask_ratio = len(mask) / jnp.sqrt(jnp.sum(mask))
+        return (
+            jnp.fft.irfft(whitened_frequency_series, n=self.data.n_time)
+            * freq_mask_ratio
         )
-        return jnp.fft.irfft(whitened_frequency_series) * freq_mask_ratio
 
     @property
     def whitened_frequency_domain_data(self) -> Complex[Array, " n_sample"]:
@@ -805,56 +1148,9 @@ class GroundBased2G(Detector):
         )
 
 
-def time_to_merger(
-    frequency: Float[Array, " n_sample"],
-    M_c: FloatLike,
-    eta: FloatLike,
-    s1_z: FloatLike = 0.0,
-    s2_z: FloatLike = 0.0,
-    mode: int = 2,
-) -> Float[Array, " n_sample"]:
-    """Stationary-phase time to merger at 2PN for an aligned-spin binary.
-
-    Implements Eq. (3.3) of Poisson & Will (1995), arXiv:gr-qc/9502040.
-
-    Args:
-        frequency (Float[Array, "n_sample"]): Gravitational-wave frequency in Hz.
-        M_c (Float): Detector-frame chirp mass in solar masses.
-        eta (Float): Symmetric mass ratio.
-        s1_z (Float, optional): Aligned spin of the primary. Defaults to 0.
-        s2_z (Float, optional): Aligned spin of the secondary. Defaults to 0.
-        mode (int, optional): Azimuthal mode number that ``frequency`` refers to.
-            Defaults to 2.
-
-    Returns:
-        Float[Array, "n_sample"]: Time to merger in seconds.
-
-    Raises:
-        ValueError: If ``mode`` is 0, for which the mapping is undefined.
-    """
-    if mode == 0:
-        raise ValueError(
-            "mode must be a non-zero azimuthal number: an m = 0 mode has no "
-            "frequency-to-time mapping."
-        )
-    f_22 = 2 * frequency / abs(mode)
-    M = M_c * eta ** (-3.0 / 5.0)
-    # Component mass fractions m_i / M.
-    delta = jnp.sqrt(1 - 4 * eta)
-    x1, x2 = (1 + delta) / 2, (1 - delta) / 2
-    M_c_s = M_c * MTSUN
-    x = (jnp.pi * M * MTSUN * f_22) ** (2.0 / 3.0)
-    beta = ((113 * x1**2 + 75 * eta) * s1_z + (113 * x2**2 + 75 * eta) * s2_z) / 12
-    sigma = 474 / 48 * eta * s1_z * s2_z
-    tau_newtonian = 5 / 256 * M_c_s * (jnp.pi * M_c_s * f_22) ** (-8.0 / 3.0)
-    return tau_newtonian * (
-        1
-        + 4 / 3 * (743 / 336 + 11 / 4 * eta) * x
-        - 8 / 5 * (4 * jnp.pi - beta) * x**1.5
-        + 2
-        * (3058673 / 1016064 + 5429 / 1008 * eta + 617 / 144 * eta**2 - sigma)
-        * x**2
-    )
+# ----------------------------------------------------------------------
+# Third-generation detectors
+# ----------------------------------------------------------------------
 
 
 class GroundBased3G(GroundBased2G):
@@ -866,12 +1162,8 @@ class GroundBased3G(GroundBased2G):
     parameters passed to ``fd_response``.
 
     With ``finite_arm_length``, the arms are not assumed to be short compared to
-    the gravitational wavelength (Baral et al. 2023,
-    [arXiv:2304.09889](https://arxiv.org/abs/2304.09889)), which
-    matters for loud signals with power at high frequencies. The output is
-    assigned to the time the light reaches the end mirror rather than its return
-    to the beam splitter; see the data guide for the convention and how to
-    convert from the other one.
+    the gravitational wavelength, which matters for loud signals with power at
+    high frequencies. Its phase convention is given in the technical notes of the documentation.
 
     With both switched off, the response is identical to
     [`GroundBased2G`][jimgw.core.single_event.detector.GroundBased2G].
@@ -885,6 +1177,12 @@ class GroundBased3G(GroundBased2G):
     arm_length: float = 0.0
     earth_rotation: bool = True
     finite_arm_length: bool = False
+
+    _geometry_names = (*GroundBased2G._geometry_names, "arm_length")
+
+    # ------------------------------------------------------------------
+    # Construction
+    # ------------------------------------------------------------------
 
     def __init__(
         self,
@@ -922,6 +1220,10 @@ class GroundBased3G(GroundBased2G):
         Raises:
             ValueError: If ``finite_arm_length`` is True and ``arm_length`` is not positive.
         """
+        # --------------------------------------------------------------
+        # Validation
+        # --------------------------------------------------------------
+
         if finite_arm_length and not arm_length > 0:
             raise ValueError(
                 f"finite_arm_length=True needs a positive arm_length, got {arm_length}."
@@ -979,6 +1281,65 @@ class GroundBased3G(GroundBased2G):
             finite_arm_length=finite_arm_length,
         )
 
+    # ------------------------------------------------------------------
+    # Earth rotation
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def time_to_merger(
+        frequency: Float[Array, " n_sample"],
+        M_c: FloatLike,
+        eta: FloatLike,
+        s1_z: FloatLike = 0.0,
+        s2_z: FloatLike = 0.0,
+        mode: int = 2,
+    ) -> Float[Array, " n_sample"]:
+        """Stationary-phase time to merger at 2PN for an aligned-spin binary.
+
+        Args:
+            frequency (Float[Array, "n_sample"]): Gravitational-wave frequency in Hz.
+            M_c (Float): Detector-frame chirp mass in solar masses.
+            eta (Float): Symmetric mass ratio.
+            s1_z (Float, optional): Aligned spin of the primary. Defaults to 0.
+            s2_z (Float, optional): Aligned spin of the secondary. Defaults to 0.
+            mode (int, optional): Azimuthal mode number that ``frequency`` refers to.
+                Defaults to 2.
+
+        Returns:
+            Float[Array, "n_sample"]: Time to merger in seconds.
+
+        Raises:
+            ValueError: If ``mode`` is 0, for which the mapping is undefined.
+        """
+        # --------------------------------------------------------------
+        # Validation
+        # --------------------------------------------------------------
+
+        if mode == 0:
+            raise ValueError(
+                "mode must be a non-zero azimuthal number: an m = 0 mode has no "
+                "frequency-to-time mapping."
+            )
+        # Eq. (3.3) of Poisson & Will (1995), arXiv:gr-qc/9502040.
+        f_22 = 2 * frequency / abs(mode)
+        M = M_c * eta ** (-3.0 / 5.0)
+        # Component mass fractions m_i / M.
+        delta = jnp.sqrt(1 - 4 * eta)
+        x1, x2 = (1 + delta) / 2, (1 - delta) / 2
+        M_c_s = M_c * MTSUN
+        x = (jnp.pi * M * MTSUN * f_22) ** (2.0 / 3.0)
+        beta = ((113 * x1**2 + 75 * eta) * s1_z + (113 * x2**2 + 75 * eta) * s2_z) / 12
+        sigma = 474 / 48 * eta * s1_z * s2_z
+        tau_newtonian = 5 / 256 * M_c_s * (jnp.pi * M_c_s * f_22) ** (-8.0 / 3.0)
+        return tau_newtonian * (
+            1
+            + 4 / 3 * (743 / 336 + 11 / 4 * eta) * x
+            - 8 / 5 * (4 * jnp.pi - beta) * x**1.5
+            + 2
+            * (3058673 / 1016064 + 5429 / 1008 * eta + 617 / 144 * eta**2 - sigma)
+            * x**2
+        )
+
     def gmst_at_frequency(
         self, frequency: Float[Array, " n_sample"], params: dict[str, Float]
     ) -> Float[Array, " n_sample"]:
@@ -986,8 +1347,9 @@ class GroundBased3G(GroundBased2G):
 
         Args:
             frequency (Float[Array, "n_sample"]): Array of frequency samples.
-            params (dict[str, Float]): Source parameters containing ``gmst`` (at
-                the trigger time), ``t_c``, ``M_c``, ``eta``, ``s1_z`` and ``s2_z``.
+            params (dict[str, Float]): Source parameters containing ``t_c``,
+                ``M_c``, ``eta``, ``s1_z`` and ``s2_z``. The sidereal angle at the
+                trigger time comes from the attached data.
 
         Returns:
             Float[Array, "n_sample"]: GMST in radians. Non-positive frequencies,
@@ -998,7 +1360,7 @@ class GroundBased3G(GroundBased2G):
         positive = frequency > 0
         # Evaluate at a safe frequency where masked, so neither the value nor
         # its gradient is poisoned by tau(0) = inf.
-        tau = time_to_merger(
+        tau = self.time_to_merger(
             jnp.where(positive, frequency, 1.0),
             params["M_c"],
             params["eta"],
@@ -1008,31 +1370,29 @@ class GroundBased3G(GroundBased2G):
         tau = jnp.where(positive, tau, 0.0)
         # Wrap first: the rotation is added to an angle of order one rather
         # than to an unwrapped sidereal time, which keeps its precision.
-        gmst = jnp.mod(params["gmst"], 2 * jnp.pi)
+        gmst = jnp.mod(
+            cached_greenwich_mean_sidereal_time(self.data.trigger_time), 2 * jnp.pi
+        )
         # Under time marginalization t_c is zero, which neglects the rotation
         # across its range (about 7e-6 rad for 0.1 s).
         return gmst + EARTH_ROTATION_RATE * (params["t_c"] - tau)
 
+    # ------------------------------------------------------------------
+    # Finite arm length
+    # ------------------------------------------------------------------
+
     @staticmethod
     def _arm_transfer_function(x: Float, y: Float) -> Complex:
-        """Single-arm transfer function, normalised to one.
-
-        Eq. (7) of [arXiv:2304.09889](https://arxiv.org/abs/2304.09889). The
-        wave is referenced at the vertex and the output is assigned to the time
-        the light reaches the end mirror, so at low frequency
-        $T \\approx 1 - i\\pi x y$ adds no direction-independent delay. A
-        transfer function assigned to the light's return at the beam splitter
-        (Rakhmanov et al. 2008,
-        [arXiv:0808.3805](https://arxiv.org/abs/0808.3805)) is
-        $e^{-2\\pi i x}$ times this one, a delay of $L/c$.
+        """Single-arm transfer function, equal to one when ``x`` is zero.
 
         Args:
             x (Float): Arm length in units of the gravitational wavelength, $fL/c$.
             y (Float): Projection of the propagation direction onto the arm.
 
         Returns:
-            Complex: Transfer function, equal to one when $x = 0$.
+            Complex: Transfer function.
         """
+        # Eq. (7) of Baral et al. 2023, arXiv:2304.09889.
         return 0.5 * (
             jnp.exp(-1j * jnp.pi * x * (1 + y)) * jnp.sinc(x * (1 - y))
             + jnp.exp(1j * jnp.pi * x * (1 - y)) * jnp.sinc(x * (1 + y))
@@ -1068,6 +1428,10 @@ class GroundBased3G(GroundBased2G):
             )
         return antenna_patterns
 
+    # ------------------------------------------------------------------
+    # Detector response
+    # ------------------------------------------------------------------
+
     def fd_response(
         self,
         frequency: Float[Array, " n_sample"],
@@ -1094,7 +1458,7 @@ class GroundBased3G(GroundBased2G):
         if self.earth_rotation:
             gmst = self.gmst_at_frequency(frequency, params)
         else:
-            gmst = params["gmst"]
+            gmst = cached_greenwich_mean_sidereal_time(self.data.trigger_time)
 
         if self.finite_arm_length:
             antenna_pattern = self._finite_arm_antenna_pattern(
@@ -1104,6 +1468,11 @@ class GroundBased3G(GroundBased2G):
             antenna_pattern = self.antenna_pattern(ra, dec, psi, gmst)
         time_shift = self.delay_from_geocenter(ra, dec, gmst)
         return self._project(frequency, h_sky, antenna_pattern, time_shift, params)
+
+
+# ----------------------------------------------------------------------
+# Detector presets
+# ----------------------------------------------------------------------
 
 
 def get_H1() -> GroundBased2G:
@@ -1156,10 +1525,8 @@ def get_ET(
 ) -> list[GroundBased3G]:
     """Return a list of three [`GroundBased3G`][jimgw.core.single_event.detector.GroundBased3G] instances for Einstein Telescope (ET).
 
-    ET is modelled as a triangle of three interferometers at adjacent vertices,
-    with arms rotated by 120° relative to each other. Vertex positions are
-    propagated using the spherical forward-azimuth (haversine) formula with a
-    latitude-dependent Earth radius derived from the WGS-84 ellipsoid.
+    ET is modelled as a triangle of three interferometers with 10 km arms at the
+    Virgo site.
 
     Args:
         earth_rotation (bool, optional): Follow the Earth's rotation. Turn on for

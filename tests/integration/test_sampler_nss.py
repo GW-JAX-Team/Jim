@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-import math
-
+import jax.numpy as jnp
 import numpy as np
 import pytest
 
@@ -41,4 +40,4 @@ def test_nss_posterior_mean_near_half(nss_jim):
 def test_nss_log_evidence_finite(nss_jim):
     diag = nss_jim.sampler.get_diagnostics()
     log_z = diag["log_Z"]
-    assert math.isfinite(log_z)
+    assert jnp.isfinite(log_z)

@@ -5,7 +5,7 @@ from jaxtyping import Array, Float
 EPS = 1e-15
 
 
-def log_i0(x: Float[Array, " n"]) -> Float[Array, " n"]:
+def log_i0(x: Float[Array, "..."]) -> Float[Array, "..."]:
     """
     A numerically stable method to evaluate log of
     a modified Bessel function of order 0.
@@ -21,8 +21,8 @@ def log_i0(x: Float[Array, " n"]) -> Float[Array, " n"]:
 
 
 def safe_arctan2(
-    y: Float[Array, " n"], x: Float[Array, " n"], default_value: float = 0.0
-) -> Float[Array, " n"]:
+    y: Float[Array, "..."], x: Float[Array, "..."], default_value: float = 0.0
+) -> Float[Array, "..."]:
     """
     A numerically stable method to evaluate arctan2 upon taking gradient.
 
@@ -46,8 +46,8 @@ def safe_arctan2(
 
 
 def safe_polar_angle(
-    x: Float[Array, " n"], y: Float[Array, " n"], z: Float[Array, " n"]
-) -> Float[Array, " n"]:
+    x: Float[Array, "..."], y: Float[Array, "..."], z: Float[Array, "..."]
+) -> Float[Array, "..."]:
     """
     A numerically stable method to compute the polar angle upon taking gradient.
 
@@ -74,11 +74,11 @@ def safe_polar_angle(
 
 
 def carte_to_spherical_angles(
-    x: Float[Array, " n"],
-    y: Float[Array, " n"],
-    z: Float[Array, " n"],
+    x: Float[Array, "..."],
+    y: Float[Array, "..."],
+    z: Float[Array, "..."],
     default_value: float = 0.0,
-) -> tuple[Float[Array, " n"], Float[Array, " n"]]:
+) -> tuple[Float[Array, "..."], Float[Array, "..."]]:
     """
     A numerically stable method to compute the spherical angles upon taking gradient.
 
@@ -112,7 +112,7 @@ def carte_to_spherical_angles(
 
 
 def round_up_to_power_of_two(n: int) -> int:
-    """Round up to the nearest power of two."""
+    """Round up to the nearest power of two, returning 1 for nonpositive inputs."""
     if n <= 0:
         return 1
     return 1 << (n - 1).bit_length()

@@ -23,7 +23,6 @@ from pydantic import (
 
 from jimgw.cli._utils import (
     CARTESIAN_SPIN_PARAMS,
-    DEFAULT_ASD_DETECTORS,
     DETECTOR_SKY_PARAMS,
     EQUATORIAL_SKY_PARAMS,
     J_FRAME_SPIN_PARAMS,
@@ -35,15 +34,20 @@ from jimgw.samplers.config import SamplerConfig
 
 logger = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
+
+# ----------------------------------------------------------------------
 # Data section
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 class _DataBase(BaseModel):
-    model_config = {"extra": "forbid"}
+    model_config = {"extra": "forbid", "allow_inf_nan": False}
     detectors: list[str]
-    trigger_time: float
+    trigger_time: float = Field(allow_inf_nan=False)
+
+    # ------------------------------------------------------------------
+    # Validation
+    # ------------------------------------------------------------------
 
     @field_validator("detectors")
     @classmethod
@@ -66,9 +70,25 @@ class GWOSCDataConfig(_DataBase):
     """Fetch strain and PSD from GWOSC."""
 
     type: Literal["gwosc"] = "gwosc"
-    duration: float = Field(gt=0.0)
-    post_trigger_duration: float = 2.0
-    psd_duration: float = Field(gt=0.0)
+    duration: float = Field(gt=0.0, allow_inf_nan=False)
+    post_trigger_duration: float = Field(default=2.0, ge=0.0, allow_inf_nan=False)
+    psd_duration: float = Field(gt=0.0, allow_inf_nan=False)
+
+    # ------------------------------------------------------------------
+    # Validation
+    # ------------------------------------------------------------------
+
+    @model_validator(mode="after")
+    def _check_trigger_inside_segment(self) -> "GWOSCDataConfig":
+        unavailable = sorted(set(self.detectors) - {"H1", "L1", "V1"})
+        if unavailable:
+            raise ValueError(
+                f"GWOSC strain is not available for detector(s) {unavailable}; "
+                "choose H1, L1 or V1, or use injection/file data."
+            )
+        if self.post_trigger_duration > self.duration:
+            raise ValueError("post_trigger_duration must not exceed duration")
+        return self
 
 
 # Formats read by ``PowerSpectrum.from_file``.
@@ -87,6 +107,10 @@ class _PSDSourceBase(_DataBase):
     psd_files: Optional[dict[str, Path]] = None  # detector_name -> PSD file
     asd_files: Optional[dict[str, Path]] = None  # detector_name -> ASD file
 
+    # ------------------------------------------------------------------
+    # Validation
+    # ------------------------------------------------------------------
+
     @model_validator(mode="after")
     def _check_psd_source(self) -> "_PSDSourceBase":
         if self.psd_files is not None and self.asd_files is not None:
@@ -102,6 +126,9 @@ class _PSDSourceBase(_DataBase):
             missing = [d for d in self.detectors if d not in table]
             if missing:
                 raise ValueError(f"{field} missing for: {missing}")
+            unknown = sorted(set(table) - set(self.detectors))
+            if unknown:
+                raise ValueError(f"{field} has unknown detector names: {unknown}")
             for detector, path in table.items():
                 if path.suffix.lower() not in _PSD_FILE_SUFFIXES:
                     raise ValueError(
@@ -115,11 +142,15 @@ class InjectionDataConfig(_PSDSourceBase):
     """Synthetic injection into Gaussian noise drawn from the detector PSD."""
 
     type: Literal["injection"] = "injection"
-    duration: float = Field(gt=0.0)
-    sampling_frequency: float = Field(gt=0.0)
+    duration: float = Field(gt=0.0, allow_inf_nan=False)
+    sampling_frequency: float = Field(gt=0.0, allow_inf_nan=False)
     injection_parameters: dict[str, float]
     zero_noise: bool = False
-    noise_seed: Optional[int] = None
+    noise_seed: Optional[int] = Field(default=None, strict=True)
+
+    # ------------------------------------------------------------------
+    # Validation
+    # ------------------------------------------------------------------
 
     @model_validator(mode="after")
     def _check_noise_seed(self) -> "InjectionDataConfig":
@@ -129,18 +160,6 @@ class InjectionDataConfig(_PSDSourceBase):
             )
         if not self.zero_noise and self.noise_seed is None:
             raise ValueError("noise_seed is required when zero_noise = false.")
-        return self
-
-    @model_validator(mode="after")
-    def _check_built_in_psd_available(self) -> "InjectionDataConfig":
-        if self.psd_files is None and self.asd_files is None:
-            no_default = [d for d in self.detectors if d not in DEFAULT_ASD_DETECTORS]
-            if no_default:
-                raise ValueError(
-                    f"No built-in PSD for detector(s) {no_default} (built-in "
-                    f"defaults: {sorted(DEFAULT_ASD_DETECTORS)}). Set psd_files "
-                    "or asd_files, naming every detector."
-                )
         return self
 
 
@@ -153,6 +172,9 @@ class FileDataConfig(_PSDSourceBase):
     For frame (``.gwf``) and HDF5 files a channel name is required.  Provide
     ``strain_channels`` to map detector names to channel strings; if omitted,
     common LIGO/Virgo preset channel names are tried automatically for GWF files.
+
+    With ``detectors = ["ET"]``, strain files and channels use the individual
+    interferometer names ``ET1``, ``ET2`` and ``ET3``; the PSD/ASD uses ``ET``.
     """
 
     type: Literal["file"] = "file"
@@ -161,11 +183,32 @@ class FileDataConfig(_PSDSourceBase):
         default_factory=dict
     )  # detector_name -> channel (e.g. "H1:GDS-CALIB_STRAIN")
 
+    # ------------------------------------------------------------------
+    # Validation
+    # ------------------------------------------------------------------
+
     @model_validator(mode="after")
     def _check_strain_and_psd_files(self) -> "FileDataConfig":
-        missing_strain = [d for d in self.detectors if d not in self.strain_files]
+        strain_detectors = {
+            name
+            for detector in self.detectors
+            for name in (("ET1", "ET2", "ET3") if detector == "ET" else (detector,))
+        }
+        if "ET" in self.strain_files or "ET" in self.strain_channels:
+            raise ValueError(
+                "ET strain_files and strain_channels must use the individual "
+                "interferometer names ET1, ET2 and ET3; only PSD/ASD files use ET."
+            )
+        missing_strain = sorted(strain_detectors - set(self.strain_files))
         if missing_strain:
             raise ValueError(f"strain_files missing for: {missing_strain}")
+        for field, names in (
+            ("strain_files", self.strain_files),
+            ("strain_channels", self.strain_channels),
+        ):
+            unknown = sorted(set(names) - strain_detectors)
+            if unknown:
+                raise ValueError(f"{field} has unknown interferometer names: {unknown}")
         if self.psd_files is None and self.asd_files is None:
             raise ValueError("provide psd_files or asd_files (exactly one of the two)")
         return self
@@ -177,9 +220,9 @@ DataConfig = Annotated[
 ]
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Waveform section
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 Approximant = Literal[
     "TaylorF2",
@@ -198,12 +241,12 @@ Approximant = Literal[
 
 
 class WaveformConfig(BaseModel):
-    model_config = {"extra": "forbid"}
+    model_config = {"extra": "forbid", "allow_inf_nan": False}
     approximant: Approximant
     f_ref: float = Field(default=20.0, gt=0.0)
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Prior section
 #
 # Parameter names are the dict keys; each value is an inline table with a
@@ -214,14 +257,16 @@ class WaveformConfig(BaseModel):
 #   M_c  = { type = "uniform",   min = 10.0, max = 80.0 }
 #   iota = { type = "sine" }
 #   d_L  = { type = "power_law", min = 1.0, max = 2000.0, alpha = 2.0 }
-# ---------------------------------------------------------------------------
-
-
+# ----------------------------------------------------------------------
 class UniformSpec(BaseModel):
-    model_config = {"extra": "forbid"}
+    model_config = {"extra": "forbid", "allow_inf_nan": False}
     type: Literal["uniform"] = "uniform"
     min: float
     max: float
+
+    # ------------------------------------------------------------------
+    # Validation
+    # ------------------------------------------------------------------
 
     @model_validator(mode="after")
     def _check_bounds(self) -> "UniformSpec":
@@ -233,10 +278,14 @@ class UniformSpec(BaseModel):
 
 
 class GaussianSpec(BaseModel):
-    model_config = {"extra": "forbid"}
+    model_config = {"extra": "forbid", "allow_inf_nan": False}
     type: Literal["gaussian"] = "gaussian"
     loc: float
     scale: float
+
+    # ------------------------------------------------------------------
+    # Validation
+    # ------------------------------------------------------------------
 
     @model_validator(mode="after")
     def _check_scale(self) -> "GaussianSpec":
@@ -248,24 +297,30 @@ class GaussianSpec(BaseModel):
 
 
 class SineSpec(BaseModel):
-    model_config = {"extra": "forbid"}
+    model_config = {"extra": "forbid", "allow_inf_nan": False}
     type: Literal["sine"] = "sine"
 
 
 class CosineSpec(BaseModel):
-    model_config = {"extra": "forbid"}
+    model_config = {"extra": "forbid", "allow_inf_nan": False}
     type: Literal["cosine"] = "cosine"
 
 
 class PowerLawSpec(BaseModel):
-    model_config = {"extra": "forbid"}
+    model_config = {"extra": "forbid", "allow_inf_nan": False}
     type: Literal["power_law"] = "power_law"
     min: float
     max: float
     alpha: float
 
+    # ------------------------------------------------------------------
+    # Validation
+    # ------------------------------------------------------------------
+
     @model_validator(mode="after")
     def _check_bounds(self) -> "PowerLawSpec":
+        if self.min <= 0:
+            raise ValueError("power_law prior requires min > 0")
         if self.min >= self.max:
             raise ValueError(
                 f"power_law prior requires min < max, got min={self.min}, max={self.max}"
@@ -274,9 +329,13 @@ class PowerLawSpec(BaseModel):
 
 
 class RayleighSpec(BaseModel):
-    model_config = {"extra": "forbid"}
+    model_config = {"extra": "forbid", "allow_inf_nan": False}
     type: Literal["rayleigh"] = "rayleigh"
     scale: float
+
+    # ------------------------------------------------------------------
+    # Validation
+    # ------------------------------------------------------------------
 
     @model_validator(mode="after")
     def _check_scale(self) -> "RayleighSpec":
@@ -290,7 +349,7 @@ class RayleighSpec(BaseModel):
 class UniformSphereSpec(BaseModel):
     """Maps to UniformSpherePrior — generates three parameters: {name}_mag/theta/phi."""
 
-    model_config = {"extra": "forbid"}
+    model_config = {"extra": "forbid", "allow_inf_nan": False}
     type: Literal["uniform_sphere"] = "uniform_sphere"
 
 
@@ -316,9 +375,9 @@ class PriorConfig(RootModel[dict[str, PriorSpec]]):
     """
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Sampling space section (optional)
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 class SamplingConfig(BaseModel):
@@ -328,7 +387,7 @@ class SamplingConfig(BaseModel):
     sampling space. The CLI auto-infers transforms for every other case.
     """
 
-    model_config = {"extra": "forbid"}
+    model_config = {"extra": "forbid", "allow_inf_nan": False}
 
     time_frame: str = "detector"
     """Detector name to sample arrival time in (e.g. "H1"). Special values:
@@ -343,20 +402,31 @@ class SamplingConfig(BaseModel):
     Only used when ``ra``/``dec`` are in the prior."""
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Likelihood section
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
+
 # CLI-level marg configs: structurally equivalent to the library versions but
 # JAX-free. Converted to the real configs in the likelihood builder (Stage 6).
 
 
 class CLIPhaseMargConfig(BaseModel):
-    model_config = {"extra": "forbid"}
+    model_config = {"extra": "forbid", "allow_inf_nan": False}
 
 
 class CLITimeMargConfig(BaseModel):
-    model_config = {"extra": "forbid"}
+    model_config = {"extra": "forbid", "allow_inf_nan": False}
     tc_range: tuple[float, float] = (-0.1, 0.1)
+
+    # ------------------------------------------------------------------
+    # Validation
+    # ------------------------------------------------------------------
+
+    @model_validator(mode="after")
+    def _check_time_range(self) -> "CLITimeMargConfig":
+        if not self.tc_range[0] < self.tc_range[1]:
+            raise ValueError("tc_range must contain finite, increasing bounds.")
+        return self
 
 
 class CLIDistanceMargConfig(BaseModel):
@@ -366,16 +436,21 @@ class CLIDistanceMargConfig(BaseModel):
     ``[prior]`` section) that is built into a ``Prior`` object by the builder.
     """
 
-    model_config = {"extra": "forbid"}
+    model_config = {"extra": "forbid", "allow_inf_nan": False}
     distance_prior: PriorConfig
-    n_dist_points: int = Field(default=10000, ge=2)
+    n_dist_points: int = Field(default=10000, ge=2, strict=True)
     ref_dist: Optional[float] = Field(default=None, gt=0.0)
+
+    # ------------------------------------------------------------------
+    # Validation
+    # ------------------------------------------------------------------
 
     @model_validator(mode="after")
     def _check_single_distance_param(self) -> "CLIDistanceMargConfig":
-        if len(self.distance_prior.root) != 1:
+        if set(self.distance_prior.root) != {"d_L"}:
             raise ValueError(
-                "distance_marginalization.distance_prior must contain exactly one parameter"
+                "distance_marginalization.distance_prior must contain exactly one "
+                "parameter, 'd_L'"
             )
         return self
 
@@ -383,17 +458,17 @@ class CLIDistanceMargConfig(BaseModel):
 class CLIOptimizerRefParams(BaseModel):
     """Find reference parameters automatically via CMA-ES (default)."""
 
-    model_config = {"extra": "forbid"}
+    model_config = {"extra": "forbid", "allow_inf_nan": False}
     type: Literal["optimizer"] = "optimizer"
-    popsize: int = Field(default=500, ge=1)
-    n_steps: int = Field(default=1000, ge=1)
+    popsize: int = Field(default=500, ge=1, strict=True)
+    n_steps: int = Field(default=1000, ge=1, strict=True)
     target: Optional[float] = None
 
 
 class CLIProvidedRefParams(BaseModel):
     """Explicit likelihood-space reference parameters; skips CMA-ES."""
 
-    model_config = {"extra": "forbid"}
+    model_config = {"extra": "forbid", "allow_inf_nan": False}
     type: Literal["provided"] = "provided"
     values: dict[str, float]
 
@@ -404,7 +479,7 @@ class CLIInjectionRefParams(BaseModel):
     Only valid for injection runs (``data.type = "injection"``).
     """
 
-    model_config = {"extra": "forbid"}
+    model_config = {"extra": "forbid", "allow_inf_nan": False}
     type: Literal["injection"] = "injection"
 
 
@@ -431,12 +506,22 @@ class CLIHeterodynedConfig(BaseModel):
     bin) is used as the default.
     """
 
-    model_config = {"extra": "forbid"}
-    n_bins: Optional[int] = Field(default=None, ge=1)
+    model_config = {"extra": "forbid", "allow_inf_nan": False}
+    n_bins: Optional[int] = Field(default=None, ge=1, strict=True)
     epsilon: Optional[float] = Field(default=None, gt=0.0)
     reference_parameters: HeterodynedRefParams = Field(
         default_factory=CLIOptimizerRefParams
     )
+
+    # ------------------------------------------------------------------
+    # Validation
+    # ------------------------------------------------------------------
+
+    @model_validator(mode="after")
+    def _check_binning(self) -> "CLIHeterodynedConfig":
+        if self.n_bins is not None and self.epsilon is not None:
+            raise ValueError("n_bins and epsilon are mutually exclusive")
+        return self
 
 
 class CLIMultibandedConfig(BaseModel):
@@ -451,9 +536,9 @@ class CLIMultibandedConfig(BaseModel):
     them explicitly to override the inferred values.
     """
 
-    model_config = {"extra": "forbid"}
+    model_config = {"extra": "forbid", "allow_inf_nan": False}
     reference_chirp_mass: Optional[float] = Field(default=None, gt=0.0)
-    highest_mode: int = Field(default=2, ge=1)
+    highest_mode: int = Field(default=2, ge=1, strict=True)
     accuracy_factor: float = Field(default=5.0, gt=0.0)
     time_offset: Optional[float] = Field(default=None, ge=0.0)
     delta_f_end: Optional[float] = Field(default=None, gt=0.0)
@@ -462,9 +547,9 @@ class CLIMultibandedConfig(BaseModel):
 
 
 class LikelihoodConfig(BaseModel):
-    model_config = {"extra": "forbid"}
+    model_config = {"extra": "forbid", "allow_inf_nan": False}
     f_min: float = Field(gt=0.0)
-    f_max: float = Field(gt=0.0)
+    f_max: float = Field(gt=0.0, allow_inf_nan=True)
     fixed_parameters: dict[str, float] = Field(default_factory=dict)
     phase_marginalization: bool = False
     time_marginalization: Optional[CLITimeMargConfig] = None
@@ -472,8 +557,30 @@ class LikelihoodConfig(BaseModel):
     heterodyne: Optional[CLIHeterodynedConfig] = None
     multiband: Optional[CLIMultibandedConfig] = None
 
+    # ------------------------------------------------------------------
+    # Validation
+    # ------------------------------------------------------------------
+
     @model_validator(mode="after")
     def _validate_marginalization_conflicts(self) -> "LikelihoodConfig":
+        if not self.f_min < self.f_max:
+            raise ValueError("f_min must be below f_max")
+        for name, enabled in (
+            ("phase_c", self.phase_marginalization),
+            ("t_c", self.time_marginalization is not None),
+            ("d_L", self.distance_marginalization is not None),
+        ):
+            if enabled and name in self.fixed_parameters:
+                raise ValueError(
+                    f"Cannot have {name} fixed while marginalizing over it"
+                )
+        if (
+            self.time_marginalization is not None
+            and self.distance_marginalization is not None
+        ):
+            raise ValueError(
+                "Joint time + distance marginalization is not yet supported"
+            )
         if self.heterodyne is not None and self.multiband is not None:
             raise ValueError("heterodyne and multiband cannot both be set")
         if self.heterodyne is not None:
@@ -501,31 +608,34 @@ class LikelihoodConfig(BaseModel):
         return self
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Output section
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 class OutputConfig(BaseModel):
-    model_config = {"extra": "forbid"}
+    model_config = {"extra": "forbid", "allow_inf_nan": False}
     dir: Path
     save_corner: bool = False
     n_samples: int = Field(
-        default=10000, ge=0, description="Number of posterior samples to save. 0 = all."
+        default=10000,
+        ge=0,
+        strict=True,
+        description="Number of posterior samples to save. 0 = all.",
     )
     overwrite: bool = False
     corner_parameters: Optional[list[str]] = None
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Top-level pipeline config
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 class PipelineConfig(BaseModel):
-    model_config = {"extra": "forbid"}
+    model_config = {"extra": "forbid", "allow_inf_nan": False}
 
-    seed: int = 0
+    seed: int = Field(default=0, strict=True)
     data: DataConfig
     waveform: WaveformConfig
     prior: PriorConfig
@@ -533,6 +643,10 @@ class PipelineConfig(BaseModel):
     likelihood: LikelihoodConfig
     sampler: SamplerConfig
     output: OutputConfig
+
+    # ------------------------------------------------------------------
+    # Validation
+    # ------------------------------------------------------------------
 
     @model_validator(mode="after")
     def _validate_injection_frame_consistency(self) -> "PipelineConfig":

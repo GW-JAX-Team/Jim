@@ -1,8 +1,8 @@
 """Cross-validation of the Earth-rotating detector response.
 
     Jim                                     Reference
-    ──────────────────────────────────────  ────────────────────────────────────────────────
-    time_to_merger                          LALSimulation TaylorF2ReducedSpin chirp time (2PN)
+    --------------------------------------  ------------------------------------------------
+    GroundBased3G.time_to_merger            LALSimulation TaylorF2ReducedSpin chirp time (2PN)
     GroundBased3G (rotation)                bilby antenna response and geocentre delay at the
                                             exact GMST of each emission time
     GroundBased3G (rotation + finite arm)   bilby_xG frequency_dependent_antenna_response
@@ -21,10 +21,6 @@ from jimgw.core.constants import MSUN
 from jimgw.core.single_event.detector import (
     GroundBased3G,
     get_ET,
-    time_to_merger,
-)
-from jimgw.core.single_event.time_utils import (
-    greenwich_mean_sidereal_time as compute_gmst,
 )
 
 GPS = 1400000000.0
@@ -50,8 +46,6 @@ def _jim_params(t_c=0.0):
         "dec": DEC,
         "psi": PSI,
         "t_c": t_c,
-        "trigger_time": GPS,
-        "gmst": compute_gmst(GPS),
     }
 
 
@@ -59,7 +53,9 @@ def _jim_response(det, params):
     """Plus and cross responses, delay included, from unit polarizations."""
     from jimgw.core.single_event.data import Data
 
-    det.set_data(Data(td=jnp.zeros(8), delta_t=1.0, start_time=START_TIME))
+    det.set_data(
+        Data.from_td(jnp.zeros(8), 1.0, start_time=START_TIME, trigger_time=GPS)
+    )
     frequency = jnp.asarray(FREQUENCIES)
     one, zero = jnp.ones_like(frequency) + 0j, jnp.zeros_like(frequency) + 0j
     plus = det.fd_response(frequency, {"p": one, "c": zero}, params)
@@ -94,7 +90,7 @@ def test_time_to_merger_matches_lal_at_2pn(m1, m2):
         expected = lalsim.SimInspiralTaylorF2ReducedSpinChirpTime(
             f, m1 * MSUN, m2 * MSUN, 0.0, 4
         )
-        actual = float(time_to_merger(jnp.array(f), M_c, eta))
+        actual = float(GroundBased3G.time_to_merger(jnp.array(f), M_c, eta))
         np.testing.assert_allclose(actual, expected, rtol=1e-6, atol=0.0)
 
 
@@ -105,7 +101,9 @@ def test_rotating_response_matches_bilby_at_emission_times():
     jim_plus, jim_cross = _jim_response(det, _jim_params(t_c))
 
     ifo = _bilby_interferometer(det, bilby.gw.detector.Interferometer)
-    tau = np.asarray(time_to_merger(jnp.asarray(FREQUENCIES), M_C, ETA, CHI1, CHI2))
+    tau = np.asarray(
+        GroundBased3G.time_to_merger(jnp.asarray(FREQUENCIES), M_C, ETA, CHI1, CHI2)
+    )
     emission = GPS + t_c - tau
     bilby_plus = np.empty(len(FREQUENCIES), dtype=complex)
     bilby_cross = np.empty(len(FREQUENCIES), dtype=complex)

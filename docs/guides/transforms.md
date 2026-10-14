@@ -63,7 +63,7 @@ from jimgw.core.single_event.transforms import SkyFrameToDetectorFrameSkyPositio
 
 # Sampler explores (zenith, azimuth) in detector frame instead of (ra, dec)
 sample_transforms = [
-    SkyFrameToDetectorFrameSkyPositionTransform(trigger_time=gps_time, ifos=ifos),
+    SkyFrameToDetectorFrameSkyPositionTransform(ifos=ifos),
 ]
 ```
 
@@ -103,9 +103,9 @@ likelihood_transforms = [MassRatioToSymmetricMassRatioTransform()]  # TypeError
 
 | Transform | Mapping | Notes |
 | --- | --- | --- |
-| `SkyFrameToDetectorFrameSkyPositionTransform(trigger_time, ifos)` | `(ra, dec) → (zenith, azimuth)` | Reduces ra/dec correlation for detector networks |
-| `GeocentricArrivalTimeToDetectorArrivalTimeTransform(trigger_time, ifo)` | `t_c → t_det` | Conditional on ra, dec |
-| `GeocentricArrivalPhaseToDetectorArrivalPhaseTransform(trigger_time, ifo)` | `phase_c → phase_det` | Conditional on ra, dec, psi, iota. Assumes dominant quadrupolar mode only ([arXiv:2207.03508](https://arxiv.org/abs/2207.03508)); **not valid** for waveforms with higher harmonics or precession. |
+| `SkyFrameToDetectorFrameSkyPositionTransform(ifos)` | `(ra, dec) → (zenith, azimuth)` | Reduces ra/dec correlation for detector networks |
+| `GeocentricArrivalTimeToDetectorArrivalTimeTransform(ifo)` | `t_c → t_det` | Conditional on ra, dec |
+| `GeocentricArrivalPhaseToDetectorArrivalPhaseTransform(ifo)` | `phase_c → phase_det` | Conditional on ra, dec, psi, iota. Assumes dominant quadrupolar mode only ([arXiv:2207.03508](https://arxiv.org/abs/2207.03508)); **not valid** for waveforms with higher harmonics or precession. |
 | `DistanceToSNRWeightedDistanceTransform` | `d_L → d_hat` | SNR-weighted distance parameterisation ([arXiv:2207.03508](https://arxiv.org/abs/2207.03508)). Assumes dominant quadrupolar mode only; **not valid** for waveforms with higher harmonics or precession. |
 
 ## Mapping a prior to the unit cube (for NS AW)

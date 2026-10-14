@@ -1476,7 +1476,7 @@ class GroundBased3G(GroundBased2G):
 
 
 def get_H1() -> GroundBased2G:
-    """Return a [`GroundBased2G`][jimgw.core.single_event.detector.GroundBased2G] instance for LIGO Hanford (H1)."""
+    """Return a instance for LIGO Hanford (H1)."""
     return GroundBased2G(
         "H1",
         latitude=(46 + 27.0 / 60 + 18.528 / 3600) * DEG_TO_RAD,
@@ -1491,7 +1491,7 @@ def get_H1() -> GroundBased2G:
 
 
 def get_L1() -> GroundBased2G:
-    """Return a [`GroundBased2G`][jimgw.core.single_event.detector.GroundBased2G] instance for LIGO Livingston (L1)."""
+    """Return a instance for LIGO Livingston (L1)."""
     return GroundBased2G(
         "L1",
         latitude=(30 + 33.0 / 60 + 46.4196 / 3600) * DEG_TO_RAD,
@@ -1506,7 +1506,7 @@ def get_L1() -> GroundBased2G:
 
 
 def get_V1() -> GroundBased2G:
-    """Return a [`GroundBased2G`][jimgw.core.single_event.detector.GroundBased2G] instance for Virgo (V1)."""
+    """Return a instance for Virgo (V1)."""
     return GroundBased2G(
         "V1",
         latitude=(43 + 37.0 / 60 + 53.0921 / 3600) * DEG_TO_RAD,
@@ -1521,12 +1521,12 @@ def get_V1() -> GroundBased2G:
 
 
 def get_ET(
-    earth_rotation: bool = False, finite_arm_length: bool = False
+    *, earth_rotation: bool = False, finite_arm_length: bool = False
 ) -> list[GroundBased3G]:
-    """Return a list of three [`GroundBased3G`][jimgw.core.single_event.detector.GroundBased3G] instances for Einstein Telescope (ET).
+    """Return a list of three instances for the triangular Einstein Telescope (ET).
 
-    ET is modelled as a triangle of three interferometers with 10 km arms at the
-    Virgo site.
+    The design is a triangle of three interferometers with 10 km arms at the
+    Euregio Meuse-Rhine site, with the arm azimuths of the Virgo arms.
 
     Args:
         earth_rotation (bool, optional): Follow the Earth's rotation. Turn on for
@@ -1536,13 +1536,13 @@ def get_ET(
             high frequencies. Defaults to False.
     """
     name = "ET"
-    latitude = (43 + 37.0 / 60 + 53.0921 / 3600) * DEG_TO_RAD
-    longitude = (10 + 30.0 / 60 + 16.1878 / 3600) * DEG_TO_RAD
+    latitude = (50 + 43.0 / 60 + 23.0 / 3600) * DEG_TO_RAD
+    longitude = (5 + 55.0 / 60 + 14.0 / 3600) * DEG_TO_RAD
     xarm_azimuth = 70.5674 * DEG_TO_RAD
     yarm_azimuth = 130.5674 * DEG_TO_RAD
     xarm_tilt = 0
     yarm_tilt = 0
-    elevation = 51.884
+    elevation = 0.0
     length: float = 1e4  # arm length in metres
 
     a = EARTH_SEMI_MAJOR_AXIS / 1e3  # Numerical instability avoidance
@@ -1595,10 +1595,66 @@ def get_ET(
     return ifos
 
 
+def get_ET_2L(
+    *,
+    alignment_angle: float = 42.5,
+    earth_rotation: bool = False,
+    finite_arm_length: bool = False,
+) -> list[GroundBased3G]:
+    """Return the two L-shaped detectors of the Einstein Telescope 2L design.
+
+    The design has two L-shaped interferometers with 15 km arms, ``ET_Sar`` in
+    Sardinia and ``ET_EMR`` in the Euregio Meuse-Rhine. The arms of ``ET_Sar`` have
+    the azimuths of the Virgo arms. The arms of ``ET_EMR`` are rotated from those
+    of ``ET_Sar`` by ``alignment_angle``, a difference of azimuths, each measured
+    against the local axes of its site rather than the great circle between them.
+
+    Args:
+        alignment_angle (float, optional): Rotation of the arms of ``ET_EMR`` from
+            those of ``ET_Sar``, in degrees. Zero gives parallel arms; 45 degrees is
+            the misaligned case. Defaults to 42.5.
+        earth_rotation (bool, optional): Follow the Earth's rotation. Turn on for
+            signals that stay in band for ten minutes or longer. Defaults to False.
+        finite_arm_length (bool, optional): Account for the arms' finite length
+            relative to the wavelength. Turn on for loud signals with power at
+            high frequencies. Defaults to False.
+    """
+    sardinia_xarm_azimuth = 70.5674
+    sardinia_yarm_azimuth = 160.5674
+    return [
+        GroundBased3G(
+            "ET_Sar",
+            latitude=(40 + 31.0 / 60) * DEG_TO_RAD,
+            longitude=(9 + 25.0 / 60) * DEG_TO_RAD,
+            xarm_azimuth=sardinia_xarm_azimuth * DEG_TO_RAD,
+            yarm_azimuth=sardinia_yarm_azimuth * DEG_TO_RAD,
+            elevation=0.0,
+            xarm_tilt=0,
+            yarm_tilt=0,
+            arm_length=1.5e4,
+            earth_rotation=earth_rotation,
+            finite_arm_length=finite_arm_length,
+        ),
+        GroundBased3G(
+            "ET_EMR",
+            latitude=(50 + 43.0 / 60 + 23.0 / 3600) * DEG_TO_RAD,
+            longitude=(5 + 55.0 / 60 + 14.0 / 3600) * DEG_TO_RAD,
+            xarm_azimuth=(sardinia_xarm_azimuth - alignment_angle) * DEG_TO_RAD,
+            yarm_azimuth=(sardinia_yarm_azimuth - alignment_angle) * DEG_TO_RAD,
+            elevation=0.0,
+            xarm_tilt=0,
+            yarm_tilt=0,
+            arm_length=1.5e4,
+            earth_rotation=earth_rotation,
+            finite_arm_length=finite_arm_length,
+        ),
+    ]
+
+
 def get_CE(
-    earth_rotation: bool = False, finite_arm_length: bool = False
+    *, earth_rotation: bool = False, finite_arm_length: bool = False
 ) -> GroundBased3G:
-    """Return a [`GroundBased3G`][jimgw.core.single_event.detector.GroundBased3G] instance for Cosmic Explorer (CE).
+    """Return a instance for Cosmic Explorer (CE).
 
     CE shares the LIGO Hanford site geometry and has 40 km arms.
 

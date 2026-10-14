@@ -284,7 +284,7 @@ H1.inject_signal(waveform, second_params)
 
 ## Next-Generation Detectors
 
-`get_ET()` and `get_CE()` return `GroundBased3G` detectors, which respond like `GroundBased2G` unless you turn on one of two options:
+`get_ET()`, `get_ET_2L()` and `get_CE()` return `GroundBased3G` detectors, which respond like `GroundBased2G` unless you turn on one of two options:
 
 - `earth_rotation=True` follows the Earth's rotation while the signal is in band.
   Turn it on for signals that stay in band for ten minutes or longer, such as binary neutron stars observed from about 10 Hz or lower, or for a few minutes if the signal is very loud.

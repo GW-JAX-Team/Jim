@@ -21,6 +21,7 @@ from jimgw.core.constants import MSUN
 from jimgw.core.single_event.detector import (
     GroundBased3G,
     get_ET,
+    get_ET_2L,
 )
 
 GPS = 1400000000.0
@@ -151,3 +152,47 @@ def test_response_matches_bilby_xg(finite_arm_length):
     # and computes its own tau; 1e-6 covers both at unit antenna amplitude.
     np.testing.assert_allclose(jim_plus, xg_plus, rtol=0.0, atol=1e-6)
     np.testing.assert_allclose(jim_cross, xg_cross, rtol=0.0, atol=1e-6)
+
+
+# The interferometer files of the 2L design with arms misaligned by 45 degrees,
+# as bilby reads them: lengths in km, angles in degrees.
+ET_2L_BILBY_FILES = {
+    "ET_Sar": {
+        "length": 15,
+        "latitude": 40 + 31.0 / 60 + 0.0 / 3600,
+        "longitude": 9 + 25.0 / 60 + 0.0 / 3600,
+        "elevation": 0.0,
+        "xarm_azimuth": 70.5674,
+        "yarm_azimuth": 160.5674,
+    },
+    "ET_EMR": {
+        "length": 15,
+        "latitude": 50 + 43.0 / 60 + 23 / 3600,
+        "longitude": 5 + 55.0 / 60 + 14 / 3600,
+        "elevation": 0.0,
+        "xarm_azimuth": 25.5674,
+        "yarm_azimuth": 115.5674,
+    },
+}
+
+
+@pytest.mark.parametrize("index", [0, 1])
+def test_et_2l_response_matches_the_bilby_files(index):
+    """Both L-shaped detectors respond like bilby's, built from the files of the design."""
+    det = get_ET_2L(alignment_angle=45.0)[index]
+    ifo = bilby.gw.detector.Interferometer(
+        name=det.name,
+        power_spectral_density=bilby.gw.detector.PowerSpectralDensity.from_aligo(),
+        minimum_frequency=5.0,
+        maximum_frequency=4096.0,
+        **ET_2L_BILBY_FILES[det.name],
+    )
+    jim_plus, jim_cross = _jim_response(det, _jim_params())
+
+    delay = ifo.time_delay_from_geocenter(RA, DEC, GPS)
+    shift = np.exp(-2j * np.pi * FREQUENCIES * ((GPS - START_TIME) + delay))
+    bilby_plus = ifo.antenna_response(RA, DEC, GPS, PSI, "plus") * shift
+    bilby_cross = ifo.antenna_response(RA, DEC, GPS, PSI, "cross") * shift
+
+    np.testing.assert_allclose(jim_plus, bilby_plus, rtol=0.0, atol=1e-7)
+    np.testing.assert_allclose(jim_cross, bilby_cross, rtol=0.0, atol=1e-7)

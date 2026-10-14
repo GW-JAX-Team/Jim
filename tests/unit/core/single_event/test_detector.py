@@ -26,6 +26,7 @@ from jimgw.core.single_event.detector import (
     get_CE,
     get_detector_preset,
     get_ET,
+    get_ET_2L,
     get_H1,
     get_L1,
     get_V1,
@@ -1533,6 +1534,13 @@ class TestET:
         assert len(self.ifos) == 3
         assert all(isinstance(ifo, GroundBased3G) for ifo in self.ifos)
 
+    def test_et1_is_at_the_emr_site_of_the_2l_design(self):
+        """The triangle and the EMR detector of the 2L design share their site."""
+        et1, emr = self.ifos[0], get_ET_2L()[1]
+        assert et1.latitude == emr.latitude
+        assert et1.longitude == emr.longitude
+        assert et1.elevation == emr.elevation
+
     def test_detector_names(self):
         """Sub-detectors are named ET1, ET2, ET3 in order."""
         assert [ifo.name for ifo in self.ifos] == ["ET1", "ET2", "ET3"]
@@ -2098,3 +2106,81 @@ class TestNextGenerationPresets:
         for det in self._detectors(name, earth_rotation=True, finite_arm_length=True):
             assert det.earth_rotation
             assert det.finite_arm_length
+
+
+class TestET2L:
+    """get_ET_2L: two 15 km L-shaped detectors, in Sardinia and in the Euregio Meuse-Rhine."""
+
+    def test_two_l_shaped_detectors_with_15_km_arms(self):
+        ifos = get_ET_2L(alignment_angle=45.0)
+        assert [ifo.name for ifo in ifos] == ["ET_Sar", "ET_EMR"]
+        for ifo in ifos:
+            assert isinstance(ifo, GroundBased3G)
+            assert ifo.arm_length == 1.5e4
+            np.testing.assert_allclose(ifo.yarm_azimuth - ifo.xarm_azimuth, np.pi / 2)
+
+    def test_the_sites(self):
+        sardinia, emr = get_ET_2L(alignment_angle=0.0)
+        np.testing.assert_allclose(
+            np.degrees([sardinia.latitude, sardinia.longitude]),
+            [40 + 31 / 60, 9 + 25 / 60],
+        )
+        np.testing.assert_allclose(
+            np.degrees([emr.latitude, emr.longitude]),
+            [50 + 43 / 60 + 23 / 3600, 5 + 55 / 60 + 14 / 3600],
+        )
+
+    def test_the_misaligned_case_has_the_arm_azimuths_of_the_bilby_files(self):
+        sardinia, emr = get_ET_2L(alignment_angle=45.0)
+        np.testing.assert_allclose(
+            np.degrees([sardinia.xarm_azimuth, sardinia.yarm_azimuth]),
+            [70.5674, 160.5674],
+        )
+        np.testing.assert_allclose(
+            np.degrees([emr.xarm_azimuth, emr.yarm_azimuth]), [25.5674, 115.5674]
+        )
+
+    @pytest.mark.parametrize("angle", [0.0, 10.0, 45.0, 90.0])
+    def test_the_alignment_angle_rotates_only_the_emr_arms(self, angle):
+        sardinia, emr = get_ET_2L(alignment_angle=angle)
+        np.testing.assert_allclose(np.degrees(sardinia.xarm_azimuth), 70.5674)
+        np.testing.assert_allclose(
+            np.degrees(sardinia.xarm_azimuth - emr.xarm_azimuth), angle, atol=1e-12
+        )
+        np.testing.assert_allclose(
+            np.degrees(sardinia.yarm_azimuth - emr.yarm_azimuth), angle, atol=1e-12
+        )
+
+    def test_the_default_alignment_angle_is_42_5_degrees(self):
+        default, explicit = get_ET_2L(), get_ET_2L(alignment_angle=42.5)
+        for ifo, expected in zip(default, explicit):
+            assert ifo.xarm_azimuth == expected.xarm_azimuth
+            assert ifo.yarm_azimuth == expected.yarm_azimuth
+        np.testing.assert_allclose(
+            np.degrees(default[0].xarm_azimuth - default[1].xarm_azimuth), 42.5
+        )
+
+    def test_default_options_and_options_reach_both_detectors(self):
+        assert not any(
+            ifo.earth_rotation or ifo.finite_arm_length
+            for ifo in get_ET_2L(alignment_angle=45.0)
+        )
+        for ifo in get_ET_2L(
+            alignment_angle=45.0, earth_rotation=True, finite_arm_length=True
+        ):
+            assert ifo.earth_rotation
+            assert ifo.finite_arm_length
+
+    def test_there_is_no_built_in_psd_yet(self):
+        for ifo in get_ET_2L(alignment_angle=45.0):
+            with pytest.raises(
+                ValueError, match=f"No built-in PSD for detector {ifo.name}"
+            ):
+                ifo.load_and_set_psd()
+            assert ifo.psd.is_empty
+
+
+@pytest.mark.parametrize("getter", [get_ET, get_ET_2L, get_CE])
+def test_next_generation_presets_take_keyword_arguments_only(getter):
+    with pytest.raises(TypeError, match="positional"):
+        getter(True)

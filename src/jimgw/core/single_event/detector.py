@@ -866,8 +866,12 @@ class GroundBased3G(GroundBased2G):
     parameters passed to ``fd_response``.
 
     With ``finite_arm_length``, the arms are not assumed to be short compared to
-    the gravitational wavelength (Baral et al. 2023, arXiv:2304.09889), which
-    matters for loud signals with power at high frequencies.
+    the gravitational wavelength (Baral et al. 2023,
+    [arXiv:2304.09889](https://arxiv.org/abs/2304.09889)), which
+    matters for loud signals with power at high frequencies. The output is
+    assigned to the time the light reaches the end mirror rather than its return
+    to the beam splitter; see the data guide for the convention and how to
+    convert from the other one.
 
     With both switched off, the response is identical to
     [`GroundBased2G`][jimgw.core.single_event.detector.GroundBased2G].
@@ -1011,9 +1015,16 @@ class GroundBased3G(GroundBased2G):
 
     @staticmethod
     def _arm_transfer_function(x: Float, y: Float) -> Complex:
-        """Single-arm transfer function, Eq. (2.13) of arXiv:2304.09889.
+        """Single-arm transfer function, normalised to one.
 
-        Its phase is referenced to the time the light reaches the end mirror.
+        Eq. (7) of [arXiv:2304.09889](https://arxiv.org/abs/2304.09889). The
+        wave is referenced at the vertex and the output is assigned to the time
+        the light reaches the end mirror, so at low frequency
+        $T \\approx 1 - i\\pi x y$ adds no direction-independent delay. A
+        transfer function assigned to the light's return at the beam splitter
+        (Rakhmanov et al. 2008,
+        [arXiv:0808.3805](https://arxiv.org/abs/0808.3805)) is
+        $e^{-2\\pi i x}$ times this one, a delay of $L/c$.
 
         Args:
             x (Float): Arm length in units of the gravitational wavelength, $fL/c$.

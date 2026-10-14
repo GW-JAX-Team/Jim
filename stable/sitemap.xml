@@ -4,49 +4,7 @@
         <loc>https://gw-jax-team.github.io/Jim/stable/</loc>
       </url>
       <url>
-        <loc>https://gw-jax-team.github.io/Jim/stable/installation/</loc>
-      </url>
-      <url>
-        <loc>https://gw-jax-team.github.io/Jim/stable/quickstart/</loc>
-      </url>
-      <url>
-        <loc>https://gw-jax-team.github.io/Jim/stable/tutorials/</loc>
-      </url>
-      <url>
-        <loc>https://gw-jax-team.github.io/Jim/stable/tutorials/getting_started/</loc>
-      </url>
-      <url>
-        <loc>https://gw-jax-team.github.io/Jim/stable/tutorials/gw150914_cli/</loc>
-      </url>
-      <url>
-        <loc>https://gw-jax-team.github.io/Jim/stable/guides/</loc>
-      </url>
-      <url>
-        <loc>https://gw-jax-team.github.io/Jim/stable/guides/cli/</loc>
-      </url>
-      <url>
-        <loc>https://gw-jax-team.github.io/Jim/stable/guides/data/</loc>
-      </url>
-      <url>
-        <loc>https://gw-jax-team.github.io/Jim/stable/guides/likelihood/</loc>
-      </url>
-      <url>
-        <loc>https://gw-jax-team.github.io/Jim/stable/guides/prior/</loc>
-      </url>
-      <url>
-        <loc>https://gw-jax-team.github.io/Jim/stable/guides/samplers/</loc>
-      </url>
-      <url>
-        <loc>https://gw-jax-team.github.io/Jim/stable/guides/transforms/</loc>
-      </url>
-      <url>
         <loc>https://gw-jax-team.github.io/Jim/stable/FAQ/</loc>
-      </url>
-      <url>
-        <loc>https://gw-jax-team.github.io/Jim/stable/citing/</loc>
-      </url>
-      <url>
-        <loc>https://gw-jax-team.github.io/Jim/stable/contributing/</loc>
       </url>
       <url>
         <loc>https://gw-jax-team.github.io/Jim/stable/api/jimgw/core/base/</loc>
@@ -106,19 +64,43 @@
         <loc>https://gw-jax-team.github.io/Jim/stable/api/jimgw/samplers/base/</loc>
       </url>
       <url>
-        <loc>https://gw-jax-team.github.io/Jim/stable/api/jimgw/samplers/blackjax/ns_aw/</loc>
+        <loc>https://gw-jax-team.github.io/Jim/stable/api/jimgw/samplers/blackjax/ns/ns_aw/</loc>
       </url>
       <url>
-        <loc>https://gw-jax-team.github.io/Jim/stable/api/jimgw/samplers/blackjax/nss/</loc>
+        <loc>https://gw-jax-team.github.io/Jim/stable/api/jimgw/samplers/blackjax/ns/nss/</loc>
       </url>
       <url>
-        <loc>https://gw-jax-team.github.io/Jim/stable/api/jimgw/samplers/blackjax/sharding/</loc>
+        <loc>https://gw-jax-team.github.io/Jim/stable/api/jimgw/samplers/blackjax/ns/sharding/</loc>
       </url>
       <url>
-        <loc>https://gw-jax-team.github.io/Jim/stable/api/jimgw/samplers/blackjax/smc/</loc>
+        <loc>https://gw-jax-team.github.io/Jim/stable/api/jimgw/samplers/blackjax/ns/swig/</loc>
       </url>
       <url>
-        <loc>https://gw-jax-team.github.io/Jim/stable/api/jimgw/samplers/blackjax/swig/</loc>
+        <loc>https://gw-jax-team.github.io/Jim/stable/api/jimgw/samplers/blackjax/smc/adaptive_persistent/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/stable/api/jimgw/samplers/blackjax/smc/adaptive_tempered/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/stable/api/jimgw/samplers/blackjax/smc/base/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/stable/api/jimgw/samplers/blackjax/smc/diagnostics/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/stable/api/jimgw/samplers/blackjax/smc/fixed_persistent/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/stable/api/jimgw/samplers/blackjax/smc/fixed_tempered/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/stable/api/jimgw/samplers/blackjax/smc/sampler/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/stable/api/jimgw/samplers/blackjax/smc/typing/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/stable/api/jimgw/samplers/blackjax/utils/</loc>
       </url>
       <url>
         <loc>https://gw-jax-team.github.io/Jim/stable/api/jimgw/samplers/config/</loc>
@@ -131,5 +113,47 @@
       </url>
       <url>
         <loc>https://gw-jax-team.github.io/Jim/stable/api/jimgw/typing/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/stable/citing/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/stable/contributing/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/stable/guides/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/stable/guides/cli/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/stable/guides/data/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/stable/guides/likelihood/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/stable/guides/prior/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/stable/guides/samplers/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/stable/guides/transforms/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/stable/installation/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/stable/quickstart/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/stable/tutorials/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/stable/tutorials/getting_started/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/stable/tutorials/gw150914_cli/</loc>
       </url>
 </urlset>

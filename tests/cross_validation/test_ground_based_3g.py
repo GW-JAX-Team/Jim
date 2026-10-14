@@ -4,7 +4,7 @@
     ──────────────────────────────────────  ────────────────────────────────────────────────
     time_to_merger                          LALSimulation TaylorF2ReducedSpin chirp time (2PN)
     time_to_merger (aligned spins)          bilby_xG calculate_time_to_merger_for_any_mode
-    GroundBased3G (rotation)               bilby antenna response and geocentre delay at the
+    GroundBased3G (rotation)                bilby antenna response and geocentre delay at the
                                             exact GMST of each emission time
     GroundBased3G (rotation + finite size)  bilby_xG frequency_dependent_antenna_response
 

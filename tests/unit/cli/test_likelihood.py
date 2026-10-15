@@ -48,13 +48,11 @@ def detectors():
     return ifos
 
 
-def build(config, ifos, prior=None, time_frame="geocentric"):
+def build(config, ifos, prior=None):
     return build_likelihood(
         LikelihoodConfig.model_validate({"f_min": 20.0, "f_max": 1024.0, **config}),
         ifos,
         RippleIMRPhenomD(f_ref=20.0),
-        20.0,
-        time_frame,
         prior,
         [],
         None,
@@ -140,7 +138,6 @@ class TestMultibandTimeWindowFromTheDetectorTimePrior:
             {"multiband": {"reference_chirp_mass": 20.0}},
             detectors,
             prior=self.prior(0.1),
-            time_frame="H1",
         )
         t_end = detectors[0].data.end_time - detectors[0].data.trigger_time
         assert isinstance(likelihood, MultibandedTransientLikelihoodFD)
@@ -162,7 +159,6 @@ class TestMultibandTimeWindowFromTheDetectorTimePrior:
             },
             detectors,
             prior=self.prior(0.1),
-            time_frame="H1",
         )
         assert likelihood.time_offset == 2.5
         assert likelihood.delta_f_end == 40.0
@@ -173,5 +169,4 @@ class TestMultibandTimeWindowFromTheDetectorTimePrior:
                 {"multiband": {"reference_chirp_mass": 20.0}},
                 detectors,
                 prior=self.prior(2.5),
-                time_frame="H1",
             )

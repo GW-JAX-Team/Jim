@@ -7,23 +7,27 @@ from jimgw.cli._prior import adapt_prior_for_ns_time
 
 
 @pytest.mark.parametrize(
-    "source, time_frame",
-    [("t_c", "H1"), ("t_det", "geocentric")],
+    "source, detector_frame_time",
+    [("t_c", True), ("t_det", False)],
 )
-def test_time_adaptation_requires_uniform_prior(source, time_frame):
+def test_time_adaptation_requires_uniform_prior(source, detector_frame_time):
     prior = PriorConfig({source: GaussianSpec(loc=0.0, scale=0.1)})
+    sampling = SamplingConfig(detector_frame_time=detector_frame_time)
     with pytest.raises(ValueError, match=f"uniform {source} prior"):
-        adapt_prior_for_ns_time(prior, SamplingConfig(time_frame=time_frame))
+        adapt_prior_for_ns_time(prior, sampling)
 
 
 @pytest.mark.parametrize(
-    "source, destination, time_frame",
-    [("t_c", "t_det", "H1"), ("t_det", "t_c", "geocentric")],
+    "source, destination, detector_frame_time",
+    [("t_c", "t_det", True), ("t_det", "t_c", False)],
 )
-def test_time_adaptation_preserves_uniform_bounds(source, destination, time_frame):
+def test_time_adaptation_preserves_uniform_bounds(
+    source, destination, detector_frame_time
+):
     spec = UniformSpec(min=-0.1, max=0.2)
     prior = PriorConfig({source: spec})
-    result = adapt_prior_for_ns_time(prior, SamplingConfig(time_frame=time_frame))
+    sampling = SamplingConfig(detector_frame_time=detector_frame_time)
+    result = adapt_prior_for_ns_time(prior, sampling)
     assert result is not None
     assert list(result.root) == [destination]
     assert result.root[destination] == spec

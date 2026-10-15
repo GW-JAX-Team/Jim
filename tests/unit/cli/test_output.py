@@ -11,11 +11,12 @@ from jimgw.cli._jim import build_jim
 from jimgw.cli._likelihood import build_likelihood
 from jimgw.cli._output import _injection_truths_in_prior_space, _save_corner
 from jimgw.cli._prior import build_prior
-from jimgw.cli._transforms import (
-    infer_likelihood_transforms,
-    infer_sample_transforms,
-)
 from jimgw.cli._waveform import build_waveform
+from jimgw.core.single_event.helpers import (
+    get_default_likelihood_transforms,
+    get_default_periodic,
+    get_default_sample_transforms,
+)
 from jimgw.core.single_event.time_utils import (
     greenwich_mean_sidereal_time as compute_gmst,
 )
@@ -63,7 +64,7 @@ def _raw_config(time_parameter, tmp_path):
         },
         "waveform": {"approximant": "IMRPhenomXAS", "f_ref": 20.0},
         "prior": prior,
-        "sampling": {"time_frame": "detector"},
+        "sampling": {"detector_frame_time": True},
         "likelihood": {"f_min": 20.0, "f_max": 1024.0},
         "sampler": {
             "type": "flowmc",
@@ -88,44 +89,37 @@ def _truths(time_parameter, tmp_path):
         f_min=cfg.likelihood.f_min,
         f_max=cfg.likelihood.f_max,
         waveform=waveform,
-        time_frame=cfg.sampling.time_frame,
     )
     prior = build_prior(cfg.prior)
-    prior_params = frozenset(prior.parameter_names)
-    sample_transforms = infer_sample_transforms(
-        prior_params, ifos, cfg.sampling, unit_cube=False, prior_cfg=cfg.prior
-    )
-    likelihood_transforms = infer_likelihood_transforms(
-        prior_params,
+    sample_transforms = get_default_sample_transforms(prior, ifos)
+    likelihood_transforms = get_default_likelihood_transforms(
+        prior,
         ifos,
-        cfg.sampling,
-        cfg.waveform.f_ref,
+        waveform,
         phase_marginalization=cfg.likelihood.phase_marginalization,
     )
     likelihood = build_likelihood(
         cfg.likelihood,
         ifos,
         waveform,
-        cfg.waveform.f_ref,
         prior=prior,
         likelihood_transforms=likelihood_transforms,
         data_cfg=cfg.data,
-        time_frame=cfg.sampling.time_frame,
     )
     jim = build_jim(
         likelihood,
         prior,
         sample_transforms,
         likelihood_transforms,
+        get_default_periodic(prior, sample_transforms),
         cfg,
         verbose=False,
     )
     truths = _injection_truths_in_prior_space(
         cfg.data.injection_parameters,
         jim.likelihood_transforms,
-        cfg.waveform.f_ref,
+        waveform,
         ifos=list(jim.likelihood.detectors),
-        time_frame=cfg.sampling.time_frame,
         jim=jim,
     )
     return truths, ifos

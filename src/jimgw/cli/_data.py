@@ -9,9 +9,9 @@ from jimgw.cli._config import (
     GWOSCDataConfig,
     InjectionDataConfig,
 )
-from jimgw.cli._transforms import to_likelihood_space
 from jimgw.core.single_event.data import Data, PowerSpectrum
 from jimgw.core.single_event.detector import GroundBased2G, get_detector_preset
+from jimgw.core.single_event.helpers import to_likelihood_space
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,6 @@ def build_data(
     f_min: float,
     f_max: float,
     waveform=None,
-    time_frame: str = "detector",
 ) -> list[GroundBased2G]:
     """Construct a list of detectors populated with strain data and PSDs.
 
@@ -49,7 +48,6 @@ def build_data(
             config_name=config_name,
             f_min=f_min,
             f_max=f_max,
-            time_frame=time_frame,
         )
     elif isinstance(data_cfg, FileDataConfig):
         _load_files(ifos, data_cfg, config_name=config_name)
@@ -109,7 +107,6 @@ def _load_injection(
     config_name: dict[str, str],
     f_min: float,
     f_max: float,
-    time_frame: str = "detector",
 ) -> None:
     noise_key = None
     if not cfg.zero_noise:
@@ -145,12 +142,7 @@ def _load_injection(
             )
 
     # The conversion reads the trigger time from the data, so the segments come first.
-    parameters = to_likelihood_space(
-        cfg.injection_parameters,
-        waveform_f_ref=waveform.f_ref,
-        ifos=ifos,
-        time_frame=time_frame,
-    )
+    parameters = to_likelihood_space(cfg.injection_parameters, ifos, waveform)
     for ifo in ifos:
         logger.info("Injecting signal into %s", ifo.name)
         ifo.inject_signal(waveform, parameters)

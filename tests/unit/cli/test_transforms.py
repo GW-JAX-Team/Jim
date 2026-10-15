@@ -1,11 +1,10 @@
-"""Unit tests for transform inference logic."""
+"""Config validation of the transform-relevant parameter groups, and NS AW time adaptation."""
 
 import pytest
 from pydantic import ValidationError
 
 from jimgw.cli._config import PipelineConfig, PriorConfig, SamplingConfig, UniformSpec
 from jimgw.cli._prior import adapt_prior_for_ns_time
-from tests.utils import attach_data
 
 _MINIMAL_DATA = {
     "type": "gwosc",
@@ -21,7 +20,9 @@ _MINIMAL_PRIOR = {
 }
 
 
-def _make_pipeline_cfg(prior_raw=None, sky_frame="detector", time_frame="detector"):
+def _make_pipeline_cfg(
+    prior_raw=None, detector_frame_sky=True, detector_frame_time=True
+):
     """Build a minimal PipelineConfig, merging prior_raw on top of _MINIMAL_PRIOR."""
     return PipelineConfig.model_validate(
         {
@@ -31,221 +32,15 @@ def _make_pipeline_cfg(prior_raw=None, sky_frame="detector", time_frame="detecto
             "likelihood": {"f_min": 20.0, "f_max": 1024.0},
             "sampler": {"type": "flowmc"},
             "output": {"dir": "tests/tmp/test"},
-            "sampling": {"sky_frame": sky_frame, "time_frame": time_frame},
+            "sampling": {
+                "detector_frame_sky": detector_frame_sky,
+                "detector_frame_time": detector_frame_time,
+            },
         }
     )
 
 
-def _make_ifos():
-    from jimgw.core.single_event.detector import get_detector_preset
-
-    preset = get_detector_preset()
-    ifos = [preset["H1"], preset["L1"]]
-    attach_data(TRIGGER_TIME, ifos)
-    return ifos
-
-
 TRIGGER_TIME = 1126259462.4
-
-
-def _infer(prior_params, sky_frame="detector", time_frame="detector"):
-
-    from jimgw.cli._transforms import (
-        infer_likelihood_transforms,
-        infer_sample_transforms,
-    )
-
-    ifos = _make_ifos()
-    cfg = SamplingConfig(sky_frame=sky_frame, time_frame=time_frame)  # type: ignore[arg-type]
-    prior_cfg = PriorConfig.model_validate({})
-    sample_t = infer_sample_transforms(
-        frozenset(prior_params),
-        ifos,
-        cfg,
-        prior_cfg=prior_cfg,
-    )
-    lh_t = infer_likelihood_transforms(
-        frozenset(prior_params),
-        ifos,
-        cfg,
-        20.0,
-    )
-    return sample_t, lh_t
-
-
-# ----------------------------------------------------------------------
-# Standard CBC case (the GW150914 default)
-# ----------------------------------------------------------------------
-
-
-def test_gw150914_default_transforms():
-    params = {
-        "M_c",
-        "q",
-        "s1_z",
-        "s2_z",
-        "iota",
-        "d_L",
-        "t_c",
-        "phase_c",
-        "psi",
-        "ra",
-        "dec",
-    }
-    sample_t, lh_t = _infer(params)
-
-    sample_names = [type(t).__name__ for t in sample_t]
-    assert "GeocentricArrivalTimeToDetectorArrivalTimeTransform" in sample_names
-    assert "SkyFrameToDetectorFrameSkyPositionTransform" in sample_names
-    assert len(sample_t) == 2
-
-    # Only q→eta in likelihood space; reverse sky/time handled by reversed sample transforms
-    assert len(lh_t) == 1
-    assert "q" in str(lh_t[0].name_mapping)
-
-
-# ----------------------------------------------------------------------
-# Geocentric sky (no sky sample transform)
-# ----------------------------------------------------------------------
-
-
-def test_geocentric_sky_no_sky_sample_transform():
-    params = {
-        "M_c",
-        "q",
-        "iota",
-        "d_L",
-        "t_c",
-        "phase_c",
-        "psi",
-        "ra",
-        "dec",
-        "s1_z",
-        "s2_z",
-    }
-    sample_t, _ = _infer(params, sky_frame="geocentric")
-
-    sample_names = [type(t).__name__ for t in sample_t]
-    assert "SkyFrameToDetectorFrameSkyPositionTransform" not in sample_names
-    assert "GeocentricArrivalTimeToDetectorArrivalTimeTransform" in sample_names
-
-
-# ----------------------------------------------------------------------
-# Geocentric time frame (t_c sampled directly)
-# ----------------------------------------------------------------------
-
-
-def test_geocentric_time_no_time_sample_transform():
-    params = {
-        "M_c",
-        "q",
-        "iota",
-        "d_L",
-        "t_c",
-        "phase_c",
-        "psi",
-        "ra",
-        "dec",
-        "s1_z",
-        "s2_z",
-    }
-    sample_t, _ = _infer(params, time_frame="geocentric")
-
-    sample_names = [type(t).__name__ for t in sample_t]
-    assert "GeocentricArrivalTimeToDetectorArrivalTimeTransform" not in sample_names
-    assert "SkyFrameToDetectorFrameSkyPositionTransform" in sample_names
-
-
-# ----------------------------------------------------------------------
-# Detector-frame sky prior (azimuth/zenith in prior)
-# ----------------------------------------------------------------------
-
-
-def test_detector_frame_sky_prior():
-    params = {
-        "M_c",
-        "q",
-        "iota",
-        "d_L",
-        "t_c",
-        "phase_c",
-        "psi",
-        "azimuth",
-        "zenith",
-        "s1_z",
-        "s2_z",
-    }
-    sample_t, lh_t = _infer(params)
-
-    sample_names = [type(t).__name__ for t in sample_t]
-    # No sky sample transform (already in detector frame)
-    assert "SkyFrameToDetectorFrameSkyPositionTransform" not in sample_names
-    # Reverse sky transform must appear in likelihood transforms
-    lh_repr = [repr(t) for t in lh_t]
-    assert any("zenith" in r or "azimuth" in r for r in lh_repr)
-
-
-# ----------------------------------------------------------------------
-# Detector-frame time prior (t_det in prior)
-# ----------------------------------------------------------------------
-
-
-def test_detector_frame_time_prior():
-    params = {
-        "M_c",
-        "q",
-        "iota",
-        "d_L",
-        "t_det",
-        "phase_c",
-        "psi",
-        "ra",
-        "dec",
-        "s1_z",
-        "s2_z",
-    }
-    sample_t, lh_t = _infer(params)
-
-    sample_names = [type(t).__name__ for t in sample_t]
-    # No time sample transform
-    assert "GeocentricArrivalTimeToDetectorArrivalTimeTransform" not in sample_names
-    # Reverse time transform must appear in likelihood transforms
-    lh_repr = [repr(t) for t in lh_t]
-    assert any("t_det" in r or "t_c" in r for r in lh_repr)
-
-
-# ----------------------------------------------------------------------
-# J-frame spin angles
-# ----------------------------------------------------------------------
-
-
-def test_j_frame_spin_angles():
-    params = {
-        "M_c",
-        "q",
-        "d_L",
-        "t_c",
-        "phase_c",
-        "psi",
-        "ra",
-        "dec",
-        "theta_jn",
-        "phi_jl",
-        "tilt_1",
-        "tilt_2",
-        "phi_12",
-        "a_1",
-        "a_2",
-    }
-    sample_t, lh_t = _infer(params)
-
-    # Spin physics transforms are in likelihood_transforms (prior → likelihood space),
-    # not in sample_transforms — so the sampler explores in J-frame angle space.
-    sample_names = [type(t).__name__ for t in sample_t]
-    assert "SpinAnglesToCartesianSpinTransform" not in sample_names
-
-    lh_names = [type(t).__name__ for t in lh_t]
-    assert "SpinAnglesToCartesianSpinTransform" in lh_names
 
 
 def test_j_frame_iota_conflict():
@@ -277,69 +72,6 @@ def test_j_frame_partial_params_rejected():
                 "q": {"type": "uniform", "min": 0.125, "max": 1.0},
             }
         )
-
-
-# ----------------------------------------------------------------------
-# Spherical per-spin
-# ----------------------------------------------------------------------
-
-
-def test_sphere_spin_transform():
-    params = {
-        "M_c",
-        "q",
-        "d_L",
-        "t_c",
-        "phase_c",
-        "psi",
-        "iota",
-        "ra",
-        "dec",
-        "s1_mag",
-        "s1_theta",
-        "s1_phi",
-        "s2_mag",
-        "s2_theta",
-        "s2_phi",
-    }
-    sample_t, lh_t = _infer(params)
-
-    # Sphere spin physics transforms are in likelihood_transforms, not sample_transforms.
-    sample_names = [type(t).__name__ for t in sample_t]
-    assert "SphereSpinToCartesianSpinTransform" not in sample_names
-
-    lh_names = [type(t).__name__ for t in lh_t]
-    assert lh_names.count("SphereSpinToCartesianSpinTransform") == 2
-
-
-# ----------------------------------------------------------------------
-# Cartesian spins — no transform needed
-# ----------------------------------------------------------------------
-
-
-def test_cartesian_spins_no_transform():
-    params = {
-        "M_c",
-        "q",
-        "d_L",
-        "t_c",
-        "phase_c",
-        "psi",
-        "iota",
-        "ra",
-        "dec",
-        "s1_x",
-        "s1_y",
-        "s1_z",
-        "s2_x",
-        "s2_y",
-        "s2_z",
-    }
-    sample_t, _ = _infer(params)
-
-    sample_names = [type(t).__name__ for t in sample_t]
-    assert "SphereSpinToCartesianSpinTransform" not in sample_names
-    assert "SpinAnglesToCartesianSpinTransform" not in sample_names
 
 
 # ----------------------------------------------------------------------
@@ -382,22 +114,22 @@ def test_time_groups_mutually_exclusive():
         )
 
 
-def test_t_det_geocentric_time_frame_raises():
+def test_t_det_without_detector_frame_time_raises():
     with pytest.raises(ValidationError, match="t_det"):
         _make_pipeline_cfg(
             prior_raw={"t_det": {"type": "uniform", "min": -0.1, "max": 0.1}},
-            time_frame="geocentric",
+            detector_frame_time=False,
         )
 
 
-def test_detector_sky_geocentric_sky_frame_raises():
+def test_detector_sky_without_detector_frame_sky_raises():
     with pytest.raises(ValidationError, match="azimuth"):
         _make_pipeline_cfg(
             prior_raw={
                 "azimuth": {"type": "uniform", "min": 0.0, "max": 6.28318},
                 "zenith": {"type": "sine"},
             },
-            sky_frame="geocentric",
+            detector_frame_sky=False,
         )
 
 
@@ -412,8 +144,8 @@ def _make_prior_cfg(params: dict):
 
 
 def test_adapt_ns_time_converts_t_c_to_t_det():
-    """t_c in prior + detector time_frame → replaced by t_det with widened GPS bounds."""
-    cfg = SamplingConfig(time_frame="detector")
+    """t_c in prior + detector-frame time → replaced by t_det with widened GPS bounds."""
+    cfg = SamplingConfig(detector_frame_time=True)
     prior_cfg = _make_prior_cfg(
         {
             "M_c": {"type": "uniform", "min": 10.0, "max": 80.0},
@@ -436,8 +168,8 @@ def test_adapt_ns_time_converts_t_c_to_t_det():
 
 
 def test_adapt_ns_time_geocentric_no_conversion():
-    """time_frame='geocentric' → no conversion; t_c sampled directly is already exact."""
-    cfg = SamplingConfig(time_frame="geocentric")
+    """detector_frame_time=False → no conversion; t_c sampled directly is already exact."""
+    cfg = SamplingConfig(detector_frame_time=False)
     prior_cfg = _make_prior_cfg(
         {
             "t_c": {"type": "uniform", "min": -0.1, "max": 0.1},
@@ -451,7 +183,7 @@ def test_adapt_ns_time_geocentric_no_conversion():
 
 def test_adapt_ns_time_t_det_in_prior_no_conversion():
     """User already put t_det in prior → no conversion needed."""
-    cfg = SamplingConfig(time_frame="detector")
+    cfg = SamplingConfig(detector_frame_time=True)
     lo = TRIGGER_TIME - 0.15
     hi = TRIGGER_TIME + 0.15
     prior_cfg = _make_prior_cfg(
@@ -467,7 +199,7 @@ def test_adapt_ns_time_t_det_in_prior_no_conversion():
 
 def test_adapt_ns_time_t_det_geocentric():
     """t_det in prior + geocentric sampling → adapted to widened t_c prior."""
-    cfg = SamplingConfig(time_frame="geocentric")
+    cfg = SamplingConfig(detector_frame_time=False)
     lo = TRIGGER_TIME - 0.15
     hi = TRIGGER_TIME + 0.15
     prior_cfg = _make_prior_cfg({"t_det": {"type": "uniform", "min": lo, "max": hi}})

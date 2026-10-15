@@ -388,17 +388,14 @@ class SamplingConfig(BaseModel):
 
     model_config = {"extra": "forbid", "allow_inf_nan": False}
 
-    time_frame: str = "detector"
-    """Detector name to sample arrival time in (e.g. "H1"). Special values:
-    - ``"detector"`` (default): use the first entry in data.detectors.
-    - ``"geocentric"``: sample t_c directly without a time sample transform.
-    Only used when ``t_c`` is in the prior."""
+    detector_frame_time: bool = True
+    """Sample the arrival time at the first detector in data.detectors (default)
+    instead of the geocentric ``t_c``.  Only used when ``t_c`` is in the prior."""
 
-    sky_frame: Literal["detector", "geocentric"] = "detector"
-    """Sampling space for sky position.
-    - ``"detector"``: sample in azimuth/zenith (default, better mixing).
-    - ``"geocentric"``: sample directly in ra/dec.
-    Only used when ``ra``/``dec`` are in the prior."""
+    detector_frame_sky: bool = True
+    """Sample the sky position as azimuth/zenith relative to the detector baseline
+    (default, better mixing) instead of ra/dec.  Only used when ``ra``/``dec`` are
+    in the prior."""
 
 
 # ----------------------------------------------------------------------
@@ -652,17 +649,18 @@ class PipelineConfig(BaseModel):
         if not isinstance(self.data, InjectionDataConfig):
             return self
         inj = set(self.data.injection_parameters)
-        if "t_det" in inj and self.sampling.time_frame == "geocentric":
+        if "t_det" in inj and not self.sampling.detector_frame_time:
             raise ValueError(
-                "injection_parameters uses 't_det' but [sampling].time_frame = "
-                "'geocentric'. Use 't_c' in injection_parameters, or set "
-                "time_frame to 'detector' or a specific detector name."
+                "injection_parameters uses 't_det' but [sampling].detector_frame_time = "
+                "false. Use 't_c' in injection_parameters, or set "
+                "detector_frame_time = true."
             )
-        if inj & DETECTOR_SKY_PARAMS and self.sampling.sky_frame != "detector":
+        if inj & DETECTOR_SKY_PARAMS and not self.sampling.detector_frame_sky:
             raise ValueError(
                 "injection_parameters uses detector-frame sky position "
-                "('azimuth'/'zenith') but [sampling].sky_frame != 'detector'. "
-                "Use 'ra'/'dec' in injection_parameters, or set sky_frame = 'detector'."
+                "('azimuth'/'zenith') but [sampling].detector_frame_sky = false. "
+                "Use 'ra'/'dec' in injection_parameters, or set "
+                "detector_frame_sky = true."
             )
         if inj & J_FRAME_SPIN_PARAMS and "phase_c" not in inj:
             raise ValueError(
@@ -737,11 +735,11 @@ class PipelineConfig(BaseModel):
                 "Sky parametrizations are mutually exclusive: "
                 "cannot have both ra/dec and azimuth/zenith in [prior]."
             )
-        if has_detector_sky and self.sampling.sky_frame == "geocentric":
+        if has_detector_sky and not self.sampling.detector_frame_sky:
             raise ValueError(
-                "azimuth/zenith are in [prior] but sky_frame='geocentric' requests "
+                "azimuth/zenith are in [prior] but detector_frame_sky = false requests "
                 "equatorial-sky sampling. Either remove azimuth/zenith from [prior] "
-                "and use ra/dec, or set sky_frame='detector'."
+                "and use ra/dec, or set detector_frame_sky = true."
             )
 
         has_geocentric_time = "t_c" in prior_keys
@@ -751,33 +749,24 @@ class PipelineConfig(BaseModel):
                 "Time parametrizations are mutually exclusive: "
                 "cannot have both t_c and t_det in [prior]."
             )
-        if has_detector_time and self.sampling.time_frame == "geocentric":
+        if has_detector_time and not self.sampling.detector_frame_time:
             raise ValueError(
-                "t_det is in [prior] but time_frame='geocentric' requests geocentric-time "
-                "sampling. Either remove t_det from [prior] and use t_c, or set "
-                "time_frame to 'detector' or a specific detector name."
+                "t_det is in [prior] but detector_frame_time = false requests "
+                "geocentric-time sampling. Either remove t_det from [prior] and use "
+                "t_c, or set detector_frame_time = true."
             )
 
         return self
 
     @model_validator(mode="after")
     def _validate_sampling_ifo_consistency(self) -> "PipelineConfig":
-        if (
-            self.sampling.time_frame not in ("detector", "geocentric")
-            and self.sampling.time_frame not in self.data.detectors
-        ):
-            raise ValueError(
-                f"[sampling] time_frame={self.sampling.time_frame!r} is not in "
-                f"data.detectors {self.data.detectors}"
-            )
-
         prior_keys = frozenset(self.prior.root.keys())
         has_sky_params = bool(
             prior_keys & (EQUATORIAL_SKY_PARAMS | DETECTOR_SKY_PARAMS)
         )
         if (
             has_sky_params
-            and self.sampling.sky_frame == "detector"
+            and self.sampling.detector_frame_sky
             and len(self.data.detectors) < 2
         ):
             raise ValueError(
@@ -805,13 +794,13 @@ class PipelineConfig(BaseModel):
 
         if (
             "t_c" in prior_keys
-            and self.sampling.time_frame != "geocentric"
+            and self.sampling.detector_frame_time
             and not isinstance(self.prior.root["t_c"], UniformSpec)
         ):
             raise ValueError(
                 "NS AW sampler: the 't_c' prior must be 'uniform' for automatic "
                 "conversion to 't_det'. Either use a uniform t_c prior, set "
-                "[sampling] time_frame = 'geocentric' to sample t_c directly, or "
+                "[sampling] detector_frame_time = false to sample t_c directly, or "
                 "replace 't_c' with 't_det' in [prior]."
             )
 

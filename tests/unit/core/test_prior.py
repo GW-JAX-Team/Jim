@@ -90,7 +90,7 @@ cases = [
     lambda: SequentialTransformPrior([], []),
     lambda: adapt_prior_for_ns_time(
         PriorConfig({'t_c': GaussianSpec(loc=0.0, scale=0.1)}),
-        SamplingConfig(time_frame='H1'),
+        SamplingConfig(),
     ),
 ]
 for index, make in enumerate(cases):

@@ -1,5 +1,6 @@
 """Integration test: full jim-run pipeline from TOML config."""
 
+import logging
 import tomllib
 from pathlib import Path
 
@@ -115,3 +116,37 @@ def test_overwrite_false_raises(patched_config, full_run_result, tmp_output):
         tomli_w.dump(raw, f)
     result2 = _RUNNER.invoke(app, [str(cfg2)])
     assert result2.exit_code == 2
+
+
+def test_ns_aw_run_uses_the_unit_cube_and_periodic_names(tmp_path, caplog):
+    """A small NS AW run with ra/dec sampled directly: the CLI wiring of the transform flags."""
+    with open(_CONFIG, "rb") as f:
+        raw = tomllib.load(f)
+    raw["sampler"] = {
+        "type": "blackjax-ns-aw",
+        "n_live": 20,
+        "n_target": 3,
+        "max_mcmc": 10,
+        "termination_dlogz": 50.0,
+    }
+    raw["sampling"] = {"detector_frame_time": True, "detector_frame_sky": False}
+    raw["output"] = {"dir": str(tmp_path / "output"), "overwrite": True}
+    cfg_path = tmp_path / "ns_aw.toml"
+    with open(cfg_path, "wb") as f:
+        tomli_w.dump(raw, f)
+
+    # The jimgw logger does not propagate, so attach the capture handler to it directly.
+    jimgw_logger = logging.getLogger("jimgw")
+    jimgw_logger.addHandler(caplog.handler)
+    try:
+        result = _RUNNER.invoke(app, [str(cfg_path)], catch_exceptions=False)
+    finally:
+        jimgw_logger.removeHandler(caplog.handler)
+    assert result.exit_code == 0, result.output
+
+    messages = [record.getMessage() for record in caplog.records]
+    assert "periodic parameters: ['phase_c_unit', 'psi_unit', 'ra_unit']" in messages
+    with np.load(tmp_path / "output" / "samples.npz") as data:
+        # t_c was replaced by t_det in the prior; ra/dec were sampled directly.
+        assert {"t_det", "ra", "dec"} <= set(data.files)
+        assert "t_c" not in data.files

@@ -72,12 +72,12 @@ def adapt_prior_for_ns_time(
     NS AW requires every sampling-space parameter to lie in [0, 1].
     Two cases require adaptation:
 
-    1. **t_c in prior, time_frame != "geocentric"**: replace ``t_c`` with
+    1. **t_c in prior, detector_frame_time = true**: replace ``t_c`` with
        ``t_det`` using the same relative bounds:
 
            t_det ∈ [t_c.min, t_c.max]
 
-    2. **t_det in prior, time_frame = "geocentric"**: replace ``t_det`` with
+    2. **t_det in prior, detector_frame_time = false**: replace ``t_det`` with
        ``t_c`` using the same relative bounds:
 
            t_c ∈ [t_det.min, t_det.max]
@@ -89,7 +89,7 @@ def adapt_prior_for_ns_time(
     has_t_det = "t_det" in prior_cfg.root
 
     # Case 2: t_det in prior + geocentric sampling → adapt to t_c prior.
-    if has_t_det and sampling_cfg.time_frame == "geocentric":
+    if has_t_det and not sampling_cfg.detector_frame_time:
         t_det_spec = prior_cfg.root["t_det"]
         # --------------------------------------------------------------
         # Time prior validation
@@ -100,7 +100,7 @@ def adapt_prior_for_ns_time(
         logger.warning(
             "NS AW sampler: replacing t_det ~ Uniform(%.4f, %.4f) in [prior] with "
             "t_c ~ Uniform(%.4f, %.4f) (same relative-offset bounds). "
-            "To sample t_det directly instead, remove [sampling] time_frame = 'geocentric'.",
+            "To sample t_det directly instead, remove [sampling] detector_frame_time = false.",
             t_det_spec.min,
             t_det_spec.max,
             t_det_spec.min,
@@ -112,10 +112,10 @@ def adapt_prior_for_ns_time(
         return PriorConfig.model_validate(new_root)
 
     # No t_c in prior, or user already opted for geocentric t_c sampling → no change.
-    if not has_t_c or sampling_cfg.time_frame == "geocentric":
+    if not has_t_c or not sampling_cfg.detector_frame_time:
         return None
 
-    # Case 1: t_c in prior + detector time_frame → adapt to t_det prior.
+    # Case 1: t_c in prior + detector-frame time → adapt to t_det prior.
     t_c_spec = prior_cfg.root["t_c"]
     # ------------------------------------------------------------------
     # Time prior validation
@@ -126,7 +126,7 @@ def adapt_prior_for_ns_time(
     logger.warning(
         "NS AW sampler: replacing t_c ~ Uniform(%.4f, %.4f) in [prior] with "
         "t_det ~ Uniform(%.4f, %.4f) (same relative-offset bounds). "
-        "To sample t_c directly instead, set [sampling] time_frame = 'geocentric'.",
+        "To sample t_c directly instead, set [sampling] detector_frame_time = false.",
         t_c_spec.min,
         t_c_spec.max,
         t_c_spec.min,

@@ -291,8 +291,8 @@ def test_file_config_from_toml():
 
 def test_sampling_config_defaults():
     cfg = PipelineConfig.model_validate(_MINIMAL_RAW)
-    assert cfg.sampling.time_frame == "detector"
-    assert cfg.sampling.sky_frame == "detector"
+    assert cfg.sampling.detector_frame_time is True
+    assert cfg.sampling.detector_frame_sky is True
 
 
 def test_likelihood_config_values():
@@ -655,7 +655,7 @@ def test_incomplete_detector_sky_rejected():
                     "azimuth": {"type": "uniform", "min": 0.0, "max": 6.283},
                     # zenith missing
                 },
-                "sampling": {"sky_frame": "detector"},
+                "sampling": {"detector_frame_sky": True},
             }
         )
 

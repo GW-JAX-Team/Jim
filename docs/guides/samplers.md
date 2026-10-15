@@ -306,24 +306,39 @@ Set `checkpoint_interval = 0` in the `[sampler]` block to opt out.
 
 ## Periodic parameters
 
-All samplers accept a `periodic` field to handle parameters that wrap around (e.g. angles).
-Pass a dict of `parameter_name: (lower, upper)` bounds:
+Parameters that wrap around (e.g. angles) are declared with the `periodic` argument of `Jim`, not in the sampler config.
+For flowMC, NSS, SwiG and SMC, pass a dict of `parameter_name: (lower, upper)` bounds in the sampling space:
 
 ```python
-config = FlowMCConfig(
+jim = Jim(
     ...,
+    sampler_config=FlowMCConfig(...),
     periodic={"phase_c": (0.0, 6.283185), "psi": (0.0, 3.141593)},
 )
 ```
 
-BlackJAX NS AW operates in `[0, 1]` per dimension, so its `periodic` field takes a plain list of parameter names:
+BlackJAX NS AW operates in `[0, 1]` per dimension, so it takes a plain list of sampling-space parameter names:
 
 ```python
-config = BlackJAXNSAWConfig(
+jim = Jim(
     ...,
-    periodic=["phase_c", "psi"],
+    sampler_config=BlackJAXNSAWConfig(...),
+    periodic=["phase_c_unit", "psi_unit"],
 )
 ```
+
+For the usual angles you can let `get_default_periodic` build either form from your sample transforms:
+
+```python
+from jimgw.core.single_event.helpers import get_default_periodic
+
+# A dict of bounds, or for sample transforms that map onto [0, 1] (NS AW)
+# the names of the unit-cube parameters, e.g. ["psi_unit", "azimuth_unit"].
+periodic = get_default_periodic(prior, sample_transforms)
+```
+
+It marks `psi`, `ra`, `azimuth`, `phase_c`, `phi_jl`, `phi_12`, `s1_phi` and `s2_phi` when their prior is a `UniformPrior` over exactly one period.
+The [CLI](cli.md) passes the same result to Jim.
 
 ---
 

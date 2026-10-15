@@ -18,7 +18,7 @@ from jimgw.core.single_event.blocked_likelihood import (
 from jimgw.core.single_event.likelihood import SingleEventLikelihood
 from jimgw.core.transforms import BijectiveTransform, NtoMTransform
 from jimgw.samplers import Sampler, SamplerConfig, build_sampler
-from jimgw.typing import FloatScalar
+from jimgw.typing import FloatLike, FloatScalar
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ _NAN_TEST_POINTS = 10
 _NAN_FAIL_THRESHOLD = 5
 
 # Fixed key used for downsampling in get_samples.
-_DOWNSAMPLE_KEY: Key = jax.random.key(42)
+_DOWNSAMPLE_KEY: Key[Array, ""] = jax.random.key(42)
 
 
 class Jim:
@@ -360,7 +360,7 @@ class Jim:
 
         def _sampling_array_to_likelihood_parameters(
             arr: Float[Array, " n_dims"],
-        ) -> dict[str, Float]:
+        ) -> dict[str, FloatLike]:
             named = dict(zip(names, arr, strict=True))
             for transform in reversed(sample_transforms):
                 named, _ = transform.inverse(named)
@@ -473,7 +473,9 @@ class Jim:
                 "property to return True."
             )
 
-    def _draw_initial_positions(self, key: Key, n: int) -> Float[Array, "n n_dims"]:
+    def _draw_initial_positions(
+        self, key: Key[Array, ""], n: int
+    ) -> Float[Array, "n n_dims"]:
         """Sample ``n`` initial positions from the prior in sampling space.
 
         Args:
@@ -501,22 +503,22 @@ class Jim:
     # Public API
     # ------------------------------------------------------------------
 
-    def add_name(self, x: Float[Array, " n_dims"]) -> dict[str, Float]:
+    def add_name(self, x: Float[Array, " n_dims"]) -> dict[str, FloatScalar]:
         """Convert a flat sampling-space array to a named dict."""
         return dict(zip(self.sampling_parameter_names, x, strict=True))
 
-    def evaluate_prior(self, params: Float[Array, " n_dims"]) -> Float:
+    def evaluate_prior(self, params: Float[Array, " n_dims"]) -> FloatLike:
         """Log-prior in the sampling space (with Jacobian corrections from sample_transforms)."""
         return self._log_prior_fn(params)
 
-    def evaluate_posterior(self, params: Float[Array, " n_dims"]) -> Float:
+    def evaluate_posterior(self, params: Float[Array, " n_dims"]) -> FloatLike:
         """Log-posterior in the sampling space."""
         return self._log_posterior_fn(params)
 
     def sample_initial_positions(
         self,
         n_points: int,
-        rng_key: Key,
+        rng_key: Key[Array, ""],
     ) -> Float[Array, "n_points n_dims"]:
         """Draw ``n_points`` initial positions from the prior in sampling space.
 

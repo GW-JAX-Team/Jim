@@ -9,7 +9,7 @@ from blackjax import adaptive_persistent_sampling_smc, inner_kernel_tuning, rmh
 from blackjax.smc import extend_params
 from blackjax.smc.inner_kernel_tuning import StateWithParameterOverride
 from blackjax.smc.resampling import systematic
-from jaxtyping import Key
+from jaxtyping import Array, Key
 
 from jimgw.samplers.blackjax.smc import diagnostics
 from jimgw.samplers.blackjax.smc.base import _BlackJAXSMCBase
@@ -27,7 +27,7 @@ class AdaptivePersistentSMCSampler(_BlackJAXSMCBase):
     mode = "ap"
     _cov_scale_history: np.ndarray  # per-step covariance scale
 
-    def _run(self, rng_key: Key, initial_particles) -> None:
+    def _run(self, rng_key: Key[Array, ""], initial_particles) -> None:
         config = self._config
         n_mcmc_steps = config.n_mcmc_steps_per_dim * self.n_dims
         target_ess = config._resolve_target_ess_fraction()
@@ -40,7 +40,7 @@ class AdaptivePersistentSMCSampler(_BlackJAXSMCBase):
         )
 
         def mcmc_parameter_update_fn(_key, state, _info):
-            return extend_params({"cov": jnp.atleast_2d(jnp.cov(state.particles.T))})  # type: ignore[arg-type]  # blackjax stubs: extend_params accepts dict
+            return extend_params({"cov": jnp.atleast_2d(jnp.cov(state.particles.T))})  # ty: ignore[invalid-argument-type]  # blackjax stubs: extend_params accepts dict
 
         smc_algorithm = inner_kernel_tuning(
             smc_algorithm=adaptive_persistent_sampling_smc,
@@ -51,7 +51,7 @@ class AdaptivePersistentSMCSampler(_BlackJAXSMCBase):
             mcmc_init_fn=rmh.init,
             resampling_fn=systematic,
             mcmc_parameter_update_fn=mcmc_parameter_update_fn,
-            initial_parameter_value=extend_params({"cov": initial_covariance}),  # type: ignore[arg-type]  # blackjax stubs: extend_params accepts dict
+            initial_parameter_value=extend_params({"cov": initial_covariance}),  # ty: ignore[invalid-argument-type]  # blackjax stubs: extend_params accepts dict
             num_mcmc_steps=n_mcmc_steps,
             target_ess=target_ess,
             batch_size=config.batch_size,
@@ -88,7 +88,7 @@ class AdaptivePersistentSMCSampler(_BlackJAXSMCBase):
         run_adaptive_step = jax.jit(smc_algorithm.step)
         last_checkpoint_write_time = time.perf_counter()
 
-        while state.sampler_state.tempering_param < 1.0:  # type: ignore[attr-defined]  # blackjax stubs
+        while state.sampler_state.tempering_param < 1.0:  # ty: ignore[unresolved-attribute]  # blackjax stubs
             rng_key, step_key = jax.random.split(rng_key)
             state, info = run_adaptive_step(step_key, state)
 
@@ -102,9 +102,9 @@ class AdaptivePersistentSMCSampler(_BlackJAXSMCBase):
             )
             current_covariance = state.parameter_override["cov"]
             updated_parameters = extend_params(
-                {"cov": current_covariance[0] * updated_covariance_scale}  # type: ignore[arg-type]  # blackjax stubs
+                {"cov": current_covariance[0] * updated_covariance_scale}  # ty: ignore[invalid-argument-type]  # blackjax stubs
             )
-            state = StateWithParameterOverride(sampler_state, updated_parameters)  # type: ignore[arg-type]  # blackjax stubs
+            state = StateWithParameterOverride(sampler_state, updated_parameters)  # ty: ignore[invalid-argument-type]  # blackjax stubs
 
             acceptance_history.append(acceptance_rate)
             covariance_scale_history.append(updated_covariance_scale)

@@ -327,7 +327,7 @@ class Data(_Freezable, ABC):
             data_td.value,
             data_td.dt.value,
             # Astropy types Time.value broadly; from_td validates the raw scalar.
-            start_time=data_td.epoch.value,  # type: ignore[arg-type]
+            start_time=data_td.epoch.value,
             trigger_time=(
                 gps_end_time - DEFAULT_POST_TRIGGER_DURATION
                 if trigger_time is None
@@ -1443,7 +1443,7 @@ class PowerSpectrum(_Freezable, ABC):
             self.frequencies,
             self.values,
             kind=kind,
-            fill_value=(  # type: ignore[arg-type]  # scipy stubs
+            fill_value=(
                 self.values[int(np.argmin(frequencies_np))],
                 self.values[int(np.argmax(frequencies_np))],
             ),
@@ -1454,7 +1454,7 @@ class PowerSpectrum(_Freezable, ABC):
 
     def simulate_data(
         self,
-        key: Key,
+        key: Key[Array, ""],
     ) -> Complex[Array, " n_sample"]:
         """Simulate noise data based on the power spectrum.
 

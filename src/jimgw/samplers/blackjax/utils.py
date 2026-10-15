@@ -21,7 +21,7 @@ from typing import Any, Optional
 
 import jax
 from jax.experimental.compilation_cache import compilation_cache
-from jaxtyping import Key
+from jaxtyping import Array, Key
 
 from jimgw.samplers.base import Sampler
 from jimgw.samplers.config import _CheckpointMixin
@@ -44,7 +44,7 @@ def load_or_initialize_checkpoint(
     sampler: Sampler,
     checkpoint_path: Optional[Path],
     config: _CheckpointMixin,
-    rng_key: Key,
+    rng_key: Key[Array, ""],
     initial_particles: Any,
     initialize_state: Callable[..., Any],
     initial_extra: dict[str, Any],
@@ -54,7 +54,7 @@ def load_or_initialize_checkpoint(
     after_load: Optional[Callable[[Any], Any]] = None,
     is_stale: Optional[Callable[[int], bool]] = None,
     stale_message: str = "checkpoint exceeds current schedule",
-) -> tuple[Any, Key, int, dict[str, Any]]:
+) -> tuple[Any, Key[Array, ""], int, dict[str, Any]]:
     """Load a compatible checkpoint or initialize a new sampler state.
 
     ``initialize_state`` builds a fresh state from ``initial_particles``.
@@ -144,13 +144,16 @@ def save_checkpoint_if_due(
     last_checkpoint_write_time: float,
     run_start_time: float,
     state: Any,
-    rng_key: Key,
+    rng_key: Key[Array, ""],
     n_completed_iterations: int,
     extra: dict[str, Any],
     *,
     log_label: str,
     before_save: Optional[
-        Callable[[Any, Key, dict[str, Any]], tuple[Any, Key, dict[str, Any]]]
+        Callable[
+            [Any, Key[Array, ""], dict[str, Any]],
+            tuple[Any, Key[Array, ""], dict[str, Any]],
+        ]
     ] = None,
 ) -> float:
     """Save a checkpoint when its interval has elapsed.

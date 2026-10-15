@@ -116,7 +116,7 @@ class BlackJAXNSAWSampler(Sampler):
 
     def _sample(
         self,
-        rng_key: Key,
+        rng_key: Key[Array, ""],
         initial_position: Float[Array, "n_live n_dims"],
     ) -> None:
         """Run the BlackJAX NS AW sampler.
@@ -166,7 +166,7 @@ class BlackJAXNSAWSampler(Sampler):
             config,
             rng_key,
             initial_position,
-            lambda position: nested_sampler.init(validate_initial_particles(position)),  # type: ignore[call-arg]  # blackjax API
+            lambda position: nested_sampler.init(validate_initial_particles(position)),  # ty: ignore[missing-argument]  # blackjax API
             initial_extra={"dead": []},
             load_extra=lambda checkpoint: {"dead": checkpoint["dead"]},
             log_label=self.sampler_name,

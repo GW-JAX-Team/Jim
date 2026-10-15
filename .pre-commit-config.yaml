@@ -1,7 +1,7 @@
 ci:
   autoupdate_branch: jim-dev
   autoupdate_schedule: quarterly
-  skip: [pyright, ty]
+  skip: [ty]
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -41,13 +41,3 @@ repos:
     hooks:
       - id: ty
         args: ["--no-sync"]
-
-  - repo: local
-    hooks:
-      - id: pyright
-        name: pyright
-        entry: uv run --no-sync pyright
-        language: system
-        files: src/
-        types_or: [python, pyi]
-        require_serial: true

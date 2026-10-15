@@ -88,7 +88,7 @@ class Sampler(ABC):
 
     def sample(
         self,
-        rng_key: Key,
+        rng_key: Key[Array, ""],
         initial_position: Float[Array, "n n_dims"],
     ) -> None:
         """Run the sampler and record wall-clock sampling time.
@@ -108,7 +108,7 @@ class Sampler(ABC):
     @abstractmethod
     def _sample(
         self,
-        rng_key: Key,
+        rng_key: Key[Array, ""],
         initial_position: Float[Array, "n n_dims"],
     ) -> None:
         """Backend-specific sampling implementation."""

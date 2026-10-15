@@ -15,15 +15,15 @@ from jaxtyping import Array, Float, Inexact
 from jimgw.typing import ComplexScalar, FloatLike, FloatScalar
 
 FixedParameter: TypeAlias = (
-    Float | Callable[[dict[str, Float]], Float | dict[str, Float]]
+    FloatLike | Callable[[dict[str, FloatLike]], FloatLike | dict[str, FloatLike]]
 )
 FixedParameters: TypeAlias = Mapping[str, FixedParameter]
 
 
 def apply_fixed_parameters(
-    params: dict[str, Float],
+    params: dict[str, FloatLike],
     fixed_parameters: FixedParameters,
-) -> dict[str, Float]:
+) -> dict[str, FloatLike]:
     """Merge ``fixed_parameters`` into *params*, resolving callables in-place.
 
     For each entry in ``fixed_parameters``:
@@ -48,7 +48,7 @@ def apply_fixed_parameters(
         KeyError: If a callable returns a dict that does not contain the expected key.
     """
     for key, value in fixed_parameters.items():
-        if callable(value):
+        if isinstance(value, Callable):
             result = value(params)
             if isinstance(result, dict):
                 if key not in result:

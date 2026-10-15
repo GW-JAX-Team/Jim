@@ -2,6 +2,7 @@ import copy
 import logging
 import zlib
 from abc import ABC, abstractmethod
+from collections.abc import Mapping
 from importlib import resources
 from typing import Self
 
@@ -28,7 +29,7 @@ from jimgw.core.single_event.mixins import _Freezable
 from jimgw.core.single_event.polarization import Polarization
 from jimgw.core.single_event.time_utils import cached_greenwich_mean_sidereal_time
 from jimgw.core.single_event.utils import complex_inner_product, inner_product
-from jimgw.typing import ComplexScalar, FloatLike, FloatScalar
+from jimgw.typing import ComplexLike, ComplexScalar, FloatLike, FloatScalar
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +97,7 @@ class Detector(_Freezable, ABC):
         self,
         frequency: Float[Array, " n_sample"],
         h_sky: dict[str, Float[Array, " n_sample"]],
-        params: dict,
+        params: Mapping[str, FloatLike],
     ) -> Complex[Array, " n_sample"]:
         """Modulate the waveform in the sky frame by the detector response in the frequency domain.
 
@@ -475,7 +476,7 @@ class GroundBased2G(Detector):
         self,
         frequency: Float[Array, " n_sample"],
         h_sky: dict[str, Float[Array, " n_sample"]],
-        params: dict[str, Float],
+        params: Mapping[str, FloatLike],
     ) -> Complex[Array, " n_sample"]:
         """Modulate the waveform in the sky frame by the detector response in the frequency domain.
 
@@ -506,9 +507,9 @@ class GroundBased2G(Detector):
         self,
         frequency: Float[Array, " n_sample"],
         h_sky: dict[str, Float[Array, " n_sample"]],
-        antenna_pattern: dict[str, Complex],
-        geocenter_delay: Float,
-        params: dict[str, Float],
+        antenna_pattern: Mapping[str, ComplexLike],
+        geocenter_delay: FloatLike,
+        params: Mapping[str, FloatLike],
     ) -> Complex[Array, " n_sample"]:
         """Combine the polarizations with the antenna pattern and shift them in time."""
         time_shift = geocenter_delay + (
@@ -546,7 +547,7 @@ class GroundBased2G(Detector):
         raise NotImplementedError
 
     def delay_from_geocenter(
-        self, ra: FloatScalar, dec: FloatScalar, gmst: FloatScalar
+        self, ra: FloatLike, dec: FloatLike, gmst: FloatLike
     ) -> FloatScalar:
         """Calculate time delay between two detectors in geocentric coordinates.
 
@@ -565,7 +566,7 @@ class GroundBased2G(Detector):
 
     @staticmethod
     def _source_direction(
-        ra: FloatScalar, dec: FloatScalar, gmst: FloatScalar
+        ra: FloatLike, dec: FloatLike, gmst: FloatLike
     ) -> Float[Array, "3 ..."]:
         """Unit vector from the geocenter to the source in Earth-fixed coordinates, one per ``gmst``."""
         gmst = jnp.mod(gmst, 2 * jnp.pi)
@@ -580,11 +581,11 @@ class GroundBased2G(Detector):
 
     def antenna_pattern(
         self,
-        ra: FloatScalar,
-        dec: FloatScalar,
-        psi: FloatScalar,
-        gmst: FloatScalar,
-    ) -> dict[str, Complex]:
+        ra: FloatLike,
+        dec: FloatLike,
+        psi: FloatLike,
+        gmst: FloatLike,
+    ) -> dict[str, ComplexLike]:
         """Compute antenna patterns for polarizations at specified sky location.
 
         In the long-wavelength approximation, the antenna pattern for a
@@ -809,7 +810,7 @@ class GroundBased2G(Detector):
         trigger_time: float,
         f_min: float,
         f_max: float,
-        rng_key: Key,
+        rng_key: Key[Array, ""],
         post_trigger_duration: float = DEFAULT_POST_TRIGGER_DURATION,
     ) -> None:
         """Replace the data by noise drawn from the PSD.
@@ -1341,7 +1342,7 @@ class GroundBased3G(GroundBased2G):
         )
 
     def gmst_at_frequency(
-        self, frequency: Float[Array, " n_sample"], params: dict[str, Float]
+        self, frequency: Float[Array, " n_sample"], params: Mapping[str, FloatLike]
     ) -> Float[Array, " n_sample"]:
         """Sidereal angle at the time each frequency is emitted.
 
@@ -1382,7 +1383,7 @@ class GroundBased3G(GroundBased2G):
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _arm_transfer_function(x: Float, y: Float) -> Complex:
+    def _arm_transfer_function(x: FloatLike, y: FloatLike) -> ComplexLike:
         """Single-arm transfer function, equal to one when ``x`` is zero.
 
         Args:
@@ -1401,10 +1402,10 @@ class GroundBased3G(GroundBased2G):
     def _finite_arm_antenna_pattern(
         self,
         frequency: Float[Array, " n_sample"],
-        ra: FloatScalar,
-        dec: FloatScalar,
-        psi: FloatScalar,
-        gmst: Float,
+        ra: FloatLike,
+        dec: FloatLike,
+        psi: FloatLike,
+        gmst: FloatLike,
     ) -> dict[str, Complex[Array, " n_sample"]]:
         """Antenna patterns with each arm weighted by its transfer function."""
         propagation = -self._source_direction(ra, dec, gmst)
@@ -1436,7 +1437,7 @@ class GroundBased3G(GroundBased2G):
         self,
         frequency: Float[Array, " n_sample"],
         h_sky: dict[str, Float[Array, " n_sample"]],
-        params: dict[str, Float],
+        params: Mapping[str, FloatLike],
     ) -> Complex[Array, " n_sample"]:
         """Project the sky-frame waveform with a frequency-dependent response.
 

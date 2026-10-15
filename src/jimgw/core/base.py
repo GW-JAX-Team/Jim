@@ -1,8 +1,7 @@
 from abc import ABC, abstractmethod
+from collections.abc import Mapping
 
-from jaxtyping import Float
-
-from jimgw.typing import FloatScalar
+from jimgw.typing import FloatLike, FloatScalar
 
 
 class Data(ABC):
@@ -39,7 +38,7 @@ class LikelihoodBase(ABC):
         return self._data
 
     @abstractmethod
-    def evaluate(self, params: dict[str, Float]) -> FloatScalar:
+    def evaluate(self, params: Mapping[str, FloatLike]) -> FloatScalar:
         """Evaluate the log-likelihood for a given set of parameters.
 
         Args:

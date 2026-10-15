@@ -63,7 +63,7 @@ class DEKernelParams(NamedTuple):
 
 
 def _de_one_step(
-    rng_key: Key,
+    rng_key: Key[Array, ""],
     state: StateWithLogLikelihood,
     loglikelihood_0: FloatScalar,
     logprior_fn,
@@ -121,7 +121,7 @@ def _de_one_step(
 
 
 def _de_walk(
-    rng_key: Key,
+    rng_key: Key[Array, ""],
     state: StateWithLogLikelihood,
     loglikelihood_0: FloatScalar,
     logprior_fn,
@@ -203,7 +203,7 @@ def _update_bilby_walks(
     max_mcmc: int,
     n_delete: int,
 ) -> DEKernelParams:
-    prev_params = ns_state.inner_kernel_params["params"]  # type: ignore[attr-defined]  # blackjax stubs
+    prev_params = ns_state.inner_kernel_params["params"]  # ty: ignore[unresolved-attribute]  # blackjax stubs
     is_uninitialized = prev_params.n_accept_total < 0
 
     default_walks_float = jnp.array(100.0, dtype=jnp.float32)
@@ -323,7 +323,7 @@ def bilby_adaptive_de_sampler(
 
         return jax.vmap(single)(sub_keys, start_states)
 
-    base_kernel_step = build_adaptive_kernel(delete_fn, inner_kernel, update_fn)  # type: ignore[arg-type]  # blackjax stubs
+    base_kernel_step = build_adaptive_kernel(delete_fn, inner_kernel, update_fn)
 
     def init_fn(particles):
         # Use lax.map instead of vmap to bound peak memory during init.
@@ -365,4 +365,4 @@ def bilby_adaptive_de_sampler(
     def step_fn(rng_key, state: AdaptiveNSState):
         return base_kernel_step(rng_key, state)
 
-    return SamplingAlgorithm(init_fn, step_fn)  # type: ignore[arg-type]  # blackjax stubs
+    return SamplingAlgorithm(init_fn, step_fn)  # ty: ignore[invalid-argument-type]  # blackjax stubs

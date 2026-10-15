@@ -17,6 +17,7 @@ from jimgw.core.prior import (
     CosinePrior,
     GaussianPrior,
     PowerLawPrior,
+    Prior,
     RayleighPrior,
     SinePrior,
     UniformPrior,
@@ -28,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 def build_prior(cfg: PriorConfig):
     """Build a CombinePrior from the dict-keyed prior config."""
-    components = []
+    components: list[Prior] = []
     for name, spec in cfg.root.items():
         if isinstance(spec, UniformSpec):
             components.append(UniformPrior(spec.min, spec.max, [name]))

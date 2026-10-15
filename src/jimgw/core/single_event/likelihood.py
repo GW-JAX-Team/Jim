@@ -1,6 +1,6 @@
 import logging
 from abc import abstractmethod
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import replace
 from numbers import Integral
 from typing import Any, Optional, Union
@@ -201,7 +201,7 @@ class SingleEventLikelihood(LikelihoodBase):
     # Direct evaluation
     # ------------------------------------------------------------------
 
-    def evaluate(self, params: dict[str, Float]) -> FloatScalar:
+    def evaluate(self, params: Mapping[str, FloatLike]) -> FloatScalar:
         """Prepare parameters and evaluate the likelihood.
 
         Constants are injected directly; callables receive the current params
@@ -210,9 +210,11 @@ class SingleEventLikelihood(LikelihoodBase):
         """
         return self._evaluate(self._prepare_parameters(params))
 
-    def _prepare_parameters(self, params: dict[str, Float]) -> dict[str, Float]:
+    def _prepare_parameters(
+        self, params: Mapping[str, FloatLike]
+    ) -> dict[str, FloatLike]:
         """Add marginalization defaults and fixed parameters."""
-        prepared_params = params.copy()
+        prepared_params = dict(params)
         if self.time_marginalization:
             prepared_params["t_c"] = 0.0
         if self.phase_marginalization:
@@ -223,7 +225,7 @@ class SingleEventLikelihood(LikelihoodBase):
         return prepared_params
 
     @abstractmethod
-    def _evaluate(self, params: dict[str, Float]) -> FloatScalar:
+    def _evaluate(self, params: Mapping[str, FloatLike]) -> FloatScalar:
         """Core likelihood evaluation method to be implemented by subclasses."""
         raise NotImplementedError("Subclasses must implement this method.")
 
@@ -231,7 +233,7 @@ class SingleEventLikelihood(LikelihoodBase):
     # Waveform cache evaluation
     # ------------------------------------------------------------------
 
-    def generate_waveform(self, params: dict[str, Float]) -> Any:
+    def generate_waveform(self, params: Mapping[str, FloatLike]) -> Any:
         """Generate a reusable waveform cache.
 
         Evaluated at unit distance when ``waveform_caches_distance`` is True,
@@ -249,13 +251,13 @@ class SingleEventLikelihood(LikelihoodBase):
         return self._generate_waveform(self._prepare_parameters(params))
 
     @abstractmethod
-    def _generate_waveform(self, params: dict[str, Float]) -> Any:
+    def _generate_waveform(self, params: Mapping[str, FloatLike]) -> Any:
         """Build the waveform cache from already-prepared parameters."""
         raise NotImplementedError("Subclasses must implement this method.")
 
     def evaluate_from_waveform(
         self,
-        params: dict[str, Float],
+        params: Mapping[str, FloatLike],
         waveform_cache: Any,
     ) -> FloatScalar:
         """Evaluate this likelihood from a waveform cache."""
@@ -266,7 +268,7 @@ class SingleEventLikelihood(LikelihoodBase):
     @abstractmethod
     def _evaluate_from_waveform(
         self,
-        params: dict[str, Float],
+        params: Mapping[str, FloatLike],
         waveform_cache: Any,
     ) -> FloatScalar:
         """Evaluate the likelihood from a generated waveform cache."""
@@ -275,7 +277,7 @@ class SingleEventLikelihood(LikelihoodBase):
     def _waveform_sky_for_cache(
         self,
         frequencies: Float[Array, " n_freq"],
-        params: dict[str, Float],
+        params: Mapping[str, FloatLike],
     ) -> dict[str, Complex[Array, " n_freq"]]:
         """Evaluate sky-frame polarizations for a waveform cache.
 
@@ -291,7 +293,7 @@ class SingleEventLikelihood(LikelihoodBase):
     def _waveform_sky_from_cache(
         self,
         cached_polarizations: dict[str, Complex[Array, " n_freq"]],
-        params: dict[str, Float],
+        params: Mapping[str, FloatLike],
     ) -> dict[str, Complex[Array, " n_freq"]]:
         """Recover physical-distance polarizations from a cache entry.
 
@@ -485,7 +487,7 @@ class ZeroLikelihood(LikelihoodBase):
     # Direct evaluation
     # ------------------------------------------------------------------
 
-    def evaluate(self, params: dict[str, Float]) -> FloatScalar:
+    def evaluate(self, params: Mapping[str, FloatLike]) -> FloatScalar:
         """Return zero regardless of the parameters.
 
         Args:
@@ -645,7 +647,7 @@ class TransientLikelihoodFD(SingleEventLikelihood):
     # Direct evaluation
     # ------------------------------------------------------------------
 
-    def _evaluate(self, params: dict[str, Float]) -> FloatScalar:
+    def _evaluate(self, params: Mapping[str, FloatLike]) -> FloatScalar:
         waveform_sky = self.waveform(self.frequencies, params)
         return self._likelihood(params, waveform_sky)
 
@@ -654,7 +656,7 @@ class TransientLikelihoodFD(SingleEventLikelihood):
     # ------------------------------------------------------------------
 
     def _generate_waveform(
-        self, params: dict[str, Float]
+        self, params: Mapping[str, FloatLike]
     ) -> dict[str, Complex[Array, " n_freq"]]:
         """Generate reusable sky-frame waveform polarizations.
 
@@ -666,7 +668,7 @@ class TransientLikelihoodFD(SingleEventLikelihood):
 
     def _evaluate_from_waveform(
         self,
-        params: dict[str, Float],
+        params: Mapping[str, FloatLike],
         waveform_cache: dict[str, Complex[Array, " n_freq"]],
     ) -> FloatScalar:
         """Core likelihood evaluation from a pre-generated waveform cache."""
@@ -679,7 +681,7 @@ class TransientLikelihoodFD(SingleEventLikelihood):
 
     def _likelihood(
         self,
-        params: dict[str, Float],
+        params: Mapping[str, FloatLike],
         waveform_sky: dict[str, Complex[Array, " n_freq"]],
     ) -> FloatScalar:
         """Core likelihood computation from a physical-distance sky-frame waveform."""
@@ -1315,7 +1317,7 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
     # Direct evaluation
     # ------------------------------------------------------------------
 
-    def _evaluate(self, params: dict[str, Float]) -> FloatScalar:
+    def _evaluate(self, params: Mapping[str, FloatLike]) -> FloatScalar:
         # Preserve both waveform grids: some models depend on grid spacing.
         waveform_low = self.waveform(self.freq_grid_low, params)
         waveform_high = self.waveform(self.freq_grid_high, params)
@@ -1326,7 +1328,7 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
     # ------------------------------------------------------------------
 
     def _generate_waveform(
-        self, params: dict[str, Float]
+        self, params: Mapping[str, FloatLike]
     ) -> dict[str, dict[str, Complex[Array, " n_bins"]]]:
         """Generate bin-edge polarizations for cache reuse.
 
@@ -1341,7 +1343,7 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
 
     def _evaluate_from_waveform(
         self,
-        params: dict[str, Float],
+        params: Mapping[str, FloatLike],
         waveform_cache: dict[str, dict[str, Complex[Array, " n_bins"]]],
     ) -> FloatScalar:
         """Core likelihood evaluation from a pre-generated waveform cache."""
@@ -1355,7 +1357,7 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
 
     def _likelihood(
         self,
-        params: dict[str, Float],
+        params: Mapping[str, FloatLike],
         waveform_low: dict[str, Complex[Array, " n_bins"]],
         waveform_high: dict[str, Complex[Array, " n_bins"]],
     ) -> FloatScalar:
@@ -1948,7 +1950,7 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
     # Direct evaluation
     # ------------------------------------------------------------------
 
-    def _evaluate(self, params: dict[str, Float]) -> FloatScalar:
+    def _evaluate(self, params: Mapping[str, FloatLike]) -> FloatScalar:
         waveform_sky = self.waveform(self.unique_frequencies, params)
         return self._likelihood(params, waveform_sky)
 
@@ -1957,7 +1959,7 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
     # ------------------------------------------------------------------
 
     def _generate_waveform(
-        self, params: dict[str, Float]
+        self, params: Mapping[str, FloatLike]
     ) -> dict[str, Complex[Array, " n_freq"]]:
         """Generate polarizations at multiband frequencies for cache reuse.
 
@@ -1969,7 +1971,7 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
 
     def _evaluate_from_waveform(
         self,
-        params: dict[str, Float],
+        params: Mapping[str, FloatLike],
         waveform_cache: dict[str, Complex[Array, " n_freq"]],
     ) -> FloatScalar:
         """Core likelihood evaluation from a pre-generated waveform cache."""
@@ -1982,7 +1984,7 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
 
     def _likelihood(
         self,
-        params: dict[str, Float],
+        params: Mapping[str, FloatLike],
         waveform_sky: dict[str, Complex[Array, " n_freq"]],
     ) -> FloatScalar:
         """Core likelihood computation from physical-distance multiband polarizations."""
@@ -2011,7 +2013,7 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
 
     def _resolve_reference_chirp_mass(
         self,
-        reference_chirp_mass: Optional[Float],
+        reference_chirp_mass: Optional[float],
         prior: Optional[Prior],
     ) -> float:
         """Return ``reference_chirp_mass``, inferring from the M_c prior minimum when not provided."""
@@ -2157,7 +2159,7 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
     # Frequency bands
     # ------------------------------------------------------------------
 
-    def _compute_tau_dtaudf(self, f: Float) -> tuple[Float, Float]:
+    def _compute_tau_dtaudf(self, f: FloatLike) -> tuple[FloatLike, FloatLike]:
         """Compute time-to-merger and its derivative using 0PN formula.
 
         Parameters
@@ -2179,8 +2181,8 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
         return tau, dtaudf
 
     def _find_starting_frequency(
-        self, duration: float, f_now: float
-    ) -> tuple[Optional[Float], Optional[Float]]:
+        self, duration: float, f_now: FloatLike
+    ) -> tuple[Optional[FloatLike], Optional[FloatLike]]:
         """Find the starting frequency of the next band by bisection.
 
         Parameters

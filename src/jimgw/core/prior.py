@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from collections.abc import Mapping
 from dataclasses import field
 from typing import Optional
 
@@ -18,7 +19,7 @@ from jimgw.core.transforms import (
     ScaleTransform,
     reverse_bijective_transform,
 )
-from jimgw.typing import FloatScalar
+from jimgw.typing import FloatLike, FloatScalar
 
 
 class Prior(eqx.Module):
@@ -64,7 +65,7 @@ class Prior(eqx.Module):
         """
         self.parameter_names = tuple(parameter_names)
 
-    def add_name(self, x: Float[Array, "n_dims"]) -> dict[str, Float]:
+    def add_name(self, x: Float[Array, "n_dims"]) -> dict[str, FloatScalar]:
         """Convert a flat parameter array to a named dict.
 
         Args:
@@ -75,12 +76,12 @@ class Prior(eqx.Module):
         """
         return dict(zip(self.parameter_names, x, strict=True))
 
-    def __call__(self, x: dict[str, Float]) -> FloatScalar:
+    def __call__(self, x: Mapping[str, FloatLike]) -> FloatScalar:
         """Alias for `log_prob`."""
         return self.log_prob(x)
 
     @abstractmethod
-    def log_prob(self, z: dict[str, Float]) -> FloatScalar:
+    def log_prob(self, z: Mapping[str, FloatLike]) -> FloatScalar:
         """Evaluate the log-probability of a sample.
 
         Args:
@@ -93,7 +94,7 @@ class Prior(eqx.Module):
 
     @abstractmethod
     def sample(
-        self, rng_key: Key, n_samples: int
+        self, rng_key: Key[Array, ""], n_samples: int
     ) -> dict[str, Float[Array, " n_samples"]]:
         """Draw samples from the prior.
 
@@ -177,7 +178,7 @@ class LogisticDistribution(Prior):
             raise ValueError("LogisticDistribution needs to be 1D distributions")
 
     def sample(
-        self, rng_key: Key, n_samples: int
+        self, rng_key: Key[Array, ""], n_samples: int
     ) -> dict[str, Float[Array, " n_samples"]]:
         """Sample from a logistic distribution.
 
@@ -192,7 +193,7 @@ class LogisticDistribution(Prior):
         samples = logit(samples)
         return self.add_name(samples[None])
 
-    def log_prob(self, z: dict[str, Float]) -> FloatScalar:
+    def log_prob(self, z: Mapping[str, FloatLike]) -> FloatScalar:
         variable = z[self.parameter_names[0]]
         magnitude = jnp.abs(variable)
         # Symmetry keeps the exponential bounded without overflowing in either tail.
@@ -220,7 +221,7 @@ class StandardNormalDistribution(Prior):
             raise ValueError("StandardNormalDistribution needs to be 1D distributions")
 
     def sample(
-        self, rng_key: Key, n_samples: int
+        self, rng_key: Key[Array, ""], n_samples: int
     ) -> dict[str, Float[Array, " n_samples"]]:
         """Sample from a standard normal distribution.
 
@@ -234,7 +235,7 @@ class StandardNormalDistribution(Prior):
         samples = jax.random.normal(rng_key, (n_samples,))
         return self.add_name(samples[None])
 
-    def log_prob(self, z: dict[str, Float]) -> FloatScalar:
+    def log_prob(self, z: Mapping[str, FloatLike]) -> FloatScalar:
         variable = z[self.parameter_names[0]]
         return -0.5 * (variable**2 + jnp.log(2 * jnp.pi))
 
@@ -263,7 +264,7 @@ class UniformDistribution(Prior):
             raise ValueError("UniformDistribution needs to be 1D distributions")
 
     def sample(
-        self, rng_key: Key, n_samples: int
+        self, rng_key: Key[Array, ""], n_samples: int
     ) -> dict[str, Float[Array, " n_samples"]]:
         """Sample from a uniform distribution.
 
@@ -277,7 +278,7 @@ class UniformDistribution(Prior):
         samples = jax.random.uniform(rng_key, (n_samples,), minval=0.0, maxval=1.0)
         return self.add_name(samples[None])
 
-    def log_prob(self, z: dict[str, Float]) -> FloatScalar:
+    def log_prob(self, z: Mapping[str, FloatLike]) -> FloatScalar:
         variable = z[self.parameter_names[0]]
         return jnp.where(
             jnp.logical_and(variable >= 0.0, variable <= 1.0), 0.0, -jnp.inf
@@ -326,7 +327,7 @@ class SequentialTransformPrior(CompositePrior):
             self.parameter_names = tuple(transform.propagate_name(self.parameter_names))
 
     def sample(
-        self, rng_key: Key, n_samples: int
+        self, rng_key: Key[Array, ""], n_samples: int
     ) -> dict[str, Float[Array, " n_samples"]]:
         """Sample by drawing from the base prior and applying all transforms.
 
@@ -338,9 +339,9 @@ class SequentialTransformPrior(CompositePrior):
             Transformed samples keyed by parameter name.
         """
         output = self.base_prior[0].sample(rng_key, n_samples)
-        return jax.vmap(self.transform)(output)
+        return jax.vmap(self.transform)(output)  # ty: ignore[invalid-return-type]  # vmap output is batched arrays
 
-    def log_prob(self, z: dict[str, Float]) -> FloatScalar:
+    def log_prob(self, z: Mapping[str, FloatLike]) -> FloatScalar:
         """Evaluate the log-probability of a transformed sample z.
 
         Applies the inverse transforms in reverse order, accumulating
@@ -359,7 +360,7 @@ class SequentialTransformPrior(CompositePrior):
         output += self.base_prior[0].log_prob(z)
         return output
 
-    def transform(self, x: dict[str, Float]) -> dict[str, Float]:
+    def transform(self, x: Mapping[str, FloatLike]) -> dict[str, FloatLike]:
         """Apply all transforms sequentially (forward direction).
 
         Args:
@@ -368,9 +369,10 @@ class SequentialTransformPrior(CompositePrior):
         Returns:
             Transformed sample.
         """
+        y = dict(x)
         for transform in self.transforms:
-            x = transform.forward(x)
-        return x
+            y = transform.forward(y)
+        return y
 
 
 class BoundedMixin:
@@ -399,10 +401,10 @@ class BoundedMixin:
     def is_normalized(self) -> bool:
         return False
 
-    def log_prob(self, z: dict[str, Float]) -> FloatScalar:
+    def log_prob(self, z: Mapping[str, FloatLike]) -> FloatScalar:
         x = z[self.parameter_names[0]]
         # The next class in the cooperative MRO supplies Prior.log_prob.
-        base_log_prob = super().log_prob(z)  # type: ignore[attr-defined]  # ty: ignore[unresolved-attribute]
+        base_log_prob = super().log_prob(z)  # ty: ignore[unresolved-attribute]
         return jnp.where(
             jnp.logical_and(x >= self.xmin, x <= self.xmax),
             base_log_prob,
@@ -443,7 +445,7 @@ class CombinePrior(CompositePrior):
         super().__init__(priors)
 
     def sample(
-        self, rng_key: Key, n_samples: int
+        self, rng_key: Key[Array, ""], n_samples: int
     ) -> dict[str, Float[Array, " n_samples"]]:
         """Sample from all component priors independently.
 
@@ -460,7 +462,7 @@ class CombinePrior(CompositePrior):
             output.update(prior.sample(subkey, n_samples))
         return output
 
-    def log_prob(self, z: dict[str, Float]) -> FloatScalar:
+    def log_prob(self, z: Mapping[str, FloatLike]) -> FloatScalar:
         """Evaluate the joint log-probability as the sum of component log-probabilities.
 
         Args:

@@ -57,7 +57,6 @@ test = [
     "pytest>=8.3.3",
     "pytest-cov>=6.0.0",
     "ruff>=0.12.2",
-    "pyright>=1.1.402",
 ]
 cross-validation = [
     "lalsuite>=7.26.4",
@@ -97,10 +96,6 @@ markers = [
     "slow: slow tests",
 ]
 
-[tool.pyright]
-include = ["src"]
-reportUnnecessaryTypeIgnoreComment = "error"
-
 [tool.ruff.lint]
 ignore = ["F722", "UP007", "UP045"]
 
@@ -111,15 +106,9 @@ ignore = ["F722", "UP007", "UP045"]
 [tool.ty.src]
 include = ["src"]
 
-[tool.ty.analysis]
-# These libraries expose dynamic APIs or annotation helpers that ty cannot yet model.
-# Pyright remains responsible for checking their richer type information.
-replace-imports-with-any = [
-    "astropy.**",
-    "blackjax.**",
-    "flowMC.**",
-    "jaxtyping.**",
-]
+[tool.ty.rules]
+possibly-unresolved-reference = "error"
+unused-ignore-comment = "error"
 
 [tool.coverage.report]
 exclude_also = [

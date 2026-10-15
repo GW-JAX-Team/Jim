@@ -8,7 +8,7 @@ import numpy as np
 from blackjax import persistent_sampling_smc, rmh
 from blackjax.smc import extend_params
 from blackjax.smc.resampling import systematic
-from jaxtyping import Key
+from jaxtyping import Array, Key
 
 from jimgw.samplers.blackjax.smc import diagnostics
 from jimgw.samplers.blackjax.smc.base import _BlackJAXSMCBase
@@ -25,7 +25,7 @@ class FixedPersistentSMCSampler(_BlackJAXSMCBase):
 
     mode = "fp"
 
-    def _run(self, rng_key: Key, initial_particles) -> None:
+    def _run(self, rng_key: Key[Array, ""], initial_particles) -> None:
         config = self._config
         ladder = config.temperature_ladder
         assert ladder is not None
@@ -46,7 +46,7 @@ class FixedPersistentSMCSampler(_BlackJAXSMCBase):
             n_schedule=n_temperature_steps,
             mcmc_step_fn=mcmc_step,
             mcmc_init_fn=rmh.init,
-            mcmc_parameters=extend_params({"cov": initial_covariance}),  # type: ignore[arg-type]  # blackjax stubs: extend_params accepts dict
+            mcmc_parameters=extend_params({"cov": initial_covariance}),  # ty: ignore[invalid-argument-type]  # blackjax stubs: extend_params accepts dict
             resampling_fn=systematic,
             num_mcmc_steps=n_mcmc_steps,
             batch_size=config.batch_size,

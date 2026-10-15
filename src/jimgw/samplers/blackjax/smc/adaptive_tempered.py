@@ -8,7 +8,7 @@ import numpy as np
 from blackjax import adaptive_tempered_smc, inner_kernel_tuning, rmh
 from blackjax.smc import extend_params
 from blackjax.smc.resampling import systematic
-from jaxtyping import Key
+from jaxtyping import Array, Key
 
 from jimgw.samplers.blackjax.smc import diagnostics
 from jimgw.samplers.blackjax.smc.base import _BlackJAXSMCBase
@@ -27,7 +27,7 @@ class AdaptiveTemperedSMCSampler(_BlackJAXSMCBase):
     _tempering_schedule: np.ndarray  # per-step temperature
     _is_weights_history: np.ndarray  # per-step normalized IS weights
 
-    def _run(self, rng_key: Key, initial_particles) -> None:
+    def _run(self, rng_key: Key[Array, ""], initial_particles) -> None:
         config = self._config
         n_mcmc_steps = config.n_mcmc_steps_per_dim * self.n_dims
         target_ess = config._resolve_target_ess_fraction()
@@ -40,7 +40,7 @@ class AdaptiveTemperedSMCSampler(_BlackJAXSMCBase):
         )
 
         def mcmc_parameter_update_fn(_key, state, _info):
-            return extend_params({"cov": jnp.atleast_2d(jnp.cov(state.particles.T))})  # type: ignore[arg-type]  # blackjax stubs: extend_params accepts dict
+            return extend_params({"cov": jnp.atleast_2d(jnp.cov(state.particles.T))})  # ty: ignore[invalid-argument-type]  # blackjax stubs: extend_params accepts dict
 
         smc_algorithm = inner_kernel_tuning(
             smc_algorithm=adaptive_tempered_smc,
@@ -50,7 +50,7 @@ class AdaptiveTemperedSMCSampler(_BlackJAXSMCBase):
             mcmc_init_fn=rmh.init,
             resampling_fn=systematic,
             mcmc_parameter_update_fn=mcmc_parameter_update_fn,
-            initial_parameter_value=extend_params({"cov": initial_covariance}),  # type: ignore[arg-type]  # blackjax stubs: extend_params accepts dict
+            initial_parameter_value=extend_params({"cov": initial_covariance}),  # ty: ignore[invalid-argument-type]  # blackjax stubs: extend_params accepts dict
             num_mcmc_steps=n_mcmc_steps,
             target_ess=target_ess,
             batch_size=config.batch_size,

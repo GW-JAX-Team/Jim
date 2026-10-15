@@ -32,6 +32,7 @@ nav = [
     {"How-to" = [
         "how-to/index.md",
         {"Reduce GPU Memory Use" = "how-to/reduce_gpu_memory.md"},
+        {"Use Your Own Likelihood" = "how-to/custom_likelihood.md"},
     ]},
     {"Technical Notes" = [
         "notes/index.md",

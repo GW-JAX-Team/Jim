@@ -22,4 +22,4 @@ python GW150914_flowMC.py
 ```
 
 These scripts require Jim and its dependencies to be installed.
-Each script fetches data from GWOSC on first run, so an internet connection is needed.
+Some scripts fetch data from GWOSC on first run, so an internet connection is needed.

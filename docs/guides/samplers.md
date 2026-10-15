@@ -122,7 +122,6 @@ jim = Jim(
         n_delete_frac=0.5,
         n_target=60,
         max_mcmc=5000,
-        max_proposals=1000,
         termination_dlogz=0.1,
     ),
     sample_transforms=sample_transforms,
@@ -194,10 +193,8 @@ Yallup, D., Kroupa, N., Handley, W., *"Nested Slice Sampling"*, [OpenReview](htt
 ### BlackJAX SwiG
 
 Nested Slice within Gibbs (SwiG) applies covariance-shaped slice updates to named parameter blocks.
-With `TransientLikelihoodFD`, `HeterodynedTransientLikelihoodFD`, or `MultibandedTransientLikelihoodFD`, the likelihood provides a cache of generated waveform polarizations to the sampler.
-Blocks that affect waveform inputs refresh that cache, while detector-projection-only blocks reuse it.
-When the waveform model supports analytic distance scaling, luminosity distance is also factored out, so a `d_L` block reuses the cache; otherwise a `d_L` block refreshes it like any other waveform dependency.
-The likelihood determines the remaining dependencies after sample transforms, likelihood transforms, fixed parameters, and analytic marginalisation have been applied.
+With `TransientLikelihoodFD`, `HeterodynedTransientLikelihoodFD`, or `MultibandedTransientLikelihoodFD`, the generated waveform polarizations are cached.
+Blocks that affect waveform inputs refresh that cache, while detector-projection-only blocks reuse it and are cheaper; see the [technical notes](../notes/samplers.md) for how the likelihood decides.
 
 ```python
 from jimgw.samplers.config import BlackJAXSwiGConfig

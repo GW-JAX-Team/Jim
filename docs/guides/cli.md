@@ -51,7 +51,7 @@ Fetches public LIGO/Virgo/KAGRA strain and PSD from the Gravitational-Wave Open 
 
 Injects a waveform into simulated Gaussian noise drawn from the detector PSD.
 
-By default the PSD is the built-in O3 ASD, available for `H1`, `L1` and `V1`.
+By default the PSD is the design-sensitivity ASD Jim ships for each detector; see [Default design-sensitivity ASD](data.md#default-design-sensitivity-asd).
 To use your own, set `psd_files` or `asd_files`; see the note on PSD and ASD files below.
 
 | Field | Type | Default | Description |
@@ -63,7 +63,7 @@ To use your own, set `psd_files` or `asd_files`; see the note on PSD and ASD fil
 | `injection_parameters` | dict[str, float] | — | Signal parameters to inject |
 | `zero_noise` | bool | `false` | If `true`, inject into zero noise. |
 | `noise_seed` | int | — | Seed for the injected noise. Required unless `zero_noise = true`. |
-| `psd_files` | dict[str, path] | — | Map from detector name to PSD file. Mutually exclusive with `asd_files`. Omit both to use the built-in O3 ASD. |
+| `psd_files` | dict[str, path] | — | Map from detector name to PSD file. Mutually exclusive with `asd_files`. Omit both to use the built-in design-sensitivity ASD. |
 | `asd_files` | dict[str, path] | — | Map from detector name to ASD file. Mutually exclusive with `psd_files`. |
 
 Example:
@@ -103,10 +103,14 @@ PSD and ASD formats are described in the note on PSD and ASD files below.
 | --- | --- | --- | --- |
 | `detectors` | list[str] | — | Detector identifiers |
 | `trigger_time` | float | — | GPS trigger time |
-| `strain_files` | dict[str, path] | — | Map from detector name to strain file (any supported format) |
+| `strain_files` | dict[str, path] | — | Map from individual interferometer name to strain file (any supported format) |
 | `psd_files` | dict[str, path] | — | Map from detector name to PSD file. Exactly one of `psd_files` and `asd_files` is required. |
 | `asd_files` | dict[str, path] | — | Map from detector name to ASD file. Exactly one of `psd_files` and `asd_files` is required. |
 | `strain_channels` | dict[str, str] | `{}` | Channel name per detector for GWF/HDF5 files (e.g. `"H1:GDS-CALIB_STRAIN"`). If omitted, common LIGO/Virgo preset channel names are tried for `.gwf` files. |
+
+For `detectors = ["ET"]`, provide separate `strain_files` entries for `ET1`,
+`ET2` and `ET3`. Use those individual names in `strain_channels` too. The three
+interferometers share the `ET` entry in `psd_files` or `asd_files`.
 
 Example with `.npz` files (no channels required):
 
@@ -425,7 +429,6 @@ The CLI enforces this automatically.
 | `n_delete_frac` | `0.5` | Fraction of live points replaced per iteration |
 | `n_target` | `60` | Target number of accepted steps per replacement |
 | `max_mcmc` | `5000` | Maximum MCMC steps per replacement attempt |
-| `max_proposals` | `1000` | Maximum proposals per MCMC step |
 | `termination_dlogz` | `0.1` | Termination criterion on remaining log-evidence |
 | `checkpoint_dir` | `{output.dir}/` | Directory for `checkpoint.pkl`; set by the CLI automatically |
 | `checkpoint_interval` | `600.0` | Seconds between checkpoint writes; `0` disables checkpointing |

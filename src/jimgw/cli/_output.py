@@ -37,7 +37,7 @@ def write_outputs(jim, cfg) -> None:
     samples = jim.get_samples(n_samples=cfg.output.n_samples)
     samples_path = out_dir / "samples.npz"
     # NumPy's stubs do not model dynamically named arrays unpacked as kwargs.
-    np.savez(samples_path, **{k: np.asarray(v) for k, v in samples.items()})  # type: ignore[call-overload]
+    np.savez(samples_path, **{k: np.asarray(v) for k, v in samples.items()})  # ty: ignore[invalid-argument-type]
     logger.info(
         "Saved %d samples to %s", next(iter(samples.values())).shape[0], samples_path
     )
@@ -57,7 +57,7 @@ def write_outputs(jim, cfg) -> None:
     if array_diag:
         diag_npz = out_dir / "diagnostics.npz"
         # NumPy's stubs do not model dynamically named arrays unpacked as kwargs.
-        np.savez(diag_npz, **{k: np.asarray(v) for k, v in array_diag.items()})  # type: ignore[call-overload]
+        np.savez(diag_npz, **{k: np.asarray(v) for k, v in array_diag.items()})  # ty: ignore[invalid-argument-type]
         logger.info("Saved array diagnostics to %s", diag_npz)
 
     # Resolved config
@@ -74,7 +74,6 @@ def write_outputs(jim, cfg) -> None:
                 cfg.data.injection_parameters,
                 jim.likelihood_transforms,
                 cfg.waveform.f_ref,
-                trigger_time=cfg.data.trigger_time,
                 ifos=list(jim.likelihood.detectors),
                 time_frame=cfg.sampling.time_frame,
                 jim=jim,
@@ -89,7 +88,6 @@ def _injection_truths_in_prior_space(
     injection_parameters: dict[str, float],
     likelihood_transforms: list[NtoMTransform],
     waveform_f_ref: float,
-    trigger_time: float,
     ifos: list[GroundBased2G],
     time_frame: str,
     jim,
@@ -105,7 +103,6 @@ def _injection_truths_in_prior_space(
     p: dict = to_likelihood_space(
         injection_parameters,
         waveform_f_ref,
-        trigger_time=trigger_time,
         ifos=ifos,
         time_frame=time_frame,
     )
@@ -146,6 +143,13 @@ def _save_corner(
 ) -> None:
     labels = list(samples.keys())
     if param_names:
+        missing = [p for p in param_names if p not in samples]
+        if missing:
+            logger.warning(
+                "corner_parameters %s are not among the sampled parameters (%s).",
+                missing,
+                ", ".join(samples),
+            )
         filtered = [p for p in param_names if p in samples]
         if filtered:
             labels = filtered

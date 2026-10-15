@@ -13,6 +13,6 @@ LogDensityFn: TypeAlias = Callable[[Float[Array, " n_dim"]], FloatScalar]
 
 # The plain GRW mutation step: (key, state, logdensity, cov) -> (state, info).
 PlainMCMCStep: TypeAlias = Callable[
-    [Key, random_walk.RWState, LogDensityFn, Float[Array, "n_dim n_dim"]],
+    [Key[Array, ""], random_walk.RWState, LogDensityFn, Float[Array, "n_dim n_dim"]],
     tuple[random_walk.RWState, random_walk.RWInfo],
 ]

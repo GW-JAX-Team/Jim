@@ -10,15 +10,20 @@ import tomli_w
 from pydantic import ValidationError
 
 from jimgw.cli._config import (
+    CLIDistanceMargConfig,
     CLIHeterodynedConfig,
     CLIInjectionRefParams,
+    CLIMultibandedConfig,
     CLIOptimizerRefParams,
     CLIProvidedRefParams,
+    CLITimeMargConfig,
     CosineSpec,
     FileDataConfig,
     GaussianSpec,
     GWOSCDataConfig,
     InjectionDataConfig,
+    LikelihoodConfig,
+    OutputConfig,
     PipelineConfig,
     PowerLawSpec,
     PriorConfig,
@@ -49,6 +54,26 @@ _MINIMAL_RAW = {
 }
 
 
+@pytest.mark.parametrize("value", [True, 2.0, "2"])
+def test_cli_seeds_and_output_count_require_integers(value):
+    with pytest.raises(ValidationError, match="seed"):
+        PipelineConfig.model_validate({**_MINIMAL_RAW, "seed": value})
+    with pytest.raises(ValidationError, match="n_samples"):
+        OutputConfig.model_validate({"dir": "tests/tmp/test", "n_samples": value})
+    with pytest.raises(ValidationError, match="noise_seed"):
+        InjectionDataConfig.model_validate(
+            {
+                "type": "injection",
+                "detectors": ["H1"],
+                "trigger_time": 1126259462.4,
+                "duration": 4.0,
+                "sampling_frequency": 2048.0,
+                "injection_parameters": {},
+                "noise_seed": value,
+            }
+        )
+
+
 def test_pipeline_config_minimal():
     cfg = PipelineConfig.model_validate(_MINIMAL_RAW)
     assert isinstance(cfg.data, GWOSCDataConfig)
@@ -56,6 +81,40 @@ def test_pipeline_config_minimal():
     assert cfg.waveform.approximant == "IMRPhenomXAS"
     assert cfg.waveform.f_ref == 20.0  # default
     assert cfg.seed == 0  # default
+
+
+@pytest.mark.parametrize(
+    "field", ["trigger_time", "duration", "post_trigger_duration", "psd_duration"]
+)
+@pytest.mark.parametrize("bad", [float("nan"), float("inf"), -float("inf")])
+def test_gwosc_timing_must_be_finite(field, bad):
+    with pytest.raises(ValidationError):
+        GWOSCDataConfig.model_validate({**_MINIMAL_RAW["data"], field: bad})
+
+
+@pytest.mark.parametrize("post_trigger_duration", [-0.1, 4.1])
+def test_gwosc_trigger_must_be_inside_requested_segment(post_trigger_duration):
+    with pytest.raises(ValidationError, match="post_trigger_duration"):
+        GWOSCDataConfig.model_validate(
+            {**_MINIMAL_RAW["data"], "post_trigger_duration": post_trigger_duration}
+        )
+
+
+@pytest.mark.parametrize("field", ["trigger_time", "duration", "sampling_frequency"])
+@pytest.mark.parametrize("bad", [float("nan"), float("inf"), -float("inf")])
+def test_injection_timing_must_be_finite(field, bad):
+    data = {
+        "type": "injection",
+        "detectors": ["H1"],
+        "trigger_time": 1126259462.4,
+        "duration": 4.0,
+        "sampling_frequency": 2048.0,
+        "injection_parameters": {},
+        "zero_noise": True,
+        field: bad,
+    }
+    with pytest.raises(ValidationError):
+        InjectionDataConfig.model_validate(data)
 
 
 def test_pipeline_config_file_data():
@@ -320,9 +379,9 @@ def test_file_data_config_missing_psd_rejected():
         )
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # PSD / ASD sources (file and injection data)
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 _STRAIN_H1 = "tests/fixtures/GW150914_strain_H1.npz"
 _PSD_H1 = "tests/fixtures/GW150914_psd_H1.npz"
@@ -407,29 +466,22 @@ def test_asd_files_must_name_every_detector():
         )
 
 
-def test_injection_without_files_uses_built_in_default_for_known_detectors():
-    cfg = InjectionDataConfig.model_validate(_injection_data(("H1", "L1", "V1")))
+def test_injection_without_files_uses_built_in_default_for_every_detector():
+    cfg = InjectionDataConfig.model_validate(
+        _injection_data(("H1", "L1", "V1", "ET", "CE"))
+    )
     assert cfg.psd_files is None
     assert cfg.asd_files is None
 
 
-@pytest.mark.parametrize("detector", ["CE", "ET"])
-def test_injection_without_files_rejects_detectors_without_default(detector):
-    # Caught at config time, instead of failing mid-run with no way to fix it.
-    with pytest.raises(
-        ValidationError, match=rf"No built-in PSD for detector\(s\) \['{detector}'\]"
-    ):
-        InjectionDataConfig.model_validate(_injection_data((detector,)))
-
-
-def test_injection_accepts_files_for_detectors_without_default():
+def test_injection_accepts_psd_files_for_ce():
     cfg = InjectionDataConfig.model_validate(
         _injection_data(("CE",), psd_files={"CE": "ce_psd.txt"})
     )
     assert cfg.psd_files == {"CE": Path("ce_psd.txt")}
 
 
-def test_injection_files_must_cover_detectors_that_have_a_default_too():
+def test_injection_files_must_cover_every_detector():
     # No silent fallback to the built-in default for a detector missing from the table.
     with pytest.raises(ValidationError, match=r"asd_files missing for: \['H1'\]"):
         InjectionDataConfig.model_validate(
@@ -464,9 +516,9 @@ def test_resolved_config_with_asd_files_serialises_to_toml():
     assert InjectionDataConfig.model_validate(round_trip).asd_files == cfg.asd_files
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Injected-noise seed
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 def test_noisy_injection_requires_noise_seed():
@@ -504,9 +556,9 @@ def test_noise_seed_only_exists_for_injection_data():
         )
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Prior spec validators
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 def test_uniform_spec_inverted_bounds_rejected():
@@ -557,9 +609,9 @@ def test_rayleigh_spec_negative_scale_rejected():
         PriorConfig.model_validate({"sigma": {"type": "rayleigh", "scale": -0.5}})
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Detector list validators
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 def test_duplicate_detectors_rejected():
@@ -572,9 +624,9 @@ def test_duplicate_detectors_rejected():
         )
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Sky parametrization completeness
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 def test_incomplete_equatorial_sky_rejected():
@@ -608,9 +660,9 @@ def test_incomplete_detector_sky_rejected():
         )
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # NS AW sampler prior constraints
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 def test_ns_aw_non_uniform_t_c_rejected():
@@ -643,9 +695,9 @@ def test_ns_aw_non_uniform_t_det_rejected():
         )
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # SwiG sampler config
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 def test_swig_sampler_parses_from_toml():
@@ -674,3 +726,229 @@ def test_swig_sampler_requires_blocks():
                 "sampler": {"type": "blackjax-swig"},
             }
         )
+
+
+@pytest.mark.parametrize("bad", [float("nan"), float("inf"), -float("inf")])
+@pytest.mark.parametrize(
+    "model, values, field",
+    [
+        (UniformSpec, {"min": 1.0, "max": 2.0}, "min"),
+        (UniformSpec, {"min": 1.0, "max": 2.0}, "max"),
+        (GaussianSpec, {"loc": 0.0, "scale": 1.0}, "loc"),
+        (GaussianSpec, {"loc": 0.0, "scale": 1.0}, "scale"),
+        (PowerLawSpec, {"min": 1.0, "max": 2.0, "alpha": 2.0}, "alpha"),
+        (RayleighSpec, {"scale": 1.0}, "scale"),
+        (WaveformConfig, {"approximant": "IMRPhenomD"}, "f_ref"),
+        (CLIMultibandedConfig, {}, "reference_chirp_mass"),
+        (CLIMultibandedConfig, {}, "time_offset"),
+        (CLIOptimizerRefParams, {}, "target"),
+        (CLIHeterodynedConfig, {}, "epsilon"),
+    ],
+)
+def test_numeric_config_values_must_be_finite(model, values, field, bad):
+    with pytest.raises(ValidationError):
+        model.model_validate({**values, field: bad})
+
+
+@pytest.mark.parametrize(
+    "bounds", [(0.1, -0.1), (0.0, 0.0), (float("nan"), 0.1), (-0.1, float("inf"))]
+)
+def test_time_marginalization_requires_finite_increasing_range(bounds):
+    with pytest.raises(ValidationError):
+        CLITimeMargConfig(tc_range=bounds)
+
+
+@pytest.mark.parametrize("bounds", [(100.0, 20.0), (20.0, 20.0)])
+def test_likelihood_frequency_range_must_increase(bounds):
+    with pytest.raises(ValidationError, match="f_min must be below f_max"):
+        LikelihoodConfig(f_min=bounds[0], f_max=bounds[1])
+
+
+def test_likelihood_still_accepts_infinite_upper_frequency_as_nyquist_shorthand():
+    config = LikelihoodConfig(f_min=20.0, f_max=float("inf"))
+    assert config.f_max == float("inf")
+
+
+@pytest.mark.parametrize("bad", [float("nan"), float("inf"), -float("inf")])
+def test_dictionary_parameter_values_must_be_finite(bad):
+    with pytest.raises(ValidationError):
+        CLIProvidedRefParams(values={"d_L": bad})
+    with pytest.raises(ValidationError):
+        LikelihoodConfig(f_min=20.0, f_max=100.0, fixed_parameters={"d_L": bad})
+    with pytest.raises(ValidationError):
+        InjectionDataConfig(
+            detectors=["H1"],
+            trigger_time=2.0,
+            duration=4.0,
+            sampling_frequency=256.0,
+            zero_noise=True,
+            injection_parameters={"d_L": bad},
+        )
+
+
+@pytest.mark.parametrize("minimum", [0.0, -1.0])
+def test_power_law_prior_requires_positive_lower_bound(minimum):
+    with pytest.raises(ValidationError, match="min > 0"):
+        PowerLawSpec(min=minimum, max=2.0, alpha=2.0)
+
+
+def test_heterodyne_binning_inputs_are_mutually_exclusive():
+    with pytest.raises(ValidationError, match="mutually exclusive"):
+        CLIHeterodynedConfig(n_bins=32, epsilon=0.5)
+
+
+@pytest.mark.parametrize("bad", [True, 2.0, 2.5])
+def test_bin_counts_and_modes_are_actual_integers(bad):
+    with pytest.raises(ValidationError):
+        CLIHeterodynedConfig(n_bins=bad)
+    with pytest.raises(ValidationError):
+        CLIMultibandedConfig(highest_mode=bad)
+
+
+@pytest.mark.parametrize("bad", [float("nan"), float("inf"), -float("inf")])
+def test_distance_reference_must_be_finite(bad):
+    with pytest.raises(ValidationError):
+        CLIDistanceMargConfig.model_validate(
+            {
+                "distance_prior": {"d_L": {"type": "uniform", "min": 1.0, "max": 2.0}},
+                "ref_dist": bad,
+            }
+        )
+
+
+def test_distance_prior_must_name_distance_parameter():
+    with pytest.raises(ValidationError, match="'d_L'"):
+        CLIDistanceMargConfig.model_validate(
+            {"distance_prior": {"mass": {"type": "uniform", "min": 1.0, "max": 2.0}}}
+        )
+
+
+@pytest.mark.parametrize(
+    "parameter, option",
+    [
+        ("phase_c", {"phase_marginalization": True}),
+        ("t_c", {"time_marginalization": {}}),
+        (
+            "d_L",
+            {
+                "distance_marginalization": {
+                    "distance_prior": {
+                        "d_L": {"type": "uniform", "min": 1.0, "max": 2.0}
+                    }
+                }
+            },
+        ),
+    ],
+)
+def test_marginalized_parameters_cannot_be_fixed(parameter, option):
+    with pytest.raises(ValidationError, match=f"Cannot have {parameter} fixed"):
+        LikelihoodConfig(
+            f_min=20.0, f_max=100.0, fixed_parameters={parameter: 1.0}, **option
+        )
+
+
+_DISTANCE_MARGINALIZATION = {
+    "distance_prior": {"d_L": {"type": "uniform", "min": 1.0, "max": 2.0}}
+}
+
+
+@pytest.mark.parametrize(
+    "options, message",
+    [
+        (
+            {
+                "time_marginalization": {},
+                "distance_marginalization": _DISTANCE_MARGINALIZATION,
+            },
+            "Joint time \\+ distance",
+        ),
+        (
+            {"heterodyne": {}, "multiband": {}},
+            "heterodyne and multiband cannot both be set",
+        ),
+        (
+            {"heterodyne": {}, "time_marginalization": {}},
+            "time_marginalization cannot be used with heterodyne",
+        ),
+        (
+            {"heterodyne": {}, "distance_marginalization": _DISTANCE_MARGINALIZATION},
+            "distance_marginalization cannot be used with heterodyne",
+        ),
+        (
+            {"multiband": {}, "time_marginalization": {}},
+            "time_marginalization cannot be used with multiband",
+        ),
+        (
+            {"multiband": {}, "distance_marginalization": _DISTANCE_MARGINALIZATION},
+            "distance_marginalization cannot be used with multiband",
+        ),
+        (
+            {"multiband": {}, "phase_marginalization": True},
+            "phase_marginalization cannot be used with multiband",
+        ),
+    ],
+)
+def test_incompatible_likelihood_options_are_refused(options, message):
+    with pytest.raises(ValidationError, match=message):
+        LikelihoodConfig.model_validate({"f_min": 20.0, "f_max": 100.0, **options})
+
+
+def _et_file_config(**fields):
+    return {
+        "detectors": ["ET"],
+        "trigger_time": 2.0,
+        "strain_files": {name: f"{name}.npz" for name in ("ET1", "ET2", "ET3")},
+        "psd_files": {"ET": "ET_psd.txt"},
+        **fields,
+    }
+
+
+def test_et_file_data_uses_individual_strains_and_shared_psd():
+    config = FileDataConfig.model_validate(
+        _et_file_config(
+            strain_channels={name: f"{name}:STRAIN" for name in ("ET1", "ET2", "ET3")}
+        )
+    )
+    assert set(config.strain_files) == {"ET1", "ET2", "ET3"}
+    assert set(config.strain_channels) == {"ET1", "ET2", "ET3"}
+    assert config.psd_files is not None
+    assert set(config.psd_files) == {"ET"}
+
+
+@pytest.mark.parametrize(
+    "fields, message",
+    [
+        ({"strain_files": {"ET": "ET.npz"}}, "individual interferometer names"),
+        ({"strain_files": {"ET1": "ET1.npz", "ET2": "ET2.npz"}}, "ET3"),
+        ({"strain_channels": {"ET": "ET:STRAIN"}}, "individual interferometer names"),
+        ({"strain_channels": {"H1": "H1:STRAIN"}}, "unknown interferometer names"),
+    ],
+)
+def test_et_file_data_rejects_ambiguous_or_missing_strain_sources(fields, message):
+    with pytest.raises(ValidationError, match=message):
+        FileDataConfig.model_validate(_et_file_config(**fields))
+
+
+@pytest.mark.parametrize("detector", ["ET", "CE"])
+def test_gwosc_config_rejects_presets_without_open_strain(detector):
+    with pytest.raises(ValidationError, match="GWOSC strain is not available"):
+        GWOSCDataConfig(
+            detectors=[detector], trigger_time=2.0, duration=4.0, psd_duration=8.0
+        )
+
+
+@pytest.mark.parametrize("field", ["popsize", "n_steps"])
+@pytest.mark.parametrize("bad", [True, 2.0, 2.5])
+def test_reference_optimizer_counts_are_actual_integers(field, bad):
+    with pytest.raises(ValidationError):
+        CLIOptimizerRefParams.model_validate({field: bad})
+
+
+@pytest.mark.parametrize("field", ["psd_files", "asd_files"])
+def test_psd_source_rejects_unknown_detector_mapping_keys(field):
+    fields = {
+        "psd_files": None,
+        field: {"ET": "ET_psd.txt", "ET1": "unused_psd.txt"},
+    }
+    with pytest.raises(ValidationError, match=f"{field} has unknown detector names"):
+        FileDataConfig.model_validate(_et_file_config(**fields))

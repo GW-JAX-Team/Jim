@@ -1,6 +1,5 @@
-import math
-
 import jax.numpy as jnp
+import numpy as np
 import pytest
 
 from jimgw.samplers.periodic import (
@@ -11,12 +10,57 @@ from jimgw.samplers.periodic import (
 
 # Index-based periodic specs matching PARAMS_3D = ("alpha", "phase_c", "psi")
 # phase_c → index 1, psi → index 2
-PERIODIC_3D = {1: (0.0, 2 * math.pi), 2: (0.0, math.pi)}
+PERIODIC_3D = {1: (0.0, 2 * jnp.pi), 2: (0.0, jnp.pi)}
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
+# Index and bound validation
+# ----------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("index", [1.0, "1"])
+@pytest.mark.parametrize("adapter", [to_unit_cube_stepper, to_displacement_wrapper])
+def test_periodic_adapters_reject_noninteger_indices(adapter, index):
+    spec = [index] if adapter is to_unit_cube_stepper else {index: (0.0, 1.0)}
+    with pytest.raises(TypeError, match="must be integers"):
+        adapter(spec, 3)
+
+
+@pytest.mark.parametrize("index", [-1, 3])
+@pytest.mark.parametrize("adapter", [to_unit_cube_stepper, to_displacement_wrapper])
+def test_periodic_adapters_reject_out_of_range_indices(adapter, index):
+    spec = [index] if adapter is to_unit_cube_stepper else {index: (0.0, 1.0)}
+    with pytest.raises(ValueError, match="out of bounds"):
+        adapter(spec, 3)
+
+
+def test_periodic_adapters_accept_numpy_integer_dimensions_and_indices():
+    stepper = to_unit_cube_stepper([np.int64(1)], np.int32(3))
+    wrapper = to_displacement_wrapper({np.int64(1): (0.0, 1.0)}, np.int32(3))
+    position = jnp.array([0.2, 0.9, 0.3])
+    direction = jnp.array([0.1, 0.4, 0.1])
+    expected = jnp.array([0.3, 0.3, 0.4])
+    assert jnp.allclose(stepper(position, direction, 1.0), expected)
+    assert jnp.allclose(position + wrapper(direction, position), expected)
+
+
+@pytest.mark.parametrize("bound", [jnp.nan, jnp.inf, -jnp.inf])
+@pytest.mark.parametrize("side", [0, 1])
+def test_periodic_bounds_must_be_finite(bound, side):
+    bounds = [0.0, 1.0]
+    bounds[side] = bound
+    with pytest.raises(ValueError, match="must be finite"):
+        to_displacement_wrapper({1: tuple(bounds)}, 3)
+
+
+def test_periodic_interval_must_be_finite():
+    with pytest.raises(ValueError, match="interval.*finite"):
+        to_displacement_wrapper({1: (-1e308, 1e308)}, 3)
+
+
+# ----------------------------------------------------------------------
 # to_unit_cube_stepper — flat arrays: [alpha, phase_c, psi]
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 def _pos(alpha=0.3, phase_c=0.6, psi=0.9):
@@ -64,9 +108,9 @@ def test_unit_cube_stepper_empty_periodic():
     assert jnp.allclose(result, pos + direction)
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # to_prior_space_proposal — flat arrays
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 class _MockState:
@@ -98,7 +142,7 @@ def test_prior_space_proposal_none_periodic():
 
 def test_prior_space_proposal_wraps_phase_c():
     """Periodic dims are wrapped after a nonzero proposal move."""
-    two_pi = 2 * math.pi
+    two_pi = 2 * jnp.pi
     direction = jnp.array([0.0, 1.0, 0.0])
     proposal_factory = to_prior_space_proposal(
         {1: (0.0, two_pi)},
@@ -119,9 +163,9 @@ def test_prior_space_proposal_invalid_bounds_raises():
         to_prior_space_proposal({1: (1.0, 0.0)}, 3, lambda *_args: _dir())
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # to_displacement_wrapper — flat arrays
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 def test_displacement_wrapper_none_periodic():
@@ -133,7 +177,7 @@ def test_displacement_wrapper_none_periodic():
 
 
 def test_displacement_wrapper_wraps_periodic():
-    two_pi = 2 * math.pi
+    two_pi = 2 * jnp.pi
     wrapper = to_displacement_wrapper({1: (0.0, two_pi)}, 3)  # index 1 = phase_c
     # current phase_c = 5.8, displacement = 1.0 → new = 6.8 → wrapped = mod(6.8, 2π) ≈ 0.517
     current_val = 5.8
@@ -148,6 +192,7 @@ def test_displacement_wrapper_wraps_periodic():
     assert float(result[0]) == pytest.approx(0.0, abs=1e-6)
 
 
-def test_displacement_wrapper_invalid_bounds_raises():
+@pytest.mark.parametrize("bounds", [(2.0, 1.0), (1.0, 1.0)])
+def test_displacement_wrapper_invalid_bounds_raises(bounds):
     with pytest.raises(ValueError, match="hi > lo"):
-        to_displacement_wrapper({1: (2.0, 1.0)}, 3)
+        to_displacement_wrapper({1: bounds}, 3)

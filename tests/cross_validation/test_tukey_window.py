@@ -14,7 +14,7 @@ def test_default_tukey_window_matches_bilby(duration: int) -> None:
     sampling_frequency = 16
     strain = np.ones(duration * sampling_frequency)
 
-    jim_data = Data(td=strain, delta_t=1 / sampling_frequency)
+    jim_data = Data.from_td(td=strain, delta_t=1 / sampling_frequency)
 
     bilby_data = bilby.gw.detector.InterferometerStrainData(
         roll_off=DEFAULT_TUKEY_ROLL_OFF

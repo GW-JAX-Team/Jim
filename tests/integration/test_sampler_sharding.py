@@ -10,9 +10,8 @@ and the checkpoint-free sampling loop are all included.
 
 from __future__ import annotations
 
-import math
-
 import jax
+import jax.numpy as jnp
 import numpy as np
 import pytest
 
@@ -53,7 +52,7 @@ def test_sharded_nss_posterior_mean_near_half(sharded_nss_jim):
 
 def test_sharded_nss_log_evidence_finite(sharded_nss_jim):
     diag = sharded_nss_jim.sampler.get_diagnostics()
-    assert math.isfinite(diag["log_Z"])
+    assert jnp.isfinite(diag["log_Z"])
 
 
 @pytest.fixture(scope="module")

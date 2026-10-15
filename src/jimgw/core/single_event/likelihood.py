@@ -1,7 +1,8 @@
 import logging
 from abc import abstractmethod
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import replace
+from numbers import Integral
 from typing import Any, Optional, Union
 
 import jax
@@ -22,9 +23,6 @@ from jimgw.core.single_event.marginalization_config import (
     PhaseMargConfig,
     TimeMargConfig,
 )
-from jimgw.core.single_event.time_utils import (
-    greenwich_mean_sidereal_time as compute_gmst,
-)
 from jimgw.core.single_event.utils import (
     FixedParameters,
     apply_fixed_parameters,
@@ -38,49 +36,74 @@ from jimgw.typing import ComplexScalar, FloatLike, FloatScalar
 logger = logging.getLogger(__name__)
 
 
+# ----------------------------------------------------------------------
+# Shared single-event likelihood
+# ----------------------------------------------------------------------
+
+
 class SingleEventLikelihood(LikelihoodBase):
     detectors: Sequence[Detector]
     waveform: Waveform
     fixed_parameters: FixedParameters
-    trigger_time: float
-    gmst: FloatScalar
     ref_dist: FloatLike
+    _detector_data_selections: tuple[slice | Array, ...]
+    _detector_psd_selections: tuple[slice | Array, ...]
 
-    @property
-    def duration(self) -> FloatLike:
-        """Duration of the data segment in seconds (taken from the first detector)."""
-        return self.detectors[0].data.duration
-
-    @property
-    def detector_names(self) -> list[str]:
-        """Names of the detectors used in this likelihood."""
-        return [detector.name for detector in self.detectors]
+    # ------------------------------------------------------------------
+    # Construction
+    # ------------------------------------------------------------------
 
     def __init__(
         self,
         detectors: Sequence[Detector],
         waveform: Waveform,
+        *,
         fixed_parameters: Optional[FixedParameters] = None,
+        f_min: Optional[float | dict[str, float]] = None,
+        f_max: Optional[float | dict[str, float]] = None,
     ) -> None:
         """
         Args:
             detectors (Sequence[Detector]): Detectors with initialized data and PSD.
+                The detectors will be frozen to prevent accidental changes after the
+                likelihood is constructed.
             waveform (Waveform): Waveform model to evaluate.
             fixed_parameters (Optional[dict]): Parameters held constant during
                 sampling. Values may be scalars or callables
                 ``f(params) -> Float | dict``; callables are applied in insertion
                 order. Defaults to None (no fixed parameters).
+            f_min (Optional[float | dict[str, float]]): Minimum frequency for
+                likelihood evaluation.
+            f_max (Optional[float | dict[str, float]]): Maximum frequency for
+                likelihood evaluation.
 
         Raises:
-            ValueError: If any detector has uninitialized data or PSD.
+            ValueError: If the waveform is a time-domain model, if any detector has
+                uninitialized data or PSD, if the data of the detectors do not carry
+                one trigger time inside them, or if the frequency range of the
+                likelihood is invalid.
         """
+        # --------------------------------------------------------------
+        # Validation
+        # --------------------------------------------------------------
+
+        # Check that the waveform is frequency-domain
+        if getattr(waveform, "waveform_metadata", {}).get("domain") == "TD":
+            raise ValueError(
+                "The likelihood requires a frequency-domain waveform model, "
+                f"got the time-domain {waveform!r}."
+            )
+        # Check that at least one detector is provided
+        if len(detectors) == 0:
+            raise ValueError("A likelihood needs at least one detector.")
         # Check that all detectors have initialized data and PSD
         for detector in detectors:
+            detector._validate_geometry()
             if detector.data.is_empty:
                 raise ValueError(
                     f"Detector '{detector.name}' does not have initialized data. "
-                    f"Please set data using detector.set_data() or detector.inject_signal() "
-                    f"before initializing the likelihood."
+                    f"Please set data using detector.set_data(), detector.set_zero_noise() "
+                    f"or detector.simulate_and_set_noise() before initializing the likelihood."
                 )
             if detector.psd.is_empty:
                 raise ValueError(
@@ -88,33 +111,110 @@ class SingleEventLikelihood(LikelihoodBase):
                     f"Please set PSD using detector.set_psd() or detector.load_and_set_psd() "
                     f"before initializing the likelihood."
                 )
+        # Check that all detectors have different names
+        names = [detector.name for detector in detectors]
+        if len(set(names)) != len(names):
+            raise ValueError(
+                f"The detectors of a likelihood must have different names, got {names}."
+            )
 
-        self.detectors = detectors
+        # Keep the supplied detector instances and their order.
+        self.detectors = tuple(detectors)
         self.waveform = waveform
         self.fixed_parameters = fixed_parameters if fixed_parameters is not None else {}
+        self._shared_trigger_time(self.detectors)
         self.time_marginalization = False
         self.phase_marginalization = False
         self.distance_marginalization = False
 
-    def _set_detector_frequency_bounds(
-        self,
-        f_min: float | dict[str, float],
-        f_max: float | dict[str, float],
-    ) -> list[Float[Array, " n_freq"]]:
-        """Set per-detector frequency bounds and return the resulting grids."""
-        detector_frequencies = []
-        for detector in self.detectors:
-            detector_f_min = f_min[detector.name] if isinstance(f_min, dict) else f_min
-            detector_f_max = f_max[detector.name] if isinstance(f_max, dict) else f_max
-            detector.set_frequency_bounds(detector_f_min, detector_f_max)
-            detector_frequencies.append(detector.sliced_frequencies)
-        return detector_frequencies
+        self._prepare_detector_frequency_selections(f_min, f_max)
 
-    def _prepare_parameters(self, params: dict[str, Float]) -> dict[str, Float]:
-        """Add event metadata, marginalization defaults, and fixed parameters."""
-        prepared_params = params.copy()
-        prepared_params["trigger_time"] = self.trigger_time
-        prepared_params["gmst"] = self.gmst
+        # Common validation has succeeded. These shared instances remain frozen even
+        # if a subclass subsequently fails to configure marginalization or caches.
+        for detector in self.detectors:
+            detector._freeze()
+
+    def _warn_if_phase_marginalization_is_inexact(self) -> None:
+        """Warn that phase marginalization needs a signal with the (2, 2) mode alone."""
+        metadata = getattr(self.waveform, "waveform_metadata", {})
+        reasons = []
+        if metadata.get("is_precessing"):
+            reasons.append("precession")
+        if (metadata.get("highest_mode") or 2) > 2:
+            reasons.append(f"modes up to m = {metadata['highest_mode']}")
+        if reasons:
+            logger.warning(
+                "phase_marginalization assumes a signal with only the (2, 2) mode, "
+                "but %r has %s, so the marginalized likelihood may be inaccurate.",
+                self.waveform,
+                " and ".join(reasons),
+            )
+
+    # ------------------------------------------------------------------
+    # Properties
+    # ------------------------------------------------------------------
+
+    @property
+    def duration(self) -> FloatLike:
+        """Duration of the data segment in seconds (taken from the first detector)."""
+        return self.detectors[0].data.duration
+
+    @property
+    def df(self) -> FloatLike:
+        """Shared frequency spacing of the frozen detector data."""
+        return 1.0 / self.duration
+
+    @property
+    def trigger_time(self) -> float:
+        """Shared trigger time of the frozen detector data."""
+        return self.detectors[0].data.trigger_time
+
+    @property
+    def detector_names(self) -> list[str]:
+        """Names of the detectors used in this likelihood."""
+        return [detector.name for detector in self.detectors]
+
+    @property
+    def detector_frequencies(self) -> list[Float[Array, " n_freq"]]:
+        """Frequencies in the frequency range of the likelihood, one array per detector."""
+        return [
+            detector.data.frequencies[selection]
+            for detector, selection in zip(
+                self.detectors, self._detector_data_selections
+            )
+        ]
+
+    @property
+    def waveform_caches_distance(self) -> bool:
+        """Whether a waveform cache can be reused across ``d_L`` changes.
+
+        Derived from the waveform's type by default, so subclasses may
+        override it to control the behavior directly. Consumed by the
+        waveform-cache block-dependency inference (see
+        ``jimgw.core.single_event.blocked_likelihood``): when True, ``d_L``
+        is excluded from the cache's dependency set, so a ``d_L``-only
+        proposal block reuses the cache instead of rebuilding it.
+        """
+        return isinstance(self.waveform, DistanceScaledWaveform)
+
+    # ------------------------------------------------------------------
+    # Direct evaluation
+    # ------------------------------------------------------------------
+
+    def evaluate(self, params: Mapping[str, FloatLike]) -> FloatScalar:
+        """Prepare parameters and evaluate the likelihood.
+
+        Constants are injected directly; callables receive the current params
+        dict and may return a scalar or a dict (the matching key is extracted).
+        Callables are applied in insertion order.
+        """
+        return self._evaluate(self._prepare_parameters(params))
+
+    def _prepare_parameters(
+        self, params: Mapping[str, FloatLike]
+    ) -> dict[str, FloatLike]:
+        """Add marginalization defaults and fixed parameters."""
+        prepared_params = dict(params)
         if self.time_marginalization:
             prepared_params["t_c"] = 0.0
         if self.phase_marginalization:
@@ -124,25 +224,16 @@ class SingleEventLikelihood(LikelihoodBase):
         apply_fixed_parameters(prepared_params, self.fixed_parameters)
         return prepared_params
 
-    # --- direct evaluation ---
-
-    def evaluate(self, params: dict[str, Float]) -> FloatScalar:
-        """Prepare parameters and evaluate the likelihood.
-
-        Constants are injected directly; callables receive the current params
-        dict and may return a scalar or a dict (the matching key is extracted).
-        Callables are applied in insertion order.
-        """
-        return self._evaluate(self._prepare_parameters(params))
-
     @abstractmethod
-    def _evaluate(self, params: dict[str, Float]) -> FloatScalar:
+    def _evaluate(self, params: Mapping[str, FloatLike]) -> FloatScalar:
         """Core likelihood evaluation method to be implemented by subclasses."""
         raise NotImplementedError("Subclasses must implement this method.")
 
-    # --- waveform-cache evaluation ---
+    # ------------------------------------------------------------------
+    # Waveform cache evaluation
+    # ------------------------------------------------------------------
 
-    def generate_waveform(self, params: dict[str, Float]) -> Any:
+    def generate_waveform(self, params: Mapping[str, FloatLike]) -> Any:
         """Generate a reusable waveform cache.
 
         Evaluated at unit distance when ``waveform_caches_distance`` is True,
@@ -160,13 +251,13 @@ class SingleEventLikelihood(LikelihoodBase):
         return self._generate_waveform(self._prepare_parameters(params))
 
     @abstractmethod
-    def _generate_waveform(self, params: dict[str, Float]) -> Any:
+    def _generate_waveform(self, params: Mapping[str, FloatLike]) -> Any:
         """Build the waveform cache from already-prepared parameters."""
         raise NotImplementedError("Subclasses must implement this method.")
 
     def evaluate_from_waveform(
         self,
-        params: dict[str, Float],
+        params: Mapping[str, FloatLike],
         waveform_cache: Any,
     ) -> FloatScalar:
         """Evaluate this likelihood from a waveform cache."""
@@ -177,31 +268,16 @@ class SingleEventLikelihood(LikelihoodBase):
     @abstractmethod
     def _evaluate_from_waveform(
         self,
-        params: dict[str, Float],
+        params: Mapping[str, FloatLike],
         waveform_cache: Any,
     ) -> FloatScalar:
         """Evaluate the likelihood from a generated waveform cache."""
         raise NotImplementedError("Subclasses must implement this method.")
 
-    # --- cache machinery (distance-scaling optimization) ---
-
-    @property
-    def waveform_caches_distance(self) -> bool:
-        """Whether a waveform cache can be reused across ``d_L`` changes.
-
-        Derived from the waveform's type by default, so subclasses may
-        override it to control the behavior directly. Consumed by the
-        waveform-cache block-dependency inference (see
-        ``jimgw.core.single_event.blocked_likelihood``): when True, ``d_L``
-        is excluded from the cache's dependency set, so a ``d_L``-only
-        proposal block reuses the cache instead of rebuilding it.
-        """
-        return isinstance(self.waveform, DistanceScaledWaveform)
-
     def _waveform_sky_for_cache(
         self,
         frequencies: Float[Array, " n_freq"],
-        params: dict[str, Float],
+        params: Mapping[str, FloatLike],
     ) -> dict[str, Complex[Array, " n_freq"]]:
         """Evaluate sky-frame polarizations for a waveform cache.
 
@@ -217,7 +293,7 @@ class SingleEventLikelihood(LikelihoodBase):
     def _waveform_sky_from_cache(
         self,
         cached_polarizations: dict[str, Complex[Array, " n_freq"]],
-        params: dict[str, Float],
+        params: Mapping[str, FloatLike],
     ) -> dict[str, Complex[Array, " n_freq"]]:
         """Recover physical-distance polarizations from a cache entry.
 
@@ -233,6 +309,166 @@ class SingleEventLikelihood(LikelihoodBase):
             for polarization, strain in cached_polarizations.items()
         }
 
+    # ------------------------------------------------------------------
+    # Detector validation
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _shared_trigger_time(detectors: Sequence[Detector]) -> float:
+        """Return the trigger time shared by the data of every detector.
+
+        The detectors are independent, so the likelihood checks that they all analyse
+        the same segment: the data of each must have the same trigger time, which by
+        default is 2 s before the end of the data, and it must lie inside the data of
+        each.
+        """
+
+        data_trigger_times = {d.name: d.data.trigger_time for d in detectors}
+        shared = set(data_trigger_times.values())
+        if len(shared) != 1:
+            raise ValueError(
+                "The data of the detectors have different trigger times: "
+                f"{data_trigger_times}. Use data from the same segment, or set the "
+                "same data.trigger_time on all of them."
+            )
+        trigger_time = shared.pop()
+        for detector in detectors:
+            start_time = float(detector.data.start_time)
+            end_time = start_time + float(detector.data.duration)
+            if not start_time <= trigger_time <= end_time:
+                raise ValueError(
+                    f"The trigger time {trigger_time} is outside the data of detector "
+                    f"'{detector.name}', which span [{start_time}, {end_time}]. Check "
+                    "data.trigger_time and data.start_time."
+                )
+        return trigger_time
+
+    @staticmethod
+    def _validated_frequency_range(
+        detector: Detector, f_min: Optional[float], f_max: Optional[float]
+    ) -> tuple[float, float]:
+        """Validate the frequency range of the likelihood for a detector.
+
+        A missing ``f_min`` or ``f_max`` is first filled in from the frequency range
+        of the data (or the Nyquist frequency).
+        """
+
+        data_f_min, data_f_max = detector.data.frequency_bounds
+        nyquist = float(detector.data.sampling_frequency) / 2
+        low = float(data_f_min if f_min is None else f_min)
+        if f_max is None or f_max == jnp.inf:
+            high = min(float(data_f_max), float(detector.data.frequencies[-1]))
+        else:
+            high = float(f_max)
+            # The Nyquist frequency is 1 / delta_t / 2, which is off by a rounding error
+            # for some sampling rates (744 Hz, for example): do not reject f_max for that.
+            if high > nyquist and not jnp.isclose(high, nyquist, rtol=1e-12, atol=0.0):
+                raise ValueError(
+                    f"f_max = {high} Hz is above the Nyquist frequency of detector "
+                    f"{detector.name}'s data, {nyquist} Hz."
+                )
+        if not low > 0:
+            raise ValueError(
+                f"The frequency range of the likelihood for detector "
+                f"{detector.name} starts at {low} Hz. Pass a positive f_min: "
+                "waveforms are not defined at 0 Hz."
+            )
+        if not low < high:
+            raise ValueError(
+                f"The frequency range of the likelihood for detector "
+                f"{detector.name}, [{low}, {high}] Hz, is empty. f_min must be "
+                "below f_max."
+            )
+        return low, high
+
+    # ------------------------------------------------------------------
+    # Frequency selections
+    # ------------------------------------------------------------------
+
+    def _prepare_detector_frequency_selections(
+        self,
+        f_min: Optional[float | dict[str, float]],
+        f_max: Optional[float | dict[str, float]],
+    ) -> None:
+        """Check the frequency range of every detector before fixing the FFT of any."""
+
+        detector_names = set(self.detector_names)
+        for name, bounds in (("f_min", f_min), ("f_max", f_max)):
+            if isinstance(bounds, dict) and set(bounds) != detector_names:
+                missing = sorted(detector_names - set(bounds))
+                unknown = sorted(set(bounds) - detector_names, key=str)
+                raise ValueError(
+                    f"{name} must contain exactly the detector names; "
+                    f"missing names: {missing}, unknown names: {unknown}."
+                )
+        spacings = jnp.array([1.0 / d.data.duration for d in self.detectors])
+        if not jnp.allclose(spacings, spacings[0], rtol=1e-12, atol=0.0):
+            raise ValueError(
+                f"All detectors must have the same frequency spacing, got {spacings} "
+                "Hz. Use data of the same duration."
+            )
+        frequency_ranges = []
+        for detector in self.detectors:
+            detector_f_min = f_min[detector.name] if isinstance(f_min, dict) else f_min
+            detector_f_max = f_max[detector.name] if isinstance(f_max, dict) else f_max
+            frequency_ranges.append(
+                self._validated_frequency_range(
+                    detector, detector_f_min, detector_f_max
+                )
+            )
+        data_selections = []
+        psd_selections = []
+        for detector, frequency_range in zip(self.detectors, frequency_ranges):
+            _, fd_data, psd = detector.slice_to_frequency_range(*frequency_range)
+            if not bool(jnp.all(jnp.isfinite(fd_data / psd))):
+                raise ValueError(
+                    f"PSD-weighted data for detector '{detector.name}' must be "
+                    f"finite within the frequency range of the likelihood {frequency_range}."
+                )
+            data_selections.append(
+                self._frequency_selection(detector.data.frequencies, *frequency_range)
+            )
+            psd_selections.append(
+                self._frequency_selection(detector.psd.frequencies, *frequency_range)
+            )
+        self._detector_frequency_ranges = tuple(frequency_ranges)
+        self._detector_data_selections = tuple(data_selections)
+        self._detector_psd_selections = tuple(psd_selections)
+
+    @classmethod
+    def _frequency_selection(
+        cls, frequencies: Float[Array, " n_freq"], f_min: float, f_max: float
+    ) -> slice | Array:
+        """Resolve the frequencies from f_min to f_max before tracing any evaluation."""
+        indices = jnp.flatnonzero((frequencies >= f_min) & (frequencies <= f_max))
+        return cls._static_selection(indices)
+
+    @staticmethod
+    def _static_selection(indices: Array) -> slice | Array:
+        """Use a static slice for consecutive indices, retaining other mappings."""
+        if bool(jnp.all(jnp.diff(indices) == 1)):
+            first = int(indices[0])
+            return slice(first, first + len(indices))
+        return indices
+
+    def _detector_data_in_frequency_range(
+        self, index: int
+    ) -> tuple[
+        Float[Array, " n_freq"], Complex[Array, " n_freq"], Float[Array, " n_freq"]
+    ]:
+        """Read the selected spectra from their frozen owners using static indices."""
+        detector = self.detectors[index]
+        return (
+            detector.data.frequencies[self._detector_data_selections[index]],
+            detector.data.fd[self._detector_data_selections[index]],
+            detector.psd.values[self._detector_psd_selections[index]],
+        )
+
+
+# ----------------------------------------------------------------------
+# Zero likelihood
+# ----------------------------------------------------------------------
+
 
 class ZeroLikelihood(LikelihoodBase):
     """Trivial likelihood that always returns zero.
@@ -240,10 +476,18 @@ class ZeroLikelihood(LikelihoodBase):
     Useful for prior-only sampling or debugging.
     """
 
+    # ------------------------------------------------------------------
+    # Construction
+    # ------------------------------------------------------------------
+
     def __init__(self) -> None:
         pass
 
-    def evaluate(self, params: dict[str, Float]) -> FloatScalar:
+    # ------------------------------------------------------------------
+    # Direct evaluation
+    # ------------------------------------------------------------------
+
+    def evaluate(self, params: Mapping[str, FloatLike]) -> FloatScalar:
         """Return zero regardless of the parameters.
 
         Args:
@@ -255,9 +499,11 @@ class ZeroLikelihood(LikelihoodBase):
         return jnp.zeros(())
 
 
-# ---------------------------------------------------------------------------
-# Unified transient likelihood
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
+# Full frequency-domain likelihood
+# ----------------------------------------------------------------------
+
+
 class TransientLikelihoodFD(SingleEventLikelihood):
     """Frequency-domain transient gravitational wave likelihood.
 
@@ -272,10 +518,13 @@ class TransientLikelihoodFD(SingleEventLikelihood):
             callables are applied in insertion order.  See the likelihood
             tutorial for details and examples.
         f_min: Minimum frequency for likelihood evaluation.
-            Can be a single float or a per-detector dictionary.
+            Can be a single float or a per-detector dictionary.  Must be positive
+            and not below the minimum frequency of the data.  Defaults to that
+            minimum frequency.
         f_max: Maximum frequency for likelihood evaluation.
-            Can be a single float or a per-detector dictionary.
-        trigger_time: GPS time of the event trigger.
+            Can be a single float or a per-detector dictionary.  Must not exceed
+            the maximum frequency of the data or the Nyquist frequency.  Defaults
+            to the smaller of the two.
         time_marginalization: If provided, marginalize over coalescence time
             ``t_c``.  Pass a [`TimeMargConfig`][jimgw.core.single_event.likelihood.TimeMargConfig]
             object, a plain dict (e.g. ``{"tc_range": (-0.1, 0.1)}``), or ``True``
@@ -295,53 +544,54 @@ class TransientLikelihoodFD(SingleEventLikelihood):
     Example:
         >>> likelihood = TransientLikelihoodFD(
         ...     detectors, waveform,
-        ...     f_min=20, f_max=1024, trigger_time=1234567890,
+        ...     f_min=20, f_max=1024,
         ...     phase_marginalization=True,
         ...     time_marginalization={"tc_range": (-0.1, 0.1)},
         ... )
         >>> logL = likelihood.evaluate(params)
     """
 
+    # ------------------------------------------------------------------
+    # Construction
+    # ------------------------------------------------------------------
+
     def __init__(
         self,
         detectors: Sequence[Detector],
         waveform: Waveform,
+        *,
         fixed_parameters: Optional[FixedParameters] = None,
-        f_min: float | dict[str, float] = 0.0,
-        f_max: float | dict[str, float] = jnp.inf,
-        trigger_time: float = 0,
+        f_min: Optional[float | dict[str, float]] = None,
+        f_max: Optional[float | dict[str, float]] = None,
         time_marginalization: Optional[Union[TimeMargConfig, dict, bool]] = None,
         phase_marginalization: Optional[Union[PhaseMargConfig, dict, bool]] = None,
         distance_marginalization: Optional[
             Union[DistanceMargConfig, dict, bool]
         ] = None,
     ) -> None:
-        super().__init__(detectors, waveform, fixed_parameters)
+        super().__init__(
+            detectors,
+            waveform,
+            fixed_parameters=fixed_parameters,
+            f_min=f_min,
+            f_max=f_max,
+        )
 
-        # --- frequency setup ---
-        _frequencies = self._set_detector_frequency_bounds(f_min, f_max)
+        # --------------------------------------------------------------
+        # Frequency setup
+        # --------------------------------------------------------------
 
-        assert all(
-            jnp.isclose(
-                _frequencies[0][1] - _frequencies[0][0],
-                freq[1] - freq[0],
-            )
-            for freq in _frequencies
-        ), "All detectors must have the same frequency spacing."
+        _frequencies = self.detector_frequencies
 
-        self.df = _frequencies[0][1] - _frequencies[0][0]
         self.frequencies = jnp.unique(jnp.concatenate(_frequencies))
-        self.frequency_masks = [
-            jnp.isin(
-                self.frequencies, detector.sliced_frequencies, method="binary_search"
-            )
-            for detector in detectors
+        self.frequency_indices = [
+            jnp.searchsorted(self.frequencies, freqs) for freqs in _frequencies
         ]
 
-        self.trigger_time = trigger_time
-        self.gmst = compute_gmst(self.trigger_time)
+        # --------------------------------------------------------------
+        # Marginalization input validation
+        # --------------------------------------------------------------
 
-        # --- resolve marginalization inputs ---
         if isinstance(time_marginalization, dict):
             time_marginalization = TimeMargConfig(**time_marginalization)
         elif time_marginalization is True:
@@ -353,8 +603,14 @@ class TransientLikelihoodFD(SingleEventLikelihood):
             phase_marginalization = PhaseMargConfig(**phase_marginalization)
         elif phase_marginalization is True:
             phase_marginalization = PhaseMargConfig()
-        elif not phase_marginalization:
+        elif phase_marginalization is None or phase_marginalization is False:
             phase_marginalization = None
+        elif not isinstance(phase_marginalization, PhaseMargConfig):
+            # A wrong value would not fail later, so "false" would switch phase
+            # marginalization on.
+            raise ValueError(
+                "phase_marginalization must be None, a bool, a dict or a PhaseMargConfig."
+            )
 
         if isinstance(distance_marginalization, dict):
             distance_marginalization = DistanceMargConfig(**distance_marginalization)
@@ -367,7 +623,10 @@ class TransientLikelihoodFD(SingleEventLikelihood):
                 "or a DistanceMargConfig instance instead."
             )
 
-        # --- marginalization flags ---
+        # --------------------------------------------------------------
+        # Marginalization flags
+        # --------------------------------------------------------------
+
         self.time_marginalization = time_marginalization is not None
         self.phase_marginalization = phase_marginalization is not None
         self.distance_marginalization = distance_marginalization is not None
@@ -384,16 +643,20 @@ class TransientLikelihoodFD(SingleEventLikelihood):
         if distance_marginalization is not None:
             self._init_distance_marginalization(distance_marginalization)
 
-    # --- direct evaluation ---
+    # ------------------------------------------------------------------
+    # Direct evaluation
+    # ------------------------------------------------------------------
 
-    def _evaluate(self, params: dict[str, Float]) -> FloatScalar:
+    def _evaluate(self, params: Mapping[str, FloatLike]) -> FloatScalar:
         waveform_sky = self.waveform(self.frequencies, params)
         return self._likelihood(params, waveform_sky)
 
-    # --- waveform-cache evaluation ---
+    # ------------------------------------------------------------------
+    # Waveform cache evaluation
+    # ------------------------------------------------------------------
 
     def _generate_waveform(
-        self, params: dict[str, Float]
+        self, params: Mapping[str, FloatLike]
     ) -> dict[str, Complex[Array, " n_freq"]]:
         """Generate reusable sky-frame waveform polarizations.
 
@@ -405,39 +668,46 @@ class TransientLikelihoodFD(SingleEventLikelihood):
 
     def _evaluate_from_waveform(
         self,
-        params: dict[str, Float],
+        params: Mapping[str, FloatLike],
         waveform_cache: dict[str, Complex[Array, " n_freq"]],
     ) -> FloatScalar:
         """Core likelihood evaluation from a pre-generated waveform cache."""
         waveform_sky = self._waveform_sky_from_cache(waveform_cache, params)
         return self._likelihood(params, waveform_sky)
 
-    # --- shared likelihood core ---
+    # ------------------------------------------------------------------
+    # Likelihood computation
+    # ------------------------------------------------------------------
 
     def _likelihood(
         self,
-        params: dict[str, Float],
+        params: Mapping[str, FloatLike],
         waveform_sky: dict[str, Complex[Array, " n_freq"]],
     ) -> FloatScalar:
         """Core likelihood computation from a physical-distance sky-frame waveform."""
 
-        # --- choose accumulation type based on flags ---
+        # --------------------------------------------------------------
+        # Choose accumulation type based on flags
+        # --------------------------------------------------------------
+
         if self.time_marginalization:
             # Per-frequency complex array for FFT-based time marginalization
             complex_d_inner_h = jnp.zeros(len(self.frequencies), dtype=jnp.complex128)
             log_likelihood: FloatScalar = jnp.zeros(())
 
             for i, ifo in enumerate(self.detectors):
-                psd = ifo.sliced_psd
+                frequencies, fd_data, psd = self._detector_data_in_frequency_range(i)
                 waveform_sky_ifo = {
-                    key: waveform_sky[key][self.frequency_masks[i]]
+                    key: waveform_sky[key][self.frequency_indices[i]]
                     for key in waveform_sky
                 }
                 h_dec = ifo.fd_response(
-                    ifo.sliced_frequencies, waveform_sky_ifo, params
+                    frequencies,
+                    waveform_sky_ifo,
+                    params,
                 )
-                complex_d_inner_h = complex_d_inner_h.at[self.frequency_masks[i]].add(
-                    4 * h_dec * jnp.conj(ifo.sliced_fd_data) / psd * self.df
+                complex_d_inner_h = complex_d_inner_h.at[self.frequency_indices[i]].add(
+                    4 * h_dec * jnp.conj(fd_data) / psd * self.df
                 )
                 optimal_SNR = inner_product(h_dec, h_dec, psd, self.df)
                 log_likelihood += -optimal_SNR / 2
@@ -457,22 +727,22 @@ class TransientLikelihoodFD(SingleEventLikelihood):
             optimal_snr: FloatScalar = jnp.zeros(())
 
             for i, ifo in enumerate(self.detectors):
-                psd = ifo.sliced_psd
+                frequencies, fd_data, psd = self._detector_data_in_frequency_range(i)
                 waveform_sky_ifo = {
-                    key: waveform_sky[key][self.frequency_masks[i]]
+                    key: waveform_sky[key][self.frequency_indices[i]]
                     for key in waveform_sky
                 }
                 h_dec = ifo.fd_response(
-                    ifo.sliced_frequencies, waveform_sky_ifo, params
+                    frequencies,
+                    waveform_sky_ifo,
+                    params,
                 )
                 if self.phase_marginalization:
                     complex_d_inner_h += complex_inner_product(
-                        h_dec, ifo.sliced_fd_data, psd, self.df
+                        h_dec, fd_data, psd, self.df
                     )
                 else:
-                    match_filter_snr += inner_product(
-                        h_dec, ifo.sliced_fd_data, psd, self.df
-                    )
+                    match_filter_snr += inner_product(h_dec, fd_data, psd, self.df)
                 optimal_snr += inner_product(h_dec, h_dec, psd, self.df)
 
             if self.phase_marginalization and self.distance_marginalization:
@@ -489,56 +759,101 @@ class TransientLikelihoodFD(SingleEventLikelihood):
             # No marginalization
             log_likelihood: FloatScalar = jnp.zeros(())
             for i, ifo in enumerate(self.detectors):
-                psd = ifo.sliced_psd
+                frequencies, fd_data, psd = self._detector_data_in_frequency_range(i)
                 waveform_sky_ifo = {
-                    key: waveform_sky[key][self.frequency_masks[i]]
+                    key: waveform_sky[key][self.frequency_indices[i]]
                     for key in waveform_sky
                 }
                 h_dec = ifo.fd_response(
-                    ifo.sliced_frequencies, waveform_sky_ifo, params
+                    frequencies,
+                    waveform_sky_ifo,
+                    params,
                 )
-                match_filter_SNR = inner_product(
-                    h_dec, ifo.sliced_fd_data, psd, self.df
-                )
+                match_filter_SNR = inner_product(h_dec, fd_data, psd, self.df)
                 optimal_SNR = inner_product(h_dec, h_dec, psd, self.df)
                 log_likelihood += match_filter_SNR - optimal_SNR / 2
             return log_likelihood
 
-    # --- time marginalization helpers ---
+    # ------------------------------------------------------------------
+    # Time marginalization
+    # ------------------------------------------------------------------
 
     def _init_time_marginalization(self, config: TimeMargConfig) -> None:
+        # --------------------------------------------------------------
+        # Time marginalization validation
+        # --------------------------------------------------------------
+
         if "t_c" in self.fixed_parameters:
             raise ValueError("Cannot have t_c fixed while marginalizing over t_c")
         self.tc_range = config.tc_range
-        fs = self.detectors[0].data.sampling_frequency
-        duration = self.detectors[0].data.duration
-        self.tc_array = jnp.fft.fftfreq(int(duration * fs / 2), 1.0 / duration)
-        self.pad_low = jnp.zeros(int(self.frequencies[0] * duration))
-        n_pad_high = int(
-            (fs / 2.0 - 1.0 / duration - float(self.frequencies[-1])) * duration
+        low, high = self.tc_range
+        if not bool(jnp.isfinite(low) & jnp.isfinite(high)) or not low < high:
+            raise ValueError("tc_range must contain finite, increasing bounds.")
+        time_frequency_indices = jnp.rint(self.frequencies * self.duration).astype(
+            jnp.int64
         )
-        self.pad_high = jnp.zeros(max(0, n_pad_high))
+        # Preserve the usual half-sampling-rate grid, extending it when an odd-length
+        # spectrum or a selected Nyquist bin needs one additional FFT coefficient.
+        n_fft = max(
+            max(d.data.n_time // 2 for d in self.detectors),
+            int(time_frequency_indices[-1]) + 1,
+        )
+        self.time_frequency_indices = self._static_selection(time_frequency_indices)
+        self.tc_array = jnp.fft.fftfreq(n_fft, float(self.df))
+        # In FFT order an interval spanning zero wraps around the array. Shift it
+        # first so the accepted times form a static slice instead of a gather.
+        sorted_times = jnp.fft.fftshift(self.tc_array)
+        time_indices = jnp.flatnonzero((sorted_times > low) & (sorted_times < high))
+        if len(time_indices) == 0:
+            raise ValueError(
+                "tc_range does not contain any time-marginalization samples."
+            )
+        self._time_selection = self._static_selection(time_indices)
+        grid_low = float(sorted_times[0])
+        grid_high = grid_low + 1 / float(self.df)
+        if float(low) < grid_low or float(high) > grid_high:
+            logger.warning(
+                "tc_range (%s, %s) extends beyond the time grid of the data, "
+                "(%s, %s) s, so the marginalized likelihood may be inaccurate.",
+                float(low),
+                float(high),
+                grid_low,
+                grid_high,
+            )
+        # t_c has a uniform prior over tc_range: a sample of the time grid
+        # weighs (time spacing) / (width of tc_range), and the time spacing is
+        # 1 / (n_fft * df).
+        self._log_time_weight = -jnp.log((high - low) * n_fft * float(self.df))
 
-    def _reduce_time(self, complex_d_inner_h: Float[Array, " n_freq"]) -> FloatScalar:
+    def _time_fft(
+        self, complex_d_inner_h: Complex[Array, " n_freq"]
+    ) -> Complex[Array, " n_time"]:
+        """Place every frequency of the likelihood on its FFT bin, zeroing unused bins."""
+        dense = jnp.zeros(len(self.tc_array), dtype=complex_d_inner_h.dtype)
+        dense = dense.at[self.time_frequency_indices].add(complex_d_inner_h)
+        return jnp.fft.fft(dense, norm="backward")
+
+    def _reduce_time(self, complex_d_inner_h: Complex[Array, " n_freq"]) -> FloatScalar:
         """FFT-based time marginalization (real part)."""
-        complex_d_inner_h_positive_f = jnp.concatenate(
-            (self.pad_low, complex_d_inner_h, self.pad_high)
-        )
-        fft_d_inner_h = jnp.fft.fft(complex_d_inner_h_positive_f, norm="backward")
-        fft_d_inner_h = jnp.where(
-            (self.tc_array > self.tc_range[0]) & (self.tc_array < self.tc_range[1]),
-            fft_d_inner_h.real,
-            jnp.zeros_like(fft_d_inner_h.real) - jnp.inf,
-        )
-        return logsumexp(fft_d_inner_h) - jnp.log(len(self.tc_array))
+        fft_d_inner_h = jnp.fft.fftshift(self._time_fft(complex_d_inner_h))[
+            self._time_selection
+        ]
+        return logsumexp(fft_d_inner_h.real) + self._log_time_weight
 
-    # --- phase marginalization helpers ---
+    # ------------------------------------------------------------------
+    # Phase marginalization
+    # ------------------------------------------------------------------
 
     def _init_phase_marginalization(self) -> None:
+        # --------------------------------------------------------------
+        # Phase marginalization validation
+        # --------------------------------------------------------------
+
         if "phase_c" in self.fixed_parameters:
             raise ValueError(
                 "Cannot have phase_c fixed while marginalizing over phase_c"
             )
+        self._warn_if_phase_marginalization_is_inexact()
 
     def _reduce_phase(
         self,
@@ -548,12 +863,21 @@ class TransientLikelihoodFD(SingleEventLikelihood):
         """Phase marginalization via modified Bessel function (Thrane & Talbot 2019, Eq. 24)."""
         return -optimal_snr / 2 + log_i0(jnp.absolute(complex_d_inner_h))
 
-    # --- distance marginalization helpers ---
+    # ------------------------------------------------------------------
+    # Distance marginalization
+    # ------------------------------------------------------------------
 
     def _init_distance_marginalization(self, config: DistanceMargConfig) -> None:
+        # --------------------------------------------------------------
+        # Distance marginalization validation
+        # --------------------------------------------------------------
+
         distance_prior = config.distance_prior
         n_dist_points = config.n_dist_points
         ref_dist = config.ref_dist
+
+        if ref_dist is not None and not (jnp.isfinite(ref_dist) and ref_dist > 0):
+            raise ValueError("ref_dist must be finite and positive.")
 
         if "d_L" in self.fixed_parameters:
             raise ValueError("Cannot have d_L fixed while marginalising over d_L")
@@ -572,6 +896,9 @@ class TransientLikelihoodFD(SingleEventLikelihood):
             )
         dist_min, dist_max = bounds
 
+        if not bool(jnp.all(jnp.isfinite(jnp.asarray(bounds)))):
+            raise ValueError("The d_L prior bounds must be finite.")
+
         if dist_min <= 0:
             raise ValueError(
                 "The d_L prior's xmin must be > 0 (distance must be positive)"
@@ -580,17 +907,35 @@ class TransientLikelihoodFD(SingleEventLikelihood):
             raise ValueError("The d_L prior's xmax must be greater than xmin")
 
         if ref_dist is None:
-            self.ref_dist = (dist_min + dist_max) / 2.0
+            self.ref_dist = dist_min + (dist_max - dist_min) / 2.0
         else:
             self.ref_dist = ref_dist
 
         distance_grid = jnp.linspace(dist_min, dist_max, n_dist_points)
         delta_d = (dist_max - dist_min) / (n_dist_points - 1)
         self.scaling = self.ref_dist / distance_grid
+        if not bool(jnp.all(jnp.isfinite(self.scaling**2))):
+            raise ValueError(
+                "ref_dist must yield finite distance scaling over the prior."
+            )
 
         log_prob_fn = jax.vmap(lambda d: distance_prior.log_prob({"d_L": d}))
         log_w = log_prob_fn(distance_grid) + jnp.log(delta_d)
-        self.log_weights = log_w - logsumexp(log_w)
+        if log_w.shape != distance_grid.shape or jnp.iscomplexobj(log_w):
+            raise ValueError(
+                "distance_prior must return a real scalar log probability."
+            )
+        max_log_weight = jnp.max(log_w)
+        if not bool(jnp.isfinite(max_log_weight)):
+            raise ValueError(
+                "distance_prior must have finite, nonzero probability over the "
+                "distance-marginalization grid."
+            )
+        # Remove the common offset before normalization so a large finite log
+        # density cannot erase the relative weights through cancellation.
+        log_w = log_w - max_log_weight
+        log_normalization = logsumexp(log_w)
+        self.log_weights = log_w - log_normalization
 
     def _reduce_distance(
         self, match_filter_snr: FloatScalar, optimal_snr: FloatScalar
@@ -603,22 +948,19 @@ class TransientLikelihoodFD(SingleEventLikelihood):
         )
         return logsumexp(log_integrand)
 
-    # --- combined marginalization helpers ---
+    # ------------------------------------------------------------------
+    # Combined marginalization
+    # ------------------------------------------------------------------
 
     def _reduce_phase_time(
-        self, complex_d_inner_h: Float[Array, " n_freq"]
+        self, complex_d_inner_h: Complex[Array, " n_freq"]
     ) -> FloatScalar:
         """FFT-based time + phase marginalization (Bessel-weighted FFT)."""
-        complex_d_inner_h_positive_f = jnp.concatenate(
-            (self.pad_low, complex_d_inner_h, self.pad_high)
-        )
-        fft_d_inner_h = jnp.fft.fft(complex_d_inner_h_positive_f, norm="backward")
-        log_i0_abs_fft = jnp.where(
-            (self.tc_array > self.tc_range[0]) & (self.tc_array < self.tc_range[1]),
-            log_i0(jnp.absolute(fft_d_inner_h)),
-            jnp.zeros_like(fft_d_inner_h.real) - jnp.inf,
-        )
-        return logsumexp(log_i0_abs_fft) - jnp.log(len(self.tc_array))
+        fft_d_inner_h = jnp.fft.fftshift(self._time_fft(complex_d_inner_h))[
+            self._time_selection
+        ]
+        log_i0_abs_fft = log_i0(jnp.absolute(fft_d_inner_h))
+        return logsumexp(log_i0_abs_fft) + self._log_time_weight
 
     def _reduce_phase_distance(
         self,
@@ -635,9 +977,11 @@ class TransientLikelihoodFD(SingleEventLikelihood):
         return logsumexp(log_integrand)
 
 
-# ---------------------------------------------------------------------------
-# Heterodyned (relative-binning) likelihood
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
+# Heterodyned likelihood
+# ----------------------------------------------------------------------
+
+
 class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
     """Frequency-domain likelihood using the relative-binning (heterodyne) scheme.
 
@@ -653,8 +997,13 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
             See [`TransientLikelihoodFD`][jimgw.core.single_event.likelihood.TransientLikelihoodFD]
             for a detailed description and example.
         f_min: Minimum frequency for likelihood evaluation.
+            Can be a single float or a per-detector dictionary.  Must be positive
+            and not below the minimum frequency of the data.  Defaults to that
+            minimum frequency.
         f_max: Maximum frequency for likelihood evaluation.
-        trigger_time: GPS time of the event trigger.
+            Can be a single float or a per-detector dictionary.  Must not exceed
+            the maximum frequency of the data or the Nyquist frequency.  Defaults
+            to the smaller of the two.
         n_bins: Number of frequency bins for relative binning.  Mutually
             exclusive with ``epsilon``; raises ``ValueError`` if both are set.
             When neither is set, ``epsilon=0.5`` is used as the default.
@@ -687,21 +1036,22 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
     n_bins: int
     epsilon: float
     reference_parameters: dict
-    freq_grid_low: Float[Array, " n_valid"]
-    freq_grid_high: Float[Array, " n_valid"]
-    bin_widths: Float[Array, " n_valid"]
-    waveform_low_ref: dict[str, Complex[Array, " n_valid"]]
-    waveform_high_ref: dict[str, Complex[Array, " n_valid"]]
+    freq_grid: Float[Array, " n_valid+1"]
+    _waveform_ref: dict[str, Complex[Array, " 2*n_valid"]]
     summary_data: dict[str, Complex[Array, "4 n_valid"]]
+
+    # ------------------------------------------------------------------
+    # Construction
+    # ------------------------------------------------------------------
 
     def __init__(
         self,
         detectors: Sequence[Detector],
         waveform: Waveform,
+        *,
         fixed_parameters: Optional[FixedParameters] = None,
-        f_min: float | dict[str, float] = 0.0,
-        f_max: float | dict[str, float] = jnp.inf,
-        trigger_time: float = 0,
+        f_min: Optional[float | dict[str, float]] = None,
+        f_max: Optional[float | dict[str, float]] = None,
         n_bins: Optional[int] = None,
         epsilon: Optional[float] = None,
         optimizer_popsize: int = 500,
@@ -713,47 +1063,94 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         likelihood_transforms: Optional[list[NtoMTransform]] = None,
         phase_marginalization: Optional[Union[PhaseMargConfig, dict, bool]] = None,
     ):
-        super().__init__(detectors, waveform, fixed_parameters)
+        super().__init__(
+            detectors,
+            waveform,
+            fixed_parameters=fixed_parameters,
+            f_min=f_min,
+            f_max=f_max,
+        )
 
-        # --- coerce phase marginalization input ---
+        # --------------------------------------------------------------
+        # Phase marginalization input validation
+        # --------------------------------------------------------------
+
         if isinstance(phase_marginalization, dict):
             phase_marginalization = PhaseMargConfig(**phase_marginalization)
         elif phase_marginalization is True:
             phase_marginalization = PhaseMargConfig()
-        elif not phase_marginalization:
+        elif phase_marginalization is None or phase_marginalization is False:
             phase_marginalization = None
+        elif not isinstance(phase_marginalization, PhaseMargConfig):
+            raise ValueError(
+                "phase_marginalization must be None, a bool, a dict or a PhaseMargConfig."
+            )
         self.phase_marginalization = phase_marginalization is not None
 
-        # --- frequency setup (same as TransientLikelihoodFD) ---
-        _frequencies = self._set_detector_frequency_bounds(f_min, f_max)
+        # --------------------------------------------------------------
+        # Binning validation
+        # --------------------------------------------------------------
 
-        assert all(
-            jnp.isclose(
-                _frequencies[0][1] - _frequencies[0][0],
-                freq[1] - freq[0],
-            )
-            for freq in _frequencies
-        ), "All detectors must have the same frequency spacing."
+        # Reject bad binning inputs before computing or optimizing a reference.
+        if n_bins is not None:
+            if epsilon is not None:
+                raise ValueError(
+                    "'n_bins' and 'epsilon' are mutually exclusive; specify at most one."
+                )
+            if (
+                isinstance(n_bins, bool)
+                or not isinstance(n_bins, Integral)
+                or n_bins <= 0
+            ):
+                raise ValueError(
+                    f"'n_bins' must be a positive integer, got {n_bins!r}."
+                )
+            n_bins = int(n_bins)
+        elif epsilon is None:
+            epsilon = 0.5
 
-        self.df = _frequencies[0][1] - _frequencies[0][0]
+        if epsilon is not None:
+            try:
+                epsilon_array = jnp.asarray(epsilon)
+                valid_epsilon = (
+                    epsilon_array.ndim == 0
+                    and jnp.issubdtype(epsilon_array.dtype, jnp.number)
+                    and not jnp.iscomplexobj(epsilon_array)
+                    and bool(jnp.isfinite(epsilon_array) & (epsilon_array > 0))
+                )
+            except (TypeError, ValueError):
+                valid_epsilon = False
+            if not valid_epsilon:
+                raise ValueError(
+                    f"'epsilon' must be a finite positive number, got {epsilon!r}."
+                )
+
+        # --------------------------------------------------------------
+        # Frequency setup (same as TransientLikelihoodFD)
+        # --------------------------------------------------------------
+
+        _frequencies = self.detector_frequencies
+
         self.frequencies = jnp.unique(jnp.concatenate(_frequencies))
-        self.frequency_masks = [
-            jnp.isin(
-                self.frequencies, detector.sliced_frequencies, method="binary_search"
-            )
-            for detector in detectors
+        self.frequency_indices = [
+            jnp.searchsorted(self.frequencies, freqs) for freqs in _frequencies
         ]
 
-        self.trigger_time = trigger_time
-        self.gmst = compute_gmst(self.trigger_time)
+        # --------------------------------------------------------------
+        # Phase marginalization validation
+        # --------------------------------------------------------------
 
-        # --- phase marginalization flag ---
         if self.phase_marginalization and "phase_c" in self.fixed_parameters:
             raise ValueError(
                 "Cannot have phase_c fixed while marginalizing over phase_c"
             )
+        if self.phase_marginalization:
+            self._warn_if_phase_marginalization_is_inexact()
 
-        # --- heterodyne setup ---
+        # --------------------------------------------------------------
+        # Heterodyne setup
+        # --------------------------------------------------------------
+
         logger.info("Initializing heterodyned likelihood..")
 
         if likelihood_transforms is None:
@@ -787,73 +1184,151 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
             )
         logger.info("Constructing reference waveforms..")
 
-        self.reference_parameters["trigger_time"] = self.trigger_time
-        self.reference_parameters["gmst"] = self.gmst
-
-        self.waveform_low_ref = {}
-        self.waveform_high_ref = {}
+        self._waveform_ref = {}
         self.summary_data = {}
 
-        if n_bins is not None:
-            if epsilon is not None:
-                raise ValueError(
-                    "'n_bins' and 'epsilon' are mutually exclusive; specify at most one."
-                )
-            elif n_bins <= 0:
-                raise ValueError(
-                    f"'n_bins' must be a positive integer, got {n_bins!r}."
-                )
-        elif epsilon is None:
-            epsilon = 0.5
-
         if epsilon is not None:
-            if epsilon <= 0:
-                raise ValueError(
-                    f"'epsilon' must be a positive number, got {epsilon!r}."
-                )
-            else:
-                freqs_arr = self.frequencies
-                phase = HeterodynedTransientLikelihoodFD._max_phase_diff(
-                    freqs_arr, freqs_arr[0], freqs_arr[-1]
-                )
-                n_bins = max(1, int(float(phase[-1]) / epsilon))
+            freqs_arr = self.frequencies
+            phase = HeterodynedTransientLikelihoodFD._max_phase_diff(
+                freqs_arr, freqs_arr[0], freqs_arr[-1]
+            )
+            n_bins = max(1, int(float(phase[-1]) / epsilon))
+        # The input checks and epsilon calculation above resolve an integer count.
         assert isinstance(n_bins, int)
         freq_grid = self._make_binning_scheme(self.frequencies, n_bins=n_bins)
 
         ref_hpc = reference_waveform(self.frequencies, self.reference_parameters)
         masked_freq_grid = self._mask_and_set_frequency_arrays(ref_hpc, freq_grid)
 
-        hpc_low = reference_waveform(self.freq_grid_low, self.reference_parameters)
-        hpc_high = reference_waveform(self.freq_grid_high, self.reference_parameters)
+        # --------------------------------------------------------------
+        # Reference edge validation
+        # --------------------------------------------------------------
+
+        # Each unsuccessful pass removes at least one bin. The initial bin count
+        # therefore bounds the work needed to find supported edges.
+        for _ in range(self.n_bins):
+            hpc_low = reference_waveform(self.freq_grid_low, self.reference_parameters)
+            hpc_high = reference_waveform(
+                self.freq_grid_high, self.reference_parameters
+            )
+            self._validate_reference_waveform(hpc_low, self.freq_grid_low)
+            self._validate_reference_waveform(hpc_high, self.freq_grid_high)
+            if hpc_low.keys() != hpc_high.keys() or hpc_low.keys() != ref_hpc.keys():
+                raise ValueError(
+                    "Reference waveform polarizations must match across grids."
+                )
+            # Grid-dependent cutoffs can remove further edge bins. Trim only the
+            # ends and regenerate: removing lower bins changes the grid spacing.
+            low_support = jnp.any(
+                jnp.array([value != 0 for value in hpc_low.values()]), axis=0
+            )
+            high_support = jnp.any(
+                jnp.array([value != 0 for value in hpc_high.values()]), axis=0
+            )
+            supported_bins = low_support & high_support
+            if bool(jnp.all(supported_bins)):
+                break
+            supported_indices = jnp.flatnonzero(supported_bins)
+            if not len(supported_indices):
+                raise ValueError(
+                    "Reference waveform must have finite, nonzero bin edges in "
+                    "the frequency range of the likelihood; increase n_bins or choose a "
+                    "supported range."
+                )
+            first, last = int(supported_indices[0]), int(supported_indices[-1])
+            if not bool(jnp.all(supported_bins[first : last + 1])):
+                raise ValueError(
+                    "Reference waveform must be nonzero at bin edges inside its "
+                    "supported range."
+                )
+            self.freq_grid = self.freq_grid[first : last + 2]
+            self.n_bins = len(self.freq_grid) - 1
+            masked_freq_grid = self.freq_grid
+        else:
+            raise RuntimeError("Reference bin refinement did not converge.")
+        if reference_waveform is not waveform:
+            for frequencies in (self.freq_grid_low, self.freq_grid_high):
+                self._validate_reference_waveform(
+                    waveform(frequencies, self.reference_parameters),
+                    frequencies,
+                    label="Waveform",
+                )
+        hpc_edges = {
+            key: jnp.concatenate((hpc_low[key], hpc_high[key])) for key in hpc_low
+        }
+        response_frequencies = jnp.concatenate(
+            (self.freq_grid_low, self.freq_grid_high)
+        )
+
+        # --------------------------------------------------------------
+        # Reference response and coefficient validation
+        # --------------------------------------------------------------
 
         for i, detector in enumerate(self.detectors):
-            hpc_ifo = {key: ref_hpc[key][self.frequency_masks[i]] for key in ref_hpc}
+            hpc_ifo = {key: ref_hpc[key][self.frequency_indices[i]] for key in ref_hpc}
             waveform_ref = detector.fd_response(
-                detector.sliced_frequencies, hpc_ifo, self.reference_parameters
+                _frequencies[i],
+                hpc_ifo,
+                self.reference_parameters,
             )
-            self.waveform_low_ref[detector.name] = detector.fd_response(
-                self.freq_grid_low, hpc_low, self.reference_parameters
+            self._waveform_ref[detector.name] = detector.fd_response(
+                response_frequencies,
+                hpc_edges,
+                self.reference_parameters,
             )
-            self.waveform_high_ref[detector.name] = detector.fd_response(
-                self.freq_grid_high, hpc_high, self.reference_parameters
-            )
+            edge_reference = self._waveform_ref[detector.name]
+            if not bool(jnp.all(jnp.isfinite(edge_reference) & (edge_reference != 0))):
+                raise ValueError(
+                    f"Reference response for {detector.name} must be finite and "
+                    "nonzero at every bin edge; choose different reference "
+                    "parameters or a supported frequency range."
+                )
             self.summary_data[detector.name] = self._compute_coefficients(
                 detector,
                 waveform_ref,
                 masked_freq_grid,
             )
+            if not bool(jnp.all(jnp.isfinite(self.summary_data[detector.name]))):
+                raise ValueError(
+                    f"Heterodyne coefficients for {detector.name} must be finite; "
+                    "check the reference waveform, strain and PSD."
+                )
 
-    # --- direct evaluation ---
+    # ------------------------------------------------------------------
+    # Properties
+    # ------------------------------------------------------------------
 
-    def _evaluate(self, params: dict[str, Float]) -> FloatScalar:
-        waveform_sky_low = self.waveform(self.freq_grid_low, params)
-        waveform_sky_high = self.waveform(self.freq_grid_high, params)
-        return self._likelihood(params, waveform_sky_low, waveform_sky_high)
+    @property
+    def freq_grid_low(self) -> Float[Array, " n_valid"]:
+        """Lower frequency edge of each relative-binning interval."""
+        return self.freq_grid[:-1]
 
-    # --- waveform-cache evaluation ---
+    @property
+    def freq_grid_high(self) -> Float[Array, " n_valid"]:
+        """Upper frequency edge of each relative-binning interval."""
+        return self.freq_grid[1:]
+
+    @property
+    def bin_widths(self) -> Float[Array, " n_valid"]:
+        """Widths derived from the shared bin-edge grid."""
+        return self.freq_grid_high - self.freq_grid_low
+
+    # ------------------------------------------------------------------
+    # Direct evaluation
+    # ------------------------------------------------------------------
+
+    def _evaluate(self, params: Mapping[str, FloatLike]) -> FloatScalar:
+        # Preserve both waveform grids: some models depend on grid spacing.
+        waveform_low = self.waveform(self.freq_grid_low, params)
+        waveform_high = self.waveform(self.freq_grid_high, params)
+        return self._likelihood(params, waveform_low, waveform_high)
+
+    # ------------------------------------------------------------------
+    # Waveform cache evaluation
+    # ------------------------------------------------------------------
 
     def _generate_waveform(
-        self, params: dict[str, Float]
+        self, params: Mapping[str, FloatLike]
     ) -> dict[str, dict[str, Complex[Array, " n_bins"]]]:
         """Generate bin-edge polarizations for cache reuse.
 
@@ -868,41 +1343,45 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
 
     def _evaluate_from_waveform(
         self,
-        params: dict[str, Float],
+        params: Mapping[str, FloatLike],
         waveform_cache: dict[str, dict[str, Complex[Array, " n_bins"]]],
     ) -> FloatScalar:
         """Core likelihood evaluation from a pre-generated waveform cache."""
-        waveform_sky_low = self._waveform_sky_from_cache(waveform_cache["low"], params)
-        waveform_sky_high = self._waveform_sky_from_cache(
-            waveform_cache["high"], params
-        )
-        return self._likelihood(params, waveform_sky_low, waveform_sky_high)
+        waveform_low = self._waveform_sky_from_cache(waveform_cache["low"], params)
+        waveform_high = self._waveform_sky_from_cache(waveform_cache["high"], params)
+        return self._likelihood(params, waveform_low, waveform_high)
 
-    # --- shared likelihood core ---
+    # ------------------------------------------------------------------
+    # Likelihood computation
+    # ------------------------------------------------------------------
 
     def _likelihood(
         self,
-        params: dict[str, Float],
-        waveform_sky_low: dict[str, Complex[Array, " n_bins"]],
-        waveform_sky_high: dict[str, Complex[Array, " n_bins"]],
+        params: Mapping[str, FloatLike],
+        waveform_low: dict[str, Complex[Array, " n_bins"]],
+        waveform_high: dict[str, Complex[Array, " n_bins"]],
     ) -> FloatScalar:
         """Core likelihood computation from physical-distance bin-edge polarizations."""
-        frequencies_low = self.freq_grid_low
-        frequencies_high = self.freq_grid_high
         log_likelihood: FloatScalar = jnp.zeros(())
 
         complex_d_inner_h: ComplexScalar = jnp.zeros((), dtype=jnp.complex128)
 
+        # Project both edge grids together without changing waveform evaluation.
+        frequencies = jnp.concatenate((self.freq_grid_low, self.freq_grid_high))
+        waveform_sky = {
+            key: jnp.concatenate((waveform_low[key], waveform_high[key]))
+            for key in waveform_low
+        }
+
         for detector in self.detectors:
-            waveform_low = detector.fd_response(
-                frequencies_low, waveform_sky_low, params
-            )
-            waveform_high = detector.fd_response(
-                frequencies_high, waveform_sky_high, params
+            waveform_edges = detector.fd_response(
+                frequencies,
+                waveform_sky,
+                params,
             )
 
-            r_low = waveform_low / self.waveform_low_ref[detector.name]
-            r_high = waveform_high / self.waveform_high_ref[detector.name]
+            ratios = waveform_edges / self._waveform_ref[detector.name]
+            r_low, r_high = jnp.split(ratios, 2)
             r0 = (r_low + r_high) / 2
             r1 = (r_high - r_low) / self.bin_widths
 
@@ -912,13 +1391,15 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
             if self.phase_marginalization:
                 complex_d_inner_h += jnp.sum(A0 * r0.conj() + A1 * r1.conj())
                 optimal_SNR = jnp.sum(
-                    B0 * jnp.abs(r0) ** 2 + 2 * B1 * (r0 * r1.conj()).real
+                    B0 * (r0.real**2 + r0.imag**2)
+                    + 2 * B1 * (r0.real * r1.real + r0.imag * r1.imag)
                 )
                 log_likelihood += -optimal_SNR.real / 2
             else:
                 match_filter_SNR = jnp.sum(A0 * r0.conj() + A1 * r1.conj())
                 optimal_SNR = jnp.sum(
-                    B0 * jnp.abs(r0) ** 2 + 2 * B1 * (r0 * r1.conj()).real
+                    B0 * (r0.real**2 + r0.imag**2)
+                    + 2 * B1 * (r0.real * r1.real + r0.imag * r1.imag)
                 )
                 log_likelihood += (match_filter_SNR - optimal_SNR / 2).real
 
@@ -927,126 +1408,9 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
 
         return log_likelihood
 
-    # --- relative-binning setup helpers ---
-
-    def _make_binning_scheme(
-        self,
-        freqs: Float[Array, " n_freq"],
-        n_bins: int,
-        chi: float = 1.0,
-    ) -> Float[Array, " n_bins+1"]:
-        """Make ``n_bins`` frequency bins of equal phase change.
-
-        ``n_bins`` must be a positive integer resolved by the caller
-        (see :meth:`__init__`).
-        """
-        phase_diff_array = self._max_phase_diff(freqs, freqs[0], freqs[-1], chi=chi)
-        total_phase = phase_diff_array[-1]
-        phase_diff = jnp.linspace(0.0, total_phase, n_bins + 1)
-        f_bins = interp1d(phase_diff_array, freqs)(phase_diff)
-        return jnp.array(f_bins)
-
-    def _mask_and_set_frequency_arrays(
-        self,
-        waveform: dict[str, Complex[Array, " n_freq"]],
-        frequencies: Float[Array, " n_freq"],
-    ) -> Float[Array, " n_valid+1"]:
-        """
-        Mask out trivial waveform pieces which are usually beyond merger frequency.
-
-        This is to avoid creating NaNs from 0/0 when computing the r0 and r1,
-        where the ratios between waveforms are taken.
-
-        Remark:
-            The following operations change array shapes dynamically, which is
-            not jittable. In the future, if jax.jit is preferable, this has to
-            be scrapped, and then when computing the likelihood (inside _likelihood),
-            replace jnp.sum with jnp.nansum.
-            The current implementation has the advantage of greatly reducing memory
-            usage when the detector f_max is larger than merger frequency.
-        """
-        h_amp = jnp.array([jnp.abs(p) for p in waveform.values()]).sum(axis=0)
-        _valid_frequencies = self.frequencies[h_amp > 0]
-        valid_mask = (frequencies >= _valid_frequencies[0]) & (
-            frequencies <= _valid_frequencies[-1]
-        )
-
-        masked_frequencies = frequencies[valid_mask]
-        self.freq_grid_low = masked_frequencies[:-1]
-        self.freq_grid_high = masked_frequencies[1:]
-        self.n_bins = len(masked_frequencies) - 1
-        self.bin_widths = self.freq_grid_high - self.freq_grid_low
-
-        return masked_frequencies
-
-    @staticmethod
-    def _max_phase_diff(
-        freqs: Float[Array, " n_freq"],
-        f_low: FloatLike,
-        f_high: FloatLike,
-        chi: float = 1.0,
-    ) -> Float[Array, " n_freq"]:
-        """
-        Compute the cumulative phase difference used for bin construction.
-
-        Uses 5 physically-motivated PN/IMR terms from arXiv:1806.08792:
-        gamma ∈ {-5/3, -2/3, 1, 5/3, 7/3}, covering the dominant Newtonian
-        chirp (0PN), spin-orbit (1.5PN), coalescence time, and phenomenological
-        IMR contributions.  Each term is normalised by so that its individual
-        contribution spans exactly ``chi * 2π`` rad across [f_low, f_high].
-        The returned array starts at 0 (cumulative from f_low).
-
-        See also Eq.(7) in arXiv:2302.05333.
-        """
-        gamma = jnp.array([-5.0, -2.0, 3.0, 5.0, 7.0]) / 3
-        freq_2D = jax.lax.broadcast_in_dim(freqs, (freqs.size, gamma.size), [0])
-        f_star = jnp.where(gamma >= 0, f_high, f_low)
-        summand = (freq_2D / f_star) ** gamma * jnp.sign(gamma)
-        dphi = 2 * jnp.pi * chi * jnp.sum(summand, axis=1)
-        return dphi - dphi[0]
-
-    @staticmethod
-    def _compute_coefficients(
-        detector: Detector,
-        h_ref: Complex[Array, " n_freq"],
-        f_bins: Float[Array, " n_valid+1"],
-    ) -> Complex[Array, "4 n_valid"]:
-        data = detector.sliced_fd_data
-        psd = detector.sliced_psd
-        freqs = detector.sliced_frequencies
-
-        data_prod = jnp.array(data * h_ref.conj()) / psd
-        self_prod = jnp.array(h_ref * h_ref.conj()) / psd
-
-        # Broadcasting for 2D frequencies
-        freqs_broadcast = freqs[None, :]  # Shape: (1, n_freq)
-        freq_bins_left = f_bins[:-1][:, None]  # Shpae: (n_valid, 1)
-        freq_bins_right = f_bins[1:][:, None]  # Shape: (n_valid, 1)
-        freq_bins_center = (freq_bins_left + freq_bins_right) / 2
-
-        # Shape: (n_valid, n_freq)
-        mask = (freqs_broadcast >= freq_bins_left) & (freqs_broadcast < freq_bins_right)
-        # The half-open interval [left, right) excludes any frequency that lands
-        # exactly on the upper edge of the last bin (f_bins[-1]).  This happens
-        # whenever the interpolated bin edge coincides with the last discrete
-        # frequency sample (common when the waveform reaches f_max).  Extend the
-        # last row to a closed interval by OR-ing in the equality condition.
-        mask = mask.at[-1].set(mask[-1] | (freqs == f_bins[-1]))
-        freq_shift_matrix = (freqs_broadcast - freq_bins_center) * mask
-
-        # The resultant arrays have shape (n_valid), the dimension with "n_freq" is summed over.
-        summary_data = jnp.array(
-            [
-                jnp.sum(data_prod[None, :] * mask, axis=1),  # A0
-                jnp.sum(data_prod[None, :] * freq_shift_matrix, axis=1),  # A1
-                jnp.sum(self_prod[None, :] * mask, axis=1),  # B0
-                jnp.sum(self_prod[None, :] * freq_shift_matrix, axis=1),  # B1
-            ]
-        )
-
-        return 4 / detector.duration * summary_data
-
-    # --- reference-parameter optimization ---
+    # ------------------------------------------------------------------
+    # Reference parameter optimization
+    # ------------------------------------------------------------------
 
     def maximize_likelihood(
         self,
@@ -1082,32 +1446,64 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
                 search may still stop earlier if CMA-ES's own
                 convergence/stall criterion fires).
         """
+        # --------------------------------------------------------------
+        # Optimizer validation
+        # --------------------------------------------------------------
+
+        for name, count in (
+            ("optimizer_popsize", optimizer_popsize),
+            ("optimizer_n_steps", optimizer_n_steps),
+        ):
+            if isinstance(count, bool) or not isinstance(count, Integral) or count <= 0:
+                raise ValueError(f"{name} must be a positive integer, got {count!r}.")
+        if optimizer_target is not None:
+            try:
+                target = jnp.asarray(optimizer_target)
+                valid_target = (
+                    target.ndim == 0
+                    and jnp.issubdtype(target.dtype, jnp.number)
+                    and not jnp.iscomplexobj(target)
+                    and bool(jnp.isfinite(target))
+                )
+            except (TypeError, ValueError):
+                valid_target = False
+            if not valid_target:
+                raise ValueError(
+                    f"optimizer_target must be a finite real scalar or None, "
+                    f"got {optimizer_target!r}."
+                )
         parameter_names = list(prior.parameter_names)
         n_dim = len(parameter_names)
 
-        # ------------------------------------------------------------------
-        # Reconstruct f_min / f_max per detector from already-set bounds
-        # ------------------------------------------------------------------
-        f_min_dict = {d.name: d.frequency_bounds[0] for d in self.detectors}
-        f_max_dict = {d.name: d.frequency_bounds[1] for d in self.detectors}
+        # --------------------------------------------------------------
+        # Reuse the frequencies of the likelihood for every detector
+        # --------------------------------------------------------------
 
-        # ------------------------------------------------------------------
+        frequency_grids = dict(zip(self.detector_names, self.detector_frequencies))
+
+        # --------------------------------------------------------------
         # Build the full (un-marginalized) TransientLikelihoodFD objective
-        # ------------------------------------------------------------------
+        # --------------------------------------------------------------
+
         full_likelihood = TransientLikelihoodFD(
             detectors=self.detectors,
             waveform=self.waveform,
-            f_min=f_min_dict,
-            f_max=f_max_dict,
-            trigger_time=self.trigger_time,
+            f_min={
+                name: float(frequencies[0])
+                for name, frequencies in frequency_grids.items()
+            },
+            f_max={
+                name: float(frequencies[-1])
+                for name, frequencies in frequency_grids.items()
+            },
         )
 
-        # ------------------------------------------------------------------
-        # Normalize the search space using the prior sample statistics so
-        # that every dimension has unit variance before CMA-ES sees it.
-        # CMA-ES then operates with std_init=1e-3 in a space where each
-        # parameter already lives on a comparable scale.
-        # ------------------------------------------------------------------
+        # --------------------------------------------------------------
+        # Search space normalization
+        # --------------------------------------------------------------
+
+        # Prior sample statistics give each dimension unit variance so CMA-ES
+        # can use std_init=1e-3 on a comparable scale for every parameter.
         n_init = max(optimizer_popsize, 1000)
         init_samples = prior.sample(jax.random.key(0), n_init)
         sample_matrix = jnp.column_stack(
@@ -1132,9 +1528,10 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
 
         _log_likelihood_vmap = jax.vmap(_log_likelihood)
 
-        # ------------------------------------------------------------------
+        # --------------------------------------------------------------
         # Set up CMA-ES in normalized space: init_mean=0, std_init=1e-3
-        # ------------------------------------------------------------------
+        # --------------------------------------------------------------
+
         es = CMA_ES(population_size=optimizer_popsize, solution=jnp.zeros(n_dim))
         es_params = replace(es.default_params, std_init=1e-3)
         key = jax.random.key(42)
@@ -1212,9 +1609,10 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         )
         best_z = state.best_solution
 
-        # ------------------------------------------------------------------
+        # --------------------------------------------------------------
         # Convert best solution back to named parameters
-        # ------------------------------------------------------------------
+        # --------------------------------------------------------------
+
         best_x = prior_mean + prior_std * best_z
         named_params = dict(zip(parameter_names, best_x, strict=True))
         for transform in likelihood_transforms:
@@ -1222,10 +1620,167 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         named_params = apply_fixed_parameters(named_params, self.fixed_parameters)
         return named_params
 
+    # ------------------------------------------------------------------
+    # Relative binning setup
+    # ------------------------------------------------------------------
 
-# ---------------------------------------------------------------------------
-# Multi-banded likelihood
-# ---------------------------------------------------------------------------
+    def _make_binning_scheme(
+        self,
+        freqs: Float[Array, " n_freq"],
+        n_bins: int,
+        chi: float = 1.0,
+    ) -> Float[Array, " n_bins+1"]:
+        """Make ``n_bins`` frequency bins of equal phase change.
+
+        ``n_bins`` must be a positive integer resolved by the caller
+        (see :meth:`__init__`).
+        """
+        phase_diff_array = self._max_phase_diff(freqs, freqs[0], freqs[-1], chi=chi)
+        total_phase = phase_diff_array[-1]
+        phase_diff = jnp.linspace(0.0, total_phase, n_bins + 1)
+        f_bins = interp1d(phase_diff_array, freqs)(phase_diff)
+        return jnp.array(f_bins)
+
+    def _mask_and_set_frequency_arrays(
+        self,
+        waveform: dict[str, Complex[Array, " n_freq"]],
+        frequencies: Float[Array, " n_freq"],
+    ) -> Float[Array, " n_valid+1"]:
+        """
+        Mask out trivial waveform pieces which are usually beyond merger frequency.
+
+        This is to avoid creating NaNs from 0/0 when computing the r0 and r1,
+        where the ratios between waveforms are taken.
+
+        This setup step trims unsupported frequencies before JIT compilation,
+        keeping the evaluation grids fixed and avoiding undefined waveform ratios.
+        """
+        # --------------------------------------------------------------
+        # Reference support validation
+        # --------------------------------------------------------------
+
+        self._validate_reference_waveform(waveform, self.frequencies)
+        h_amp = jnp.array([jnp.abs(p) for p in waveform.values()]).sum(axis=0)
+        support = h_amp > 0
+        support_indices = jnp.flatnonzero(support)
+        if not len(support_indices):
+            raise ValueError(
+                "Reference waveform has no support in the frequency range of the likelihood."
+            )
+        first, last = int(support_indices[0]), int(support_indices[-1])
+        if not bool(jnp.all(support[first : last + 1])):
+            raise ValueError(
+                "Reference waveform must be nonzero inside its supported range."
+            )
+        _valid_frequencies = self.frequencies[support_indices]
+        valid_mask = (frequencies >= _valid_frequencies[0]) & (
+            frequencies <= _valid_frequencies[-1]
+        )
+
+        masked_frequencies = frequencies[valid_mask]
+        if len(masked_frequencies) < 2:
+            raise ValueError(
+                "Reference waveform support contains fewer than two bin edges; "
+                "increase n_bins or choose a supported frequency range."
+            )
+        if not bool(jnp.all(jnp.diff(masked_frequencies) > 0)):
+            raise ValueError("Heterodyne bin edges must be strictly increasing.")
+        self.freq_grid = masked_frequencies
+        self.n_bins = len(masked_frequencies) - 1
+
+        return masked_frequencies
+
+    @staticmethod
+    def _validate_reference_waveform(
+        waveform: dict[str, Complex[Array, " n_freq"]],
+        frequencies: Float[Array, " n_freq"],
+        *,
+        label: str = "Reference waveform",
+    ) -> None:
+        """Reject unsupported reference grids before building likelihood ratios."""
+        # --------------------------------------------------------------
+        # Reference waveform validation
+        # --------------------------------------------------------------
+
+        if not waveform:
+            raise ValueError(f"{label} must contain polarizations.")
+        for polarization, strain in waveform.items():
+            if strain.shape != frequencies.shape or not bool(
+                jnp.all(jnp.isfinite(strain))
+            ):
+                raise ValueError(
+                    f"{label} polarization {polarization!r} must contain "
+                    "one finite value per frequency. Check the reference parameters "
+                    "and whether the waveform supports the bin-edge grid; increasing "
+                    "n_bins may be necessary."
+                )
+
+    @staticmethod
+    def _max_phase_diff(
+        freqs: Float[Array, " n_freq"],
+        f_low: FloatLike,
+        f_high: FloatLike,
+        chi: float = 1.0,
+    ) -> Float[Array, " n_freq"]:
+        """Cumulative phase difference of the reference signal, starting at 0 at ``f_low``."""
+        # Five power laws in frequency (arXiv:1806.08792) for the Newtonian chirp, the
+        # spin-orbit term, the coalescence time and the merger-ringdown; see also
+        # Eq. (7) of arXiv:2302.05333.
+        gamma = jnp.array([-5.0, -2.0, 3.0, 5.0, 7.0]) / 3
+        freq_2D = jax.lax.broadcast_in_dim(freqs, (freqs.size, gamma.size), [0])
+        f_star = jnp.where(gamma >= 0, f_high, f_low)
+        summand = (freq_2D / f_star) ** gamma * jnp.sign(gamma)
+        dphi = 2 * jnp.pi * chi * jnp.sum(summand, axis=1)
+        return dphi - dphi[0]
+
+    def _compute_coefficients(
+        self,
+        detector: Detector,
+        h_ref: Complex[Array, " n_freq"],
+        f_bins: Float[Array, " n_valid+1"],
+    ) -> Complex[Array, "4 n_valid"]:
+        i = self.detectors.index(detector)
+        freqs, data, psd = self._detector_data_in_frequency_range(i)
+
+        data_prod = jnp.array(data * h_ref.conj()) / psd
+        self_prod = jnp.array(h_ref * h_ref.conj()) / psd
+
+        n_bins = f_bins.shape[0] - 1
+        freq_bins_center = (f_bins[:-1] + f_bins[1:]) / 2
+
+        # Assign each frequency sample to its bin: bin k is [f_bins[k], f_bins[k+1]).
+        # A per-sample bin index with segment_sum keeps memory at O(n_freq), whereas
+        # a dense (n_bins, n_freq) mask matrix is prohibitive for long durations.
+        idx = jnp.searchsorted(f_bins, freqs, side="right") - 1
+        # The half-open interval excludes any frequency that lands exactly on the
+        # upper edge of the last bin (f_bins[-1]).  This happens whenever the
+        # interpolated bin edge coincides with the last discrete frequency sample
+        # (common when the waveform reaches f_max).  Close the last bin on the right.
+        idx = jnp.where(freqs == f_bins[-1], n_bins - 1, idx)
+        freq_shift = freqs - freq_bins_center[jnp.clip(idx, 0, n_bins - 1)]
+
+        def _bin_sum(x: Complex[Array, " n_freq"]) -> Complex[Array, " n_valid"]:
+            # Drop samples outside the binned range without accumulating them.
+            return jax.ops.segment_sum(x, idx, num_segments=n_bins, mode="drop")
+
+        # The resultant arrays have shape (n_valid), the dimension with "n_freq" is summed over.
+        summary_data = jnp.array(
+            [
+                _bin_sum(data_prod),  # A0
+                _bin_sum(data_prod * freq_shift),  # A1
+                _bin_sum(self_prod),  # B0
+                _bin_sum(self_prod * freq_shift),  # B1
+            ]
+        )
+
+        return 4 / detector.data.duration * summary_data
+
+
+# ----------------------------------------------------------------------
+# Multibanded likelihood
+# ----------------------------------------------------------------------
+
+
 class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
     """Multi-banded likelihood for gravitational wave transient events.
 
@@ -1249,11 +1804,14 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
         detectors (Sequence[Detector]): List of detector objects.
         waveform (Waveform): Waveform model to evaluate.
         fixed_parameters (Optional[dict]): Fixed parameters for the likelihood.
-        f_min (Float | dict[str, Float]): Minimum frequency for likelihood
-            evaluation, or a dict mapping detector name to per-detector Float.
-        f_max (Float | dict[str, Float]): Maximum frequency for likelihood
-            evaluation, or a dict mapping detector name to per-detector Float.
-        trigger_time (Float): GPS time of the event trigger.
+        f_min (Optional[Float | dict[str, Float]]): Minimum frequency for
+            likelihood evaluation, or a dict mapping detector name to a per-detector
+            Float.  Must be positive and not below the minimum frequency of the
+            data.  Defaults to that minimum frequency.
+        f_max (Optional[Float | dict[str, Float]]): Maximum frequency for
+            likelihood evaluation, or a dict mapping detector name to a per-detector
+            Float.  Must not exceed the maximum frequency of the data or the
+            Nyquist frequency.  Defaults to the smaller of the two.
         highest_mode (int): Maximum magnetic number (default 2, for 22-mode only).
         accuracy_factor (Float): Accuracy parameter L (default 5.0).
         prior (Optional[Prior]): Combined prior object.  Needed when *reference_chirp_mass*,
@@ -1264,7 +1822,8 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
             ``None``, the value is inferred from the ``M_c`` component of *prior*.
         time_offset (Optional[Float]): Time offset in seconds.  When ``None``,
             inferred from the ``t_c`` (or ``t_{ifo}``) prior range; falls back
-            to 2.12 s with a warning when the prior is unavailable.
+            to 2.12 s with a warning when the prior is unavailable and the data end
+            2 s after the trigger time (otherwise it is an error).
         delta_f_end (Optional[Float]): End frequency taper scale in Hz.  When
             ``None``, inferred from the ``t_c`` prior range; falls back to 53.0 Hz.
         max_banding_frequency (Optional[Float]): Upper limit on band starting frequency.
@@ -1286,17 +1845,21 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
     unique_frequencies: Float[Array, " n_unique"]
     unique_to_original: Array
 
-    linear_coeffs: dict[str, Float[Array, " n_total_points"]]
+    linear_coeffs: dict[str, Complex[Array, " n_total_points"]]
     quadratic_coeffs: dict[str, Float[Array, " n_total_points"]]
+
+    # ------------------------------------------------------------------
+    # Construction
+    # ------------------------------------------------------------------
 
     def __init__(
         self,
         detectors: Sequence[Detector],
         waveform: Waveform,
+        *,
         fixed_parameters: Optional[FixedParameters] = None,
-        f_min: float | dict[str, float] = 0,
-        f_max: float | dict[str, float] = jnp.inf,
-        trigger_time: float = 0,
+        f_min: Optional[float | dict[str, float]] = None,
+        f_max: Optional[float | dict[str, float]] = None,
         highest_mode: int = 2,
         accuracy_factor: float = 5.0,
         prior: Optional[Prior] = None,
@@ -1307,7 +1870,13 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
         min_banding_duration: float = 0.0,
     ):
 
-        super().__init__(detectors, waveform, fixed_parameters)
+        super().__init__(
+            detectors,
+            waveform,
+            fixed_parameters=fixed_parameters,
+            f_min=f_min,
+            f_max=f_max,
+        )
 
         logger.info("Initializing multi-banded likelihood...")
 
@@ -1315,8 +1884,12 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
             reference_chirp_mass, prior
         )
         time_offset, delta_f_end = self._resolve_time_params(
-            time_offset, delta_f_end, prior, float(trigger_time), detectors
+            time_offset, delta_f_end, prior
         )
+        # --------------------------------------------------------------
+        # Banding validation
+        # --------------------------------------------------------------
+
         self._validate_banding_params(
             reference_chirp_mass,
             highest_mode,
@@ -1335,19 +1908,6 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
         self.delta_f_end = delta_f_end
         self.min_banding_duration = min_banding_duration
 
-        _f_mins = []
-        _f_maxs = []
-        for detector in detectors:
-            f_min_ifo = f_min[detector.name] if isinstance(f_min, dict) else f_min
-            f_max_ifo = f_max[detector.name] if isinstance(f_max, dict) else f_max
-            detector.set_frequency_bounds(f_min_ifo, f_max_ifo)
-            sliced = detector.sliced_frequencies
-            _f_mins.append(float(sliced[0]))
-            _f_maxs.append(float(sliced[-1]))
-
-        self.minimum_frequency = min(_f_mins)
-        self.maximum_frequency = max(_f_maxs)
-
         fmax_spa = (
             (15 / 968) ** (3 / 5)
             * (self.highest_mode / (2 * jnp.pi)) ** (8 / 5)
@@ -1359,9 +1919,6 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
             else fmax_spa
         )
 
-        self.trigger_time = trigger_time
-        self.gmst = compute_gmst(trigger_time)
-
         self._setup_frequency_bands()
         self._setup_integers()
         self._setup_waveform_frequency_points()
@@ -1370,16 +1927,39 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
 
         logger.info("Multi-banding setup complete with %d bands", self.n_bands)
 
-    # --- direct evaluation ---
+    # ------------------------------------------------------------------
+    # Properties
+    # ------------------------------------------------------------------
 
-    def _evaluate(self, params: dict[str, Float]) -> FloatScalar:
+    @property
+    def minimum_frequency(self) -> float:
+        """Lowest f_min of the likelihood across the detectors."""
+        return min(f_min for f_min, _ in self._detector_frequency_ranges)
+
+    @property
+    def maximum_frequency(self) -> float:
+        """Highest f_max of the likelihood across the detectors."""
+        return max(f_max for _, f_max in self._detector_frequency_ranges)
+
+    @property
+    def n_bands(self) -> int:
+        """Number of frequency bands."""
+        return len(self.durations)
+
+    # ------------------------------------------------------------------
+    # Direct evaluation
+    # ------------------------------------------------------------------
+
+    def _evaluate(self, params: Mapping[str, FloatLike]) -> FloatScalar:
         waveform_sky = self.waveform(self.unique_frequencies, params)
         return self._likelihood(params, waveform_sky)
 
-    # --- waveform-cache evaluation ---
+    # ------------------------------------------------------------------
+    # Waveform cache evaluation
+    # ------------------------------------------------------------------
 
     def _generate_waveform(
-        self, params: dict[str, Float]
+        self, params: Mapping[str, FloatLike]
     ) -> dict[str, Complex[Array, " n_freq"]]:
         """Generate polarizations at multiband frequencies for cache reuse.
 
@@ -1391,18 +1971,20 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
 
     def _evaluate_from_waveform(
         self,
-        params: dict[str, Float],
+        params: Mapping[str, FloatLike],
         waveform_cache: dict[str, Complex[Array, " n_freq"]],
     ) -> FloatScalar:
         """Core likelihood evaluation from a pre-generated waveform cache."""
         waveform_sky = self._waveform_sky_from_cache(waveform_cache, params)
         return self._likelihood(params, waveform_sky)
 
-    # --- shared likelihood core ---
+    # ------------------------------------------------------------------
+    # Likelihood computation
+    # ------------------------------------------------------------------
 
     def _likelihood(
         self,
-        params: dict[str, Float],
+        params: Mapping[str, FloatLike],
         waveform_sky: dict[str, Complex[Array, " n_freq"]],
     ) -> FloatScalar:
         """Core likelihood computation from physical-distance multiband polarizations."""
@@ -1411,10 +1993,11 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
         for detector in self.detectors:
             # Get detector response at banded frequencies.
             h_det_unique = detector.fd_response(
-                self.unique_frequencies, waveform_sky, params
+                self.unique_frequencies,
+                waveform_sky,
+                params,
             )
             strain = h_det_unique[self.unique_to_original]
-
             d_inner_h = jnp.sum(strain * self.linear_coeffs[detector.name])
             h_inner_h = jnp.sum(
                 jnp.real(strain * jnp.conj(strain))
@@ -1424,11 +2007,13 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
 
         return log_likelihood
 
-    # --- prior-inference and validation helpers ---
+    # ------------------------------------------------------------------
+    # Configuration and prior bounds
+    # ------------------------------------------------------------------
 
     def _resolve_reference_chirp_mass(
         self,
-        reference_chirp_mass: Optional[Float],
+        reference_chirp_mass: Optional[float],
         prior: Optional[Prior],
     ) -> float:
         """Return ``reference_chirp_mass``, inferring from the M_c prior minimum when not provided."""
@@ -1456,8 +2041,6 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
         time_offset: Optional[float],
         delta_f_end: Optional[float],
         prior: Optional[Prior],
-        trigger_time: float,
-        detectors: Sequence[Detector],
     ) -> tuple[float, float]:
         """Return ``(time_offset, delta_f_end)``, inferring from t_c prior bounds when not provided.
 
@@ -1465,20 +2048,18 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
         Detector-frame time ``t_det`` is not supported because
         ``t_det = t_c + sky_delay(ra, dec)`` and the delay is sky-position-dependent,
         so ``t_c`` bounds cannot be derived from a ``t_det`` prior at setup time.
-        Falls back to defaults (2.12 s, 53.0 Hz) when inference is not possible.
+        Falls back to defaults (2.12 s, 53.0 Hz) when inference is not possible and
+        the data end 2 s after the trigger time, which the defaults assume.
         """
         inferred_to: Optional[float] = None
         inferred_dfe: Optional[float] = None
+        t_end = min(d.data.end_time - self.trigger_time for d in self.detectors)
 
         if prior is not None and (time_offset is None or delta_f_end is None):
             tc_prior = find_specific_prior(prior, "t_c")
             tc_bounds = tc_prior.get_bounds() if tc_prior is not None else None
             if tc_bounds is not None:
                 tc_min, tc_max = tc_bounds
-                t_end = min(
-                    float(d.data.start_time) + float(d.data.duration) - trigger_time
-                    for d in detectors
-                )
                 RE_S = EARTH_RADIUS_LIGHT_S
                 denom = t_end - tc_max - RE_S
 
@@ -1490,6 +2071,17 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
                     )
                 inferred_to = t_end - tc_min + RE_S
                 inferred_dfe = 100.0 / denom
+
+        uses_default = (time_offset is None and inferred_to is None) or (
+            delta_f_end is None and inferred_dfe is None
+        )
+        if uses_default and not jnp.isclose(t_end, 2.0, atol=1e-3):
+            raise ValueError(
+                "time_offset and delta_f_end cannot be inferred without a t_c prior, "
+                "and their defaults (2.12 s, 53.0 Hz) assume that the data end 2 s "
+                f"after the trigger time, but these end {t_end:.3f} s after it. Pass "
+                "time_offset and delta_f_end, or a prior that contains t_c."
+            )
 
         if time_offset is None:
             if inferred_to is not None:
@@ -1524,35 +2116,50 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
         max_banding_frequency: Optional[float],
     ) -> None:
         """Validate the related multi-banding configuration values."""
-        if reference_chirp_mass <= 0:
-            raise ValueError(
-                f"reference_chirp_mass must be > 0, got {reference_chirp_mass}"
-            )
-        if highest_mode <= 0:
-            raise ValueError(f"highest_mode must be > 0, got {highest_mode}")
-        if accuracy_factor <= 0:
-            raise ValueError(f"accuracy_factor must be > 0, got {accuracy_factor}")
-        if time_offset < 0:
-            raise ValueError(f"time_offset must be >= 0, got {time_offset}")
-        if delta_f_end <= 0:
-            raise ValueError(f"delta_f_end must be > 0, got {delta_f_end}")
-        if min_banding_duration < 0:
-            raise ValueError(
-                f"min_banding_duration must be >= 0, got {min_banding_duration}"
-            )
-        if max_banding_frequency is not None and max_banding_frequency <= 0:
-            raise ValueError(
-                f"max_banding_frequency must be > 0, got {max_banding_frequency}"
-            )
+        # --------------------------------------------------------------
+        # Validation
+        # --------------------------------------------------------------
 
-    # --- band structure ---
+        if (
+            isinstance(highest_mode, bool)
+            or not isinstance(highest_mode, Integral)
+            or highest_mode <= 0
+        ):
+            raise ValueError(
+                f"highest_mode must be a positive integer, got {highest_mode!r}."
+            )
+        values = [
+            ("reference_chirp_mass", reference_chirp_mass, False),
+            ("accuracy_factor", accuracy_factor, False),
+            ("time_offset", time_offset, True),
+            ("delta_f_end", delta_f_end, False),
+            ("min_banding_duration", min_banding_duration, True),
+        ]
+        if max_banding_frequency is not None:
+            values.append(("max_banding_frequency", max_banding_frequency, False))
+        for name, value, allow_zero in values:
+            try:
+                scalar = jnp.asarray(value)
+                valid = (
+                    scalar.ndim == 0
+                    and jnp.issubdtype(scalar.dtype, jnp.number)
+                    and not jnp.iscomplexobj(scalar)
+                    and bool(jnp.isfinite(scalar))
+                    and bool(scalar >= 0 if allow_zero else scalar > 0)
+                )
+            except (TypeError, ValueError):
+                valid = False
+            if not valid:
+                comparison = ">= 0" if allow_zero else "> 0"
+                raise ValueError(
+                    f"{name} must be {comparison} and a finite real scalar, got {value!r}."
+                )
 
-    @property
-    def n_bands(self) -> int:
-        """Number of frequency bands."""
-        return len(self.durations)
+    # ------------------------------------------------------------------
+    # Frequency bands
+    # ------------------------------------------------------------------
 
-    def _compute_tau_dtaudf(self, f: Float) -> tuple[Float, Float]:
+    def _compute_tau_dtaudf(self, f: FloatLike) -> tuple[FloatLike, FloatLike]:
         """Compute time-to-merger and its derivative using 0PN formula.
 
         Parameters
@@ -1574,13 +2181,9 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
         return tau, dtaudf
 
     def _find_starting_frequency(
-        self, duration: float, f_now: float
-    ) -> tuple[Optional[Float], Optional[Float]]:
-        """Find starting frequency of next band via bisection search.
-
-        Finds frequency satisfying conditions (10) and (51) of arXiv:2104.07813:
-        - Time containment: tau(f) + L * sqrt(-dtau/df) < duration - time_offset
-        - Smooth transition: f - 1/sqrt(-dtau/df) > f_now
+        self, duration: float, f_now: FloatLike
+    ) -> tuple[Optional[FloatLike], Optional[FloatLike]]:
+        """Find the starting frequency of the next band by bisection.
 
         Parameters
         ----------
@@ -1596,6 +2199,8 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
         """
 
         def _is_above_fnext(f):
+            # Conditions (10) and (51) of arXiv:2104.07813: the signal fits in the
+            # band, and the transition from the current band is smooth.
             tau, dtaudf = self._compute_tau_dtaudf(f)
             cond1 = (
                 duration
@@ -1632,10 +2237,12 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
             self.durations: Array of band durations
             self.fb_dfb: Array of [starting_freq, taper_width] for each band
         """
-        original_duration = float(self.detectors[0].data.duration)
+        original_duration = float(self.duration)
+        minimum_frequency = self.minimum_frequency
+        maximum_frequency = self.maximum_frequency
 
         durations_list = [original_duration]
-        fb_dfb_list = [[self.minimum_frequency, 0.0]]
+        fb_dfb_list = [[minimum_frequency, 0.0]]
 
         dnext: float = original_duration / 2
 
@@ -1646,7 +2253,7 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
             if (
                 fnext is not None
                 and dfnext is not None
-                and fnext < min(self.maximum_frequency, self.max_banding_frequency)
+                and fnext < min(maximum_frequency, self.max_banding_frequency)
             ):
                 durations_list.append(dnext)
                 fb_dfb_list.append([fnext, dfnext])
@@ -1655,9 +2262,7 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
                 break
 
         # Add final boundary
-        fb_dfb_list.append(
-            [self.maximum_frequency + self.delta_f_end, self.delta_f_end]
-        )
+        fb_dfb_list.append([maximum_frequency + self.delta_f_end, self.delta_f_end])
 
         self.durations = jnp.array(durations_list)
         self.fb_dfb = jnp.array(fb_dfb_list)
@@ -1675,7 +2280,7 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
             self.Mbs: Number of samples in shortened data per band
             self.Ks_Ke: Start/end frequency indices per band
         """
-        original_duration = float(self.detectors[0].data.duration)
+        original_duration = float(self.duration)
         durations = self.durations.tolist()
         fb_dfb = self.fb_dfb.tolist()
 
@@ -1737,6 +2342,10 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
         self.unique_frequencies = unique_freqs
         self.unique_to_original = idxs.astype(jnp.int32)
 
+    # ------------------------------------------------------------------
+    # Band windows
+    # ------------------------------------------------------------------
+
     def _get_window_sequence(
         self, delta_f: float, start_idx: int, length: int, band: int
     ) -> Array:
@@ -1795,6 +2404,10 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
 
         return window
 
+    # ------------------------------------------------------------------
+    # Likelihood coefficients
+    # ------------------------------------------------------------------
+
     def _setup_linear_coefficients(self) -> None:
         """Pre-compute coefficients for (d|h) inner product.
 
@@ -1805,7 +2418,7 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
         4. Multiply by window and normalization factor
 
         Sets:
-            self.linear_coeffs: Dict mapping detector name to coefficient array
+            self.linear_coeffs: Per-detector coefficients across the banded frequency grid
         """
         Ks_Ke = self.Ks_Ke.tolist()
         Nbs = self.Nbs.tolist()
@@ -1815,17 +2428,19 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
 
         self.linear_coeffs = {}
 
-        for detector in self.detectors:
+        for i, detector in enumerate(self.detectors):
             logger.info(f"Pre-computing linear coefficients for {detector.name}")
-            data_fd = jnp.array(detector.data.fd)
-            psd = jnp.array(detector.psd.values)
-            freq_mask = jnp.array(detector.frequency_mask)
-
-            valid_len = min(len(data_fd), N // 2 + 1)
-            mask_valid = freq_mask[:valid_len]
-            safe_psd = jnp.where(mask_valid, psd[:valid_len], 1.0)
-            values = jnp.where(mask_valid, data_fd[:valid_len] / safe_psd, 0.0)
-            fddata = jnp.zeros(N // 2 + 1, dtype=complex).at[:valid_len].set(values)
+            _, data_fd, psd = self._detector_data_in_frequency_range(i)
+            weighted_data = jnp.zeros(detector.data.n_freq, dtype=data_fd.dtype)
+            weighted_data = weighted_data.at[self._detector_data_selections[i]].set(
+                data_fd / psd
+            )
+            valid_len = min(len(weighted_data), N // 2 + 1)
+            fddata = (
+                jnp.zeros(N // 2 + 1, dtype=complex)
+                .at[:valid_len]
+                .set(weighted_data[:valid_len])
+            )
 
             band_coeffs = []
 
@@ -1853,10 +2468,10 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
         of 1/PSD values using linear interpolation weights.
 
         Sets:
-            self.quadratic_coeffs: Dict mapping detector name to coefficient array
+            self.quadratic_coeffs: Per-detector coefficients on the unique frequency grid
         """
 
-        original_duration = float(self.detectors[0].data.duration)
+        original_duration = float(self.duration)
         start_end_idxs = self.start_end_idxs.tolist()
         durations = self.durations.tolist()
         fb_dfb = self.fb_dfb.tolist()
@@ -1864,9 +2479,10 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
 
         self.quadratic_coeffs = {}
 
-        for detector in self.detectors:
-            psd = jnp.array(detector.psd.values)
-            freq_mask = jnp.array(detector.frequency_mask)
+        for i, detector in enumerate(self.detectors):
+            _, _, psd = self._detector_data_in_frequency_range(i)
+            inverse_psd = jnp.zeros(detector.data.n_freq, dtype=psd.dtype)
+            inverse_psd = inverse_psd.at[self._detector_data_selections[i]].set(1 / psd)
 
             band_coeffs = []
 
@@ -1889,14 +2505,13 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
                 )
 
                 # Compute window / PSD
-                end_idx_orig = min(start_idx_orig + len(window) - 1, len(psd) - 1)
+                end_idx_orig = min(
+                    start_idx_orig + len(window) - 1, len(inverse_psd) - 1
+                )
                 valid_len = end_idx_orig - start_idx_orig + 1
 
-                local_mask = freq_mask[start_idx_orig : end_idx_orig + 1]
-                psd_slice = psd[start_idx_orig : end_idx_orig + 1]
-                safe_psd = jnp.where(local_mask, psd_slice, 1.0)
                 window_over_psd = (
-                    jnp.where(local_mask, 1.0 / safe_psd, 0.0) * window[:valid_len]
+                    inverse_psd[start_idx_orig : end_idx_orig + 1] * window[:valid_len]
                 )
 
                 # Compute coefficients using linear interpolation
@@ -1939,6 +2554,10 @@ class MultibandedTransientLikelihoodFD(SingleEventLikelihood):
 
             self.quadratic_coeffs[detector.name] = jnp.concatenate(band_coeffs)
 
+
+# ----------------------------------------------------------------------
+# Likelihood presets
+# ----------------------------------------------------------------------
 
 likelihood_presets = {
     "TransientLikelihoodFD": TransientLikelihoodFD,

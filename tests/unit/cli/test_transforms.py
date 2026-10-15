@@ -5,6 +5,7 @@ from pydantic import ValidationError
 
 from jimgw.cli._config import PipelineConfig, PriorConfig, SamplingConfig, UniformSpec
 from jimgw.cli._prior import adapt_prior_for_ns_time
+from tests.utils import attach_data
 
 _MINIMAL_DATA = {
     "type": "gwosc",
@@ -39,7 +40,9 @@ def _make_ifos():
     from jimgw.core.single_event.detector import get_detector_preset
 
     preset = get_detector_preset()
-    return [preset["H1"], preset["L1"]]
+    ifos = [preset["H1"], preset["L1"]]
+    attach_data(TRIGGER_TIME, ifos)
+    return ifos
 
 
 TRIGGER_TIME = 1126259462.4
@@ -57,14 +60,12 @@ def _infer(prior_params, sky_frame="detector", time_frame="detector"):
     prior_cfg = PriorConfig.model_validate({})
     sample_t = infer_sample_transforms(
         frozenset(prior_params),
-        TRIGGER_TIME,
         ifos,
         cfg,
         prior_cfg=prior_cfg,
     )
     lh_t = infer_likelihood_transforms(
         frozenset(prior_params),
-        TRIGGER_TIME,
         ifos,
         cfg,
         20.0,
@@ -72,9 +73,9 @@ def _infer(prior_params, sky_frame="detector", time_frame="detector"):
     return sample_t, lh_t
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Standard CBC case (the GW150914 default)
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 def test_gw150914_default_transforms():
@@ -103,9 +104,9 @@ def test_gw150914_default_transforms():
     assert "q" in str(lh_t[0].name_mapping)
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Geocentric sky (no sky sample transform)
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 def test_geocentric_sky_no_sky_sample_transform():
@@ -129,9 +130,9 @@ def test_geocentric_sky_no_sky_sample_transform():
     assert "GeocentricArrivalTimeToDetectorArrivalTimeTransform" in sample_names
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Geocentric time frame (t_c sampled directly)
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 def test_geocentric_time_no_time_sample_transform():
@@ -155,9 +156,9 @@ def test_geocentric_time_no_time_sample_transform():
     assert "SkyFrameToDetectorFrameSkyPositionTransform" in sample_names
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Detector-frame sky prior (azimuth/zenith in prior)
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 def test_detector_frame_sky_prior():
@@ -184,9 +185,9 @@ def test_detector_frame_sky_prior():
     assert any("zenith" in r or "azimuth" in r for r in lh_repr)
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Detector-frame time prior (t_det in prior)
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 def test_detector_frame_time_prior():
@@ -213,9 +214,9 @@ def test_detector_frame_time_prior():
     assert any("t_det" in r or "t_c" in r for r in lh_repr)
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # J-frame spin angles
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 def test_j_frame_spin_angles():
@@ -278,9 +279,9 @@ def test_j_frame_partial_params_rejected():
         )
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Spherical per-spin
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 def test_sphere_spin_transform():
@@ -311,9 +312,9 @@ def test_sphere_spin_transform():
     assert lh_names.count("SphereSpinToCartesianSpinTransform") == 2
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Cartesian spins — no transform needed
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 def test_cartesian_spins_no_transform():
@@ -341,9 +342,9 @@ def test_cartesian_spins_no_transform():
     assert "SpinAnglesToCartesianSpinTransform" not in sample_names
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Validation: mutually exclusive groups
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 def test_spin_groups_mutually_exclusive():
@@ -400,9 +401,9 @@ def test_detector_sky_geocentric_sky_frame_raises():
         )
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # adapt_prior_for_ns_time
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 def _make_prior_cfg(params: dict):

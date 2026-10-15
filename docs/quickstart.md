@@ -70,7 +70,7 @@ Each top-level section has a single responsibility:
 | `[data]` | Where to get strain and PSD data — GWOSC, an injection, or local files |
 | `[waveform]` | Which ripple waveform approximant to use |
 | `[prior]` | Parameter names and their prior distributions |
-| `[likelihood]` | Frequency band and optional features (heterodyning, marginalisations) |
+| `[likelihood]` | Frequency range of the likelihood and optional features (heterodyning, marginalisations) |
 | `[sampler]` | Sampler backend and its tuning parameters |
 | `[output]` | Where to write results and which artefacts to save |
 

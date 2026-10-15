@@ -15,7 +15,6 @@ from jimgw.core.single_event.waveform import (
     RippleIMRPhenomXP,
     RippleIMRPhenomXP_NRTidalv3,
     RippleIMRPhenomXPHM,
-    RippleSineGaussian,
     RippleTaylorF2,
 )
 
@@ -38,11 +37,6 @@ _REGISTRY: dict[str, Callable[..., Waveform]] = {
 
 def build_waveform(cfg: WaveformConfig) -> Waveform:
     """Instantiate the ripple waveform specified by *cfg*."""
-    if cfg.approximant == "SineGaussian":
-        waveform = RippleSineGaussian()
-        logger.info("Built waveform: %s", type(waveform).__name__)
-        return waveform
-
     waveform = _REGISTRY[cfg.approximant](f_ref=cfg.f_ref)
     logger.info("Built waveform: %s(f_ref=%.1f)", type(waveform).__name__, cfg.f_ref)
     return waveform

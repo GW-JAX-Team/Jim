@@ -14,6 +14,7 @@ named prior-space dict via [`Jim.get_samples`][jimgw.core.jim.Jim.get_samples].
 import time
 from abc import ABC, abstractmethod
 from collections.abc import Callable
+from numbers import Integral
 from typing import Any, Optional
 
 import numpy as np
@@ -51,7 +52,9 @@ class Sampler(ABC):
         log_posterior_fn: Callable[[Float[Array, " n_dims"]], FloatScalar],
         config: BaseSamplerConfig,
     ) -> None:
-        self.n_dims = n_dims
+        if isinstance(n_dims, bool) or not isinstance(n_dims, Integral) or n_dims <= 0:
+            raise ValueError("n_dims must be a positive integer.")
+        self.n_dims = int(n_dims)
         self._log_prior_fn = log_prior_fn
         self._log_likelihood_fn = log_likelihood_fn
         self._log_posterior_fn = log_posterior_fn
@@ -85,7 +88,7 @@ class Sampler(ABC):
 
     def sample(
         self,
-        rng_key: Key,
+        rng_key: Key[Array, ""],
         initial_position: Float[Array, "n n_dims"],
     ) -> None:
         """Run the sampler and record wall-clock sampling time.
@@ -105,7 +108,7 @@ class Sampler(ABC):
     @abstractmethod
     def _sample(
         self,
-        rng_key: Key,
+        rng_key: Key[Array, ""],
         initial_position: Float[Array, "n n_dims"],
     ) -> None:
         """Backend-specific sampling implementation."""

@@ -45,7 +45,6 @@ def _make_sampler(n_live: int = 200) -> BlackJAXNSAWSampler:
         n_delete_frac=0.5,
         n_target=10,
         max_mcmc=500,
-        max_proposals=200,
         termination_dlogz=0.5,
     )
     parameter_names = prior.parameter_names  # ("x", "y")
@@ -145,7 +144,6 @@ def test_ns_aw_diagnostics():
     assert diag["n_iterations"] > 0
     assert diag["n_accept_history"] is not None
     assert diag["n_walks_history"] is not None
-    assert diag["n_proposals_history"] is not None
     assert "log_Z" in diag
     assert "log_Z_error" in diag
     assert np.isfinite(diag["log_Z"])
@@ -168,7 +166,6 @@ def test_ns_aw_checkpoint_file_created(tmp_path, monkeypatch):
         n_delete_frac=0.5,
         n_target=10,
         max_mcmc=500,
-        max_proposals=200,
         termination_dlogz=0.5,
         checkpoint_dir=tmp_path,
         checkpoint_interval=1e-9,
@@ -232,7 +229,6 @@ def test_ns_aw_falls_back_to_fresh_run_on_foreign_checkpoint(tmp_path):
         n_delete_frac=0.5,
         n_target=10,
         max_mcmc=500,
-        max_proposals=200,
         termination_dlogz=2.0,
         checkpoint_dir=tmp_path,
         checkpoint_interval=1e-9,
@@ -284,7 +280,6 @@ def test_ns_aw_resume_gives_same_result(tmp_path, monkeypatch):
             n_delete_frac=0.5,
             n_target=10,
             max_mcmc=500,
-            max_proposals=200,
             termination_dlogz=0.5,
             checkpoint_dir=checkpoint_dir,
             checkpoint_interval=1e-9 if checkpoint_dir is not None else 0.0,
@@ -354,7 +349,6 @@ def test_ns_aw_checkpoint_failure_restores_caller_rng_key(tmp_path):
             n_delete_frac=0.5,
             n_target=10,
             max_mcmc=500,
-            max_proposals=200,
             termination_dlogz=0.5,
             checkpoint_dir=checkpoint_dir,
             checkpoint_interval=1e-9 if checkpoint_dir is not None else 0.0,

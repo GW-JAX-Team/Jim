@@ -4,29 +4,29 @@ import time
 from pathlib import Path
 
 import corner
-import numpy as np
 import jax
 import jax.numpy as jnp
+import numpy as np
 
 jax.config.update("jax_enable_x64", True)
 
 from jimgw.core.jim import Jim
 from jimgw.core.prior import (
     CombinePrior,
-    UniformPrior,
     CosinePrior,
-    SinePrior,
     PowerLawPrior,
+    SinePrior,
+    UniformPrior,
 )
+from jimgw.core.single_event.data import Data
 from jimgw.core.single_event.detector import get_H1, get_L1
 from jimgw.core.single_event.likelihood import TransientLikelihoodFD
-from jimgw.core.single_event.data import Data
-from jimgw.core.single_event.waveform import RippleIMRPhenomXAS
 from jimgw.core.single_event.transforms import (
-    MassRatioToSymmetricMassRatioTransform,
     GeocentricArrivalTimeToDetectorArrivalTimeTransform,
+    MassRatioToSymmetricMassRatioTransform,
     SkyFrameToDetectorFrameSkyPositionTransform,
 )
+from jimgw.core.single_event.waveform import RippleIMRPhenomXAS
 from jimgw.core.transforms import (
     BoundToBound,
     CosineTransform,
@@ -35,8 +35,9 @@ from jimgw.core.transforms import (
 )
 from jimgw.samplers.config import BlackJAXNSAWConfig
 
-
-# --- Fetch data ---
+# ----------------------------------------------------------------------
+# Fetch data
+# ----------------------------------------------------------------------
 
 gps = 1126259462.4
 duration = 4.0
@@ -57,11 +58,15 @@ for ifo in ifos:
     psd_data = Data.from_gwosc(ifo.name, psd_start, psd_end)
     ifo.set_psd(psd_data.to_psd(nperseg=int(data.duration * data.sampling_frequency)))
 
-# --- Waveform model ---
+# ----------------------------------------------------------------------
+# Waveform model
+# ----------------------------------------------------------------------
 
 waveform = RippleIMRPhenomXAS(f_ref=20)
 
-# --- Prior ---
+# ----------------------------------------------------------------------
+# Prior
+# ----------------------------------------------------------------------
 
 M_c_min, M_c_max = 20.0, 40.0
 q_min, q_max = 0.125, 1.0
@@ -83,7 +88,10 @@ prior = CombinePrior(
     ]
 )
 
-# --- Transforms ---
+# ----------------------------------------------------------------------
+# Transforms
+# ----------------------------------------------------------------------
+
 #
 # Each parameter is mapped to [0, 1].  Transform patterns:
 #   Uniform [a, b]           → BoundToBound([a, b] → [0, 1])
@@ -91,7 +99,7 @@ prior = CombinePrior(
 #   PowerLawPrior (α=2)      → reverse_bijective_transform(PowerLawTransform)
 
 sample_transforms = [
-    SkyFrameToDetectorFrameSkyPositionTransform(trigger_time=gps, ifos=ifos),
+    SkyFrameToDetectorFrameSkyPositionTransform(ifos=ifos),
     # Masses
     BoundToBound(
         name_mapping=(["M_c"], ["M_c_unit"]),
@@ -178,24 +186,25 @@ sample_transforms = [
 likelihood_transforms = [
     MassRatioToSymmetricMassRatioTransform,
     reverse_bijective_transform(
-        GeocentricArrivalTimeToDetectorArrivalTimeTransform(
-            trigger_time=gps, ifo=ifos[0]
-        )
+        GeocentricArrivalTimeToDetectorArrivalTimeTransform(ifo=ifos[0])
     ),
 ]
 
-# --- Likelihood ---
+# ----------------------------------------------------------------------
+# Likelihood
+# ----------------------------------------------------------------------
 
 likelihood = TransientLikelihoodFD(
     ifos,
     waveform=waveform,
-    trigger_time=gps,
     f_min=fmin,
     f_max=fmax,
     phase_marginalization=True,
 )
 
-# --- Sample ---
+# ----------------------------------------------------------------------
+# Sample
+# ----------------------------------------------------------------------
 
 jim = Jim(
     likelihood,
@@ -215,7 +224,9 @@ jim.sample()
 end_time = time.time()
 print(f"Sampling took {(end_time - start_time) / 60:.2f} mins")
 
-# --- Results ---
+# ----------------------------------------------------------------------
+# Results
+# ----------------------------------------------------------------------
 
 diagnostics = jim.get_diagnostics()
 print(f"log Z = {diagnostics['log_Z']:.2f} ± {diagnostics['log_Z_error']:.2f}")

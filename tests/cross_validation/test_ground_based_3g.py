@@ -1,12 +1,12 @@
 """Cross-validation of the Earth-rotating detector response.
 
     Jim                                     Reference
-    ──────────────────────────────────────  ────────────────────────────────────────────────
-    time_to_merger                          LALSimulation TaylorF2ReducedSpin chirp time (2PN)
-    time_to_merger (aligned spins)          bilby_xG calculate_time_to_merger_for_any_mode
+    --------------------------------------  ------------------------------------------------
+    GroundBased3G.time_to_merger            LALSimulation TaylorF2ReducedSpin chirp time (2PN)
+    GroundBased3G.time_to_merger (spins)    bilby_xG calculate_time_to_merger_for_any_mode
     GroundBased3G (rotation)                bilby antenna response and geocentre delay at the
                                             exact GMST of each emission time
-    GroundBased3G (rotation + finite size)  bilby_xG frequency_dependent_antenna_response
+    GroundBased3G (rotation + finite arm)   bilby_xG frequency_dependent_antenna_response
 
 ``bilby_xG`` is installed with the ``cross-validation`` dependency group; it is
 not a runtime dependency of jimgw, and the comparison skips without it.
@@ -22,10 +22,7 @@ from jimgw.core.constants import MSUN
 from jimgw.core.single_event.detector import (
     GroundBased3G,
     get_ET,
-    time_to_merger,
-)
-from jimgw.core.single_event.time_utils import (
-    greenwich_mean_sidereal_time as compute_gmst,
+    get_ET_2L,
 )
 
 GPS = 1400000000.0
@@ -51,8 +48,6 @@ def _jim_params(t_c=0.0):
         "dec": DEC,
         "psi": PSI,
         "t_c": t_c,
-        "trigger_time": GPS,
-        "gmst": compute_gmst(GPS),
     }
 
 
@@ -60,7 +55,9 @@ def _jim_response(det, params):
     """Plus and cross responses, delay included, from unit polarizations."""
     from jimgw.core.single_event.data import Data
 
-    det.set_data(Data(td=jnp.zeros(8), delta_t=1.0, start_time=START_TIME))
+    det.set_data(
+        Data.from_td(jnp.zeros(8), 1.0, start_time=START_TIME, trigger_time=GPS)
+    )
     frequency = jnp.asarray(FREQUENCIES)
     one, zero = jnp.ones_like(frequency) + 0j, jnp.zeros_like(frequency) + 0j
     plus = det.fd_response(frequency, {"p": one, "c": zero}, params)
@@ -95,7 +92,7 @@ def test_time_to_merger_matches_lal_at_2pn(m1, m2):
         expected = lalsim.SimInspiralTaylorF2ReducedSpinChirpTime(
             f, m1 * MSUN, m2 * MSUN, 0.0, 4
         )
-        actual = float(time_to_merger(jnp.array(f), M_c, eta))
+        actual = float(GroundBased3G.time_to_merger(jnp.array(f), M_c, eta))
         np.testing.assert_allclose(actual, expected, rtol=1e-6, atol=0.0)
 
 
@@ -106,7 +103,9 @@ def test_spinning_time_to_merger_matches_bilby_xg(chi1, chi2):
     expected = xg_utils.calculate_time_to_merger_for_any_mode(
         FREQUENCIES, M1, M2, chi1, chi2, mode=2
     )
-    actual = np.asarray(time_to_merger(jnp.asarray(FREQUENCIES), M_C, ETA, chi1, chi2))
+    actual = np.asarray(
+        GroundBased3G.time_to_merger(jnp.asarray(FREQUENCIES), M_C, ETA, chi1, chi2)
+    )
     # Both evaluate the same closed form and agree to ~1e-15; the spin-spin
     # term is at least ~4e-6 of tau over this band, so 1e-12 resolves it.
     np.testing.assert_allclose(actual, expected, rtol=1e-12, atol=0.0)
@@ -119,7 +118,9 @@ def test_rotating_response_matches_bilby_at_emission_times():
     jim_plus, jim_cross = _jim_response(det, _jim_params(t_c))
 
     ifo = _bilby_interferometer(det, bilby.gw.detector.Interferometer)
-    tau = np.asarray(time_to_merger(jnp.asarray(FREQUENCIES), M_C, ETA, CHI1, CHI2))
+    tau = np.asarray(
+        GroundBased3G.time_to_merger(jnp.asarray(FREQUENCIES), M_C, ETA, CHI1, CHI2)
+    )
     emission = GPS + t_c - tau
     bilby_plus = np.empty(len(FREQUENCIES), dtype=complex)
     bilby_cross = np.empty(len(FREQUENCIES), dtype=complex)
@@ -137,14 +138,14 @@ def test_rotating_response_matches_bilby_at_emission_times():
     assert np.max(np.abs(bilby_plus)) > 0.1
 
 
-@pytest.mark.parametrize("finite_size", [False, True])
-def test_response_matches_bilby_xg(finite_size):
+@pytest.mark.parametrize("finite_arm_length", [False, True])
+def test_response_matches_bilby_xg(finite_arm_length):
     """Full per-frequency response agrees with bilby_xG for a long BNS in one detector."""
     bilby_xg = pytest.importorskip("bilby_xG.interferometer")
     xg_utils = pytest.importorskip("bilby_xG.utils")
 
     det = GroundBased3G.from_detector(
-        get_ET()[0], arm_length=ARM_LENGTH, finite_size=finite_size
+        get_ET()[0], arm_length=ARM_LENGTH, finite_arm_length=finite_arm_length
     )
     jim_plus, jim_cross = _jim_response(det, _jim_params())
 
@@ -160,10 +161,54 @@ def test_response_matches_bilby_xg(finite_size):
         frequencies=FREQUENCIES,
         start_time=START_TIME,
         times_to_coalescence=tau,
-        finite_size=finite_size,
+        finite_size=finite_arm_length,
     )
 
     # bilby_xG takes the GMST rate from a one-day difference of the exact GMST
     # and computes its own tau; 1e-6 covers both at unit antenna amplitude.
     np.testing.assert_allclose(jim_plus, xg_plus, rtol=0.0, atol=1e-6)
     np.testing.assert_allclose(jim_cross, xg_cross, rtol=0.0, atol=1e-6)
+
+
+# The interferometer files of the 2L design with arms misaligned by 45 degrees,
+# as bilby reads them: lengths in km, angles in degrees.
+ET_2L_BILBY_FILES = {
+    "ET_Sar": {
+        "length": 15,
+        "latitude": 40 + 31.0 / 60 + 0.0 / 3600,
+        "longitude": 9 + 25.0 / 60 + 0.0 / 3600,
+        "elevation": 0.0,
+        "xarm_azimuth": 70.5674,
+        "yarm_azimuth": 160.5674,
+    },
+    "ET_EMR": {
+        "length": 15,
+        "latitude": 50 + 43.0 / 60 + 23 / 3600,
+        "longitude": 5 + 55.0 / 60 + 14 / 3600,
+        "elevation": 0.0,
+        "xarm_azimuth": 25.5674,
+        "yarm_azimuth": 115.5674,
+    },
+}
+
+
+@pytest.mark.parametrize("index", [0, 1])
+def test_et_2l_response_matches_the_bilby_files(index):
+    """Both L-shaped detectors respond like bilby's, built from the files of the design."""
+    det = get_ET_2L(alignment_angle=45.0)[index]
+    ifo = bilby.gw.detector.Interferometer(
+        name=det.name,
+        power_spectral_density=bilby.gw.detector.PowerSpectralDensity.from_aligo(),
+        minimum_frequency=5.0,
+        maximum_frequency=4096.0,
+        **ET_2L_BILBY_FILES[det.name],
+    )
+    jim_plus, jim_cross = _jim_response(det, _jim_params())
+
+    delay = ifo.time_delay_from_geocenter(RA, DEC, GPS)
+    shift = np.exp(-2j * np.pi * FREQUENCIES * ((GPS - START_TIME) + delay))
+    bilby_plus = ifo.antenna_response(RA, DEC, GPS, PSI, "plus") * shift
+    bilby_cross = ifo.antenna_response(RA, DEC, GPS, PSI, "cross") * shift
+
+    np.testing.assert_allclose(jim_plus, bilby_plus, rtol=0.0, atol=1e-7)
+    np.testing.assert_allclose(jim_cross, bilby_cross, rtol=0.0, atol=1e-7)

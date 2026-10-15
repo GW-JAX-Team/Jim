@@ -140,7 +140,7 @@ class FlowMCSampler(Sampler):
 
     def _sample(
         self,
-        rng_key: Key,
+        rng_key: Key[Array, ""],
         initial_position: Float[Array, "n_chains n_dims"],
     ) -> None:
         """Run the flowMC sampler.
@@ -295,11 +295,11 @@ class FlowMCSampler(Sampler):
             )
         resources = self._flowmc_sampler.resources
 
-        pos_raw = resources["positions_production"].data  # type: ignore[union-attr]  # flowMC stubs
+        pos_raw = resources["positions_production"].data  # ty: ignore[unresolved-attribute]  # flowMC stubs
         pos_jnp = jnp.array(pos_raw).reshape(-1, self.n_dims)
 
         log_posterior = np.array(
-            resources["log_prob_production"].data  # type: ignore[union-attr]  # flowMC stubs
+            resources["log_prob_production"].data  # ty: ignore[unresolved-attribute]  # flowMC stubs
         ).reshape(-1)
         log_prior = np.array(jax.vmap(self._log_prior_fn)(pos_jnp))
         log_likelihood = log_posterior - log_prior
@@ -327,7 +327,7 @@ class FlowMCSampler(Sampler):
         res = self._flowmc_sampler.resources
 
         actual_training_loops = (
-            self._flowmc_sampler.strategies["check_early_stop"]._call_count  # type: ignore[attr-defined]  # flowMC stubs: Strategy._call_count
+            self._flowmc_sampler.strategies["check_early_stop"]._call_count  # ty: ignore[unresolved-attribute]  # flowMC stubs: Strategy._call_count
             if "check_early_stop" in self._flowmc_sampler.strategies
             else cfg.n_training_loops
         )
@@ -341,13 +341,13 @@ class FlowMCSampler(Sampler):
         return {
             "n_likelihood_evaluations": n_evals,
             "n_training_loops_actual": actual_training_loops,
-            "training_loss_history": np.asarray(res["loss_buffer"].data),  # type: ignore[union-attr]  # flowMC stubs
-            "acceptance_training_local": np.asarray(res["local_accs_training"].data),  # type: ignore[union-attr]  # flowMC stubs
-            "acceptance_training_global": np.asarray(res["global_accs_training"].data),  # type: ignore[union-attr]  # flowMC stubs
+            "training_loss_history": np.asarray(res["loss_buffer"].data),  # ty: ignore[unresolved-attribute]  # flowMC stubs
+            "acceptance_training_local": np.asarray(res["local_accs_training"].data),  # ty: ignore[unresolved-attribute]  # flowMC stubs
+            "acceptance_training_global": np.asarray(res["global_accs_training"].data),  # ty: ignore[unresolved-attribute]  # flowMC stubs
             "acceptance_production_local": np.asarray(
-                res["local_accs_production"].data  # type: ignore[union-attr]  # flowMC stubs
+                res["local_accs_production"].data  # ty: ignore[unresolved-attribute]  # flowMC stubs
             ),
             "acceptance_production_global": np.asarray(
-                res["global_accs_production"].data  # type: ignore[union-attr]  # flowMC stubs
+                res["global_accs_production"].data  # ty: ignore[unresolved-attribute]  # flowMC stubs
             ),
         }

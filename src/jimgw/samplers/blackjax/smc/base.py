@@ -126,7 +126,7 @@ class _BlackJAXSMCBase(Sampler):
 
     def _sample(
         self,
-        rng_key: Key,
+        rng_key: Key[Array, ""],
         initial_position: Float[Array, "n_particles n_dims"],
     ) -> None:
         """Run the BlackJAX SMC sampler.
@@ -159,6 +159,8 @@ class _BlackJAXSMCBase(Sampler):
 
     @abstractmethod
     def _run(
-        self, rng_key: Key, initial_particles: Float[Array, "n_particles n_dims"]
+        self,
+        rng_key: Key[Array, ""],
+        initial_particles: Float[Array, "n_particles n_dims"],
     ) -> None:
         """Run this mode's SMC loop; sets ``_final_state``/``_n_iterations``/diagnostics stashes."""

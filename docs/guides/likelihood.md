@@ -13,7 +13,7 @@ from jimgw.core.single_event.waveform import RippleIMRPhenomD
 waveform = RippleIMRPhenomD(f_ref=20.0)
 ```
 
-See the [ripple documentation](https://gw-jax-team.github.io/ripple/) for the full list of available waveforms (aligned-spin, precessing, tidal, burst, etc.).
+See the [ripple documentation](https://gw-jax-team.github.io/ripple/) for the full list of available waveforms (aligned-spin, precessing, tidal, etc.).
 
 ## TransientLikelihoodFD
 
@@ -25,7 +25,6 @@ from jimgw.core.single_event.likelihood import TransientLikelihoodFD
 likelihood = TransientLikelihoodFD(
     detectors=[H1, L1],
     waveform=waveform,
-    trigger_time=gps_time,
     f_min=20.0,
     f_max=1024.0,
 )
@@ -37,7 +36,6 @@ likelihood = TransientLikelihoodFD(
 | --- | --- |
 | `detectors` | List of `Detector` objects with data and PSD already set |
 | `waveform` | A ripple waveform model instance |
-| `trigger_time` | GPS trigger time of the event |
 | `f_min` / `f_max` | Frequency range for the likelihood integral |
 | `fixed_parameters` | Dictionary of parameter values to hold fixed during sampling |
 
@@ -54,7 +52,6 @@ distance_prior = PowerLawPrior(xmin=100.0, xmax=5000.0, alpha=2.0, parameter_nam
 likelihood = TransientLikelihoodFD(
     detectors=[H1, L1],
     waveform=waveform,
-    trigger_time=gps_time,
     f_min=20.0,
     f_max=1024.0,
     time_marginalization={"tc_range": (-0.1, 0.1)},               # or time_marginalization=True for default range
@@ -65,7 +62,7 @@ likelihood = TransientLikelihoodFD(
 
 Marginalising over these parameters reduces the effective dimensionality of the problem and can significantly speed up sampling.
 
-- `time_marginalization` — marginalises over `t_c` within the range set by `tc_range` (default `(-0.1, 0.1)`).
+- `time_marginalization` — marginalises over `t_c` within the range set by `tc_range` (default `(-0.1, 0.1)`), with a uniform prior on `t_c` in that range; see the [technical notes](../notes/likelihood_details.md#time-marginalisation) for the normalisation.
   Pass `{}` to use the default range, or `{"tc_range": (lo, hi)}` for a custom range.
 - `phase_marginalization` — marginalises over `phase_c`.
   Pass `True`, `{}`, or a `PhaseMargConfig()` instance.
@@ -81,7 +78,6 @@ To fix some parameters at known values (e.g. for testing or when marginalising e
 likelihood = TransientLikelihoodFD(
     detectors=[H1, L1],
     waveform=waveform,
-    trigger_time=gps_time,
     f_min=20.0,
     f_max=1024.0,
     fixed_parameters={
@@ -117,14 +113,11 @@ from jimgw.core.single_event.transforms import (
 )
 
 # Maps t_det -> t_c, conditional on (ra, dec)
-transform = GeocentricArrivalTimeToDetectorArrivalTimeTransform(
-    trigger_time=trigger_time, ifo=H1
-)
+transform = GeocentricArrivalTimeToDetectorArrivalTimeTransform(ifo=H1)
 
 likelihood = TransientLikelihoodFD(
     detectors=[H1, L1],
     waveform=waveform,
-    trigger_time=gps_time,
     f_min=20.0,
     f_max=1024.0,
     # transform.backward returns a dict; Jim extracts params["t_c"] automatically
@@ -137,7 +130,7 @@ Alternatively use a plain lambda:
 ```python
 from jimgw.core.single_event.time_utils import greenwich_mean_sidereal_time
 
-gmst = greenwich_mean_sidereal_time(trigger_time)
+gmst = greenwich_mean_sidereal_time(H1.data.trigger_time)
 t_det_value = 0.0  # the value you are fixing
 
 likelihood = TransientLikelihoodFD(
@@ -155,6 +148,7 @@ Callables are evaluated in **insertion order**, so later entries in `fixed_param
 
 `HeterodynedTransientLikelihoodFD` and `MultibandedTransientLikelihoodFD` are both approximations that trade exactness for speed.
 They are suitable when the full likelihood is computationally expensive (e.g., long duration signals) and the signal is well-approximated by the underlying assumptions of the method.
+The [technical notes](../notes/likelihood_details.md#heterodyning-relative-binning) describe how each method chooses its bins and bands.
 
 | Likelihood | Method |
 | --- | --- |
@@ -174,7 +168,6 @@ from jimgw.core.single_event.likelihood import HeterodynedTransientLikelihoodFD
 likelihood = HeterodynedTransientLikelihoodFD(
     detectors=[H1, L1],
     waveform=waveform,
-    trigger_time=gps_time,
     f_min=20.0,
     f_max=1024.0,
     reference_parameters=ref_params,  # dict with all waveform parameters
@@ -202,7 +195,6 @@ prior = CombinePrior([
 likelihood = HeterodynedTransientLikelihoodFD(
     detectors=[H1, L1],
     waveform=waveform,
-    trigger_time=gps_time,
     f_min=20.0,
     f_max=1024.0,
     prior=prior,
@@ -232,7 +224,6 @@ likelihood = MultibandedTransientLikelihoodFD(
     waveform=waveform,
     f_min=20.0,
     f_max=1024.0,
-    trigger_time=gps_time,
     prior=prior,
 )
 ```
@@ -245,7 +236,6 @@ likelihood = MultibandedTransientLikelihoodFD(
     waveform=waveform,
     f_min=20.0,
     f_max=1024.0,
-    trigger_time=gps_time,
     reference_chirp_mass=1.2,
 )
 ```

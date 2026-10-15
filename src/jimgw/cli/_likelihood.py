@@ -36,7 +36,6 @@ def build_likelihood(
     cfg: LikelihoodConfig,
     ifos: list[GroundBased2G],
     waveform: Waveform,
-    trigger_time: float,
     waveform_f_ref: float,
     time_frame: str,
     prior: CombinePrior,
@@ -99,7 +98,6 @@ def build_likelihood(
             reference_params = to_likelihood_space(
                 data_cfg.injection_parameters,
                 waveform_f_ref=waveform_f_ref,
-                trigger_time=trigger_time,
                 ifos=ifos,
                 time_frame=time_frame,
             )
@@ -114,7 +112,6 @@ def build_likelihood(
             fixed_parameters=fixed_params,
             f_min=cfg.f_min,
             f_max=cfg.f_max,
-            trigger_time=trigger_time,
             n_bins=cfg.heterodyne.n_bins,
             epsilon=cfg.heterodyne.epsilon,
             optimizer_popsize=optimizer_popsize,
@@ -160,7 +157,7 @@ def build_likelihood(
                 t_end = (
                     float(ref_ifo.data.start_time)
                     + float(ref_ifo.data.duration)
-                    - trigger_time
+                    - ref_ifo.data.trigger_time
                 )
                 s = EARTH_RADIUS_LIGHT_S
                 if mb_time_offset is None:
@@ -187,7 +184,6 @@ def build_likelihood(
             fixed_parameters=fixed_params,
             f_min=cfg.f_min,
             f_max=cfg.f_max,
-            trigger_time=trigger_time,
             highest_mode=mb.highest_mode,
             accuracy_factor=mb.accuracy_factor,
             prior=prior,
@@ -225,7 +221,6 @@ def build_likelihood(
         fixed_parameters=fixed_params,
         f_min=cfg.f_min,
         f_max=cfg.f_max,
-        trigger_time=trigger_time,
         phase_marginalization=phase_marg,
         time_marginalization=time_marg,
         distance_marginalization=dist_marg,
@@ -234,6 +229,6 @@ def build_likelihood(
         "Built likelihood: f_min=%.1f, f_max=%.1f, trigger_time=%.3f",
         cfg.f_min,
         cfg.f_max,
-        trigger_time,
+        likelihood.trigger_time,
     )
     return likelihood

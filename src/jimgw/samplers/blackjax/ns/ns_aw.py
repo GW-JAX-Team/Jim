@@ -116,7 +116,7 @@ class BlackJAXNSAWSampler(Sampler):
 
     def _sample(
         self,
-        rng_key: Key,
+        rng_key: Key[Array, ""],
         initial_position: Float[Array, "n_live n_dims"],
     ) -> None:
         """Run the BlackJAX NS AW sampler.
@@ -158,7 +158,6 @@ class BlackJAXNSAWSampler(Sampler):
             max_mcmc=config.max_mcmc,
             num_delete=n_delete,
             stepper_fn=self._stepper_fn,
-            max_proposals=config.max_proposals,
         )
 
         state, rng_key, n_completed_iterations, extra = load_or_initialize_checkpoint(
@@ -167,7 +166,7 @@ class BlackJAXNSAWSampler(Sampler):
             config,
             rng_key,
             initial_position,
-            lambda position: nested_sampler.init(validate_initial_particles(position)),  # type: ignore[call-arg]  # blackjax API
+            lambda position: nested_sampler.init(validate_initial_particles(position)),  # ty: ignore[missing-argument]  # blackjax API
             initial_extra={"dead": []},
             load_extra=lambda checkpoint: {"dead": checkpoint["dead"]},
             log_label=self.sampler_name,
@@ -243,7 +242,6 @@ class BlackJAXNSAWSampler(Sampler):
         * ``"n_iterations"`` — total nested-sampling iterations.
         * ``"n_accept_history"`` — accepted proposal count per NS iteration.
         * ``"n_walks_history"`` — completed walk count per NS iteration.
-        * ``"n_proposals_history"`` — total proposal count per NS iteration.
         * ``"log_Z"`` — log Bayesian evidence (anesthetic mean estimate).
         * ``"log_Z_error"`` — standard deviation of log Z from 100 bootstrap samples.
         """
@@ -262,7 +260,6 @@ class BlackJAXNSAWSampler(Sampler):
             "n_iterations": self._n_iterations,
             "n_accept_history": np.asarray(ui.n_accept),
             "n_walks_history": np.asarray(ui.walks_completed),
-            "n_proposals_history": np.asarray(ui.total_proposals),
             "log_Z": log_Z,
             "log_Z_error": log_Z_error,
         }

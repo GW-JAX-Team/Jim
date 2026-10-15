@@ -21,9 +21,9 @@ from jimgw.core.constants import MTSUN
 from jimgw.core.utils import carte_to_spherical_angles, safe_arctan2
 from jimgw.typing import FloatLike, FloatScalar
 
-# =============================================================================
+# ----------------------------------------------------------------------
 # Mass-parameter conversions
-# =============================================================================
+# ----------------------------------------------------------------------
 
 
 def m1_m2_to_M_q(m1: FloatScalar, m2: FloatScalar) -> tuple[FloatScalar, FloatScalar]:
@@ -204,9 +204,9 @@ def eta_to_q(eta: FloatScalar) -> FloatScalar:
     return temp - (temp**2 - 1) ** 0.5
 
 
-# =============================================================================
+# ----------------------------------------------------------------------
 # Spin-angle <-> Cartesian-spin conversions
-# =============================================================================
+# ----------------------------------------------------------------------
 
 
 def _Lmag_2PN(m1: FloatScalar, m2: FloatScalar, v0: FloatScalar) -> FloatScalar:
@@ -454,9 +454,9 @@ def cartesian_spin_to_spin_angles(
     return theta_jn, phi_jl, tilt_1, tilt_2, phi_12, chi_1, chi_2
 
 
-# =============================================================================
+# ----------------------------------------------------------------------
 # Sky / detector coordinate transforms
-# =============================================================================
+# ----------------------------------------------------------------------
 
 
 def _rotate_y(angle: FloatScalar) -> Float[Array, "3 3"]:

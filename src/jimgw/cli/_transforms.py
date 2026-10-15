@@ -68,7 +68,6 @@ _TWO_PI = 2 * _PI
 
 def infer_sample_transforms(
     prior_params: frozenset[str],
-    trigger_time: float,
     ifos: list[GroundBased2G],
     sampling_cfg: SamplingConfig,
     *,
@@ -79,8 +78,7 @@ def infer_sample_transforms(
 
     Args:
         prior_params: Set of parameter names appearing in [prior].
-        trigger_time: GPS trigger time (from data config).
-        ifos: List of detectors (needed for sky/time transforms).
+        ifos: List of detectors.
         sampling_cfg: [sampling] section config.
         unit_cube: When ``True``, append BoundToBound/auxiliary transforms
             that map every sampling-space parameter to [0, 1] (required by the
@@ -92,7 +90,10 @@ def infer_sample_transforms(
     """
     sample_transforms: list[BijectiveTransform] = []
 
-    # --- Time sample transform --------------------------------------------
+    # ------------------------------------------------------------------
+    # Time sample transform
+    # ------------------------------------------------------------------
+
     has_geocentric_time = "t_c" in prior_params
 
     if has_geocentric_time and sampling_cfg.time_frame != "geocentric":
@@ -103,9 +104,7 @@ def infer_sample_transforms(
         )
         ifo_for_time = next(ifo for ifo in ifos if ifo.name == ifo_name)
         sample_transforms.append(
-            GeocentricArrivalTimeToDetectorArrivalTimeTransform(
-                trigger_time, ifo_for_time
-            )
+            GeocentricArrivalTimeToDetectorArrivalTimeTransform(ifo_for_time)
         )
         logger.debug(
             "Added GeocentricArrivalTimeToDetectorArrivalTimeTransform(detector=%s)",
@@ -116,16 +115,20 @@ def infer_sample_transforms(
             "time_frame='geocentric': sampling t_c directly, no time sample transform"
         )
 
-    # --- Sky sample transform ---------------------------------------------
+    # ------------------------------------------------------------------
+    # Sky sample transform
+    # ------------------------------------------------------------------
+
     has_equatorial_sky = _EQUATORIAL_SKY_PARAMS <= prior_params
 
     if has_equatorial_sky and sampling_cfg.sky_frame == "detector":
-        sample_transforms.append(
-            SkyFrameToDetectorFrameSkyPositionTransform(trigger_time, ifos)
-        )
+        sample_transforms.append(SkyFrameToDetectorFrameSkyPositionTransform(ifos))
         logger.debug("Added SkyFrameToDetectorFrameSkyPositionTransform")
 
-    # --- Unit-cube transforms (NS AW) -------------------------------------
+    # ------------------------------------------------------------------
+    # Unit-cube transforms (NS AW)
+    # ------------------------------------------------------------------
+
     if unit_cube:
         sample_transforms.extend(
             _build_unit_cube_transforms(prior_params, prior_cfg, sampling_cfg)
@@ -137,7 +140,6 @@ def infer_sample_transforms(
 
 def infer_likelihood_transforms(
     prior_params: frozenset[str],
-    trigger_time: float,
     ifos: list[GroundBased2G],
     sampling_cfg: SamplingConfig,
     waveform_f_ref: float,
@@ -147,8 +149,7 @@ def infer_likelihood_transforms(
 
     Args:
         prior_params: Set of parameter names appearing in [prior].
-        trigger_time: GPS trigger time (from data config).
-        ifos: List of detectors (needed for sky/time reverse transforms).
+        ifos: List of detectors.
         sampling_cfg: [sampling] section config.
         waveform_f_ref: Reference frequency from [waveform] — passed to
             ``SpinAnglesToCartesianSpinTransform`` to match the waveform
@@ -198,7 +199,7 @@ def infer_likelihood_transforms(
 
     # azimuth/zenith directly in prior (no sky sample transform) → ra/dec
     if has_detector_sky and not has_equatorial_sky:
-        t_sky = SkyFrameToDetectorFrameSkyPositionTransform(trigger_time, ifos)
+        t_sky = SkyFrameToDetectorFrameSkyPositionTransform(ifos)
         likelihood_transforms.append(reverse_bijective_transform(t_sky))
         logger.debug(
             "Added reverse SkyFrameToDetectorFrameSkyPositionTransform "
@@ -213,9 +214,7 @@ def infer_likelihood_transforms(
             ifo_for_time = next(
                 ifo for ifo in ifos if ifo.name == sampling_cfg.time_frame
             )
-        t_time = GeocentricArrivalTimeToDetectorArrivalTimeTransform(
-            trigger_time, ifo_for_time
-        )
+        t_time = GeocentricArrivalTimeToDetectorArrivalTimeTransform(ifo_for_time)
         likelihood_transforms.append(reverse_bijective_transform(t_time))
         logger.debug(
             "Added reverse GeocentricArrivalTimeToDetectorArrivalTimeTransform "
@@ -232,9 +231,9 @@ def infer_likelihood_transforms(
     return likelihood_transforms
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Unit-cube transforms (for NS AW sampler)
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 def _build_unit_cube_transforms(
@@ -386,15 +385,14 @@ def _unit_cube_for_spec(name: str, spec) -> list:
     raise TypeError(f"Unknown prior spec type for '{name}': {type(spec)}")
 
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Parameter-space conversion utility
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 def to_likelihood_space(
     params: dict[str, float],
     waveform_f_ref: float,
-    trigger_time: float,
     ifos: list[GroundBased2G],
     time_frame: str,
 ) -> dict[str, float]:
@@ -403,10 +401,10 @@ def to_likelihood_space(
     Handles: q→eta, J-frame spins→Cartesian, spherical spins→Cartesian,
     azimuth/zenith→ra/dec, t_det→t_c.
 
-    The detector-frame conversions (azimuth/zenith and t_det) require
-    ``trigger_time`` and ``ifos`` to be supplied.  These parameters are valid
-    when the prior is parametrized in detector frame (e.g. ``azimuth``,
-    ``zenith``, or ``t_det`` appear in ``[prior]``).
+    The detector-frame conversions (azimuth/zenith and t_det) read the trigger
+    time from the data of ``ifos``, so the data must exist.  These parameters
+    are valid when the prior is parametrized in detector frame (e.g.
+    ``azimuth``, ``zenith``, or ``t_det`` appear in ``[prior]``).
 
     ``time_frame`` mirrors ``[sampling].time_frame`` and selects which detector is
     used for the ``t_det`` ↔ ``t_c`` conversion.  Pass the same value that is
@@ -417,7 +415,7 @@ def to_likelihood_space(
 
     # azimuth/zenith → ra/dec (must come before t_det conversion, which needs ra/dec)
     if _DETECTOR_SKY_PARAMS <= p.keys():
-        t_sky = SkyFrameToDetectorFrameSkyPositionTransform(trigger_time, ifos)
+        t_sky = SkyFrameToDetectorFrameSkyPositionTransform(ifos)
         p = dict(t_sky.backward(p))
 
     # t_det → t_c (needs ra/dec as conditioning parameters)
@@ -426,9 +424,7 @@ def to_likelihood_space(
             ifo_for_time = ifos[0]
         else:
             ifo_for_time = next(ifo for ifo in ifos if ifo.name == time_frame)
-        t_time = GeocentricArrivalTimeToDetectorArrivalTimeTransform(
-            trigger_time, ifo_for_time
-        )
+        t_time = GeocentricArrivalTimeToDetectorArrivalTimeTransform(ifo_for_time)
         p = dict(t_time.backward(p))
 
     # J-frame spins → Cartesian + iota

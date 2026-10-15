@@ -155,9 +155,8 @@ class TestInferWaveformSamplingDependencies:
 
     def test_unresolvable_name_is_skipped(self):
         # A waveform input that traces back to neither a sampling parameter
-        # nor a fixed parameter (e.g. event metadata like trigger_time/gmst,
-        # injected later by _prepare_parameters) contributes no dependency.
-        likelihood = _fake_likelihood(waveform_parameter_names=("trigger_time", "a"))
+        # nor a fixed parameter contributes no dependency.
+        likelihood = _fake_likelihood(waveform_parameter_names=("unsampled", "a"))
         deps = _infer_waveform_sampling_dependencies(
             likelihood,
             parameter_names=("a",),

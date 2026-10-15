@@ -25,7 +25,6 @@ FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
 
 
 def test_runs():
-    gps = 1126259462.4
     fmin = 20.0
     fmax = 1024.0
 
@@ -34,6 +33,7 @@ def test_runs():
 
     for ifo in ifos:
         data = Data.from_file(str(FIXTURES_DIR / f"GW150914_strain_{ifo.name}.npz"))
+        data.trigger_time = 1126259462.4
         ifo.set_data(data)
         psd = PowerSpectrum.from_file(
             str(FIXTURES_DIR / f"GW150914_psd_{ifo.name}.npz")
@@ -66,7 +66,6 @@ def test_runs():
         waveform=RippleIMRPhenomD(),
         f_min=fmin,
         f_max=fmax,
-        trigger_time=gps,
         likelihood_transforms=likelihood_transforms,
         optimizer_n_steps=5,
         optimizer_popsize=10,

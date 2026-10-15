@@ -83,6 +83,33 @@ def test_trivial_sampler_works():
     assert result["log_likelihood"].shape == (3,)
 
 
+@pytest.mark.parametrize("n_dims", [True, False, 0, -1, 2.0, "2", np.bool_(True)])
+def test_sampler_requires_positive_integer_dimensions(n_dims):
+    lp, ll, lpost = _make_callables()
+    with pytest.raises(ValueError, match="n_dims must be a positive integer"):
+        _TrivialSampler(
+            n_dims=n_dims,
+            log_prior_fn=lp,
+            log_likelihood_fn=ll,
+            log_posterior_fn=lpost,
+            config=_TrivialConfig(),
+        )
+
+
+@pytest.mark.parametrize("n_dims", [np.int32(2), np.int64(2)])
+def test_sampler_normalizes_numpy_integer_dimensions(n_dims):
+    lp, ll, lpost = _make_callables()
+    sampler = _TrivialSampler(
+        n_dims=n_dims,
+        log_prior_fn=lp,
+        log_likelihood_fn=ll,
+        log_posterior_fn=lpost,
+        config=_TrivialConfig(),
+    )
+    assert sampler.n_dims == 2
+    assert type(sampler.n_dims) is int
+
+
 def test_trivial_sampler_get_diagnostics_returns_dict():
     lp, ll, lpost = _make_callables(n_dims=1)
     s = _TrivialSampler(

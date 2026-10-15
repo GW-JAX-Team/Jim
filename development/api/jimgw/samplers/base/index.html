@@ -3277,7 +3277,7 @@ samples themselves.</p>
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="sample(rng_key: Key, initial_position: Float[Array, &#x27;n n_dims&#x27;]) -&gt; None (jimgw.samplers.base.Sampler.sample)" href="./#jimgw.samplers.base.Sampler.sample">sample</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="sample(rng_key: Key[Array, &#x27;&#x27;], initial_position: Float[Array, &#x27;n n_dims&#x27;]) -&gt; None (jimgw.samplers.base.Sampler.sample)" href="./#jimgw.samplers.base.Sampler.sample">sample</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Run the sampler and record wall-clock sampling time.</p>
@@ -3412,7 +3412,7 @@ equally-weighted.</p>
 
 
 <h3 id="jimgw.samplers.base.Sampler.sample" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">sample</span><span class="p">(</span><span class="n">rng_key</span><span class="p">:</span> <span class="n">Key</span><span class="p">,</span> <span class="n">initial_position</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">'n n_dims'</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span></code>
+            <code class="highlight language-python"><span class="n">sample</span><span class="p">(</span><span class="n">rng_key</span><span class="p">:</span> <span class="n">Key</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">''</span><span class="p">],</span> <span class="n">initial_position</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">'n n_dims'</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span></code>
 
 <a href="#jimgw.samplers.base.Sampler.sample" class="headerlink" title="Permanent link">¤</a></h3>
 
@@ -3438,7 +3438,7 @@ equally-weighted.</p>
                 <code>rng_key</code>
             </td>
             <td>
-                  <code><span title="jaxtyping.Key">Key</span></code>
+                  <code><span title="jaxtyping.Key">Key</span>[<span title="jaxtyping.Array">Array</span>, &#39;&#39;]</code>
             </td>
             <td>
               <div class="doc-md-description">

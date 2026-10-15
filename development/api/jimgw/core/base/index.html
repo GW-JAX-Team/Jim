@@ -3372,7 +3372,7 @@ Subclasses must implement <code>evaluate</code>.</p>
       </thead>
       <tbody>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="evaluate(params: dict[str, Float]) -&gt; FloatScalar
+              <td><code><a class="autorefs autorefs-internal" title="evaluate(params: Mapping[str, FloatLike]) -&gt; FloatScalar
 
   
       abstractmethod
@@ -3494,7 +3494,7 @@ Subclasses must implement <code>evaluate</code>.</p>
 
 
 <h3 id="jimgw.core.base.LikelihoodBase.evaluate" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">evaluate</span><span class="p">(</span><span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">FloatScalar</span></code>
+            <code class="highlight language-python"><span class="n">evaluate</span><span class="p">(</span><span class="n">params</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FloatLike</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">FloatScalar</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
@@ -3524,7 +3524,7 @@ Subclasses must implement <code>evaluate</code>.</p>
                 <code>params</code>
             </td>
             <td>
-                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="jaxtyping.Float">Float</span>]</code>
+                  <code><span title="collections.abc.Mapping">Mapping</span>[<span title="str">str</span>, <span title="jimgw.typing.FloatLike">FloatLike</span>]</code>
             </td>
             <td>
               <div class="doc-md-description">

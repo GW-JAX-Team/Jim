@@ -4768,7 +4768,7 @@ to 2.12 s with a warning when the prior is unavailable and the data end
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="evaluate(params: dict[str, Float]) -&gt; FloatScalar (jimgw.core.single_event.likelihood.SingleEventLikelihood.evaluate)" href="./#jimgw.core.single_event.likelihood.SingleEventLikelihood.evaluate">evaluate</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="evaluate(params: Mapping[str, FloatLike]) -&gt; FloatScalar (jimgw.core.single_event.likelihood.SingleEventLikelihood.evaluate)" href="./#jimgw.core.single_event.likelihood.SingleEventLikelihood.evaluate">evaluate</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Prepare parameters and evaluate the likelihood.</p>
@@ -4776,7 +4776,7 @@ to 2.12 s with a warning when the prior is unavailable and the data end
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="evaluate_from_waveform(params: dict[str, Float], waveform_cache: Any) -&gt; FloatScalar (jimgw.core.single_event.likelihood.SingleEventLikelihood.evaluate_from_waveform)" href="./#jimgw.core.single_event.likelihood.SingleEventLikelihood.evaluate_from_waveform">evaluate_from_waveform</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="evaluate_from_waveform(params: Mapping[str, FloatLike], waveform_cache: Any) -&gt; FloatScalar (jimgw.core.single_event.likelihood.SingleEventLikelihood.evaluate_from_waveform)" href="./#jimgw.core.single_event.likelihood.SingleEventLikelihood.evaluate_from_waveform">evaluate_from_waveform</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Evaluate this likelihood from a waveform cache.</p>
@@ -4784,7 +4784,7 @@ to 2.12 s with a warning when the prior is unavailable and the data end
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="generate_waveform(params: dict[str, Float]) -&gt; Any (jimgw.core.single_event.likelihood.SingleEventLikelihood.generate_waveform)" href="./#jimgw.core.single_event.likelihood.SingleEventLikelihood.generate_waveform">generate_waveform</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="generate_waveform(params: Mapping[str, FloatLike]) -&gt; Any (jimgw.core.single_event.likelihood.SingleEventLikelihood.generate_waveform)" href="./#jimgw.core.single_event.likelihood.SingleEventLikelihood.generate_waveform">generate_waveform</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Generate a reusable waveform cache.</p>
@@ -5201,7 +5201,7 @@ likelihood is invalid.</p>
 
 
 <h3 id="jimgw.core.single_event.likelihood.SingleEventLikelihood.evaluate" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">evaluate</span><span class="p">(</span><span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">FloatScalar</span></code>
+            <code class="highlight language-python"><span class="n">evaluate</span><span class="p">(</span><span class="n">params</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FloatLike</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">FloatScalar</span></code>
 
 <a href="#jimgw.core.single_event.likelihood.SingleEventLikelihood.evaluate" class="headerlink" title="Permanent link">¤</a></h3>
 
@@ -5222,7 +5222,7 @@ Callables are applied in insertion order.</p>
 
 
 <h3 id="jimgw.core.single_event.likelihood.SingleEventLikelihood.evaluate_from_waveform" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">evaluate_from_waveform</span><span class="p">(</span><span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">],</span> <span class="n">waveform_cache</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FloatScalar</span></code>
+            <code class="highlight language-python"><span class="n">evaluate_from_waveform</span><span class="p">(</span><span class="n">params</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FloatLike</span><span class="p">],</span> <span class="n">waveform_cache</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FloatScalar</span></code>
 
 <a href="#jimgw.core.single_event.likelihood.SingleEventLikelihood.evaluate_from_waveform" class="headerlink" title="Permanent link">¤</a></h3>
 
@@ -5240,7 +5240,7 @@ Callables are applied in insertion order.</p>
 
 
 <h3 id="jimgw.core.single_event.likelihood.SingleEventLikelihood.generate_waveform" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">generate_waveform</span><span class="p">(</span><span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Any</span></code>
+            <code class="highlight language-python"><span class="n">generate_waveform</span><span class="p">(</span><span class="n">params</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FloatLike</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Any</span></code>
 
 <a href="#jimgw.core.single_event.likelihood.SingleEventLikelihood.generate_waveform" class="headerlink" title="Permanent link">¤</a></h3>
 
@@ -5592,7 +5592,7 @@ logL = likelihood.evaluate(params)</p>
       </thead>
       <tbody>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="evaluate(params: dict[str, Float]) -&gt; FloatScalar (jimgw.core.single_event.likelihood.ZeroLikelihood.evaluate)" href="./#jimgw.core.single_event.likelihood.ZeroLikelihood.evaluate">evaluate</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="evaluate(params: Mapping[str, FloatLike]) -&gt; FloatScalar (jimgw.core.single_event.likelihood.ZeroLikelihood.evaluate)" href="./#jimgw.core.single_event.likelihood.ZeroLikelihood.evaluate">evaluate</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Return zero regardless of the parameters.</p>
@@ -5622,7 +5622,7 @@ logL = likelihood.evaluate(params)</p>
 
 
 <h3 id="jimgw.core.single_event.likelihood.ZeroLikelihood.evaluate" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">evaluate</span><span class="p">(</span><span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">FloatScalar</span></code>
+            <code class="highlight language-python"><span class="n">evaluate</span><span class="p">(</span><span class="n">params</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FloatLike</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">FloatScalar</span></code>
 
 <a href="#jimgw.core.single_event.likelihood.ZeroLikelihood.evaluate" class="headerlink" title="Permanent link">¤</a></h3>
 

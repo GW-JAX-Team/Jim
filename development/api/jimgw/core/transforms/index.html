@@ -4276,7 +4276,7 @@ transform function and corresponding <code>inverse</code> and <code>backward</co
           <tr class="doc-section-item">
             <td><code><span title="jimgw.core.transforms.BijectiveTransform.inverse_transform_func">inverse_transform_func</span></code></td>
             <td>
-                  <code><span title="collections.abc.Callable">Callable</span>[[<span title="dict">dict</span>[<span title="str">str</span>, <span title="jaxtyping.Float">Float</span>]], <span title="dict">dict</span>[<span title="str">str</span>, <span title="jaxtyping.Float">Float</span>]]</code>
+                  <code><span title="collections.abc.Callable">Callable</span>[[<span title="dict">dict</span>[<span title="str">str</span>, <span title="jimgw.typing.FloatLike">FloatLike</span>]], <span title="dict">dict</span>[<span title="str">str</span>, <span title="jimgw.typing.FloatLike">FloatLike</span>]]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -4305,7 +4305,7 @@ transform function and corresponding <code>inverse</code> and <code>backward</co
       </thead>
       <tbody>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="backward(y: dict[str, Float]) -&gt; dict[str, Float] (jimgw.core.transforms.BijectiveTransform.backward)" href="./#jimgw.core.transforms.BijectiveTransform.backward">backward</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="backward(y: Mapping[str, FloatLike]) -&gt; dict[str, FloatLike] (jimgw.core.transforms.BijectiveTransform.backward)" href="./#jimgw.core.transforms.BijectiveTransform.backward">backward</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Pull back from the output coordinate to the input coordinate (no Jacobian).</p>
@@ -4313,7 +4313,7 @@ transform function and corresponding <code>inverse</code> and <code>backward</co
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="inverse(y: dict[str, Float]) -&gt; tuple[dict[str, Float], FloatScalar] (jimgw.core.transforms.BijectiveTransform.inverse)" href="./#jimgw.core.transforms.BijectiveTransform.inverse">inverse</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="inverse(y: Mapping[str, FloatLike]) -&gt; tuple[dict[str, FloatLike], FloatScalar] (jimgw.core.transforms.BijectiveTransform.inverse)" href="./#jimgw.core.transforms.BijectiveTransform.inverse">inverse</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Inverse transform from the output coordinate back to the input coordinate.</p>
@@ -4343,7 +4343,7 @@ transform function and corresponding <code>inverse</code> and <code>backward</co
 
 
 <h3 id="jimgw.core.transforms.BijectiveTransform.backward" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">backward</span><span class="p">(</span><span class="n">y</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">]</span></code>
+            <code class="highlight language-python"><span class="n">backward</span><span class="p">(</span><span class="n">y</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FloatLike</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FloatLike</span><span class="p">]</span></code>
 
 <a href="#jimgw.core.transforms.BijectiveTransform.backward" class="headerlink" title="Permanent link">¤</a></h3>
 
@@ -4369,7 +4369,7 @@ transform function and corresponding <code>inverse</code> and <code>backward</co
                 <code>y</code>
             </td>
             <td>
-                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="jaxtyping.Float">Float</span>]</code>
+                  <code><span title="collections.abc.Mapping">Mapping</span>[<span title="str">str</span>, <span title="jimgw.typing.FloatLike">FloatLike</span>]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -4395,7 +4395,7 @@ transform function and corresponding <code>inverse</code> and <code>backward</co
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="jaxtyping.Float">Float</span>]</code>
+                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="jimgw.typing.FloatLike">FloatLike</span>]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -4415,7 +4415,7 @@ transform function and corresponding <code>inverse</code> and <code>backward</co
 
 
 <h3 id="jimgw.core.transforms.BijectiveTransform.inverse" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">inverse</span><span class="p">(</span><span class="n">y</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">],</span> <span class="n">FloatScalar</span><span class="p">]</span></code>
+            <code class="highlight language-python"><span class="n">inverse</span><span class="p">(</span><span class="n">y</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FloatLike</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FloatLike</span><span class="p">],</span> <span class="n">FloatScalar</span><span class="p">]</span></code>
 
 <a href="#jimgw.core.transforms.BijectiveTransform.inverse" class="headerlink" title="Permanent link">¤</a></h3>
 
@@ -4441,7 +4441,7 @@ transform function and corresponding <code>inverse</code> and <code>backward</co
                 <code>y</code>
             </td>
             <td>
-                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="jaxtyping.Float">Float</span>]</code>
+                  <code><span title="collections.abc.Mapping">Mapping</span>[<span title="str">str</span>, <span title="jimgw.typing.FloatLike">FloatLike</span>]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -4467,7 +4467,7 @@ transform function and corresponding <code>inverse</code> and <code>backward</co
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="jaxtyping.Float">Float</span>]</code>
+                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="jimgw.typing.FloatLike">FloatLike</span>]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -5130,7 +5130,7 @@ only with respect to the primary (non-conditioning) parameters.</p>
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="inverse(y: dict[str, Float]) -&gt; tuple[dict[str, Float], FloatScalar] (jimgw.core.transforms.ConditionalBijectiveTransform.inverse)" href="./#jimgw.core.transforms.ConditionalBijectiveTransform.inverse">inverse</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="inverse(y: Mapping[str, FloatLike]) -&gt; tuple[dict[str, FloatLike], FloatScalar] (jimgw.core.transforms.ConditionalBijectiveTransform.inverse)" href="./#jimgw.core.transforms.ConditionalBijectiveTransform.inverse">inverse</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Apply the conditional inverse transform and compute the log-Jacobian.</p>
@@ -5138,7 +5138,7 @@ only with respect to the primary (non-conditioning) parameters.</p>
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="transform(x: dict[str, Float]) -&gt; tuple[dict[str, Float], FloatScalar] (jimgw.core.transforms.ConditionalBijectiveTransform.transform)" href="./#jimgw.core.transforms.ConditionalBijectiveTransform.transform">transform</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="transform(x: Mapping[str, FloatLike]) -&gt; tuple[dict[str, FloatLike], FloatScalar] (jimgw.core.transforms.ConditionalBijectiveTransform.transform)" href="./#jimgw.core.transforms.ConditionalBijectiveTransform.transform">transform</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Apply the conditional forward transform and compute the log-Jacobian.</p>
@@ -5234,7 +5234,7 @@ through unchanged.</p>
 
 
 <h3 id="jimgw.core.transforms.ConditionalBijectiveTransform.inverse" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">inverse</span><span class="p">(</span><span class="n">y</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">],</span> <span class="n">FloatScalar</span><span class="p">]</span></code>
+            <code class="highlight language-python"><span class="n">inverse</span><span class="p">(</span><span class="n">y</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FloatLike</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FloatLike</span><span class="p">],</span> <span class="n">FloatScalar</span><span class="p">]</span></code>
 
 <a href="#jimgw.core.transforms.ConditionalBijectiveTransform.inverse" class="headerlink" title="Permanent link">¤</a></h3>
 
@@ -5260,7 +5260,7 @@ through unchanged.</p>
                 <code>y</code>
             </td>
             <td>
-                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="jaxtyping.Float">Float</span>]</code>
+                  <code><span title="collections.abc.Mapping">Mapping</span>[<span title="str">str</span>, <span title="jimgw.typing.FloatLike">FloatLike</span>]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -5287,7 +5287,7 @@ through unchanged.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="jaxtyping.Float">Float</span>]</code>
+                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="jimgw.typing.FloatLike">FloatLike</span>]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -5317,7 +5317,7 @@ through unchanged.</p>
 
 
 <h3 id="jimgw.core.transforms.ConditionalBijectiveTransform.transform" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">transform</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">],</span> <span class="n">FloatScalar</span><span class="p">]</span></code>
+            <code class="highlight language-python"><span class="n">transform</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FloatLike</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FloatLike</span><span class="p">],</span> <span class="n">FloatScalar</span><span class="p">]</span></code>
 
 <a href="#jimgw.core.transforms.ConditionalBijectiveTransform.transform" class="headerlink" title="Permanent link">¤</a></h3>
 
@@ -5343,7 +5343,7 @@ through unchanged.</p>
                 <code>x</code>
             </td>
             <td>
-                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="jaxtyping.Float">Float</span>]</code>
+                  <code><span title="collections.abc.Mapping">Mapping</span>[<span title="str">str</span>, <span title="jimgw.typing.FloatLike">FloatLike</span>]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -5369,7 +5369,7 @@ through unchanged.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="jaxtyping.Float">Float</span>]</code>
+                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="jimgw.typing.FloatLike">FloatLike</span>]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -5894,7 +5894,7 @@ using the normal CDF.</p>
       </thead>
       <tbody>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="forward(x: dict[str, Float]) -&gt; dict[str, Float] (jimgw.core.transforms.NtoMTransform.forward)" href="./#jimgw.core.transforms.NtoMTransform.forward">forward</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="forward(x: Mapping[str, FloatLike]) -&gt; dict[str, FloatLike] (jimgw.core.transforms.NtoMTransform.forward)" href="./#jimgw.core.transforms.NtoMTransform.forward">forward</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Push forward the input to the transformed coordinate.</p>
@@ -5924,7 +5924,7 @@ using the normal CDF.</p>
 
 
 <h3 id="jimgw.core.transforms.NtoMTransform.forward" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">forward</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">]</span></code>
+            <code class="highlight language-python"><span class="n">forward</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FloatLike</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FloatLike</span><span class="p">]</span></code>
 
 <a href="#jimgw.core.transforms.NtoMTransform.forward" class="headerlink" title="Permanent link">¤</a></h3>
 
@@ -5950,7 +5950,7 @@ using the normal CDF.</p>
                 <code>x</code>
             </td>
             <td>
-                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="jaxtyping.Float">Float</span>]</code>
+                  <code><span title="collections.abc.Mapping">Mapping</span>[<span title="str">str</span>, <span title="jimgw.typing.FloatLike">FloatLike</span>]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -5976,7 +5976,7 @@ using the normal CDF.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="jaxtyping.Float">Float</span>]</code>
+                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="jimgw.typing.FloatLike">FloatLike</span>]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -6039,7 +6039,7 @@ determinant of the transform is computed automatically using <code>jax.jacfwd</c
       </thead>
       <tbody>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="transform(x: dict[str, Float]) -&gt; tuple[dict[str, Float], FloatScalar] (jimgw.core.transforms.NtoNTransform.transform)" href="./#jimgw.core.transforms.NtoNTransform.transform">transform</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="transform(x: Mapping[str, FloatLike]) -&gt; tuple[dict[str, FloatLike], FloatScalar] (jimgw.core.transforms.NtoNTransform.transform)" href="./#jimgw.core.transforms.NtoNTransform.transform">transform</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Transform to the output coordinate and return the log-Jacobian determinant.</p>
@@ -6120,7 +6120,7 @@ determinant of the transform is computed automatically using <code>jax.jacfwd</c
 
 
 <h3 id="jimgw.core.transforms.NtoNTransform.transform" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">transform</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">],</span> <span class="n">FloatScalar</span><span class="p">]</span></code>
+            <code class="highlight language-python"><span class="n">transform</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FloatLike</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FloatLike</span><span class="p">],</span> <span class="n">FloatScalar</span><span class="p">]</span></code>
 
 <a href="#jimgw.core.transforms.NtoNTransform.transform" class="headerlink" title="Permanent link">¤</a></h3>
 
@@ -6146,7 +6146,7 @@ determinant of the transform is computed automatically using <code>jax.jacfwd</c
                 <code>x</code>
             </td>
             <td>
-                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="jaxtyping.Float">Float</span>]</code>
+                  <code><span title="collections.abc.Mapping">Mapping</span>[<span title="str">str</span>, <span title="jimgw.typing.FloatLike">FloatLike</span>]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -6172,7 +6172,7 @@ determinant of the transform is computed automatically using <code>jax.jacfwd</c
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="jaxtyping.Float">Float</span>]</code>
+                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="jimgw.typing.FloatLike">FloatLike</span>]</code>
             </td>
             <td>
               <div class="doc-md-description">

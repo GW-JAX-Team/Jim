@@ -4093,7 +4093,7 @@
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="fd_response(frequency: Float[Array, &#x27; n_sample&#x27;], h_sky: dict[str, Float[Array, &#x27; n_sample&#x27;]], params: dict) -&gt; Complex[Array, &#x27; n_sample&#x27;]
+              <td><code><a class="autorefs autorefs-internal" title="fd_response(frequency: Float[Array, &#x27; n_sample&#x27;], h_sky: dict[str, Float[Array, &#x27; n_sample&#x27;]], params: Mapping[str, FloatLike]) -&gt; Complex[Array, &#x27; n_sample&#x27;]
 
   
       abstractmethod
@@ -4165,7 +4165,7 @@
 
 
 <h3 id="jimgw.core.single_event.detector.Detector.fd_response" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">fd_response</span><span class="p">(</span><span class="n">frequency</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_sample'</span><span class="p">],</span> <span class="n">h_sky</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_sample'</span><span class="p">]],</span> <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Complex</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_sample'</span><span class="p">]</span></code>
+            <code class="highlight language-python"><span class="n">fd_response</span><span class="p">(</span><span class="n">frequency</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_sample'</span><span class="p">],</span> <span class="n">h_sky</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_sample'</span><span class="p">]],</span> <span class="n">params</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FloatLike</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Complex</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_sample'</span><span class="p">]</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
@@ -4689,7 +4689,7 @@ include non-GR modes.</p>
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="antenna_pattern(ra: FloatScalar, dec: FloatScalar, psi: FloatScalar, gmst: FloatScalar) -&gt; dict[str, Complex] (jimgw.core.single_event.detector.GroundBased2G.antenna_pattern)" href="./#jimgw.core.single_event.detector.GroundBased2G.antenna_pattern">antenna_pattern</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="antenna_pattern(ra: FloatLike, dec: FloatLike, psi: FloatLike, gmst: FloatLike) -&gt; dict[str, ComplexLike] (jimgw.core.single_event.detector.GroundBased2G.antenna_pattern)" href="./#jimgw.core.single_event.detector.GroundBased2G.antenna_pattern">antenna_pattern</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Compute antenna patterns for polarizations at specified sky location.</p>
@@ -4697,7 +4697,7 @@ include non-GR modes.</p>
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="delay_from_geocenter(ra: FloatScalar, dec: FloatScalar, gmst: FloatScalar) -&gt; FloatScalar (jimgw.core.single_event.detector.GroundBased2G.delay_from_geocenter)" href="./#jimgw.core.single_event.detector.GroundBased2G.delay_from_geocenter">delay_from_geocenter</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="delay_from_geocenter(ra: FloatLike, dec: FloatLike, gmst: FloatLike) -&gt; FloatScalar (jimgw.core.single_event.detector.GroundBased2G.delay_from_geocenter)" href="./#jimgw.core.single_event.detector.GroundBased2G.delay_from_geocenter">delay_from_geocenter</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Calculate time delay between two detectors in geocentric coordinates.</p>
@@ -4705,7 +4705,7 @@ include non-GR modes.</p>
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="fd_response(frequency: Float[Array, &#x27; n_sample&#x27;], h_sky: dict[str, Float[Array, &#x27; n_sample&#x27;]], params: dict[str, Float]) -&gt; Complex[Array, &#x27; n_sample&#x27;] (jimgw.core.single_event.detector.GroundBased2G.fd_response)" href="./#jimgw.core.single_event.detector.GroundBased2G.fd_response">fd_response</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="fd_response(frequency: Float[Array, &#x27; n_sample&#x27;], h_sky: dict[str, Float[Array, &#x27; n_sample&#x27;]], params: Mapping[str, FloatLike]) -&gt; Complex[Array, &#x27; n_sample&#x27;] (jimgw.core.single_event.detector.GroundBased2G.fd_response)" href="./#jimgw.core.single_event.detector.GroundBased2G.fd_response">fd_response</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Modulate the waveform in the sky frame by the detector response in the frequency domain.</p>
@@ -4761,7 +4761,7 @@ include non-GR modes.</p>
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="simulate_and_set_noise(*, duration: float, sampling_frequency: float, trigger_time: float, f_min: float, f_max: float, rng_key: Key, post_trigger_duration: float = DEFAULT_POST_TRIGGER_DURATION) -&gt; None (jimgw.core.single_event.detector.GroundBased2G.simulate_and_set_noise)" href="./#jimgw.core.single_event.detector.GroundBased2G.simulate_and_set_noise">simulate_and_set_noise</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="simulate_and_set_noise(*, duration: float, sampling_frequency: float, trigger_time: float, f_min: float, f_max: float, rng_key: Key[Array, &#x27;&#x27;], post_trigger_duration: float = DEFAULT_POST_TRIGGER_DURATION) -&gt; None (jimgw.core.single_event.detector.GroundBased2G.simulate_and_set_noise)" href="./#jimgw.core.single_event.detector.GroundBased2G.simulate_and_set_noise">simulate_and_set_noise</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Replace the data by noise drawn from the PSD.</p>
@@ -5278,7 +5278,7 @@ D_{ij} = \left(x_i x_j - y_i y_j\right)/2
 
 
 <h3 id="jimgw.core.single_event.detector.GroundBased2G.antenna_pattern" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">antenna_pattern</span><span class="p">(</span><span class="n">ra</span><span class="p">:</span> <span class="n">FloatScalar</span><span class="p">,</span> <span class="n">dec</span><span class="p">:</span> <span class="n">FloatScalar</span><span class="p">,</span> <span class="n">psi</span><span class="p">:</span> <span class="n">FloatScalar</span><span class="p">,</span> <span class="n">gmst</span><span class="p">:</span> <span class="n">FloatScalar</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Complex</span><span class="p">]</span></code>
+            <code class="highlight language-python"><span class="n">antenna_pattern</span><span class="p">(</span><span class="n">ra</span><span class="p">:</span> <span class="n">FloatLike</span><span class="p">,</span> <span class="n">dec</span><span class="p">:</span> <span class="n">FloatLike</span><span class="p">,</span> <span class="n">psi</span><span class="p">:</span> <span class="n">FloatLike</span><span class="p">,</span> <span class="n">gmst</span><span class="p">:</span> <span class="n">FloatLike</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ComplexLike</span><span class="p">]</span></code>
 
 <a href="#jimgw.core.single_event.detector.GroundBased2G.antenna_pattern" class="headerlink" title="Permanent link">¤</a></h3>
 
@@ -5381,7 +5381,7 @@ tensor and the corresponding polarization tensor.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="jaxtyping.Complex">Complex</span>]</code>
+                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="jimgw.typing.ComplexLike">ComplexLike</span>]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -5401,7 +5401,7 @@ tensor and the corresponding polarization tensor.</p>
 
 
 <h3 id="jimgw.core.single_event.detector.GroundBased2G.delay_from_geocenter" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">delay_from_geocenter</span><span class="p">(</span><span class="n">ra</span><span class="p">:</span> <span class="n">FloatScalar</span><span class="p">,</span> <span class="n">dec</span><span class="p">:</span> <span class="n">FloatScalar</span><span class="p">,</span> <span class="n">gmst</span><span class="p">:</span> <span class="n">FloatScalar</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FloatScalar</span></code>
+            <code class="highlight language-python"><span class="n">delay_from_geocenter</span><span class="p">(</span><span class="n">ra</span><span class="p">:</span> <span class="n">FloatLike</span><span class="p">,</span> <span class="n">dec</span><span class="p">:</span> <span class="n">FloatLike</span><span class="p">,</span> <span class="n">gmst</span><span class="p">:</span> <span class="n">FloatLike</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FloatScalar</span></code>
 
 <a href="#jimgw.core.single_event.detector.GroundBased2G.delay_from_geocenter" class="headerlink" title="Permanent link">¤</a></h3>
 
@@ -5505,7 +5505,7 @@ tensor and the corresponding polarization tensor.</p>
 
 
 <h3 id="jimgw.core.single_event.detector.GroundBased2G.fd_response" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">fd_response</span><span class="p">(</span><span class="n">frequency</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_sample'</span><span class="p">],</span> <span class="n">h_sky</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_sample'</span><span class="p">]],</span> <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Complex</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_sample'</span><span class="p">]</span></code>
+            <code class="highlight language-python"><span class="n">fd_response</span><span class="p">(</span><span class="n">frequency</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_sample'</span><span class="p">],</span> <span class="n">h_sky</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_sample'</span><span class="p">]],</span> <span class="n">params</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FloatLike</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Complex</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_sample'</span><span class="p">]</span></code>
 
 <a href="#jimgw.core.single_event.detector.GroundBased2G.fd_response" class="headerlink" title="Permanent link">¤</a></h3>
 
@@ -6202,7 +6202,7 @@ The detector is unchanged then.</p>
 
 
 <h3 id="jimgw.core.single_event.detector.GroundBased2G.simulate_and_set_noise" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">simulate_and_set_noise</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">duration</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">sampling_frequency</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">trigger_time</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">f_min</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">f_max</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">rng_key</span><span class="p">:</span> <span class="n">Key</span><span class="p">,</span> <span class="n">post_trigger_duration</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DEFAULT_POST_TRIGGER_DURATION</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span></code>
+            <code class="highlight language-python"><span class="n">simulate_and_set_noise</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">duration</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">sampling_frequency</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">trigger_time</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">f_min</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">f_max</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">rng_key</span><span class="p">:</span> <span class="n">Key</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">''</span><span class="p">],</span> <span class="n">post_trigger_duration</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DEFAULT_POST_TRIGGER_DURATION</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span></code>
 
 <a href="#jimgw.core.single_event.detector.GroundBased2G.simulate_and_set_noise" class="headerlink" title="Permanent link">¤</a></h3>
 
@@ -6611,7 +6611,7 @@ high frequencies. Its phase convention is given in the technical notes of the do
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="fd_response(frequency: Float[Array, &#x27; n_sample&#x27;], h_sky: dict[str, Float[Array, &#x27; n_sample&#x27;]], params: dict[str, Float]) -&gt; Complex[Array, &#x27; n_sample&#x27;] (jimgw.core.single_event.detector.GroundBased3G.fd_response)" href="./#jimgw.core.single_event.detector.GroundBased3G.fd_response">fd_response</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="fd_response(frequency: Float[Array, &#x27; n_sample&#x27;], h_sky: dict[str, Float[Array, &#x27; n_sample&#x27;]], params: Mapping[str, FloatLike]) -&gt; Complex[Array, &#x27; n_sample&#x27;] (jimgw.core.single_event.detector.GroundBased3G.fd_response)" href="./#jimgw.core.single_event.detector.GroundBased3G.fd_response">fd_response</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Project the sky-frame waveform with a frequency-dependent response.</p>
@@ -6631,7 +6631,7 @@ high frequencies. Its phase convention is given in the technical notes of the do
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="gmst_at_frequency(frequency: Float[Array, &#x27; n_sample&#x27;], params: dict[str, Float]) -&gt; Float[Array, &#x27; n_sample&#x27;] (jimgw.core.single_event.detector.GroundBased3G.gmst_at_frequency)" href="./#jimgw.core.single_event.detector.GroundBased3G.gmst_at_frequency">gmst_at_frequency</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="gmst_at_frequency(frequency: Float[Array, &#x27; n_sample&#x27;], params: Mapping[str, FloatLike]) -&gt; Float[Array, &#x27; n_sample&#x27;] (jimgw.core.single_event.detector.GroundBased3G.gmst_at_frequency)" href="./#jimgw.core.single_event.detector.GroundBased3G.gmst_at_frequency">gmst_at_frequency</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Sidereal angle at the time each frequency is emitted.</p>
@@ -6923,7 +6923,7 @@ Defaults to False.</p>
 
 
 <h3 id="jimgw.core.single_event.detector.GroundBased3G.fd_response" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">fd_response</span><span class="p">(</span><span class="n">frequency</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_sample'</span><span class="p">],</span> <span class="n">h_sky</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_sample'</span><span class="p">]],</span> <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Complex</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_sample'</span><span class="p">]</span></code>
+            <code class="highlight language-python"><span class="n">fd_response</span><span class="p">(</span><span class="n">frequency</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_sample'</span><span class="p">],</span> <span class="n">h_sky</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_sample'</span><span class="p">]],</span> <span class="n">params</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FloatLike</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Complex</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_sample'</span><span class="p">]</span></code>
 
 <a href="#jimgw.core.single_event.detector.GroundBased3G.fd_response" class="headerlink" title="Permanent link">¤</a></h3>
 
@@ -7157,7 +7157,7 @@ Defaults to False.</p>
 
 
 <h3 id="jimgw.core.single_event.detector.GroundBased3G.gmst_at_frequency" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">gmst_at_frequency</span><span class="p">(</span><span class="n">frequency</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_sample'</span><span class="p">],</span> <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_sample'</span><span class="p">]</span></code>
+            <code class="highlight language-python"><span class="n">gmst_at_frequency</span><span class="p">(</span><span class="n">frequency</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_sample'</span><span class="p">],</span> <span class="n">params</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FloatLike</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_sample'</span><span class="p">]</span></code>
 
 <a href="#jimgw.core.single_event.detector.GroundBased3G.gmst_at_frequency" class="headerlink" title="Permanent link">¤</a></h3>
 

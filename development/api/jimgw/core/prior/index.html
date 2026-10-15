@@ -4252,7 +4252,7 @@ which is valid when all component priors are independent.</p>
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="log_prob(z: dict[str, Float]) -&gt; FloatScalar (jimgw.core.prior.CombinePrior.log_prob)" href="./#jimgw.core.prior.CombinePrior.log_prob">log_prob</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="log_prob(z: Mapping[str, FloatLike]) -&gt; FloatScalar (jimgw.core.prior.CombinePrior.log_prob)" href="./#jimgw.core.prior.CombinePrior.log_prob">log_prob</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Evaluate the joint log-probability as the sum of component log-probabilities.</p>
@@ -4260,7 +4260,7 @@ which is valid when all component priors are independent.</p>
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="sample(rng_key: Key, n_samples: int) -&gt; dict[str, Float[Array, &#x27; n_samples&#x27;]] (jimgw.core.prior.CombinePrior.sample)" href="./#jimgw.core.prior.CombinePrior.sample">sample</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="sample(rng_key: Key[Array, &#x27;&#x27;], n_samples: int) -&gt; dict[str, Float[Array, &#x27; n_samples&#x27;]] (jimgw.core.prior.CombinePrior.sample)" href="./#jimgw.core.prior.CombinePrior.sample">sample</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Sample from all component priors independently.</p>
@@ -4338,7 +4338,7 @@ which is valid when all component priors are independent.</p>
 
 
 <h3 id="jimgw.core.prior.CombinePrior.log_prob" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">log_prob</span><span class="p">(</span><span class="n">z</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">FloatScalar</span></code>
+            <code class="highlight language-python"><span class="n">log_prob</span><span class="p">(</span><span class="n">z</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FloatLike</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">FloatScalar</span></code>
 
 <a href="#jimgw.core.prior.CombinePrior.log_prob" class="headerlink" title="Permanent link">¤</a></h3>
 
@@ -4364,7 +4364,7 @@ which is valid when all component priors are independent.</p>
                 <code>z</code>
             </td>
             <td>
-                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="jaxtyping.Float">Float</span>]</code>
+                  <code><span title="collections.abc.Mapping">Mapping</span>[<span title="str">str</span>, <span title="jimgw.typing.FloatLike">FloatLike</span>]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -4410,7 +4410,7 @@ which is valid when all component priors are independent.</p>
 
 
 <h3 id="jimgw.core.prior.CombinePrior.sample" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">sample</span><span class="p">(</span><span class="n">rng_key</span><span class="p">:</span> <span class="n">Key</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_samples'</span><span class="p">]]</span></code>
+            <code class="highlight language-python"><span class="n">sample</span><span class="p">(</span><span class="n">rng_key</span><span class="p">:</span> <span class="n">Key</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">''</span><span class="p">],</span> <span class="n">n_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_samples'</span><span class="p">]]</span></code>
 
 <a href="#jimgw.core.prior.CombinePrior.sample" class="headerlink" title="Permanent link">¤</a></h3>
 
@@ -4436,7 +4436,7 @@ which is valid when all component priors are independent.</p>
                 <code>rng_key</code>
             </td>
             <td>
-                  <code><span title="jaxtyping.Key">Key</span></code>
+                  <code><span title="jaxtyping.Key">Key</span>[<span title="jaxtyping.Array">Array</span>, &#39;&#39;]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -5012,7 +5012,7 @@ Used to build complex prior distributions from simpler ones.</p>
       </thead>
       <tbody>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="sample(rng_key: Key, n_samples: int) -&gt; dict[str, Float[Array, &#x27; n_samples&#x27;]] (jimgw.core.prior.LogisticDistribution.sample)" href="./#jimgw.core.prior.LogisticDistribution.sample">sample</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="sample(rng_key: Key[Array, &#x27;&#x27;], n_samples: int) -&gt; dict[str, Float[Array, &#x27; n_samples&#x27;]] (jimgw.core.prior.LogisticDistribution.sample)" href="./#jimgw.core.prior.LogisticDistribution.sample">sample</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Sample from a logistic distribution.</p>
@@ -5042,7 +5042,7 @@ Used to build complex prior distributions from simpler ones.</p>
 
 
 <h3 id="jimgw.core.prior.LogisticDistribution.sample" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">sample</span><span class="p">(</span><span class="n">rng_key</span><span class="p">:</span> <span class="n">Key</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_samples'</span><span class="p">]]</span></code>
+            <code class="highlight language-python"><span class="n">sample</span><span class="p">(</span><span class="n">rng_key</span><span class="p">:</span> <span class="n">Key</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">''</span><span class="p">],</span> <span class="n">n_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_samples'</span><span class="p">]]</span></code>
 
 <a href="#jimgw.core.prior.LogisticDistribution.sample" class="headerlink" title="Permanent link">¤</a></h3>
 
@@ -5068,7 +5068,7 @@ Used to build complex prior distributions from simpler ones.</p>
                 <code>rng_key</code>
             </td>
             <td>
-                  <code><span title="jaxtyping.Key">Key</span></code>
+                  <code><span title="jaxtyping.Key">Key</span>[<span title="jaxtyping.Array">Array</span>, &#39;&#39;]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -5387,7 +5387,7 @@ bookkeeping for parameter names and transforms.</p>
       </thead>
       <tbody>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="__call__(x: dict[str, Float]) -&gt; FloatScalar (jimgw.core.prior.Prior.__call__)" href="./#jimgw.core.prior.Prior.__call__">__call__</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="__call__(x: Mapping[str, FloatLike]) -&gt; FloatScalar (jimgw.core.prior.Prior.__call__)" href="./#jimgw.core.prior.Prior.__call__">__call__</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Alias for <code>log_prob</code>.</p>
@@ -5403,7 +5403,7 @@ bookkeeping for parameter names and transforms.</p>
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="add_name(x: Float[Array, n_dims]) -&gt; dict[str, Float] (jimgw.core.prior.Prior.add_name)" href="./#jimgw.core.prior.Prior.add_name">add_name</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="add_name(x: Float[Array, n_dims]) -&gt; dict[str, FloatScalar] (jimgw.core.prior.Prior.add_name)" href="./#jimgw.core.prior.Prior.add_name">add_name</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Convert a flat parameter array to a named dict.</p>
@@ -5419,7 +5419,7 @@ bookkeeping for parameter names and transforms.</p>
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="log_prob(z: dict[str, Float]) -&gt; FloatScalar
+              <td><code><a class="autorefs autorefs-internal" title="log_prob(z: Mapping[str, FloatLike]) -&gt; FloatScalar
 
   
       abstractmethod
@@ -5431,7 +5431,7 @@ bookkeeping for parameter names and transforms.</p>
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="sample(rng_key: Key, n_samples: int) -&gt; dict[str, Float[Array, &#x27; n_samples&#x27;]]
+              <td><code><a class="autorefs autorefs-internal" title="sample(rng_key: Key[Array, &#x27;&#x27;], n_samples: int) -&gt; dict[str, Float[Array, &#x27; n_samples&#x27;]]
 
   
       abstractmethod
@@ -5558,7 +5558,7 @@ Jim will raise at construction time if this returns False for those backends.</p
 
 
 <h3 id="jimgw.core.prior.Prior.__call__" class="doc doc-heading">
-            <code class="highlight language-python"><span class="fm">__call__</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">FloatScalar</span></code>
+            <code class="highlight language-python"><span class="fm">__call__</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FloatLike</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">FloatScalar</span></code>
 
 <a href="#jimgw.core.prior.Prior.__call__" class="headerlink" title="Permanent link">¤</a></h3>
 
@@ -5624,7 +5624,7 @@ Jim will raise at construction time if this returns False for those backends.</p
 
 
 <h3 id="jimgw.core.prior.Prior.add_name" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">add_name</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="n">n_dims</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">]</span></code>
+            <code class="highlight language-python"><span class="n">add_name</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="n">n_dims</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FloatScalar</span><span class="p">]</span></code>
 
 <a href="#jimgw.core.prior.Prior.add_name" class="headerlink" title="Permanent link">¤</a></h3>
 
@@ -5680,7 +5680,7 @@ Jim will raise at construction time if this returns False for those backends.</p
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="jaxtyping.Float">Float</span>]</code>
+                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="jimgw.typing.FloatScalar">FloatScalar</span>]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -5718,7 +5718,7 @@ Jim will raise at construction time if this returns False for those backends.</p
 
 
 <h3 id="jimgw.core.prior.Prior.log_prob" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">log_prob</span><span class="p">(</span><span class="n">z</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">FloatScalar</span></code>
+            <code class="highlight language-python"><span class="n">log_prob</span><span class="p">(</span><span class="n">z</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FloatLike</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">FloatScalar</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
@@ -5748,7 +5748,7 @@ Jim will raise at construction time if this returns False for those backends.</p
                 <code>z</code>
             </td>
             <td>
-                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="jaxtyping.Float">Float</span>]</code>
+                  <code><span title="collections.abc.Mapping">Mapping</span>[<span title="str">str</span>, <span title="jimgw.typing.FloatLike">FloatLike</span>]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -5794,7 +5794,7 @@ Jim will raise at construction time if this returns False for those backends.</p
 
 
 <h3 id="jimgw.core.prior.Prior.sample" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">sample</span><span class="p">(</span><span class="n">rng_key</span><span class="p">:</span> <span class="n">Key</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_samples'</span><span class="p">]]</span></code>
+            <code class="highlight language-python"><span class="n">sample</span><span class="p">(</span><span class="n">rng_key</span><span class="p">:</span> <span class="n">Key</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">''</span><span class="p">],</span> <span class="n">n_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_samples'</span><span class="p">]]</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
@@ -5824,7 +5824,7 @@ Jim will raise at construction time if this returns False for those backends.</p
                 <code>rng_key</code>
             </td>
             <td>
-                  <code><span title="jaxtyping.Key">Key</span></code>
+                  <code><span title="jaxtyping.Key">Key</span>[<span title="jaxtyping.Array">Array</span>, &#39;&#39;]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -6143,7 +6143,7 @@ in the forward direction.</p>
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="log_prob(z: dict[str, Float]) -&gt; FloatScalar (jimgw.core.prior.SequentialTransformPrior.log_prob)" href="./#jimgw.core.prior.SequentialTransformPrior.log_prob">log_prob</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="log_prob(z: Mapping[str, FloatLike]) -&gt; FloatScalar (jimgw.core.prior.SequentialTransformPrior.log_prob)" href="./#jimgw.core.prior.SequentialTransformPrior.log_prob">log_prob</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Evaluate the log-probability of a transformed sample z.</p>
@@ -6151,7 +6151,7 @@ in the forward direction.</p>
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="sample(rng_key: Key, n_samples: int) -&gt; dict[str, Float[Array, &#x27; n_samples&#x27;]] (jimgw.core.prior.SequentialTransformPrior.sample)" href="./#jimgw.core.prior.SequentialTransformPrior.sample">sample</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="sample(rng_key: Key[Array, &#x27;&#x27;], n_samples: int) -&gt; dict[str, Float[Array, &#x27; n_samples&#x27;]] (jimgw.core.prior.SequentialTransformPrior.sample)" href="./#jimgw.core.prior.SequentialTransformPrior.sample">sample</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Sample by drawing from the base prior and applying all transforms.</p>
@@ -6159,7 +6159,7 @@ in the forward direction.</p>
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="transform(x: dict[str, Float]) -&gt; dict[str, Float] (jimgw.core.prior.SequentialTransformPrior.transform)" href="./#jimgw.core.prior.SequentialTransformPrior.transform">transform</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="transform(x: Mapping[str, FloatLike]) -&gt; dict[str, FloatLike] (jimgw.core.prior.SequentialTransformPrior.transform)" href="./#jimgw.core.prior.SequentialTransformPrior.transform">transform</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Apply all transforms sequentially (forward direction).</p>
@@ -6254,7 +6254,7 @@ samples from the base prior.</p>
 
 
 <h3 id="jimgw.core.prior.SequentialTransformPrior.log_prob" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">log_prob</span><span class="p">(</span><span class="n">z</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">FloatScalar</span></code>
+            <code class="highlight language-python"><span class="n">log_prob</span><span class="p">(</span><span class="n">z</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FloatLike</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">FloatScalar</span></code>
 
 <a href="#jimgw.core.prior.SequentialTransformPrior.log_prob" class="headerlink" title="Permanent link">¤</a></h3>
 
@@ -6282,7 +6282,7 @@ log-Jacobian determinants, then evaluates the base prior.</p>
                 <code>z</code>
             </td>
             <td>
-                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="jaxtyping.Float">Float</span>]</code>
+                  <code><span title="collections.abc.Mapping">Mapping</span>[<span title="str">str</span>, <span title="jimgw.typing.FloatLike">FloatLike</span>]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -6328,7 +6328,7 @@ log-Jacobian determinants, then evaluates the base prior.</p>
 
 
 <h3 id="jimgw.core.prior.SequentialTransformPrior.sample" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">sample</span><span class="p">(</span><span class="n">rng_key</span><span class="p">:</span> <span class="n">Key</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_samples'</span><span class="p">]]</span></code>
+            <code class="highlight language-python"><span class="n">sample</span><span class="p">(</span><span class="n">rng_key</span><span class="p">:</span> <span class="n">Key</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">''</span><span class="p">],</span> <span class="n">n_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_samples'</span><span class="p">]]</span></code>
 
 <a href="#jimgw.core.prior.SequentialTransformPrior.sample" class="headerlink" title="Permanent link">¤</a></h3>
 
@@ -6354,7 +6354,7 @@ log-Jacobian determinants, then evaluates the base prior.</p>
                 <code>rng_key</code>
             </td>
             <td>
-                  <code><span title="jaxtyping.Key">Key</span></code>
+                  <code><span title="jaxtyping.Key">Key</span>[<span title="jaxtyping.Array">Array</span>, &#39;&#39;]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -6416,7 +6416,7 @@ log-Jacobian determinants, then evaluates the base prior.</p>
 
 
 <h3 id="jimgw.core.prior.SequentialTransformPrior.transform" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">transform</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">]</span></code>
+            <code class="highlight language-python"><span class="n">transform</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FloatLike</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FloatLike</span><span class="p">]</span></code>
 
 <a href="#jimgw.core.prior.SequentialTransformPrior.transform" class="headerlink" title="Permanent link">¤</a></h3>
 
@@ -6442,7 +6442,7 @@ log-Jacobian determinants, then evaluates the base prior.</p>
                 <code>x</code>
             </td>
             <td>
-                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="jaxtyping.Float">Float</span>]</code>
+                  <code><span title="collections.abc.Mapping">Mapping</span>[<span title="str">str</span>, <span title="jimgw.typing.FloatLike">FloatLike</span>]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -6468,7 +6468,7 @@ log-Jacobian determinants, then evaluates the base prior.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="jaxtyping.Float">Float</span>]</code>
+                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="jimgw.typing.FloatLike">FloatLike</span>]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -6579,7 +6579,7 @@ log-Jacobian determinants, then evaluates the base prior.</p>
       </thead>
       <tbody>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="sample(rng_key: Key, n_samples: int) -&gt; dict[str, Float[Array, &#x27; n_samples&#x27;]] (jimgw.core.prior.StandardNormalDistribution.sample)" href="./#jimgw.core.prior.StandardNormalDistribution.sample">sample</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="sample(rng_key: Key[Array, &#x27;&#x27;], n_samples: int) -&gt; dict[str, Float[Array, &#x27; n_samples&#x27;]] (jimgw.core.prior.StandardNormalDistribution.sample)" href="./#jimgw.core.prior.StandardNormalDistribution.sample">sample</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Sample from a standard normal distribution.</p>
@@ -6609,7 +6609,7 @@ log-Jacobian determinants, then evaluates the base prior.</p>
 
 
 <h3 id="jimgw.core.prior.StandardNormalDistribution.sample" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">sample</span><span class="p">(</span><span class="n">rng_key</span><span class="p">:</span> <span class="n">Key</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_samples'</span><span class="p">]]</span></code>
+            <code class="highlight language-python"><span class="n">sample</span><span class="p">(</span><span class="n">rng_key</span><span class="p">:</span> <span class="n">Key</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">''</span><span class="p">],</span> <span class="n">n_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_samples'</span><span class="p">]]</span></code>
 
 <a href="#jimgw.core.prior.StandardNormalDistribution.sample" class="headerlink" title="Permanent link">¤</a></h3>
 
@@ -6635,7 +6635,7 @@ log-Jacobian determinants, then evaluates the base prior.</p>
                 <code>rng_key</code>
             </td>
             <td>
-                  <code><span title="jaxtyping.Key">Key</span></code>
+                  <code><span title="jaxtyping.Key">Key</span>[<span title="jaxtyping.Array">Array</span>, &#39;&#39;]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -6738,7 +6738,7 @@ log-Jacobian determinants, then evaluates the base prior.</p>
       </thead>
       <tbody>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="sample(rng_key: Key, n_samples: int) -&gt; dict[str, Float[Array, &#x27; n_samples&#x27;]] (jimgw.core.prior.UniformDistribution.sample)" href="./#jimgw.core.prior.UniformDistribution.sample">sample</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="sample(rng_key: Key[Array, &#x27;&#x27;], n_samples: int) -&gt; dict[str, Float[Array, &#x27; n_samples&#x27;]] (jimgw.core.prior.UniformDistribution.sample)" href="./#jimgw.core.prior.UniformDistribution.sample">sample</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Sample from a uniform distribution.</p>
@@ -6768,7 +6768,7 @@ log-Jacobian determinants, then evaluates the base prior.</p>
 
 
 <h3 id="jimgw.core.prior.UniformDistribution.sample" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">sample</span><span class="p">(</span><span class="n">rng_key</span><span class="p">:</span> <span class="n">Key</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_samples'</span><span class="p">]]</span></code>
+            <code class="highlight language-python"><span class="n">sample</span><span class="p">(</span><span class="n">rng_key</span><span class="p">:</span> <span class="n">Key</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">''</span><span class="p">],</span> <span class="n">n_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_samples'</span><span class="p">]]</span></code>
 
 <a href="#jimgw.core.prior.UniformDistribution.sample" class="headerlink" title="Permanent link">¤</a></h3>
 
@@ -6794,7 +6794,7 @@ log-Jacobian determinants, then evaluates the base prior.</p>
                 <code>rng_key</code>
             </td>
             <td>
-                  <code><span title="jaxtyping.Key">Key</span></code>
+                  <code><span title="jaxtyping.Key">Key</span>[<span title="jaxtyping.Array">Array</span>, &#39;&#39;]</code>
             </td>
             <td>
               <div class="doc-md-description">

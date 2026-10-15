@@ -3337,7 +3337,7 @@ pluggable JAX <a class="autorefs autorefs-internal" href="../../samplers/base/#j
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="add_name(x: Float[Array, &#x27; n_dims&#x27;]) -&gt; dict[str, Float] (jimgw.core.jim.Jim.add_name)" href="./#jimgw.core.jim.Jim.add_name">add_name</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="add_name(x: Float[Array, &#x27; n_dims&#x27;]) -&gt; dict[str, FloatScalar] (jimgw.core.jim.Jim.add_name)" href="./#jimgw.core.jim.Jim.add_name">add_name</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Convert a flat sampling-space array to a named dict.</p>
@@ -3345,7 +3345,7 @@ pluggable JAX <a class="autorefs autorefs-internal" href="../../samplers/base/#j
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="evaluate_posterior(params: Float[Array, &#x27; n_dims&#x27;]) -&gt; Float (jimgw.core.jim.Jim.evaluate_posterior)" href="./#jimgw.core.jim.Jim.evaluate_posterior">evaluate_posterior</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="evaluate_posterior(params: Float[Array, &#x27; n_dims&#x27;]) -&gt; FloatLike (jimgw.core.jim.Jim.evaluate_posterior)" href="./#jimgw.core.jim.Jim.evaluate_posterior">evaluate_posterior</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Log-posterior in the sampling space.</p>
@@ -3353,7 +3353,7 @@ pluggable JAX <a class="autorefs autorefs-internal" href="../../samplers/base/#j
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="evaluate_prior(params: Float[Array, &#x27; n_dims&#x27;]) -&gt; Float (jimgw.core.jim.Jim.evaluate_prior)" href="./#jimgw.core.jim.Jim.evaluate_prior">evaluate_prior</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="evaluate_prior(params: Float[Array, &#x27; n_dims&#x27;]) -&gt; FloatLike (jimgw.core.jim.Jim.evaluate_prior)" href="./#jimgw.core.jim.Jim.evaluate_prior">evaluate_prior</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Log-prior in the sampling space (with Jacobian corrections from sample_transforms).</p>
@@ -3385,7 +3385,7 @@ pluggable JAX <a class="autorefs autorefs-internal" href="../../samplers/base/#j
               </td>
             </tr>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="sample_initial_positions(n_points: int, rng_key: Key) -&gt; Float[Array, &#x27;n_points n_dims&#x27;] (jimgw.core.jim.Jim.sample_initial_positions)" href="./#jimgw.core.jim.Jim.sample_initial_positions">sample_initial_positions</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="sample_initial_positions(n_points: int, rng_key: Key[Array, &#x27;&#x27;]) -&gt; Float[Array, &#x27;n_points n_dims&#x27;] (jimgw.core.jim.Jim.sample_initial_positions)" href="./#jimgw.core.jim.Jim.sample_initial_positions">sample_initial_positions</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Draw <code>n_points</code> initial positions from the prior in sampling space.</p>
@@ -3593,7 +3593,7 @@ backend-specific progress output (e.g. flowMC training loss).</p>
 
 
 <h3 id="jimgw.core.jim.Jim.add_name" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">add_name</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_dims'</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">]</span></code>
+            <code class="highlight language-python"><span class="n">add_name</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_dims'</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FloatScalar</span><span class="p">]</span></code>
 
 <a href="#jimgw.core.jim.Jim.add_name" class="headerlink" title="Permanent link">¤</a></h3>
 
@@ -3611,7 +3611,7 @@ backend-specific progress output (e.g. flowMC training loss).</p>
 
 
 <h3 id="jimgw.core.jim.Jim.evaluate_posterior" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">evaluate_posterior</span><span class="p">(</span><span class="n">params</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_dims'</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Float</span></code>
+            <code class="highlight language-python"><span class="n">evaluate_posterior</span><span class="p">(</span><span class="n">params</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_dims'</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">FloatLike</span></code>
 
 <a href="#jimgw.core.jim.Jim.evaluate_posterior" class="headerlink" title="Permanent link">¤</a></h3>
 
@@ -3629,7 +3629,7 @@ backend-specific progress output (e.g. flowMC training loss).</p>
 
 
 <h3 id="jimgw.core.jim.Jim.evaluate_prior" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">evaluate_prior</span><span class="p">(</span><span class="n">params</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_dims'</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Float</span></code>
+            <code class="highlight language-python"><span class="n">evaluate_prior</span><span class="p">(</span><span class="n">params</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">' n_dims'</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">FloatLike</span></code>
 
 <a href="#jimgw.core.jim.Jim.evaluate_prior" class="headerlink" title="Permanent link">¤</a></h3>
 
@@ -3839,7 +3839,7 @@ expected shape depends on the backend:</p>
 
 
 <h3 id="jimgw.core.jim.Jim.sample_initial_positions" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">sample_initial_positions</span><span class="p">(</span><span class="n">n_points</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">rng_key</span><span class="p">:</span> <span class="n">Key</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">'n_points n_dims'</span><span class="p">]</span></code>
+            <code class="highlight language-python"><span class="n">sample_initial_positions</span><span class="p">(</span><span class="n">n_points</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">rng_key</span><span class="p">:</span> <span class="n">Key</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">''</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">'n_points n_dims'</span><span class="p">]</span></code>
 
 <a href="#jimgw.core.jim.Jim.sample_initial_positions" class="headerlink" title="Permanent link">¤</a></h3>
 
@@ -3881,7 +3881,7 @@ expected shape depends on the backend:</p>
                 <code>rng_key</code>
             </td>
             <td>
-                  <code><span title="jaxtyping.Key">Key</span></code>
+                  <code><span title="jaxtyping.Key">Key</span>[<span title="jaxtyping.Array">Array</span>, &#39;&#39;]</code>
             </td>
             <td>
               <div class="doc-md-description">

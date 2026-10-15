@@ -37,7 +37,7 @@ def write_outputs(jim, cfg) -> None:
     samples = jim.get_samples(n_samples=cfg.output.n_samples)
     samples_path = out_dir / "samples.npz"
     # NumPy's stubs do not model dynamically named arrays unpacked as kwargs.
-    np.savez(samples_path, **{k: np.asarray(v) for k, v in samples.items()})
+    np.savez(samples_path, **{k: np.asarray(v) for k, v in samples.items()})  # ty: ignore[invalid-argument-type]
     logger.info(
         "Saved %d samples to %s", next(iter(samples.values())).shape[0], samples_path
     )
@@ -57,7 +57,7 @@ def write_outputs(jim, cfg) -> None:
     if array_diag:
         diag_npz = out_dir / "diagnostics.npz"
         # NumPy's stubs do not model dynamically named arrays unpacked as kwargs.
-        np.savez(diag_npz, **{k: np.asarray(v) for k, v in array_diag.items()})
+        np.savez(diag_npz, **{k: np.asarray(v) for k, v in array_diag.items()})  # ty: ignore[invalid-argument-type]
         logger.info("Saved array diagnostics to %s", diag_npz)
 
     # Resolved config

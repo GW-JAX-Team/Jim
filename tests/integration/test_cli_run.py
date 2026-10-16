@@ -1,6 +1,5 @@
 """Integration test: full jim-run pipeline from TOML config."""
 
-import logging
 import tomllib
 from pathlib import Path
 
@@ -9,7 +8,7 @@ import pytest
 import tomli_w
 from typer.testing import CliRunner
 
-from jimgw.cli import app
+from jimgw.cli import _jim, app
 
 pytestmark = pytest.mark.integration
 
@@ -118,7 +117,7 @@ def test_overwrite_false_raises(patched_config, full_run_result, tmp_output):
     assert result2.exit_code == 2
 
 
-def test_ns_aw_run_uses_the_unit_cube_and_periodic_names(tmp_path, caplog):
+def test_ns_aw_run_uses_the_unit_cube_and_periodic_names(tmp_path, monkeypatch):
     """A small NS AW run with ra/dec sampled directly: the CLI wiring of the transform flags."""
     with open(_CONFIG, "rb") as f:
         raw = tomllib.load(f)
@@ -135,17 +134,18 @@ def test_ns_aw_run_uses_the_unit_cube_and_periodic_names(tmp_path, caplog):
     with open(cfg_path, "wb") as f:
         tomli_w.dump(raw, f)
 
-    # The jimgw logger does not propagate, so attach the capture handler to it directly.
-    jimgw_logger = logging.getLogger("jimgw")
-    jimgw_logger.addHandler(caplog.handler)
-    try:
-        result = _RUNNER.invoke(app, [str(cfg_path)], catch_exceptions=False)
-    finally:
-        jimgw_logger.removeHandler(caplog.handler)
+    jim_kwargs = {}
+    jim_class = _jim.Jim
+
+    def spy(*args, **kwargs):
+        jim_kwargs.update(kwargs)
+        return jim_class(*args, **kwargs)
+
+    monkeypatch.setattr(_jim, "Jim", spy)
+    result = _RUNNER.invoke(app, [str(cfg_path)], catch_exceptions=False)
     assert result.exit_code == 0, result.output
 
-    messages = [record.getMessage() for record in caplog.records]
-    assert "periodic parameters: ['phase_c_unit', 'psi_unit', 'ra_unit']" in messages
+    assert sorted(jim_kwargs["periodic"]) == ["phase_c_unit", "psi_unit", "ra_unit"]
     with np.load(tmp_path / "output" / "samples.npz") as data:
         # t_c was replaced by t_det in the prior; ra/dec were sampled directly.
         assert {"t_det", "ra", "dec"} <= set(data.files)

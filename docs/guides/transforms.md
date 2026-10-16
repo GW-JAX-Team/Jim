@@ -67,42 +67,6 @@ sample_transforms = [
 ]
 ```
 
-## Default transforms
-
-For standard compact-binary analyses you do not need to write the two lists yourself.
-`jimgw.core.single_event.helpers` derives them from your prior, the same way the [CLI](cli.md) does:
-
-```python
-from jimgw.core.single_event.helpers import (
-    get_default_likelihood_transforms,
-    get_default_sample_transforms,
-)
-
-# ifos must already have their data attached.
-sample_transforms = get_default_sample_transforms(prior, ifos)
-likelihood_transforms = get_default_likelihood_transforms(prior, ifos, waveform)
-
-jim = Jim(
-    likelihood,
-    prior,
-    sampler_config=FlowMCConfig(),
-    sample_transforms=sample_transforms,
-    likelihood_transforms=likelihood_transforms,
-)
-```
-
-- **Sample transforms.**
-  `t_c` is sampled as the arrival time at `ifos[0]` and `ra`/`dec` as `azimuth`/`zenith` relative to the first two detectors.
-  Pass `detector_frame_time=False` or `detector_frame_sky=False` to sample `t_c` or `ra`/`dec` directly.
-- **Likelihood transforms.**
-  `q` to `eta`; J-frame spin angles and spherical spins to Cartesian spins; and a prior given in `azimuth`/`zenith` or `t_det` back to `ra`/`dec` and `t_c`.
-- **NS AW.**
-  Pass `unit_cube=True` to `get_default_sample_transforms` to map every sampled parameter to `[0, 1]` (see [below](#mapping-a-prior-to-the-unit-cube-for-ns-aw) for what that involves).
-  This needs a prior made of `UniformPrior`, `SinePrior`, `CosinePrior`, `PowerLawPrior`, `RayleighPrior` and `GaussianPrior`, and a `t_det` prior (or `detector_frame_time=False`) rather than `t_c`, because the delay between `t_c` and `t_det` depends on the sky position, so a `t_c` prior would not fill the unit interval exactly.
-
-These cover the common cases.
-For anything else, write the lists yourself as described in the sections above, or start from the default list and add to it.
-
 ## Available Transforms
 
 All transforms are importable from `jimgw.core.single_event.transforms`.
@@ -249,6 +213,44 @@ sample_transforms += [
     ),
 ]
 ```
+
+## Default transforms
+
+For standard compact-binary analyses you do not need to write the two lists yourself.
+`jimgw.core.single_event.helpers` derives them from your prior, the same way the [CLI](cli.md) does:
+
+```python
+from jimgw.core.single_event.helpers import (
+    get_default_likelihood_transforms,
+    get_default_sample_transforms,
+)
+
+# ifos must already have their data attached.
+sample_transforms = get_default_sample_transforms(prior, ifos)
+likelihood_transforms = get_default_likelihood_transforms(prior, ifos, waveform)
+
+jim = Jim(
+    likelihood,
+    prior,
+    sampler_config=FlowMCConfig(),
+    sample_transforms=sample_transforms,
+    likelihood_transforms=likelihood_transforms,
+)
+```
+
+- **Sample transforms.**
+  `t_c` is sampled as the arrival time at `ifos[0]` and `ra`/`dec` as `azimuth`/`zenith` relative to the first two detectors.
+  Pass `detector_frame_time=False` or `detector_frame_sky=False` to sample `t_c` or `ra`/`dec` directly.
+- **Likelihood transforms.**
+  `q` to `eta`; J-frame spin angles and spherical spins to Cartesian spins; and a prior given in `azimuth`/`zenith` or `t_det` back to `ra`/`dec` and `t_c`.
+- **NS AW.**
+  Pass `unit_cube=True` to `get_default_sample_transforms` to map every sampled parameter to `[0, 1]` (see [above](#mapping-a-prior-to-the-unit-cube-for-ns-aw) for what that involves).
+  This needs a prior made of `UniformPrior`, `SinePrior`, `CosinePrior`, `PowerLawPrior`, `RayleighPrior` and `GaussianPrior`.
+  It also needs a `t_det` prior (or `detector_frame_time=False`) rather than `t_c`, because the delay between `t_c` and `t_det` depends on the sky position, so a `t_c` prior would not fill the unit interval exactly.
+  Sampling `ra`/`dec` as `azimuth`/`zenith` additionally assumes an isotropic sky prior (`ra` uniform over one period, `dec` cosine); for any other sky prior, put the prior on `azimuth`/`zenith` directly or pass `detector_frame_sky=False`.
+
+These cover the common cases.
+For anything else, write the lists yourself as described above, or start from the default list and add to it.
 
 ## Passing Transforms to Jim
 

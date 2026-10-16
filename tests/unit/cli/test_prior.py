@@ -1,4 +1,4 @@
-"""Tests for CLI prior construction and time-frame adaptation."""
+"""Tests for the NS AW time adaptation of the CLI prior."""
 
 import pytest
 
@@ -32,3 +32,26 @@ def test_time_adaptation_preserves_uniform_bounds(
     assert list(result.root) == [destination]
     assert result.root[destination] == spec
     assert list(prior.root) == [source]
+
+
+def test_time_adaptation_keeps_the_parameter_order():
+    prior = PriorConfig(
+        {
+            "M_c": UniformSpec(min=10.0, max=80.0),
+            "t_c": UniformSpec(min=-0.1, max=0.1),
+            "psi": UniformSpec(min=0.0, max=3.14),
+        }
+    )
+    result = adapt_prior_for_ns_time(prior, SamplingConfig())
+    assert result is not None
+    assert list(result.root) == ["M_c", "t_det", "psi"]
+
+
+@pytest.mark.parametrize(
+    "name, detector_frame_time",
+    [("t_c", False), ("t_det", True)],
+)
+def test_time_that_is_already_sampled_directly_is_left_alone(name, detector_frame_time):
+    prior = PriorConfig({name: UniformSpec(min=-0.1, max=0.1)})
+    sampling = SamplingConfig(detector_frame_time=detector_frame_time)
+    assert adapt_prior_for_ns_time(prior, sampling) is None

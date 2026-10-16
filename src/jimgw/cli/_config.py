@@ -12,6 +12,7 @@ import logging
 from pathlib import Path
 from typing import Annotated, Literal, Optional, Union
 
+import numpy as np
 from pydantic import (
     BaseModel,
     Discriminator,
@@ -803,6 +804,22 @@ class PipelineConfig(BaseModel):
                 "[sampling] detector_frame_time = false to sample t_c directly, or "
                 "replace 't_c' with 't_det' in [prior]."
             )
+
+        if self.sampling.detector_frame_sky and EQUATORIAL_SKY_PARAMS <= prior_keys:
+            ra, dec = self.prior.root["ra"], self.prior.root["dec"]
+            isotropic = (
+                isinstance(ra, UniformSpec)
+                and np.isclose(ra.max - ra.min, 2 * np.pi)
+                and isinstance(dec, CosineSpec)
+            )
+            if not isotropic:
+                raise ValueError(
+                    "NS AW sampler: with [sampling] detector_frame_sky = true, 'ra'/'dec' "
+                    "in [prior] must be isotropic ('ra' uniform over one period, 'dec' "
+                    "cosine). Either use such a prior, put the prior on 'azimuth'/'zenith' "
+                    "instead, or set [sampling] detector_frame_sky = false to map "
+                    "ra/dec directly."
+                )
 
         return self
 

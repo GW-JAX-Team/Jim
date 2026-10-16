@@ -254,7 +254,7 @@ Use for 3-D spin vectors.
 ## `[sampling]`
 
 Optional section that controls the coordinate system the sampler explores.
-The CLI auto-infers transforms for all other cases.
+The CLI auto-infers transforms for all other cases and declares the angles that wrap around as [periodic](samplers.md#periodic-parameters) for every sampler whenever their prior covers one full period.
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |

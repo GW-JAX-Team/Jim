@@ -64,9 +64,8 @@ def get_default_sample_transforms(
         detector_frame_sky: Sample ``ra``/``dec`` as ``azimuth``/``zenith`` relative to
             the baseline of ``ifos[0]`` and ``ifos[1]``.
         unit_cube: Also map every sampling parameter to [0, 1], as the NS AW sampler
-            requires.  Needs a prior made of ``UniformPrior``, ``SinePrior``,
-            ``CosinePrior``, ``PowerLawPrior``, ``RayleighPrior`` and ``GaussianPrior``
-            (alone or inside ``CombinePrior``).
+            requires.  Raises if a prior cannot be mapped exactly, e.g. ``t_c`` in the
+            detector frame or a non-isotropic ``ra``/``dec``.
 
     Returns:
         The transforms to pass to Jim as ``sample_transforms``.
@@ -115,8 +114,9 @@ def get_default_sample_transforms(
         if not isotropic_sky:
             raise ValueError(
                 "unit_cube=True with detector_frame_sky=True assumes an isotropic sky "
-                "prior (ra uniform over one period, dec cosine). Pass "
-                "detector_frame_sky=False to map another sky prior directly."
+                "prior (ra uniform over one period, dec cosine). Put the prior on "
+                "azimuth/zenith instead, or pass detector_frame_sky=False to map "
+                "ra/dec directly."
             )
 
     for leaf in leaves:

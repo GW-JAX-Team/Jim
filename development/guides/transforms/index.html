@@ -1142,6 +1142,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#default-transforms" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Default transforms
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#passing-transforms-to-jim" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -2061,6 +2072,33 @@
     
   
   detector
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/jimgw/core/single_event/helpers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  helpers
 
     
   </span>
@@ -3335,6 +3373,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#default-transforms" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Default transforms
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#passing-transforms-to-jim" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -3527,7 +3576,8 @@ Jim applies them to prior samples to obtain the initial positions in sampling sp
 </table>
 <h2 id="mapping-a-prior-to-the-unit-cube-for-ns-aw">Mapping a prior to the unit cube (for NS AW)<a class="headerlink" href="#mapping-a-prior-to-the-unit-cube-for-ns-aw" title="Permanent link">¤</a></h2>
 <p>The <a href="../samplers/#blackjax-ns-aw">BlackJAX NS AW sampler</a> requires the <strong>sampling space</strong> to be the unit hypercube <code>[0, 1]^n_dims</code>.
-The <code>sample_transforms</code> must map every parameter from its physical support into <code>[0, 1]</code>.</p>
+The <code>sample_transforms</code> must map every parameter from its physical support into <code>[0, 1]</code>.
+<a href="#default-transforms"><code>get_default_sample_transforms(prior, ifos, unit_cube=True)</code></a> builds all of the following for the standard prior types; the rest of this section shows what it does, for priors you handle yourself.</p>
 <p>The key tool is <code>BoundToBound</code>, which linearly maps <code>[a, b] → [c, d]</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.transforms</span><span class="w"> </span><span class="kn">import</span> <span class="n">BoundToBound</span>
 
@@ -3604,6 +3654,40 @@ The forward direction maps <code>u ∈ (0, 1)</code> to <code>x = mu + sigma * n
     <span class="p">),</span>
 <span class="p">]</span>
 </code></pre></div>
+<h2 id="default-transforms">Default transforms<a class="headerlink" href="#default-transforms" title="Permanent link">¤</a></h2>
+<p>For standard compact-binary analyses you do not need to write the two lists yourself.
+<code>jimgw.core.single_event.helpers</code> derives them from your prior, the same way the <a href="../cli/">CLI</a> does:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.single_event.helpers</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">get_default_likelihood_transforms</span><span class="p">,</span>
+    <span class="n">get_default_sample_transforms</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># ifos must already have their data attached.</span>
+<span class="n">sample_transforms</span> <span class="o">=</span> <span class="n">get_default_sample_transforms</span><span class="p">(</span><span class="n">prior</span><span class="p">,</span> <span class="n">ifos</span><span class="p">)</span>
+<span class="n">likelihood_transforms</span> <span class="o">=</span> <span class="n">get_default_likelihood_transforms</span><span class="p">(</span><span class="n">prior</span><span class="p">,</span> <span class="n">ifos</span><span class="p">,</span> <span class="n">waveform</span><span class="p">)</span>
+
+<span class="n">jim</span> <span class="o">=</span> <span class="n">Jim</span><span class="p">(</span>
+    <span class="n">likelihood</span><span class="p">,</span>
+    <span class="n">prior</span><span class="p">,</span>
+    <span class="n">sampler_config</span><span class="o">=</span><span class="n">FlowMCConfig</span><span class="p">(),</span>
+    <span class="n">sample_transforms</span><span class="o">=</span><span class="n">sample_transforms</span><span class="p">,</span>
+    <span class="n">likelihood_transforms</span><span class="o">=</span><span class="n">likelihood_transforms</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<ul>
+<li><strong>Sample transforms.</strong>
+  <code>t_c</code> is sampled as the arrival time at <code>ifos[0]</code> and <code>ra</code>/<code>dec</code> as <code>azimuth</code>/<code>zenith</code> relative to the first two detectors.
+  Pass <code>detector_frame_time=False</code> or <code>detector_frame_sky=False</code> to sample <code>t_c</code> or <code>ra</code>/<code>dec</code> directly.</li>
+<li><strong>Likelihood transforms.</strong>
+  <code>q</code> to <code>eta</code>; J-frame spin angles and spherical spins to Cartesian spins; and a prior given in <code>azimuth</code>/<code>zenith</code> or <code>t_det</code> back to <code>ra</code>/<code>dec</code> and <code>t_c</code>.</li>
+<li><strong>NS AW.</strong>
+  Pass <code>unit_cube=True</code> to <code>get_default_sample_transforms</code> to map every sampled parameter to <code>[0, 1]</code> (see <a href="#mapping-a-prior-to-the-unit-cube-for-ns-aw">above</a> for what that involves).
+  This needs a prior made of <code>UniformPrior</code>, <code>SinePrior</code>, <code>CosinePrior</code>, <code>PowerLawPrior</code>, <code>RayleighPrior</code> and <code>GaussianPrior</code>.
+  It also needs a <code>t_det</code> prior (or <code>detector_frame_time=False</code>) rather than <code>t_c</code>, because the delay between <code>t_c</code> and <code>t_det</code> depends on the sky position, so a <code>t_c</code> prior would not fill the unit interval exactly.
+  Sampling <code>ra</code>/<code>dec</code> as <code>azimuth</code>/<code>zenith</code> additionally assumes an isotropic sky prior (<code>ra</code> uniform over one period, <code>dec</code> cosine); for any other sky prior, put the prior on <code>azimuth</code>/<code>zenith</code> directly or pass <code>detector_frame_sky=False</code>.</li>
+</ul>
+<p>These cover the common cases.
+For anything else, write the lists yourself as described above, or start from the default list and add to it.</p>
 <h2 id="passing-transforms-to-jim">Passing Transforms to Jim<a class="headerlink" href="#passing-transforms-to-jim" title="Permanent link">¤</a></h2>
 <p>Both lists are passed to the <code>Jim</code> constructor:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.jim</span><span class="w"> </span><span class="kn">import</span> <span class="n">Jim</span>

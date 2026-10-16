@@ -2052,6 +2052,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/jimgw/core/single_event/helpers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  helpers
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/jimgw/core/single_event/likelihood/" class="md-nav__link">
         
   
@@ -3621,19 +3648,30 @@ Pointing a <em>different</em> backend at that <code>checkpoint_dir</code> (or, f
 Set <code>checkpoint_interval = 0</code> in the <code>[sampler]</code> block to opt out.</p>
 <hr />
 <h2 id="periodic-parameters">Periodic parameters<a class="headerlink" href="#periodic-parameters" title="Permanent link">¤</a></h2>
-<p>All samplers accept a <code>periodic</code> field to handle parameters that wrap around (e.g. angles).
-Pass a dict of <code>parameter_name: (lower, upper)</code> bounds:</p>
-<div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FlowMCConfig</span><span class="p">(</span>
+<p>Parameters that wrap around (e.g. angles) are declared with the <code>periodic</code> argument of <code>Jim</code>, not in the sampler config.
+For flowMC, NSS, SwiG and SMC, pass a dict of <code>parameter_name: (lower, upper)</code> bounds in the sampling space:</p>
+<div class="highlight"><pre><span></span><code><span class="n">jim</span> <span class="o">=</span> <span class="n">Jim</span><span class="p">(</span>
     <span class="o">...</span><span class="p">,</span>
+    <span class="n">sampler_config</span><span class="o">=</span><span class="n">FlowMCConfig</span><span class="p">(</span><span class="o">...</span><span class="p">),</span>
     <span class="n">periodic</span><span class="o">=</span><span class="p">{</span><span class="s2">"phase_c"</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">6.283185</span><span class="p">),</span> <span class="s2">"psi"</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">3.141593</span><span class="p">)},</span>
 <span class="p">)</span>
 </code></pre></div>
-<p>BlackJAX NS AW operates in <code>[0, 1]</code> per dimension, so its <code>periodic</code> field takes a plain list of parameter names:</p>
-<div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">BlackJAXNSAWConfig</span><span class="p">(</span>
+<p>BlackJAX NS AW operates in <code>[0, 1]</code> per dimension, so it takes a plain list of sampling-space parameter names:</p>
+<div class="highlight"><pre><span></span><code><span class="n">jim</span> <span class="o">=</span> <span class="n">Jim</span><span class="p">(</span>
     <span class="o">...</span><span class="p">,</span>
-    <span class="n">periodic</span><span class="o">=</span><span class="p">[</span><span class="s2">"phase_c"</span><span class="p">,</span> <span class="s2">"psi"</span><span class="p">],</span>
+    <span class="n">sampler_config</span><span class="o">=</span><span class="n">BlackJAXNSAWConfig</span><span class="p">(</span><span class="o">...</span><span class="p">),</span>
+    <span class="n">periodic</span><span class="o">=</span><span class="p">[</span><span class="s2">"phase_c_unit"</span><span class="p">,</span> <span class="s2">"psi_unit"</span><span class="p">],</span>
 <span class="p">)</span>
 </code></pre></div>
+<p>For the usual angles you can let <code>get_default_periodic</code> build either form from your sample transforms:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.single_event.helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_default_periodic</span>
+
+<span class="c1"># A dict of bounds, or for sample transforms that map onto [0, 1] (NS AW)</span>
+<span class="c1"># the names of the unit-cube parameters, e.g. ["psi_unit", "azimuth_unit"].</span>
+<span class="n">periodic</span> <span class="o">=</span> <span class="n">get_default_periodic</span><span class="p">(</span><span class="n">prior</span><span class="p">,</span> <span class="n">sample_transforms</span><span class="p">)</span>
+</code></pre></div>
+<p>It marks <code>psi</code>, <code>ra</code>, <code>azimuth</code>, <code>phase_c</code>, <code>phi_jl</code>, <code>phi_12</code>, <code>s1_phi</code> and <code>s2_phi</code> when their prior is a <code>UniformPrior</code> over exactly one period.
+The <a href="../cli/">CLI</a> passes the same result to Jim.</p>
 <hr />
 <h2 id="posterior-samples">Posterior samples<a class="headerlink" href="#posterior-samples" title="Permanent link">¤</a></h2>
 <p><code>jim.get_samples()</code> is the primary way to retrieve posterior samples.</p>

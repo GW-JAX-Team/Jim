@@ -2219,6 +2219,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/jimgw/core/single_event/helpers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  helpers
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/jimgw/core/single_event/likelihood/" class="md-nav__link">
         
   
@@ -4031,7 +4058,7 @@ Use for 3-D spin vectors.</p>
 <hr />
 <h2 id="sampling"><code>[sampling]</code><a class="headerlink" href="#sampling" title="Permanent link">¤</a></h2>
 <p>Optional section that controls the coordinate system the sampler explores.
-The CLI auto-infers transforms for all other cases.</p>
+The CLI auto-infers transforms for all other cases and declares the angles that wrap around as <a href="../samplers/#periodic-parameters">periodic</a> for every sampler whenever their prior covers one full period.</p>
 <table>
 <thead>
 <tr>
@@ -4043,16 +4070,16 @@ The CLI auto-infers transforms for all other cases.</p>
 </thead>
 <tbody>
 <tr>
-<td><code>time_frame</code></td>
-<td>str</td>
-<td><code>"detector"</code></td>
-<td>Controls the sampling parameter space of signal arrival times. <code>"detector"</code> (default): sample detector time rather than geocentric. Set to an explicit detector name (e.g. <code>"H1"</code>) to use a specific detector. <code>"geocentric"</code>: sample geocentric time directly.</td>
+<td><code>detector_frame_time</code></td>
+<td>bool</td>
+<td><code>true</code></td>
+<td>Sample the arrival time at the first detector in <code>data.detectors</code> rather than the geocentric time. Set to <code>false</code> to sample the geocentric <code>t_c</code> directly.</td>
 </tr>
 <tr>
-<td><code>sky_frame</code></td>
-<td>str</td>
-<td><code>"detector"</code></td>
-<td>Controls the sampling parameter space of sky position. <code>"detector"</code> (default): sample <code>azimuth</code>/<code>zenith</code> relative to the detector baseline (requires ≥ 2 detectors). <code>"geocentric"</code>: sample <code>ra</code>/<code>dec</code> directly.</td>
+<td><code>detector_frame_sky</code></td>
+<td>bool</td>
+<td><code>true</code></td>
+<td>Sample <code>azimuth</code>/<code>zenith</code> relative to the detector baseline (requires ≥ 2 detectors) rather than <code>ra</code>/<code>dec</code>. Set to <code>false</code> to sample <code>ra</code>/<code>dec</code> directly.</td>
 </tr>
 </tbody>
 </table>

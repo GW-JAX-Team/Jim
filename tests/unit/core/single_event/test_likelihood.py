@@ -250,6 +250,7 @@ class TestTransientLikelihoodFD:
 
         assert jnp.isfinite(likelihood.evaluate(example_params()))
 
+    @pytest.mark.slow
     def test_waveform_cache_infers_blocks_after_transform_and_marginalization(
         self, detectors_and_waveform
     ):
@@ -521,6 +522,7 @@ class TestTransientLikelihoodFD:
         assert actual_value == pytest.approx(float(expected_value), abs=1e-12)
         assert jnp.allclose(actual_gradient, expected_gradient, rtol=1e-11, atol=1e-12)
 
+    @pytest.mark.slow
     def test_close_frequency_grids_preserve_duplicate_fft_bin_accumulation(self):
         ifos = [get_H1(), get_L1()]
         for ifo, delta_t in zip(ifos, [4.0 / 128, (4.0 / 128) * (1 + 1e-13)]):
@@ -599,13 +601,12 @@ class TestTransientLikelihoodFD:
         )
         assert jnp.isfinite(likelihood.evaluate(example_params()))
 
-    @pytest.mark.parametrize("phase_marginalization", [False, True])
     @pytest.mark.parametrize(
         "n_samples", [(128, 128), (129, 129), (128, 256), (129, 257)]
     )
     @pytest.mark.parametrize("include_highest_frequency", [False, True])
     def test_time_marg_disjoint_ranges_match_direct_time_quadrature(
-        self, phase_marginalization, n_samples, include_highest_frequency
+        self, n_samples, include_highest_frequency
     ):
         # Unequal sampling rates, odd sample counts and included Nyquist bins all
         # need a dense FFT grid whose unused interior frequencies are zero.
@@ -642,14 +643,12 @@ class TestTransientLikelihoodFD:
             waveform,
             f_min=f_min,
             f_max=f_max,
-            phase_marginalization=phase_marginalization,
         )
         marginalized = TransientLikelihoodFD(
             ifos,
             waveform,
             f_min=f_min,
             f_max=f_max,
-            phase_marginalization=phase_marginalization,
             time_marginalization={"tc_range": (-0.5, 0.5)},
         )
         params = {**example_params(), "d_L": 1.0}
@@ -1397,6 +1396,7 @@ class TestHeterodynedTransientLikelihoodFD:
                 assert jnp.isfinite(obj[det.name]).all()
             assert likelihood._waveform_ref[det.name].shape == (2 * likelihood.n_bins,)
 
+    @pytest.mark.slow
     def test_preserves_waveform_grids_with_one_projection(
         self, detectors_and_waveform, monkeypatch
     ):
@@ -1455,12 +1455,10 @@ class TestHeterodynedTransientLikelihoodFD:
         assert len(response_grids) == len(ifos)
         assert jnp.allclose(cached, direct)
 
-    @pytest.mark.parametrize("phase_marginalization", [False, True])
+    @pytest.mark.slow
     def test_projection_preserves_grid_dependent_evaluation_and_gradients(
-        self, detectors_and_waveform, phase_marginalization
+        self, detectors_and_waveform
     ):
-        from jimgw.core.utils import log_i0
-
         ifos, waveform, _fmin, _fmax, _gps = detectors_and_waveform
 
         class GridDependentWaveform(type(waveform)):
@@ -1494,7 +1492,7 @@ class TestHeterodynedTransientLikelihoodFD:
             n_bins=32,
             reference_parameters=example_params(),
             reference_waveform=reference_waveform,
-            phase_marginalization=phase_marginalization,
+            phase_marginalization=True,
         )
         assert likelihood.freq_grid_low[0] >= 80.0
         assert likelihood.freq_grid_high[-1] <= 600.0
@@ -1542,9 +1540,7 @@ class TestHeterodynedTransientLikelihoodFD:
                 optimal += jnp.sum(
                     B0 * jnp.abs(r0) ** 2 + 2 * B1 * (r0 * r1.conj()).real
                 ).real
-            if phase_marginalization:
-                return log_i0(jnp.abs(match)) - optimal / 2
-            return match.real - optimal / 2
+            return log_i0(jnp.abs(match)) - optimal / 2
 
         params = {**example_params(), "M_c": 30.2, "psi": 0.1, "t_c": 0.002}
         names = ("M_c", "d_L", "psi", "t_c")
@@ -1659,6 +1655,7 @@ class TestHeterodynedTransientLikelihoodFD:
                 reference_waveform=reference if different_reference else None,
             )
 
+    @pytest.mark.slow
     def test_trimming_lower_bins_regenerates_grid_dependent_references(
         self, detectors_and_waveform, monkeypatch
     ):
@@ -1869,6 +1866,7 @@ class TestHeterodynedTransientLikelihoodFD:
 
         assert jnp.isfinite(likelihood.evaluate(example_params()))
 
+    @pytest.mark.slow
     def test_waveform_cache_uses_heterodyned_likelihood(self, detectors_and_waveform):
         ifos, waveform, fmin, fmax, _gps = detectors_and_waveform
         likelihood = HeterodynedTransientLikelihoodFD(
@@ -1958,6 +1956,7 @@ class TestHeterodynedTransientLikelihoodFD:
                 reference_parameters=example_params(),
             )
 
+    @pytest.mark.slow
     def test_maximize_likelihood(self, detectors_and_waveform):
         ifos, waveform, fmin, fmax, gps = detectors_and_waveform
         true_params = example_params()
@@ -2084,6 +2083,7 @@ class TestHeterodynedTransientLikelihoodFD:
             expected = available[(available >= low) & (available <= high)]
             assert jnp.array_equal(frequencies, expected)
 
+    @pytest.mark.slow
     def test_maximize_likelihood_stops_early_on_cma_stall(
         self, detectors_and_waveform, monkeypatch, caplog
     ):
@@ -2145,6 +2145,7 @@ class TestHeterodynedTransientLikelihoodFD:
         assert generations == 1
         assert "stop_reason=stalled" in finished_message
 
+    @pytest.mark.slow
     def test_low_frequency_reference_cutoff_does_not_reindex_summary_data(
         self, detectors_and_waveform, monkeypatch
     ):
@@ -2392,6 +2393,7 @@ class TestMultibandedTransientLikelihoodFD:
     # Initialization
     # ------------------------------------------------------------------
 
+    @pytest.mark.slow
     def test_infers_banding_parameters_from_prior(self, detectors_and_waveform):
         ifos, waveform, fmin, fmax, gps = detectors_and_waveform
         mc_prior = UniformPrior(15.0, 30.0, parameter_names=["M_c"])
@@ -2412,6 +2414,7 @@ class TestMultibandedTransientLikelihoodFD:
         assert jnp.isclose(likelihood.time_offset, expected_time_offset)
         assert jnp.isclose(likelihood.delta_f_end, expected_delta_f_end)
 
+    @pytest.mark.slow
     def test_unbounded_time_prior_uses_defaults(self, detectors_and_waveform):
         ifos, waveform, fmin, fmax, _gps = detectors_and_waveform
         prior = CombinePrior([GaussianPrior(0.0, 1.0, parameter_names=["t_c"])])
@@ -2477,6 +2480,7 @@ class TestMultibandedTransientLikelihoodFD:
                 **params,
             )
 
+    @pytest.mark.slow
     def test_frequency_band_helpers_create_multiple_bands(self, detectors_and_waveform):
         ifos, waveform, fmin, fmax, _gps = detectors_and_waveform
         likelihood = MultibandedTransientLikelihoodFD(
@@ -2521,6 +2525,7 @@ class TestMultibandedTransientLikelihoodFD:
         assert likelihood.delta_f_end == 53.0
         assert likelihood.n_bands > 0
 
+    @pytest.mark.slow
     def test_band_setup(self, detectors_and_waveform):
         ifos, waveform, fmin, fmax, _gps = detectors_and_waveform
         likelihood = MultibandedTransientLikelihoodFD(
@@ -2611,6 +2616,7 @@ class TestMultibandedTransientLikelihoodFD:
     # Evaluation
     # ------------------------------------------------------------------
 
+    @pytest.mark.slow
     def test_cropped_psds_and_differing_frequency_ranges_match_cached_and_jitted_gradients(
         self, detectors_and_waveform
     ):
@@ -2662,6 +2668,7 @@ class TestMultibandedTransientLikelihoodFD:
             assert jnp.allclose(value, expected_value, rtol=1e-10, atol=1e-8)
             assert jnp.allclose(gradient, expected_gradient, rtol=1e-9, atol=1e-7)
 
+    @pytest.mark.slow
     def test_cached_waveform_matches_direct_evaluation(self, detectors_and_waveform):
         ifos, waveform, fmin, fmax, _gps = detectors_and_waveform
         likelihood = MultibandedTransientLikelihoodFD(
@@ -2694,6 +2701,7 @@ class TestMultibandedTransientLikelihoodFD:
             likelihood.evaluate_from_waveform(projected, cache),
         )
 
+    @pytest.mark.slow
     def test_evaluate_bypasses_waveform_cache_machinery(
         self, detectors_and_waveform, monkeypatch
     ):
@@ -2777,6 +2785,7 @@ class TestMultibandedTransientLikelihoodFD:
         ).evaluate(params)
         assert jnp.isfinite(ll_diff)
 
+    @pytest.mark.slow
     def test_evaluate_does_not_mutate_params(self, detectors_and_waveform):
         ifos, waveform, fmin, fmax, _gps = detectors_and_waveform
         likelihood = MultibandedTransientLikelihoodFD(
@@ -2811,6 +2820,7 @@ class TestMultibandedTransientLikelihoodFD:
                 f"Not finite for accuracy_factor={acc}"
             )
 
+    @pytest.mark.slow
     def test_minimum_and_maximum_frequency_are_the_range_of_the_likelihood(
         self, detectors_and_waveform
     ):
@@ -2829,6 +2839,7 @@ class TestMultibandedTransientLikelihoodFD:
         assert likelihood.maximum_frequency == 900.1
         assert float(likelihood.fb_dfb[0][0]) == 23.3
 
+    @pytest.mark.slow
     def test_a_range_start_between_bin_multiples_keeps_the_first_bin(
         self, detectors_and_waveform
     ):
@@ -2861,6 +2872,7 @@ class TestMultibandedTransientLikelihoodFD:
             rtol=1e-9,
         )
 
+    @pytest.mark.slow
     def test_the_default_banding_times_need_data_ending_2_s_after_the_trigger(
         self, detectors_and_waveform
     ):
@@ -2930,7 +2942,13 @@ class TestLikelihoodFrequencyRange:
 
     @pytest.mark.parametrize(
         "kind",
-        ["transient", "transient_time", "transient_phase", "heterodyne", "multiband"],
+        [
+            "transient",
+            "transient_time",
+            "transient_phase",
+            pytest.param("heterodyne", marks=pytest.mark.slow),
+            pytest.param("multiband", marks=pytest.mark.slow),
+        ],
     )
     def test_a_likelihood_shares_and_freezes_the_detectors(
         self, detectors_and_waveform, kind
@@ -3126,7 +3144,14 @@ class TestLikelihoodFrequencyRange:
             assert not ifo.data.has_fd
             ifo.data.set_tukey_window(alpha=0.1)
 
-    @pytest.mark.parametrize("kind", ["transient", "heterodyne", "multiband"])
+    @pytest.mark.parametrize(
+        "kind",
+        [
+            "transient",
+            pytest.param("heterodyne", marks=pytest.mark.slow),
+            pytest.param("multiband", marks=pytest.mark.slow),
+        ],
+    )
     @pytest.mark.parametrize("noncontiguous", [False, True])
     def test_a_cropped_psd_uses_its_own_selection_under_jit(
         self, detectors_and_waveform, noncontiguous, kind
@@ -3175,6 +3200,7 @@ class TestLikelihoodFrequencyRange:
             pytest.approx(expected)
         )
 
+    @pytest.mark.slow
     def test_heterodyne_and_multiband_use_their_own_frequency_ranges(self):
         # 16 s of zero noise with a low-mass signal are long enough for several bands.
         # The likelihood ranges differ between the detectors and lie inside the range of
@@ -3285,6 +3311,7 @@ class TestLikelihoodTriggerTime:
         likelihood = TransientLikelihoodFD(ifos, waveform, f_min=fmin, f_max=fmax)
         assert likelihood.trigger_time == gps
 
+    @pytest.mark.slow
     def test_every_likelihood_class_reads_it(self, detectors_and_waveform):
         ifos, waveform, fmin, fmax, gps = detectors_and_waveform
         self.inject(ifos, waveform, fmin, fmax, (gps, gps))
@@ -3799,6 +3826,7 @@ def test_reference_optimizer_requires_finite_scalar_target(bad):
         )
 
 
+@pytest.mark.slow
 def test_heterodyne_accepts_numpy_integer_bin_count(likelihood_inputs):
     detectors, waveform = likelihood_inputs
     bin_count: Any = np.int64(16)
@@ -3950,6 +3978,7 @@ class TestGroundBased3GDetectors:
     def _log_likelihood(self, det, kind="full"):
         return float(self._likelihood([det], kind).evaluate(dict(LONG_SIGNAL_PARAMS)))
 
+    @pytest.mark.slow
     def test_rotating_template_recovers_the_optimal_log_likelihood(self):
         """A rotating injection is recovered exactly by the rotating response only."""
         rotating, snr = self._injected(get_ET(earth_rotation=True)[0])
@@ -3969,7 +3998,11 @@ class TestGroundBased3GDetectors:
 
     @pytest.mark.parametrize(
         "kind",
-        ["time", "heterodyne", pytest.param("multiband", marks=pytest.mark.slow)],
+        [
+            "time",
+            pytest.param("heterodyne", marks=pytest.mark.slow),
+            pytest.param("multiband", marks=pytest.mark.slow),
+        ],
     )
     def test_other_likelihoods_follow_the_rotation(self, kind):
         """Switching the rotation off moves these likelihoods as it moves the full one."""
@@ -4037,6 +4070,7 @@ class TestMarginalizationAssumptions:
         )
         assert "phase_marginalization assumes" not in warnings()
 
+    @pytest.mark.slow
     def test_the_heterodyned_likelihood_warns_too(
         self, detectors_and_waveform, warnings
     ):

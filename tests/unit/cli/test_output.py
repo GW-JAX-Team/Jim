@@ -62,7 +62,7 @@ def _raw_config(time_parameter, tmp_path):
                 "dec": DEC,
             },
         },
-        "waveform": {"approximant": "IMRPhenomXAS", "f_ref": 20.0},
+        "waveform": {"approximant": "IMRPhenomD", "f_ref": 20.0},
         "prior": prior,
         "sampling": {"detector_frame_time": True},
         "likelihood": {"f_min": 20.0, "f_max": 1024.0},
@@ -128,6 +128,7 @@ def _truths(time_parameter, tmp_path):
 class TestInjectionTruths:
     """An injection is given by its geocentric ``t_c``; the prior may use either time."""
 
+    @pytest.mark.slow
     def test_the_truth_follows_the_time_parameter_of_the_prior(self, tmp_path):
         truths_t_c, _ = _truths("t_c", tmp_path)
         truths_t_det, ifos = _truths("t_det", tmp_path)

@@ -98,6 +98,7 @@ def test_the_distance_prior_is_passed_on(detectors):
     assert len(likelihood.log_weights) == 50
 
 
+@pytest.mark.slow
 def test_the_heterodyne_likelihood_uses_the_provided_reference(detectors):
     likelihood = build(
         {
@@ -133,6 +134,7 @@ class TestMultibandTimeWindowFromTheDetectorTimePrior:
     def prior(upper):
         return CombinePrior([UniformPrior(-0.1, upper, ["t_det"])])
 
+    @pytest.mark.slow
     def test_time_offset_and_delta_f_end_follow_the_prior_bounds(self, detectors):
         likelihood = build(
             {"multiband": {"reference_chirp_mass": 20.0}},
@@ -148,6 +150,7 @@ class TestMultibandTimeWindowFromTheDetectorTimePrior:
             100.0 / (t_end - 0.1 - EARTH_RADIUS_LIGHT_S)
         )
 
+    @pytest.mark.slow
     def test_explicit_values_are_not_overridden(self, detectors):
         likelihood = build(
             {

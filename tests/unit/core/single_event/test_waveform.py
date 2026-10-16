@@ -22,6 +22,8 @@ from tests.utils import assert_all_finite
 
 _SLOW_BINDINGS = frozenset(
     {
+        "RippleIMRPhenomHM",
+        "RippleIMRPhenomXAS",
         "RippleIMRPhenomXAS_NRTidalv3",
         "RippleIMRPhenomXHM",
         "RippleIMRPhenomXP",

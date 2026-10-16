@@ -418,6 +418,7 @@ class TestJimSampleMethod:
 # ----------------------------------------------------------------------
 
 
+@pytest.mark.slow
 class TestJimReproducibility:
     @staticmethod
     def _sampled(mock_likelihood, gw_prior, seed, earlier=None):

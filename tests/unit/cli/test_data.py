@@ -85,6 +85,7 @@ def _no_built_in(*args, **kwargs):
     raise AssertionError("the built-in ASD was loaded although a PSD file was set")
 
 
+@pytest.mark.slow
 def test_injection_uses_psd_files_and_not_the_built_in_default(waveform, monkeypatch):
     monkeypatch.setattr(GroundBased2G, "load_and_set_psd", _no_built_in)
     cfg = _injection_cfg(

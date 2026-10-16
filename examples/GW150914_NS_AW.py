@@ -20,19 +20,13 @@ from jimgw.core.prior import (
 )
 from jimgw.core.single_event.data import Data
 from jimgw.core.single_event.detector import get_H1, get_L1
+from jimgw.core.single_event.helpers import (
+    get_default_likelihood_transforms,
+    get_default_periodic,
+    get_default_sample_transforms,
+)
 from jimgw.core.single_event.likelihood import TransientLikelihoodFD
-from jimgw.core.single_event.transforms import (
-    GeocentricArrivalTimeToDetectorArrivalTimeTransform,
-    MassRatioToSymmetricMassRatioTransform,
-    SkyFrameToDetectorFrameSkyPositionTransform,
-)
 from jimgw.core.single_event.waveform import RippleIMRPhenomXAS
-from jimgw.core.transforms import (
-    BoundToBound,
-    CosineTransform,
-    PowerLawTransform,
-    reverse_bijective_transform,
-)
 from jimgw.samplers.config import BlackJAXNSAWConfig
 
 # ----------------------------------------------------------------------
@@ -92,103 +86,10 @@ prior = CombinePrior(
 # Transforms
 # ----------------------------------------------------------------------
 
-#
-# Each parameter is mapped to [0, 1].  Transform patterns:
-#   Uniform [a, b]           → BoundToBound([a, b] → [0, 1])
-#   SinePrior  [0, π]        → CosineTransform → BoundToBound([-1, 1] → [0, 1])
-#   PowerLawPrior (α=2)      → reverse_bijective_transform(PowerLawTransform)
+# NS AW needs every sampled parameter in [0, 1], which unit_cube=True takes care of.
+sample_transforms = get_default_sample_transforms(prior, ifos, unit_cube=True)
 
-sample_transforms = [
-    SkyFrameToDetectorFrameSkyPositionTransform(ifos=ifos),
-    # Masses
-    BoundToBound(
-        name_mapping=(["M_c"], ["M_c_unit"]),
-        original_lower_bound=M_c_min,
-        original_upper_bound=M_c_max,
-        target_lower_bound=0.0,
-        target_upper_bound=1.0,
-    ),
-    BoundToBound(
-        name_mapping=(["q"], ["q_unit"]),
-        original_lower_bound=q_min,
-        original_upper_bound=q_max,
-        target_lower_bound=0.0,
-        target_upper_bound=1.0,
-    ),
-    # Spin 1
-    BoundToBound(
-        name_mapping=(["s1_z"], ["s1_z_unit"]),
-        original_lower_bound=-0.99,
-        original_upper_bound=0.99,
-        target_lower_bound=0.0,
-        target_upper_bound=1.0,
-    ),
-    # Spin 2
-    BoundToBound(
-        name_mapping=(["s2_z"], ["s2_z_unit"]),
-        original_lower_bound=-0.99,
-        original_upper_bound=0.99,
-        target_lower_bound=0.0,
-        target_upper_bound=1.0,
-    ),
-    # Inclination (SinePrior → cosine)
-    CosineTransform(name_mapping=(["iota"], ["cos_iota"])),
-    BoundToBound(
-        name_mapping=(["cos_iota"], ["cos_iota_unit"]),
-        original_lower_bound=-1.0,
-        original_upper_bound=1.0,
-        target_lower_bound=0.0,
-        target_upper_bound=1.0,
-    ),
-    # Luminosity distance (PowerLawPrior α=2 → unit cube)
-    reverse_bijective_transform(
-        PowerLawTransform(
-            name_mapping=(["d_L_unit"], ["d_L"]),
-            xmin=d_L_min,
-            xmax=d_L_max,
-            alpha=2.0,
-        )
-    ),
-    # Coalescence time
-    BoundToBound(
-        name_mapping=(["t_det"], ["t_det_unit"]),
-        original_lower_bound=t_det_min,
-        original_upper_bound=t_det_max,
-        target_lower_bound=0.0,
-        target_upper_bound=1.0,
-    ),
-    # Polarization angle
-    BoundToBound(
-        name_mapping=(["psi"], ["psi_unit"]),
-        original_lower_bound=0.0,
-        original_upper_bound=jnp.pi,
-        target_lower_bound=0.0,
-        target_upper_bound=1.0,
-    ),
-    # Sky position — azimuth and zenith
-    BoundToBound(
-        name_mapping=(["azimuth"], ["azimuth_unit"]),
-        original_lower_bound=0.0,
-        original_upper_bound=2 * jnp.pi,
-        target_lower_bound=0.0,
-        target_upper_bound=1.0,
-    ),
-    CosineTransform(name_mapping=(["zenith"], ["cos_zenith"])),
-    BoundToBound(
-        name_mapping=(["cos_zenith"], ["cos_zenith_unit"]),
-        original_lower_bound=-1.0,
-        original_upper_bound=1.0,
-        target_lower_bound=0.0,
-        target_upper_bound=1.0,
-    ),
-]
-
-likelihood_transforms = [
-    MassRatioToSymmetricMassRatioTransform,
-    reverse_bijective_transform(
-        GeocentricArrivalTimeToDetectorArrivalTimeTransform(ifo=ifos[0])
-    ),
-]
+likelihood_transforms = get_default_likelihood_transforms(prior, ifos, waveform)
 
 # ----------------------------------------------------------------------
 # Likelihood
@@ -211,7 +112,7 @@ jim = Jim(
     prior,
     sample_transforms=sample_transforms,
     likelihood_transforms=likelihood_transforms,
-    periodic=["psi_unit", "azimuth_unit"],
+    periodic=get_default_periodic(prior, sample_transforms),
     sampler_config=BlackJAXNSAWConfig(
         n_live=1000,
         n_delete_frac=0.5,

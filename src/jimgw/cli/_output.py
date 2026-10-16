@@ -11,8 +11,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import tomli_w
 
-from jimgw.cli._transforms import to_likelihood_space
 from jimgw.core.single_event.detector import GroundBased2G
+from jimgw.core.single_event.helpers import to_likelihood_space
 from jimgw.core.transforms import BijectiveTransform, NtoMTransform
 
 logger = logging.getLogger(__name__)
@@ -73,9 +73,8 @@ def write_outputs(jim, cfg) -> None:
             _injection_truths_in_prior_space(
                 cfg.data.injection_parameters,
                 jim.likelihood_transforms,
-                cfg.waveform.f_ref,
+                jim.likelihood.waveform,
                 ifos=list(jim.likelihood.detectors),
-                time_frame=cfg.sampling.time_frame,
                 jim=jim,
             )
             if cfg.data.type == "injection"
@@ -87,9 +86,8 @@ def write_outputs(jim, cfg) -> None:
 def _injection_truths_in_prior_space(
     injection_parameters: dict[str, float],
     likelihood_transforms: list[NtoMTransform],
-    waveform_f_ref: float,
+    waveform,
     ifos: list[GroundBased2G],
-    time_frame: str,
     jim,
 ) -> Optional[dict[str, float]]:
     """Convert injection parameters to prior space for corner plot truth markers.
@@ -100,12 +98,7 @@ def _injection_truths_in_prior_space(
     prior space — the same space that jim.get_samples() returns. Also evaluates
     and stores ``log_likelihood`` in the returned dict.
     """
-    p: dict = to_likelihood_space(
-        injection_parameters,
-        waveform_f_ref,
-        ifos=ifos,
-        time_frame=time_frame,
-    )
+    p: dict = to_likelihood_space(injection_parameters, ifos, waveform)
     p = {k: jnp.float64(v) for k, v in p.items()}
 
     for transform in reversed(likelihood_transforms):

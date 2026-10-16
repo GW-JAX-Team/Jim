@@ -13,10 +13,10 @@ from jimgw.cli._config import (
     LikelihoodConfig,
 )
 from jimgw.cli._prior import build_prior
-from jimgw.cli._transforms import to_likelihood_space
 from jimgw.core.constants import EARTH_RADIUS_LIGHT_S
 from jimgw.core.prior import CombinePrior, UniformPrior
 from jimgw.core.single_event.detector import GroundBased2G
+from jimgw.core.single_event.helpers import to_likelihood_space
 from jimgw.core.single_event.likelihood import (
     HeterodynedTransientLikelihoodFD,
     MultibandedTransientLikelihoodFD,
@@ -36,8 +36,6 @@ def build_likelihood(
     cfg: LikelihoodConfig,
     ifos: list[GroundBased2G],
     waveform: Waveform,
-    waveform_f_ref: float,
-    time_frame: str,
     prior: CombinePrior,
     likelihood_transforms: list[NtoMTransform],
     data_cfg: DataConfig,
@@ -96,10 +94,7 @@ def build_likelihood(
                     "data.type='injection'."
                 )
             reference_params = to_likelihood_space(
-                data_cfg.injection_parameters,
-                waveform_f_ref=waveform_f_ref,
-                ifos=ifos,
-                time_frame=time_frame,
+                data_cfg.injection_parameters, ifos, waveform
             )
             logger.info(
                 "Using injection parameters as heterodyne reference: %s",
@@ -149,11 +144,7 @@ def build_likelihood(
             tdet_bounds = tdet_comp.get_bounds() if tdet_comp is not None else None
             if tdet_bounds is not None:
                 xmin, xmax = tdet_bounds
-                ref_ifo = (
-                    ifos[0]
-                    if time_frame == "detector"
-                    else next(ifo for ifo in ifos if ifo.name == time_frame)
-                )
+                ref_ifo = ifos[0]
                 t_end = (
                     float(ref_ifo.data.start_time)
                     + float(ref_ifo.data.duration)

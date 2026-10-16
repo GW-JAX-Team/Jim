@@ -20,11 +20,12 @@ from jimgw.core.prior import (
 )
 from jimgw.core.single_event.data import Data
 from jimgw.core.single_event.detector import get_H1, get_L1, get_V1
-from jimgw.core.single_event.likelihood import TransientLikelihoodFD
-from jimgw.core.single_event.transforms import (
-    MassRatioToSymmetricMassRatioTransform,
-    SkyFrameToDetectorFrameSkyPositionTransform,
+from jimgw.core.single_event.helpers import (
+    get_default_likelihood_transforms,
+    get_default_periodic,
+    get_default_sample_transforms,
 )
+from jimgw.core.single_event.likelihood import TransientLikelihoodFD
 from jimgw.core.single_event.waveform import RippleIMRPhenomD_NRTidalv2
 from jimgw.samplers.config import BlackJAXSwiGConfig
 
@@ -85,13 +86,9 @@ prior = CombinePrior(
 # Transforms
 # ----------------------------------------------------------------------
 
-sample_transforms = [
-    SkyFrameToDetectorFrameSkyPositionTransform(ifos=ifos),
-]
+sample_transforms = get_default_sample_transforms(prior, ifos)
 
-likelihood_transforms = [
-    MassRatioToSymmetricMassRatioTransform,
-]
+likelihood_transforms = get_default_likelihood_transforms(prior, ifos, waveform)
 
 # ----------------------------------------------------------------------
 # Likelihood
@@ -119,10 +116,7 @@ jim = Jim(
     prior,
     sample_transforms=sample_transforms,
     likelihood_transforms=likelihood_transforms,
-    periodic={
-        "psi": (0.0, float(jnp.pi)),
-        "azimuth": (0.0, 2 * float(jnp.pi)),
-    },
+    periodic=get_default_periodic(prior, sample_transforms),
     sampler_config=BlackJAXSwiGConfig(
         blocks=[
             ["M_c", "q", "lambda_1", "lambda_2"],

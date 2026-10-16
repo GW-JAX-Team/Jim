@@ -254,12 +254,12 @@ Use for 3-D spin vectors.
 ## `[sampling]`
 
 Optional section that controls the coordinate system the sampler explores.
-The CLI auto-infers transforms for all other cases.
+The CLI auto-infers transforms for all other cases and declares the angles that wrap around as [periodic](samplers.md#periodic-parameters) for every sampler whenever their prior covers one full period.
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `time_frame` | str | `"detector"` | Controls the sampling parameter space of signal arrival times. `"detector"` (default): sample detector time rather than geocentric. Set to an explicit detector name (e.g. `"H1"`) to use a specific detector. `"geocentric"`: sample geocentric time directly. |
-| `sky_frame` | str | `"detector"` | Controls the sampling parameter space of sky position. `"detector"` (default): sample `azimuth`/`zenith` relative to the detector baseline (requires ≥ 2 detectors). `"geocentric"`: sample `ra`/`dec` directly. |
+| `detector_frame_time` | bool | `true` | Sample the arrival time at the first detector in `data.detectors` rather than the geocentric time. Set to `false` to sample the geocentric `t_c` directly. |
+| `detector_frame_sky` | bool | `true` | Sample `azimuth`/`zenith` relative to the detector baseline (requires ≥ 2 detectors) rather than `ra`/`dec`. Set to `false` to sample `ra`/`dec` directly. |
 
 ---
 

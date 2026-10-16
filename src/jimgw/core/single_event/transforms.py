@@ -281,6 +281,11 @@ class SkyFrameToDetectorFrameSkyPositionTransform(BijectiveTransform):
                 computed from the baseline vector between ``ifos[0]`` and
                 ``ifos[1]``. The trigger time is read from the data of ``ifos[0]``.
         """
+        if len(ifos) < 2:
+            raise ValueError(
+                "The detector-frame sky position is defined by the baseline between "
+                f"two detectors, but only {len(ifos)} was given."
+            )
         name_mapping = (["ra", "dec"], ["zenith", "azimuth"])
         super().__init__(name_mapping)
 

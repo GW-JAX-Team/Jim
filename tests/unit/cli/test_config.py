@@ -291,8 +291,8 @@ def test_file_config_from_toml():
 
 def test_sampling_config_defaults():
     cfg = PipelineConfig.model_validate(_MINIMAL_RAW)
-    assert cfg.sampling.time_frame == "detector"
-    assert cfg.sampling.sky_frame == "detector"
+    assert cfg.sampling.detector_frame_time is True
+    assert cfg.sampling.detector_frame_sky is True
 
 
 def test_likelihood_config_values():
@@ -655,9 +655,102 @@ def test_incomplete_detector_sky_rejected():
                     "azimuth": {"type": "uniform", "min": 0.0, "max": 6.283},
                     # zenith missing
                 },
-                "sampling": {"sky_frame": "detector"},
+                "sampling": {"detector_frame_sky": True},
             }
         )
+
+
+# ----------------------------------------------------------------------
+# Parametrization groups
+# ----------------------------------------------------------------------
+
+_FULL_PERIOD = {"type": "uniform", "min": 0.0, "max": 6.28318}
+_J_FRAME_PRIOR = {
+    "theta_jn": {"type": "uniform", "min": 0.0, "max": 3.14159},
+    "phi_jl": _FULL_PERIOD,
+    "tilt_1": {"type": "sine"},
+    "tilt_2": {"type": "sine"},
+    "phi_12": _FULL_PERIOD,
+    "a_1": {"type": "uniform", "min": 0.0, "max": 0.99},
+    "a_2": {"type": "uniform", "min": 0.0, "max": 0.99},
+}
+
+
+def _raw_with(prior=None, **sections):
+    """_MINIMAL_RAW with extra prior entries and replaced top-level sections."""
+    return {
+        **_MINIMAL_RAW,
+        "prior": {**_MINIMAL_RAW["prior"], **(prior or {})},
+        **sections,
+    }
+
+
+def test_j_frame_iota_conflict():
+    raw = _raw_with({**_J_FRAME_PRIOR, "iota": {"type": "sine"}})
+    with pytest.raises(ValidationError, match="iota"):
+        PipelineConfig.model_validate(raw)
+
+
+def test_j_frame_partial_params_rejected():
+    raw = _raw_with({"theta_jn": _J_FRAME_PRIOR["theta_jn"], "phi_jl": _FULL_PERIOD})
+    with pytest.raises(ValidationError, match="missing"):
+        PipelineConfig.model_validate(raw)
+
+
+def test_spin_groups_mutually_exclusive():
+    raw = _raw_with(
+        {
+            "s1_z": {"type": "uniform", "min": -0.99, "max": 0.99},
+            "s2_z": {"type": "uniform", "min": -0.99, "max": 0.99},
+            "s1_mag": {"type": "uniform", "min": 0.0, "max": 0.99},
+            "s1_theta": {"type": "sine"},
+            "s1_phi": _FULL_PERIOD,
+        }
+    )
+    with pytest.raises(ValidationError, match="mutually exclusive"):
+        PipelineConfig.model_validate(raw)
+
+
+def test_sky_groups_mutually_exclusive():
+    raw = _raw_with(
+        {
+            "ra": _FULL_PERIOD,
+            "dec": {"type": "cosine"},
+            "azimuth": _FULL_PERIOD,
+            "zenith": {"type": "sine"},
+        }
+    )
+    with pytest.raises(ValidationError, match="mutually exclusive"):
+        PipelineConfig.model_validate(raw)
+
+
+def test_time_groups_mutually_exclusive():
+    raw = _raw_with(
+        {
+            "t_c": {"type": "uniform", "min": -0.1, "max": 0.1},
+            "t_det": {"type": "uniform", "min": -0.1, "max": 0.1},
+        }
+    )
+    with pytest.raises(ValidationError, match="mutually exclusive"):
+        PipelineConfig.model_validate(raw)
+
+
+def test_t_det_requires_detector_frame_time():
+    raw = _raw_with(
+        {"t_det": {"type": "uniform", "min": -0.1, "max": 0.1}},
+        sampling={"detector_frame_time": False},
+    )
+    with pytest.raises(ValidationError, match="t_det"):
+        PipelineConfig.model_validate(raw)
+
+
+def test_detector_sky_requires_detector_frame_sky():
+    raw = _raw_with(
+        {"azimuth": _FULL_PERIOD, "zenith": {"type": "sine"}},
+        sampling={"detector_frame_sky": False},
+    )
+    with pytest.raises(ValidationError, match="azimuth"):
+        PipelineConfig.model_validate(raw)
 
 
 # ----------------------------------------------------------------------
@@ -693,6 +786,42 @@ def test_ns_aw_non_uniform_t_det_rejected():
                 "sampler": {"type": "blackjax-ns-aw"},
             }
         )
+
+
+_ISOTROPIC_SKY = {"ra": _FULL_PERIOD, "dec": {"type": "cosine"}}
+
+
+@pytest.mark.parametrize(
+    "sky",
+    [
+        {"ra": {"type": "uniform", "min": 1.0, "max": 2.0}, "dec": {"type": "cosine"}},
+        {"ra": _FULL_PERIOD, "dec": {"type": "uniform", "min": -0.5, "max": 0.5}},
+    ],
+    ids=["restricted_ra", "uniform_dec"],
+)
+def test_ns_aw_detector_frame_sky_needs_an_isotropic_prior(sky):
+    raw = _raw_with(sky, sampler={"type": "blackjax-ns-aw"})
+    with pytest.raises(ValidationError, match="isotropic"):
+        PipelineConfig.model_validate(raw)
+    # Mapping ra/dec directly works for any of the supported priors.
+    raw["sampling"] = {"detector_frame_sky": False}
+    PipelineConfig.model_validate(raw)
+
+
+@pytest.mark.parametrize(
+    "sky",
+    [
+        _ISOTROPIC_SKY,
+        {
+            "azimuth": _FULL_PERIOD,
+            "zenith": {"type": "uniform", "min": 0.5, "max": 1.0},
+        },
+    ],
+    ids=["isotropic_ra_dec", "any_azimuth_zenith"],
+)
+def test_ns_aw_accepts_an_isotropic_or_detector_frame_sky_prior(sky):
+    raw = _raw_with(sky, sampler={"type": "blackjax-ns-aw"})
+    PipelineConfig.model_validate(raw)
 
 
 # ----------------------------------------------------------------------

@@ -549,6 +549,11 @@ class TestSpinAnglesToCartesianSpinTransform:
 
 
 class TestSkyFrameToDetectorFrameSkyPositionTransform:
+    def test_one_detector_does_not_define_a_sky_frame(self):
+        attach_data(1126259642.4, [H1])
+        with pytest.raises(ValueError, match="two detectors"):
+            SkyFrameToDetectorFrameSkyPositionTransform(ifos=[H1])
+
     def test_forward_transform(self):
         """
         Test the forward transformation from sky frame to detector frame sky position

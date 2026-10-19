@@ -168,7 +168,8 @@ H1.load_and_set_psd()
 | --- | --- | --- |
 | H1, L1 | Advanced LIGO design | LIGO-T1800044 (Barsotti, Fritschel, Evans, Gras) |
 | V1 | Advanced Virgo design | LIGO-P1200087-v42 (LIGO Scientific Collaboration and Virgo Collaboration) |
-| ET1, ET2, ET3 | Einstein Telescope ET-D | LIGO-T1500293 (Evans, Sturani, Vitale, Hall); ET-D design: Hild et al. 2011 |
+| ET1, ET2, ET3 | Einstein Telescope 10 km baseline | ET-0482A-25 (ETO Design Task Force) |
+| ET_Sar, ET_EMR | Einstein Telescope 15 km baseline | ET-0482A-25 (ETO Design Task Force) |
 | CE | Cosmic Explorer 40 km | CE-T2000017 (Cosmic Explorer Project) |
 
 Links, versions, frequency ranges and checksums are in the [noise curve README](https://github.com/GW-JAX-Team/Jim/blob/main/src/jimgw/core/single_event/noise_curves/README.md).

@@ -856,7 +856,7 @@ class TestLoadAndSetPsd:
     def preset_interferometers():
         return {
             ifo.name: ifo
-            for value in get_detector_preset().values()
+            for value in (*get_detector_preset().values(), get_ET_2L())
             for ifo in (value if isinstance(value, list) else [value])
         }
 
@@ -2170,14 +2170,6 @@ class TestET2L:
         ):
             assert ifo.earth_rotation
             assert ifo.finite_arm_length
-
-    def test_there_is_no_built_in_psd_yet(self):
-        for ifo in get_ET_2L(alignment_angle=45.0):
-            with pytest.raises(
-                ValueError, match=f"No built-in PSD for detector {ifo.name}"
-            ):
-                ifo.load_and_set_psd()
-            assert ifo.psd.is_empty
 
 
 @pytest.mark.parametrize("getter", [get_ET, get_ET_2L, get_CE])

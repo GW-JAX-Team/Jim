@@ -39,9 +39,11 @@ default_asd_files = {
     "H1": "aLIGO_design_asd.txt",
     "L1": "aLIGO_design_asd.txt",
     "V1": "AdV_design_asd.txt",
-    "ET1": "ET_D_asd.txt",
-    "ET2": "ET_D_asd.txt",
-    "ET3": "ET_D_asd.txt",
+    "ET1": "ET_10km_asd.txt",
+    "ET2": "ET_10km_asd.txt",
+    "ET3": "ET_10km_asd.txt",
+    "ET_Sar": "ET_15km_asd.txt",
+    "ET_EMR": "ET_15km_asd.txt",
     "CE": "CE_40km_asd.txt",
 }
 

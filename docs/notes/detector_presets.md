@@ -19,7 +19,7 @@ The arms of `ET_Sar` have the azimuths of the Virgo arms.
 Those of `ET_EMR` are rotated from them by `alignment_angle`, in degrees: 0 for parallel arms and 45 for the misaligned case of that paper.
 The default is 42.5.
 The rotation is a difference of azimuths, each measured against the local axes of its site rather than against the great circle between the sites.
-No design-sensitivity ASD is packaged for them, so pass `psd_file` or `asd_file` to `load_and_set_psd`.
+`load_and_set_psd()` sets the 15 km ET baseline ASD for them; see [Default design-sensitivity ASD](../guides/data.md#default-design-sensitivity-asd).
 
 ## Cosmic Explorer
 

@@ -3405,10 +3405,10 @@ Jim ships with convenience constructors for common detectors — LIGO Hanford (<
 <p>You can also retrieve all presets at once as a dictionary with <code>get_detector_preset()</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.single_event.detector</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_detector_preset</span>
 
-<span class="n">detectors</span> <span class="o">=</span> <span class="n">get_detector_preset</span><span class="p">()</span>  <span class="c1"># {"H1": ..., "L1": ..., "V1": ..., "ET": ..., "CE": ...}</span>
+<span class="n">detectors</span> <span class="o">=</span> <span class="n">get_detector_preset</span><span class="p">()</span>  <span class="c1"># {"H1": ..., "L1": ..., "V1": ..., "ET": ..., "ET_2L": ..., "CE": ...}</span>
 <span class="n">H1</span> <span class="o">=</span> <span class="n">detectors</span><span class="p">[</span><span class="s2">"H1"</span><span class="p">]</span>
 </code></pre></div>
-<p>Note that <code>get_ET()</code> returns a <strong>list</strong> of three detectors (one for each of ET's triangular arms), while all others return a single detector.</p>
+<p>Note that <code>get_ET()</code> returns a <strong>list</strong> of three detectors (one for each of ET's triangular arms) and <code>get_ET_2L()</code> a list of two, while all others return a single detector.</p>
 <p>Once you have a detector, you need to attach strain data and a PSD to it.</p>
 <h2 id="loading-data">Loading Data<a class="headerlink" href="#loading-data" title="Permanent link">¤</a></h2>
 <h3 id="fetch-from-gwosc">Fetch from GWOSC<a class="headerlink" href="#fetch-from-gwosc" title="Permanent link">¤</a></h3>

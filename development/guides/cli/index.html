@@ -3898,7 +3898,7 @@ PSD and ASD formats are described in the note on PSD and ASD files below.</p>
 <td><code>strain_files</code></td>
 <td>dict[str, path]</td>
 <td>—</td>
-<td>Map from individual interferometer name to strain file (any supported format)</td>
+<td>Map from individual detector name to strain file (any supported format)</td>
 </tr>
 <tr>
 <td><code>psd_files</code></td>
@@ -3920,9 +3920,9 @@ PSD and ASD formats are described in the note on PSD and ASD files below.</p>
 </tr>
 </tbody>
 </table>
-<p>For <code>detectors = ["ET"]</code>, provide separate <code>strain_files</code> entries for <code>ET1</code>,
-<code>ET2</code> and <code>ET3</code>. Use those individual names in <code>strain_channels</code> too. The three
-interferometers share the <code>ET</code> entry in <code>psd_files</code> or <code>asd_files</code>.</p>
+<p>For <code>detectors = ["ET"]</code>, provide separate entries for <code>ET1</code>, <code>ET2</code> and <code>ET3</code> in
+<code>strain_files</code>, <code>strain_channels</code>, <code>psd_files</code> and <code>asd_files</code>.
+<code>detectors = ["ET_2L"]</code> works the same way with <code>ET_Sar</code> and <code>ET_EMR</code>.</p>
 <p>Example with <code>.npz</code> files (no channels required):</p>
 <div class="highlight"><pre><span></span><code><span class="k">[data]</span>
 <span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"file"</span>
@@ -3982,7 +3982,7 @@ interferometers share the <code>ET</code> entry in <code>psd_files</code> or <co
 <ul>
 <li>Set at most one of the two tables.</li>
 <li>Once a table is set it must name every detector in <code>detectors</code>; there is no per-detector fallback to the built-in default.</li>
-<li>One <code>ET</code> entry covers all three ET interferometers.</li>
+<li><code>ET</code> and <code>ET_2L</code> are named by their individual detectors: <code>ET1</code>, <code>ET2</code> and <code>ET3</code>, or <code>ET_Sar</code> and <code>ET_EMR</code>.</li>
 <li>An <code>.npz</code> archive holds <code>values</code> and <code>frequencies</code> arrays; the table it is listed under decides whether <code>values</code> is read as a PSD or an ASD.</li>
 <li>Text files have two columns: frequency in Hz, then the value.</li>
 </ul>

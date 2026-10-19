@@ -1274,10 +1274,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#einstein-telescope-triangular-interferometers" class="md-nav__link">
+  <a href="#einstein-telescope-triangular-detectors" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Einstein Telescope (Triangular interferometers)
+        Einstein Telescope (Triangular detectors)
       </span>
     </span>
   </a>
@@ -1285,10 +1285,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#einstein-telescope-2-l-shaped-interferometers" class="md-nav__link">
+  <a href="#einstein-telescope-2-l-shaped-detectors" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Einstein Telescope (2 L-shaped interferometers)
+        Einstein Telescope (2 L-shaped detectors)
       </span>
     </span>
   </a>
@@ -3096,10 +3096,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#einstein-telescope-triangular-interferometers" class="md-nav__link">
+  <a href="#einstein-telescope-triangular-detectors" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Einstein Telescope (Triangular interferometers)
+        Einstein Telescope (Triangular detectors)
       </span>
     </span>
   </a>
@@ -3107,10 +3107,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#einstein-telescope-2-l-shaped-interferometers" class="md-nav__link">
+  <a href="#einstein-telescope-2-l-shaped-detectors" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Einstein Telescope (2 L-shaped interferometers)
+        Einstein Telescope (2 L-shaped detectors)
       </span>
     </span>
   </a>
@@ -3149,16 +3149,16 @@
 
 
 <h1 id="detector-presets">Detector Presets<a class="headerlink" href="#detector-presets" title="Permanent link">¤</a></h1>
-<p><code>get_H1()</code>, <code>get_L1()</code> and <code>get_V1()</code> return single interferometers with the site coordinates, arm azimuths and tilts written in <code>jimgw/core/single_event/detector.py</code>.
+<p><code>get_H1()</code>, <code>get_L1()</code> and <code>get_V1()</code> return single detectors with the site coordinates, arm azimuths and tilts written in <code>jimgw/core/single_event/detector.py</code>.
 <code>get_ET()</code>, <code>get_ET_2L()</code> and <code>get_CE()</code> return <code>GroundBased3G</code> detectors, which respond like <code>GroundBased2G</code> unless <code>earth_rotation</code> or <code>finite_arm_length</code> is switched on (see the <a href="../../guides/data/#next-generation-detectors">data guide</a>).</p>
-<h2 id="einstein-telescope-triangular-interferometers">Einstein Telescope (Triangular interferometers)<a class="headerlink" href="#einstein-telescope-triangular-interferometers" title="Permanent link">¤</a></h2>
-<p><code>get_ET()</code> returns three interferometers, <code>ET1</code>, <code>ET2</code> and <code>ET3</code>, with 10 km arms and 60 degrees between the two arms of each.
+<h2 id="einstein-telescope-triangular-detectors">Einstein Telescope (Triangular detectors)<a class="headerlink" href="#einstein-telescope-triangular-detectors" title="Permanent link">¤</a></h2>
+<p><code>get_ET()</code> returns three detectors, <code>ET1</code>, <code>ET2</code> and <code>ET3</code>, with 10 km arms and 60 degrees between the two arms of each.
 <code>ET1</code> is at the Euregio Meuse-Rhine site (about 50.723 N, 5.921 E, at zero elevation), the point of <code>ET_EMR</code> below, with its x-arm at the azimuth of the Virgo x-arm.
 <code>ET2</code> and <code>ET3</code> are the other two corners of an equilateral triangle with 10 km sides.
 Each corner is found by moving 10 km from the previous one in the direction of its x-arm, along a great circle (haversine formula) on a sphere whose radius is the WGS-84 radius at that latitude.
 The arms are rotated by 240 degrees from one corner to the next.</p>
-<h2 id="einstein-telescope-2-l-shaped-interferometers">Einstein Telescope (2 L-shaped interferometers)<a class="headerlink" href="#einstein-telescope-2-l-shaped-interferometers" title="Permanent link">¤</a></h2>
-<p><code>get_ET_2L()</code> returns two L-shaped interferometers with 15 km arms and 90 degrees between the two arms of each: <code>ET_Sar</code> in Sardinia (about 40.517 N, 9.417 E) and <code>ET_EMR</code> in the Euregio Meuse-Rhine (about 50.723 N, 5.921 E), both at zero elevation.
+<h2 id="einstein-telescope-2-l-shaped-detectors">Einstein Telescope (2 L-shaped detectors)<a class="headerlink" href="#einstein-telescope-2-l-shaped-detectors" title="Permanent link">¤</a></h2>
+<p><code>get_ET_2L()</code> returns two L-shaped detectors with 15 km arms and 90 degrees between the two arms of each: <code>ET_Sar</code> in Sardinia (about 40.517 N, 9.417 E) and <code>ET_EMR</code> in the Euregio Meuse-Rhine (about 50.723 N, 5.921 E), both at zero elevation.
 The sites and the way the angle is measured follow <a href="https://arxiv.org/abs/2303.15923">Branchesi et al. (2023)</a>.
 The arms of <code>ET_Sar</code> have the azimuths of the Virgo arms.
 Those of <code>ET_EMR</code> are rotated from them by <code>alignment_angle</code>, in degrees: 0 for parallel arms and 45 for the misaligned case of that paper.
@@ -3166,7 +3166,7 @@ The default is 42.5.
 The rotation is a difference of azimuths, each measured against the local axes of its site rather than against the great circle between the sites.
 <code>load_and_set_psd()</code> sets the 15 km ET baseline ASD for them; see <a href="../../guides/data/#default-design-sensitivity-asd">Default design-sensitivity ASD</a>.</p>
 <h2 id="cosmic-explorer">Cosmic Explorer<a class="headerlink" href="#cosmic-explorer" title="Permanent link">¤</a></h2>
-<p><code>get_CE()</code> returns one interferometer with 40 km arms at the LIGO Hanford site, with the coordinates, elevation and arm tilts of H1.</p>
+<p><code>get_CE()</code> returns one detector with 40 km arms at the LIGO Hanford site, with the coordinates, elevation and arm tilts of H1.</p>
 
 
 

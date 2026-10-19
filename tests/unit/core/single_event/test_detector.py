@@ -853,19 +853,19 @@ class TestLoadAndSetPsd:
         assert det.psd.is_empty
 
     @staticmethod
-    def preset_interferometers():
+    def preset_detectors():
         return {
             ifo.name: ifo
-            for value in (*get_detector_preset().values(), get_ET_2L())
+            for value in get_detector_preset().values()
             for ifo in (value if isinstance(value, list) else [value])
         }
 
-    def test_every_preset_interferometer_has_a_default(self):
-        assert set(default_asd_files) == set(self.preset_interferometers())
+    def test_every_preset_detector_has_a_default(self):
+        assert set(default_asd_files) == set(self.preset_detectors())
 
     @pytest.mark.parametrize("name", sorted(default_asd_files))
     def test_default_is_the_packaged_design_asd(self, name):
-        psd = self.preset_interferometers()[name].load_and_set_psd()
+        psd = self.preset_detectors()[name].load_and_set_psd()
 
         curve = resources.files("jimgw.core.single_event") / "noise_curves"
         frequencies, asd = np.genfromtxt(

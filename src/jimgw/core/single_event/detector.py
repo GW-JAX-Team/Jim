@@ -33,7 +33,7 @@ from jimgw.typing import ComplexLike, ComplexScalar, FloatLike, FloatScalar
 
 logger = logging.getLogger(__name__)
 
-# Design-sensitivity ASD packaged for each interferometer; the sources are
+# Design-sensitivity ASD packaged for each detector; the sources are
 # credited in noise_curves/README.md.
 default_asd_files = {
     "H1": "aLIGO_design_asd.txt",
@@ -1528,7 +1528,7 @@ def get_ET(
 ) -> list[GroundBased3G]:
     """Return a list of three instances for the triangular Einstein Telescope (ET).
 
-    The design is a triangle of three interferometers with 10 km arms at the
+    The design is a triangle of three detectors with 10 km arms at the
     Euregio Meuse-Rhine site, with the arm azimuths of the Virgo arms.
 
     Args:
@@ -1606,7 +1606,7 @@ def get_ET_2L(
 ) -> list[GroundBased3G]:
     """Return the two L-shaped detectors of the Einstein Telescope 2L design.
 
-    The design has two L-shaped interferometers with 15 km arms, ``ET_Sar`` in
+    The design has two L-shaped detectors with 15 km arms, ``ET_Sar`` in
     Sardinia and ``ET_EMR`` in the Euregio Meuse-Rhine. The arms of ``ET_Sar`` have
     the azimuths of the Virgo arms. The arms of ``ET_EMR`` are rotated from those
     of ``ET_Sar`` by ``alignment_angle``, a difference of azimuths, each measured

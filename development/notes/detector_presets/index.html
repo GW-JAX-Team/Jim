@@ -26,7 +26,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="zensical-0.0.70">
+      <meta name="generator" content="zensical-0.0.71">
     
     
       
@@ -3164,7 +3164,7 @@ The arms of <code>ET_Sar</code> have the azimuths of the Virgo arms.
 Those of <code>ET_EMR</code> are rotated from them by <code>alignment_angle</code>, in degrees: 0 for parallel arms and 45 for the misaligned case of that paper.
 The default is 42.5.
 The rotation is a difference of azimuths, each measured against the local axes of its site rather than against the great circle between the sites.
-No design-sensitivity ASD is packaged for them, so pass <code>psd_file</code> or <code>asd_file</code> to <code>load_and_set_psd</code>.</p>
+<code>load_and_set_psd()</code> sets the 15 km ET baseline ASD for them; see <a href="../../guides/data/#default-design-sensitivity-asd">Default design-sensitivity ASD</a>.</p>
 <h2 id="cosmic-explorer">Cosmic Explorer<a class="headerlink" href="#cosmic-explorer" title="Permanent link">¤</a></h2>
 <p><code>get_CE()</code> returns one interferometer with 40 km arms at the LIGO Hanford site, with the coordinates, elevation and arm tilts of H1.</p>
 

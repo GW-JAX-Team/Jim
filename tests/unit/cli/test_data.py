@@ -19,9 +19,14 @@ from jimgw.cli._config import (
     WaveformConfig,
 )
 from jimgw.cli._data import build_data
+from jimgw.cli._utils import PRESET_DETECTOR_NAMES
 from jimgw.cli._waveform import build_waveform
 from jimgw.core.single_event.data import Data
-from jimgw.core.single_event.detector import GroundBased2G, default_asd_files
+from jimgw.core.single_event.detector import (
+    GroundBased2G,
+    default_asd_files,
+    get_detector_preset,
+)
 from tests.utils import sliced_fd_data, sliced_frequencies, sliced_psd
 
 FIXTURES = Path(__file__).resolve().parents[2] / "fixtures"
@@ -172,7 +177,14 @@ def test_injection_squares_npz_asd_files(tmp_path, waveform, monkeypatch):
     np.testing.assert_allclose(np.asarray(sliced_psd(ifo)), expected, rtol=1e-12)
 
 
-@pytest.mark.parametrize("detector", ["H1", "L1", "V1", "ET", "CE"])
+def test_cli_detector_table_matches_the_presets():
+    assert PRESET_DETECTOR_NAMES == {
+        name: tuple(ifo.name for ifo in (value if isinstance(value, list) else [value]))
+        for name, value in get_detector_preset().items()
+    }
+
+
+@pytest.mark.parametrize("detector", ["H1", "L1", "V1", "ET", "ET_2L", "CE"])
 def test_injection_without_files_uses_the_built_in_design_asd(detector, waveform):
     ifos = build_data(
         _injection_cfg((detector,)), f_min=F_MIN, f_max=F_MAX, waveform=waveform
@@ -187,21 +199,28 @@ def test_injection_without_files_uses_the_built_in_design_asd(detector, waveform
         np.testing.assert_allclose(np.asarray(sliced_psd(ifo)), expected, rtol=1e-12)
 
 
-@pytest.mark.parametrize("detector, n_interferometers", [("CE", 1), ("ET", 3)])
-def test_injection_table_is_keyed_by_detector_name(
-    detector, n_interferometers, waveform, monkeypatch
+@pytest.mark.parametrize(
+    "detector, names",
+    [("CE", ("CE",)), ("ET", ("ET1", "ET2", "ET3")), ("ET_2L", ("ET_Sar", "ET_EMR"))],
+)
+def test_injection_table_gives_each_detector_its_own_entry(
+    detector, names, waveform, monkeypatch
 ):
-    # One "ET" entry covers all three ET interferometers (ET1-ET3).
+    # The fixture PSDs alternate, so a detector reading another one's entry fails.
     monkeypatch.setattr(GroundBased2G, "load_and_set_psd", _no_built_in)
+    fixture = {name: ("H1", "L1")[index % 2] for index, name in enumerate(names)}
     cfg = _injection_cfg(
-        (detector,), psd_files={detector: FIXTURES / "GW150914_psd_H1.npz"}
+        (detector,),
+        psd_files={
+            name: FIXTURES / f"GW150914_psd_{fixture[name]}.npz" for name in names
+        },
     )
 
     ifos = build_data(cfg, f_min=F_MIN, f_max=F_MAX, waveform=waveform)
 
-    assert len(ifos) == n_interferometers
-    freqs, values = _fixture_psd("H1")
+    assert [ifo.name for ifo in ifos] == list(names)
     for ifo in ifos:
+        freqs, values = _fixture_psd(fixture[ifo.name])
         expected = np.interp(np.asarray(sliced_frequencies(ifo)), freqs, values)
         np.testing.assert_allclose(np.asarray(sliced_psd(ifo)), expected, rtol=1e-12)
 
@@ -262,7 +281,7 @@ def test_file_data_carry_the_trigger_time():
     assert ifo.data.trigger_time != ifo.data.start_time + ifo.data.duration - 2.0
 
 
-def test_file_data_load_each_et_interferometers_own_strain(tmp_path, monkeypatch):
+def test_file_data_load_each_et_detectors_own_strain(tmp_path, monkeypatch):
     monkeypatch.setattr(GroundBased2G, "load_and_set_psd", _no_built_in)
     trigger = 1126259462.4
     strain_files = {}
@@ -283,7 +302,9 @@ def test_file_data_load_each_et_interferometers_own_strain(tmp_path, monkeypatch
                 "detectors": ["ET"],
                 "trigger_time": trigger,
                 "strain_files": strain_files,
-                "psd_files": {"ET": FIXTURES / "GW150914_psd_H1.npz"},
+                "psd_files": {
+                    name: FIXTURES / "GW150914_psd_H1.npz" for name in strain_files
+                },
             }
         ),
         f_min=F_MIN,

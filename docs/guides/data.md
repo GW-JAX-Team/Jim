@@ -18,11 +18,11 @@ You can also retrieve all presets at once as a dictionary with `get_detector_pre
 ```python
 from jimgw.core.single_event.detector import get_detector_preset
 
-detectors = get_detector_preset()  # {"H1": ..., "L1": ..., "V1": ..., "ET": ..., "CE": ...}
+detectors = get_detector_preset()  # {"H1": ..., "L1": ..., "V1": ..., "ET": ..., "ET_2L": ..., "CE": ...}
 H1 = detectors["H1"]
 ```
 
-Note that `get_ET()` returns a **list** of three detectors (one for each of ET's triangular arms), while all others return a single detector.
+Note that `get_ET()` returns a **list** of three detectors (one for each of ET's triangular arms) and `get_ET_2L()` a list of two, while all others return a single detector.
 
 Once you have a detector, you need to attach strain data and a PSD to it.
 

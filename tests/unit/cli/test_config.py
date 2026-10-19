@@ -468,7 +468,7 @@ def test_asd_files_must_name_every_detector():
 
 def test_injection_without_files_uses_built_in_default_for_every_detector():
     cfg = InjectionDataConfig.model_validate(
-        _injection_data(("H1", "L1", "V1", "ET", "CE"))
+        _injection_data(("H1", "L1", "V1", "ET", "ET_2L", "CE"))
     )
     assert cfg.psd_files is None
     assert cfg.asd_files is None
@@ -1022,43 +1022,74 @@ def test_incompatible_likelihood_options_are_refused(options, message):
         LikelihoodConfig.model_validate({"f_min": 20.0, "f_max": 100.0, **options})
 
 
-def _et_file_config(**fields):
+_ET_NAMES = {"ET": ("ET1", "ET2", "ET3"), "ET_2L": ("ET_Sar", "ET_EMR")}
+
+
+def _et_file_config(detector="ET", **fields):
+    names = _ET_NAMES[detector]
     return {
-        "detectors": ["ET"],
+        "detectors": [detector],
         "trigger_time": 2.0,
-        "strain_files": {name: f"{name}.npz" for name in ("ET1", "ET2", "ET3")},
-        "psd_files": {"ET": "ET_psd.txt"},
+        "strain_files": {name: f"{name}.npz" for name in names},
+        "psd_files": {name: f"{name}_psd.txt" for name in names},
         **fields,
     }
 
 
-def test_et_file_data_uses_individual_strains_and_shared_psd():
+@pytest.mark.parametrize("detector", ["ET", "ET_2L"])
+def test_et_file_data_uses_the_individual_detector_names(detector):
+    names = set(_ET_NAMES[detector])
     config = FileDataConfig.model_validate(
         _et_file_config(
-            strain_channels={name: f"{name}:STRAIN" for name in ("ET1", "ET2", "ET3")}
+            detector, strain_channels={name: f"{name}:STRAIN" for name in names}
         )
     )
-    assert set(config.strain_files) == {"ET1", "ET2", "ET3"}
-    assert set(config.strain_channels) == {"ET1", "ET2", "ET3"}
+    assert set(config.strain_files) == names
+    assert set(config.strain_channels) == names
     assert config.psd_files is not None
-    assert set(config.psd_files) == {"ET"}
+    assert set(config.psd_files) == names
 
 
 @pytest.mark.parametrize(
-    "fields, message",
+    "detector, fields, message",
     [
-        ({"strain_files": {"ET": "ET.npz"}}, "individual interferometer names"),
-        ({"strain_files": {"ET1": "ET1.npz", "ET2": "ET2.npz"}}, "ET3"),
-        ({"strain_channels": {"ET": "ET:STRAIN"}}, "individual interferometer names"),
-        ({"strain_channels": {"H1": "H1:STRAIN"}}, "unknown interferometer names"),
+        (
+            "ET",
+            {"strain_files": {"ET": "ET.npz"}},
+            r"strain_files missing for: \['ET1'",
+        ),
+        ("ET", {"strain_files": {"ET1": "ET1.npz", "ET2": "ET2.npz"}}, "ET3"),
+        ("ET", {"strain_channels": {"ET": "ET:STRAIN"}}, "unknown detector names"),
+        ("ET", {"strain_channels": {"H1": "H1:STRAIN"}}, "unknown detector names"),
+        ("ET", {"psd_files": {"ET": "ET_psd.txt"}}, r"psd_files missing for: \['ET1'"),
+        (
+            "ET_2L",
+            {"psd_files": {"ET_2L": "ET_2L_psd.txt"}},
+            r"psd_files missing for: \['ET_Sar', 'ET_EMR'\]",
+        ),
     ],
 )
-def test_et_file_data_rejects_ambiguous_or_missing_strain_sources(fields, message):
+def test_et_file_data_rejects_ambiguous_or_missing_sources(detector, fields, message):
     with pytest.raises(ValidationError, match=message):
-        FileDataConfig.model_validate(_et_file_config(**fields))
+        FileDataConfig.model_validate(_et_file_config(detector, **fields))
 
 
-@pytest.mark.parametrize("detector", ["ET", "CE"])
+@pytest.mark.parametrize(
+    "detectors, accepted", [(["H1"], False), (["ET"], True), (["ET_2L"], True)]
+)
+def test_detector_frame_sky_counts_the_detectors_of_each_preset(detectors, accepted):
+    raw = _raw_with(
+        {"ra": _FULL_PERIOD, "dec": {"type": "cosine"}},
+        data=_injection_data(detectors),
+    )
+    if accepted:
+        PipelineConfig.model_validate(raw)
+    else:
+        with pytest.raises(ValidationError, match="at least 2 detectors"):
+            PipelineConfig.model_validate(raw)
+
+
+@pytest.mark.parametrize("detector", ["ET", "ET_2L", "CE"])
 def test_gwosc_config_rejects_presets_without_open_strain(detector):
     with pytest.raises(ValidationError, match="GWOSC strain is not available"):
         GWOSCDataConfig(
@@ -1077,7 +1108,10 @@ def test_reference_optimizer_counts_are_actual_integers(field, bad):
 def test_psd_source_rejects_unknown_detector_mapping_keys(field):
     fields = {
         "psd_files": None,
-        field: {"ET": "ET_psd.txt", "ET1": "unused_psd.txt"},
+        field: {
+            **{name: f"{name}_psd.txt" for name in _ET_NAMES["ET"]},
+            "ET": "ET_psd.txt",
+        },
     }
     with pytest.raises(ValidationError, match=f"{field} has unknown detector names"):
         FileDataConfig.model_validate(_et_file_config(**fields))

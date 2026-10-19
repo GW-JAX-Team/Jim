@@ -29,28 +29,16 @@ def build_data(
     preset = get_detector_preset()
 
     ifos: list[GroundBased2G] = []
-    # Interferometer name -> its name in ``data.detectors`` ("ET" covers ET1-ET3).
-    # PSD/ASD tables are keyed by the latter.
-    config_name: dict[str, str] = {}
     for name in data_cfg.detectors:
         val = preset[name]
-        group = val if isinstance(val, list) else [val]
-        ifos.extend(group)
-        config_name.update({ifo.name: name for ifo in group})
+        ifos.extend(val if isinstance(val, list) else [val])
 
     if isinstance(data_cfg, GWOSCDataConfig):
         _load_gwosc(ifos, data_cfg)
     elif isinstance(data_cfg, InjectionDataConfig):
-        _load_injection(
-            ifos,
-            data_cfg,
-            waveform,
-            config_name=config_name,
-            f_min=f_min,
-            f_max=f_max,
-        )
+        _load_injection(ifos, data_cfg, waveform, f_min=f_min, f_max=f_max)
     elif isinstance(data_cfg, FileDataConfig):
-        _load_files(ifos, data_cfg, config_name=config_name)
+        _load_files(ifos, data_cfg)
     else:
         assert_never(data_cfg)
 
@@ -104,7 +92,6 @@ def _load_injection(
     cfg: InjectionDataConfig,
     waveform,
     *,
-    config_name: dict[str, str],
     f_min: float,
     f_max: float,
 ) -> None:
@@ -117,7 +104,7 @@ def _load_injection(
     for ifo in ifos:
         # The PSD is set once, here.  The injected noise is drawn from it and the
         # likelihood reads it back, so both always use the same PSD.
-        psd = _read_psd(cfg, config_name[ifo.name])
+        psd = _read_psd(cfg, ifo.name)
         if psd is None:
             ifo.load_and_set_psd()
         else:
@@ -148,9 +135,7 @@ def _load_injection(
         ifo.inject_signal(waveform, parameters)
 
 
-def _load_files(
-    ifos: list[GroundBased2G], cfg: FileDataConfig, *, config_name: dict[str, str]
-) -> None:
+def _load_files(ifos: list[GroundBased2G], cfg: FileDataConfig) -> None:
     for ifo in ifos:
         strain_path = cfg.strain_files[ifo.name]
         channel = cfg.strain_channels.get(ifo.name)
@@ -160,6 +145,6 @@ def _load_files(
         strain.trigger_time = cfg.trigger_time
         ifo.set_data(strain)
 
-        psd = _read_psd(cfg, config_name[ifo.name])
+        psd = _read_psd(cfg, ifo.name)
         assert psd is not None  # FileDataConfig requires psd_files or asd_files
         ifo.set_psd(psd)

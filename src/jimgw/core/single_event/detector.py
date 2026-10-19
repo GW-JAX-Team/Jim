@@ -1691,13 +1691,14 @@ def get_detector_preset() -> dict[str, GroundBased2G | list[GroundBased3G]]:
         dict: Mapping of detector name to detector object(s).
             Keys are ``"H1"``, ``"L1"``, ``"V1"`` (single
             [`GroundBased2G`][jimgw.core.single_event.detector.GroundBased2G]),
-            ``"CE"`` (single [`GroundBased3G`][jimgw.core.single_event.detector.GroundBased3G])
-            and ``"ET"`` (list of three).
+            ``"CE"`` (single [`GroundBased3G`][jimgw.core.single_event.detector.GroundBased3G]),
+            ``"ET"`` (list of three) and ``"ET_2L"`` (list of two).
     """
     return {
         "H1": get_H1(),
         "L1": get_L1(),
         "V1": get_V1(),
         "ET": get_ET(),
+        "ET_2L": get_ET_2L(),
         "CE": get_CE(),
     }

@@ -27,7 +27,7 @@ from jimgw.cli._utils import (
     DETECTOR_SKY_PARAMS,
     EQUATORIAL_SKY_PARAMS,
     J_FRAME_SPIN_PARAMS,
-    SUPPORTED_DETECTORS,
+    PRESET_DETECTOR_NAMES,
 )
 
 # SamplerConfig is safe to import here — samplers/config.py only uses numpy.
@@ -55,11 +55,11 @@ class _DataBase(BaseModel):
     def _check_detectors(cls, v: list[str]) -> list[str]:
         if not v:
             raise ValueError("data.detectors must be a non-empty list")
-        unknown = [d for d in v if d not in SUPPORTED_DETECTORS]
+        unknown = [d for d in v if d not in PRESET_DETECTOR_NAMES]
         if unknown:
             raise ValueError(
                 f"Unknown detector name(s): {unknown}. "
-                f"Supported: {sorted(SUPPORTED_DETECTORS)}"
+                f"Supported: {sorted(PRESET_DETECTOR_NAMES)}"
             )
         if len(v) != len(set(v)):
             duplicates = [d for d in set(v) if v.count(d) > 1]
@@ -100,9 +100,9 @@ class _PSDSourceBase(_DataBase):
     """PSD or ASD files, shared by the data types that read one from disk.
 
     ``psd_files`` holds PSD values and ``asd_files`` holds ASD values (squared on
-    load); they are mutually exclusive.  Each maps a name from ``detectors`` to a
-    file in any format ``PowerSpectrum.from_file`` reads.  One ``ET`` entry covers
-    all three ET interferometers.
+    load); they are mutually exclusive.  Each maps every detector to a file in any
+    format ``PowerSpectrum.from_file`` reads, with ``ET`` and ``ET_2L`` named by
+    their individual detectors (``ET1``-``ET3``, ``ET_Sar`` and ``ET_EMR``).
     """
 
     psd_files: Optional[dict[str, Path]] = None  # detector_name -> PSD file
@@ -118,16 +118,17 @@ class _PSDSourceBase(_DataBase):
             raise ValueError(
                 "psd_files and asd_files are mutually exclusive; set at most one."
             )
+        names = [name for d in self.detectors for name in PRESET_DETECTOR_NAMES[d]]
         for field, table in (
             ("psd_files", self.psd_files),
             ("asd_files", self.asd_files),
         ):
             if table is None:
                 continue
-            missing = [d for d in self.detectors if d not in table]
+            missing = [name for name in names if name not in table]
             if missing:
                 raise ValueError(f"{field} missing for: {missing}")
-            unknown = sorted(set(table) - set(self.detectors))
+            unknown = sorted(set(table) - set(names))
             if unknown:
                 raise ValueError(f"{field} has unknown detector names: {unknown}")
             for detector, path in table.items():
@@ -174,8 +175,9 @@ class FileDataConfig(_PSDSourceBase):
     ``strain_channels`` to map detector names to channel strings; if omitted,
     common LIGO/Virgo preset channel names are tried automatically for GWF files.
 
-    With ``detectors = ["ET"]``, strain files and channels use the individual
-    interferometer names ``ET1``, ``ET2`` and ``ET3``; the PSD/ASD uses ``ET``.
+    With ``detectors = ["ET"]``, strain files, channels and PSD/ASD files use the
+    individual detector names ``ET1``, ``ET2`` and ``ET3``; with ``["ET_2L"]``,
+    ``ET_Sar`` and ``ET_EMR``.
     """
 
     type: Literal["file"] = "file"
@@ -193,13 +195,8 @@ class FileDataConfig(_PSDSourceBase):
         strain_detectors = {
             name
             for detector in self.detectors
-            for name in (("ET1", "ET2", "ET3") if detector == "ET" else (detector,))
+            for name in PRESET_DETECTOR_NAMES[detector]
         }
-        if "ET" in self.strain_files or "ET" in self.strain_channels:
-            raise ValueError(
-                "ET strain_files and strain_channels must use the individual "
-                "interferometer names ET1, ET2 and ET3; only PSD/ASD files use ET."
-            )
         missing_strain = sorted(strain_detectors - set(self.strain_files))
         if missing_strain:
             raise ValueError(f"strain_files missing for: {missing_strain}")
@@ -209,7 +206,7 @@ class FileDataConfig(_PSDSourceBase):
         ):
             unknown = sorted(set(names) - strain_detectors)
             if unknown:
-                raise ValueError(f"{field} has unknown interferometer names: {unknown}")
+                raise ValueError(f"{field} has unknown detector names: {unknown}")
         if self.psd_files is None and self.asd_files is None:
             raise ValueError("provide psd_files or asd_files (exactly one of the two)")
         return self
@@ -765,11 +762,8 @@ class PipelineConfig(BaseModel):
         has_sky_params = bool(
             prior_keys & (EQUATORIAL_SKY_PARAMS | DETECTOR_SKY_PARAMS)
         )
-        if (
-            has_sky_params
-            and self.sampling.detector_frame_sky
-            and len(self.data.detectors) < 2
-        ):
+        n_detectors = sum(len(PRESET_DETECTOR_NAMES[d]) for d in self.data.detectors)
+        if has_sky_params and self.sampling.detector_frame_sky and n_detectors < 2:
             raise ValueError(
                 "Sky position sampling in detector frame requires at least 2 detectors; "
                 f"got {self.data.detectors}"

@@ -22,5 +22,12 @@ CARTESIAN_SPIN_PARAMS = frozenset({"s1_x", "s1_y", "s1_z", "s2_x", "s2_y", "s2_z
 EQUATORIAL_SKY_PARAMS = frozenset({"ra", "dec"})
 DETECTOR_SKY_PARAMS = frozenset({"azimuth", "zenith"})
 
-# Detector names supported by get_detector_preset()
-SUPPORTED_DETECTORS = frozenset({"H1", "L1", "V1", "ET", "CE"})
+# Detector names in each entry of get_detector_preset()
+PRESET_DETECTOR_NAMES: dict[str, tuple[str, ...]] = {
+    "H1": ("H1",),
+    "L1": ("L1",),
+    "V1": ("V1",),
+    "ET": ("ET1", "ET2", "ET3"),
+    "ET_2L": ("ET_Sar", "ET_EMR"),
+    "CE": ("CE",),
+}

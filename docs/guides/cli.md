@@ -381,16 +381,49 @@ n_tempered_steps = 5
 
 | Field | Default | Description |
 | --- | --- | --- |
-| `n_particles` | `2000` | Number of particles |
-| `n_mcmc_steps_per_dim` | `100` | MCMC steps per dimension per temperature |
-| `target_ess_fraction` | `0.9` | Optional — target effective sample size as a fraction of `n_particles`; use instead of `target_ess`, not both |
+| `n_particles` | `5000` | Number of particles |
+| `mcmc_kernel` | `"tpCN"` | Kernel that moves the particles: `"tpCN"` or `"GRW"`, or a sub-table for kernel-specific settings (see below) |
+| `flow` | enabled | Normalizing-flow coordinates for the kernel: a sub-table for custom settings (see below), or `false` to disable |
+| `target_ess_fraction` | `3.0` (`0.9` if `persistent_sampling = false`) | Optional — target effective sample size as a fraction of `n_particles`; use instead of `target_ess`, not both |
 | `target_ess` | — | Optional — target absolute ESS count; use instead of `target_ess_fraction`, not both |
-| `initial_cov_scale` | `0.5` | Initial covariance scale factor |
-| `target_acceptance_rate` | `0.234` | Target MCMC acceptance rate |
+| `batch_size` | `0` | Particles per sequential batch when evaluating the posterior; `0` evaluates all at once |
 | `persistent_sampling` | `true` | Reuse particles across temperatures |
 | `temperature_ladder` | — | Optional — fixed list of temperatures from 0.0 to 1.0; omit to use adaptive tempering |
 | `checkpoint_dir` | `{output.dir}/` | Directory for `checkpoint.pkl`; set by the CLI automatically |
 | `checkpoint_interval` | `600.0` | Seconds between checkpoint writes; `0` disables checkpointing |
+
+Kernel sub-table, t-pCN (the default):
+
+```toml
+[sampler.mcmc_kernel]
+kernel = "tpCN"
+n_patience_per_dim = 20       # stop after this many steps per dimension without improvement
+n_max_per_dim = 100           # at most this many steps per dimension per temperature
+target_acceptance_rate = 0.15
+```
+
+Kernel sub-table, Gaussian random walk:
+
+```toml
+[sampler.mcmc_kernel]
+kernel = "GRW"
+n_mcmc_steps_per_dim = 100    # steps per dimension per temperature
+initial_cov_scale = 0.5       # first scale of the proposal covariance
+target_acceptance_rate = 0.234
+scale_adaptation_gain = 3.0
+```
+
+Flow sub-table:
+
+```toml
+[sampler.flow]
+n_layers = 6
+hidden_size = [64, 64]
+n_bins = 8
+n_epochs = 200                # training epochs per temperature
+batch_size = 500
+learning_rate = 1e-3
+```
 
 ### `type = "blackjax-nss"`
 

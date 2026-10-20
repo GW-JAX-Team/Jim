@@ -6,4 +6,4 @@ These notes give the details behind Jim's results: conventions and implementatio
 - **[Detector Presets](detector_presets.md)** — How the Einstein Telescope and Cosmic Explorer geometries are built.
 - **[Likelihood Details](likelihood_details.md)** — Conventions of the data and the inner product, frequency ranges, time marginalisation, and how the fast likelihoods choose their bins and bands.
 - **[Signal-Duration Check](signal_duration.md)** — How `inject_signal` decides whether a signal fits the segment.
-- **[Sampler Details](samplers.md)** — How the SwiG sampler reuses the waveform.
+- **[Sampler Details](samplers.md)** — How the SwiG sampler reuses the waveform, and how the SMC sampler moves its particles.

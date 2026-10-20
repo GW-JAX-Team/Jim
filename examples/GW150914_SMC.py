@@ -82,7 +82,7 @@ prior = CombinePrior(
 # Transforms
 # ----------------------------------------------------------------------
 
-sample_transforms = get_default_sample_transforms(prior, ifos)
+sample_transforms = get_default_sample_transforms(prior, ifos, space="unbounded")
 
 likelihood_transforms = get_default_likelihood_transforms(prior, ifos, waveform)
 
@@ -108,11 +108,7 @@ jim = Jim(
     sample_transforms=sample_transforms,
     likelihood_transforms=likelihood_transforms,
     periodic=get_default_periodic(prior, sample_transforms),
-    sampler_config=BlackJAXSMCConfig(
-        n_particles=5000,
-        n_mcmc_steps_per_dim=100,
-        target_ess_fraction=1,
-    ),
+    sampler_config=BlackJAXSMCConfig(n_particles=5000),
 )
 
 start_time = time.time()

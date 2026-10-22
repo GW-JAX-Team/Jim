@@ -23,7 +23,6 @@ jobs:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v10.3.0
         with:
-          enable-cache: true
           python-version: "3.12"
       - name: Install dependencies
         run: uv sync --group test
@@ -42,7 +41,6 @@ jobs:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v10.3.0
         with:
-          enable-cache: true
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: uv sync --group test ${{ matrix.test_suite == 'cross-validation' && '--group cross-validation' || '' }}
@@ -85,7 +83,6 @@ jobs:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v10.3.0
         with:
-          enable-cache: true
           python-version: "3.12"
       - name: Install coverage dependencies
         run: uv sync --group test

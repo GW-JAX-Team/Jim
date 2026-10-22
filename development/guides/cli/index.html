@@ -3987,6 +3987,35 @@ PSD and ASD formats are described in the note on PSD and ASD files below.</p>
 <li>Text files have two columns: frequency in Hz, then the value.</li>
 </ul>
 </div>
+<div class="admonition note">
+<p class="admonition-title">Next-generation detector response</p>
+<p><code>injection</code> and <code>file</code> runs with <code>ET</code>, <code>ET_2L</code> or <code>CE</code> in <code>detectors</code> can turn on two options for those detectors; see <a href="../data/#next-generation-detectors">Next-generation detectors</a> for when each matters.
+The injected signal and the likelihood use the same response.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>earth_rotation</code></td>
+<td>bool</td>
+<td><code>false</code></td>
+<td>Follow the Earth's rotation while the signal is in the frequency range of the data.</td>
+</tr>
+<tr>
+<td><code>finite_arm_length</code></td>
+<td>bool</td>
+<td><code>false</code></td>
+<td>Do not assume the arms are short compared to the gravitational wavelength.</td>
+</tr>
+</tbody>
+</table>
+</div>
 <hr />
 <h2 id="waveform"><code>[waveform]</code><a class="headerlink" href="#waveform" title="Permanent link">¤</a></h2>
 <table>

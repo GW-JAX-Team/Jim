@@ -28,7 +28,7 @@ jobs:
 
       - uses: astral-sh/setup-uv@v10.3.0
         with:
-          python-version: "3.12"
+          python-version: "3.13"
 
       - name: Install doc dependencies
         run: uv sync --group doc

@@ -4,12 +4,10 @@
 ``ScalarLike`` accept other dtypes, so they cannot replace these aliases.
 """
 
-from typing import TypeAlias
-
 from jaxtyping import Array, Complex, Float, Int
 
-FloatScalar: TypeAlias = Float[Array, ""]
-IntScalar: TypeAlias = Int[Array, ""]
-ComplexScalar: TypeAlias = Complex[Array, ""]
-FloatLike: TypeAlias = float | Float[Array, ""]
-ComplexLike: TypeAlias = complex | Complex[Array, ""]
+type FloatScalar = Float[Array, ""]
+type IntScalar = Int[Array, ""]
+type ComplexScalar = Complex[Array, ""]
+type FloatLike = float | Float[Array, ""]
+type ComplexLike = complex | Complex[Array, ""]

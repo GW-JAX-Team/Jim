@@ -21,7 +21,7 @@ jobs:
           ref: jim-dev
       - uses: astral-sh/setup-uv@v10.3.0
         with:
-          python-version: "3.12"
+          python-version: "3.13"
       - run: uvx pre-commit autoupdate
       - run: uv lock --upgrade
       - name: Commit if hooks or lockfile changed

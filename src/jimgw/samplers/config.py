@@ -11,7 +11,7 @@ import pickle
 import time
 import warnings
 from pathlib import Path
-from typing import Annotated, Generic, Literal, Optional, Self, TypeVar, Union
+from typing import Annotated, Literal, Optional, Self, Union
 
 import jax
 import numpy as np
@@ -20,10 +20,8 @@ from pydantic import BaseModel, Discriminator, Field, field_validator, model_val
 
 logger = logging.getLogger(__name__)
 
-_SamplerType = TypeVar("_SamplerType", bound=str)
 
-
-class BaseSamplerConfig(BaseModel, Generic[_SamplerType]):
+class BaseSamplerConfig[SamplerType: str](BaseModel):
     """Fields shared by all sampler configs."""
 
     model_config = {
@@ -31,7 +29,7 @@ class BaseSamplerConfig(BaseModel, Generic[_SamplerType]):
         "arbitrary_types_allowed": True,
         "allow_inf_nan": False,
     }
-    type: _SamplerType
+    type: SamplerType
 
 
 # ----------------------------------------------------------------------

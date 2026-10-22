@@ -4181,7 +4181,8 @@ drawn from the prior and the entire ask/tell loop is compiled with
 generations have run, <code>optimizer_target</code> has been reached, or
 evosax's own CMA-ES convergence/stall criterion (<code>cma_cond</code>, using
 its built-in default tolerances) detects that the search has
-converged or numerically degenerated — whichever comes first.</p>
+converged or numerically degenerated — whichever comes first.
+The population is evaluated in batches that fit in device memory.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>

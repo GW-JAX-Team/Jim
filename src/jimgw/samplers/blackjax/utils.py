@@ -6,8 +6,8 @@ The four BlackJAX SMC mode samplers, ``BlackJAXNSSSampler``, and
 (compute the path, try to resume, fall back to a fresh state on a corrupt or
 foreign checkpoint, gate saves on the configured interval, clean up on
 completion) are identical across the three; only the state shape, the extra
-per-run bookkeeping (SMC's acceptance/covariance histories vs. NS's ``dead``
-point list), and a couple of backend-specific hooks differ. This module holds
+per-run bookkeeping (SMC's mutation history vs. NS's ``dead`` point list), and
+a couple of backend-specific hooks differ. This module holds
 that shared mechanics; each sampler supplies the differences via callbacks.
 """
 
@@ -59,7 +59,7 @@ def load_or_initialize_checkpoint(
 
     ``initialize_state`` builds a fresh state from ``initial_particles``.
     ``initial_extra``/``load_extra`` supply and restore backend-specific
-    extras (histories for SMC, the NS ``dead`` point list, ...). ``after_load``
+    extras (the SMC mutation history, the NS ``dead`` point list, ...). ``after_load``
     post-processes a freshly loaded ``state`` — used for device/mesh placement
     (NSS) or other backend-specific reconstruction. ``is_stale`` optionally
     rejects a loaded checkpoint whose ``n_iter`` no longer fits the current
@@ -160,7 +160,7 @@ def save_checkpoint_if_due(
 
     ``extra`` is merged into the common checkpoint payload (state, rng_key,
     n_iter, sampler_name, elapsed_time) — use it for backend-specific fields
-    such as per-iteration histories or the NS ``dead`` point list.
+    such as the SMC mutation history or the NS ``dead`` point list.
     ``before_save`` transforms ``(state, rng_key, extra)`` right before they
     are written — e.g. NSS's ``jax.device_get`` on all three. It is called
     only when a checkpoint is actually due, so a host transfer here doesn't

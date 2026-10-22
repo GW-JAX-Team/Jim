@@ -159,7 +159,7 @@ class TestUnitCube:
     @pytest.mark.parametrize("name", PRIORS_WITH_A_UNIT_CUBE)
     def test_every_prior_type_is_mapped_to_a_uniform_unit_interval(self, ifos, name):
         prior = PRIORS_WITH_A_UNIT_CUBE[name]
-        transforms = get_default_sample_transforms(prior, ifos, unit_cube=True)
+        transforms = get_default_sample_transforms(prior, ifos, space="unit_cube")
         samples = prior.sample(jax.random.key(0), 20000)
         for transform in transforms:
             samples = jax.vmap(transform.forward)(samples)
@@ -183,7 +183,7 @@ class TestUnitCube:
                 CosinePrior(["dec"]),
             ]
         )
-        transforms = get_default_sample_transforms(prior, ifos, unit_cube=True)
+        transforms = get_default_sample_transforms(prior, ifos, space="unit_cube")
         names = tuple(prior.parameter_names)
         for transform in transforms:
             names = transform.propagate_name(names)
@@ -209,14 +209,14 @@ class TestUnitCube:
 
     def test_a_single_component_prior_is_accepted(self, ifos):
         transforms = get_default_sample_transforms(
-            SinePrior(["iota"]), ifos, unit_cube=True
+            SinePrior(["iota"]), ifos, space="unit_cube"
         )
         assert type_names(transforms) == ["CosineTransform", "BoundToBound"]
 
     def test_the_helper_priors_inside_a_component_are_not_mapped(self, ifos):
         # SinePrior's own base_prior is a UniformPrior on "cos(iota)"; it must be left alone.
         prior = CombinePrior([UniformPrior(0.0, 1.0, ["x"]), SinePrior(["iota"])])
-        transforms = get_default_sample_transforms(prior, ifos, unit_cube=True)
+        transforms = get_default_sample_transforms(prior, ifos, space="unit_cube")
         assert type_names(transforms) == [
             "BoundToBound",
             "CosineTransform",
@@ -227,7 +227,7 @@ class TestUnitCube:
         self, ifos
     ):
         prior = CombinePrior([UniformSpherePrior(["s1"])])
-        transforms = get_default_sample_transforms(prior, ifos, unit_cube=True)
+        transforms = get_default_sample_transforms(prior, ifos, space="unit_cube")
         names = tuple(prior.parameter_names)
         for transform in transforms:
             names = transform.propagate_name(names)
@@ -236,7 +236,7 @@ class TestUnitCube:
     def test_geocentric_ra_dec_get_their_own_unit_cube(self, ifos):
         prior = CombinePrior([UniformPrior(0.0, 2 * PI, ["ra"]), CosinePrior(["dec"])])
         transforms = get_default_sample_transforms(
-            prior, ifos, detector_frame_sky=False, unit_cube=True
+            prior, ifos, detector_frame_sky=False, space="unit_cube"
         )
         names = tuple(prior.parameter_names)
         for transform in transforms:
@@ -252,16 +252,16 @@ class TestUnitCube:
             ]
         )
         with pytest.raises(ValueError, match="t_det"):
-            get_default_sample_transforms(prior, ifos, unit_cube=True)
+            get_default_sample_transforms(prior, ifos, space="unit_cube")
         # Sampling t_c itself is exact, so that is accepted.
         get_default_sample_transforms(
-            prior, ifos, detector_frame_time=False, unit_cube=True
+            prior, ifos, detector_frame_time=False, space="unit_cube"
         )
 
     def test_a_prior_without_a_default_unit_cube_is_refused(self, ifos):
         with pytest.raises(TypeError, match="LogisticDistribution"):
             get_default_sample_transforms(
-                CombinePrior([LogisticDistribution(["x"])]), ifos, unit_cube=True
+                CombinePrior([LogisticDistribution(["x"])]), ifos, space="unit_cube"
             )
 
     @pytest.mark.parametrize(
@@ -278,11 +278,138 @@ class TestUnitCube:
         # azimuth and cos(zenith) would not be uniform on [0, 1] for such a prior.
         prior = CombinePrior([ra, dec])
         with pytest.raises(ValueError, match="isotropic"):
-            get_default_sample_transforms(prior, ifos, unit_cube=True)
+            get_default_sample_transforms(prior, ifos, space="unit_cube")
         # Mapping ra/dec directly works for any of the supported priors.
         get_default_sample_transforms(
-            prior, ifos, detector_frame_sky=False, unit_cube=True
+            prior, ifos, detector_frame_sky=False, space="unit_cube"
         )
+
+
+class TestUnbounded:
+    @pytest.mark.parametrize("name", PRIORS_WITH_A_UNIT_CUBE)
+    def test_every_prior_type_becomes_a_standard_logistic(self, ifos, name):
+        # The unit-cube map makes each prior uniform; the logit after it makes
+        # the density in the new coordinate exactly standard logistic.
+        prior = PRIORS_WITH_A_UNIT_CUBE[name]
+        transforms = get_default_sample_transforms(prior, ifos, space="unbounded")
+        names = tuple(prior.parameter_names)
+        for transform in transforms:
+            names = transform.propagate_name(names)
+        (target,) = names
+        assert target.endswith("_unbounded")
+
+        def log_density(value):
+            named = {target: value}
+            log_jacobian = 0.0
+            for transform in reversed(transforms):
+                named, jacobian = transform.inverse(named)
+                log_jacobian = log_jacobian + jacobian
+            return prior.log_prob(named) + log_jacobian
+
+        u = jnp.linspace(-6.0, 6.0, 25)
+        logistic = -u - 2.0 * jnp.log1p(jnp.exp(-u))
+        np.testing.assert_allclose(jax.vmap(log_density)(u), logistic, atol=1e-6)
+
+    def test_sampling_parameters_of_the_smc_example_prior(self, ifos):
+        prior = CombinePrior(
+            [
+                UniformPrior(20.0, 40.0, ["M_c"]),
+                UniformPrior(0.125, 1.0, ["q"]),
+                UniformPrior(-0.99, 0.99, ["s1_z"]),
+                UniformPrior(-0.99, 0.99, ["s2_z"]),
+                SinePrior(["iota"]),
+                PowerLawPrior(1.0, 2000.0, 2.0, ["d_L"]),
+                UniformPrior(-0.1, 0.1, ["t_c"]),
+                UniformPrior(0.0, 2 * PI, ["phase_c"]),
+                UniformPrior(0.0, PI, ["psi"]),
+                UniformPrior(0.0, 2 * PI, ["ra"]),
+                CosinePrior(["dec"]),
+            ]
+        )
+        transforms = get_default_sample_transforms(prior, ifos, space="unbounded")
+        names = tuple(prior.parameter_names)
+        for transform in transforms:
+            names = transform.propagate_name(names)
+        assert sorted(names) == sorted(
+            [
+                "M_c_unbounded",
+                "q_unbounded",
+                "s1_z_unbounded",
+                "s2_z_unbounded",
+                "cos_iota_unbounded",
+                "d_L_unbounded",
+                "t_det_unbounded",
+                "phase_c",
+                "psi",
+                "azimuth",
+                "cos_zenith_unbounded",
+            ]
+        )
+        assert get_default_periodic(prior, transforms) == {
+            "psi": (0.0, PI),
+            "azimuth": (0.0, 2 * PI),
+            "phase_c": (0.0, 2 * PI),
+        }
+        samples = prior.sample(jax.random.key(1), 1000)
+        for transform in transforms:
+            samples = jax.vmap(transform.forward)(samples)
+        for value in samples.values():
+            assert bool(jnp.all(jnp.isfinite(value)))
+
+    def test_a_detector_frame_t_c_widens_the_t_det_range(self, ifos):
+        ra_dec = [UniformPrior(0.0, 2 * PI, ["ra"]), CosinePrior(["dec"])]
+        prior = CombinePrior([UniformPrior(-0.1, 0.1, ["t_c"]), *ra_dec])
+        transforms = get_default_sample_transforms(prior, ifos, space="unbounded")
+        t_det_map = transforms[-1]
+        assert t_det_map.name_mapping == (["t_det"], ["t_det_unbounded"])
+        lower = float(t_det_map.original_lower_bound[0])
+        upper = float(t_det_map.original_upper_bound[0])
+        assert (lower, upper) == pytest.approx((-0.122, 0.122))
+        # The light-travel delay to a detector is at most 0.0213 s.
+        samples = prior.sample(jax.random.key(2), 5000)
+        for transform in transforms[:2]:
+            samples = jax.vmap(transform.forward)(samples)
+        assert float(jnp.max(jnp.abs(samples["t_det"]))) < 0.1 + 0.0214
+
+        with pytest.raises(ValueError, match="t_det"):
+            get_default_sample_transforms(
+                CombinePrior([GaussianPrior(0.0, 0.05, ["t_c"]), *ra_dec]),
+                ifos,
+                space="unbounded",
+            )
+
+    def test_angles_that_wrap_around_are_left_to_the_sampler(self, ifos):
+        prior = CombinePrior(
+            [
+                UniformPrior(0.0, 2 * PI, ["phase_c"]),
+                UniformPrior(0.0, PI, ["psi"]),
+                UniformPrior(0.0, PI, ["phi_jl"]),  # half a period: not periodic
+            ]
+        )
+        transforms = get_default_sample_transforms(prior, ifos, space="unbounded")
+        names = tuple(prior.parameter_names)
+        for transform in transforms:
+            names = transform.propagate_name(names)
+        assert sorted(names) == ["phase_c", "phi_jl_unbounded", "psi"]
+        assert get_default_periodic(prior, transforms) == {
+            "psi": (0.0, PI),
+            "phase_c": (0.0, 2 * PI),
+        }
+
+    def test_any_sky_prior_can_use_the_detector_frame_sky(self, ifos):
+        # Unlike the unit cube, a logit needs no particular density, only bounds.
+        prior = CombinePrior([UniformPrior(1.0, 2.0, ["ra"]), CosinePrior(["dec"])])
+        transforms = get_default_sample_transforms(prior, ifos, space="unbounded")
+        names = tuple(prior.parameter_names)
+        for transform in transforms:
+            names = transform.propagate_name(names)
+        assert sorted(names) == ["azimuth", "cos_zenith_unbounded"]
+
+    def test_a_prior_without_a_default_map_is_refused(self, ifos):
+        with pytest.raises(TypeError, match="LogisticDistribution"):
+            get_default_sample_transforms(
+                CombinePrior([LogisticDistribution(["x"])]), ifos, space="unbounded"
+            )
 
 
 # ----------------------------------------------------------------------
@@ -497,7 +624,7 @@ class TestPeriodic:
 
     def test_the_unit_cube_gives_the_names_of_the_unit_parameters(self, ifos):
         prior = gw_prior(t_c=None, t_det=UniformPrior(-0.1, 0.1, ["t_det"]))
-        transforms = get_default_sample_transforms(prior, ifos, unit_cube=True)
+        transforms = get_default_sample_transforms(prior, ifos, space="unit_cube")
         assert get_default_periodic(prior, transforms) == [
             "psi_unit",
             "azimuth_unit",
@@ -506,7 +633,7 @@ class TestPeriodic:
     def test_the_unit_cube_wraps_ra_when_the_sky_is_sampled_in_ra_dec(self, ifos):
         prior = gw_prior(t_c=None)
         transforms = get_default_sample_transforms(
-            prior, ifos, detector_frame_sky=False, unit_cube=True
+            prior, ifos, detector_frame_sky=False, space="unit_cube"
         )
         assert get_default_periodic(prior, transforms) == [
             "psi_unit",

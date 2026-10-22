@@ -7,6 +7,7 @@ write the lists by hand.
 """
 
 from collections.abc import Mapping, Sequence
+from typing import Literal
 
 import jax.numpy as jnp
 from ripplegw.interfaces import Waveform
@@ -33,6 +34,7 @@ from jimgw.core.single_event.transforms import (
 from jimgw.core.transforms import (
     BijectiveTransform,
     BoundToBound,
+    BoundToUnbound,
     CosineTransform,
     GaussianTransform,
     NtoMTransform,
@@ -46,6 +48,22 @@ _J_FRAME_SPIN_PARAMS = frozenset(
     {"theta_jn", "phi_jl", "tilt_1", "tilt_2", "phi_12", "a_1", "a_2"}
 )
 
+# Angles with a known period; one wraps around when its prior covers one period.
+_PERIODS = {
+    "psi": float(jnp.pi),
+    "ra": 2 * float(jnp.pi),
+    "azimuth": 2 * float(jnp.pi),
+    "phase_c": 2 * float(jnp.pi),
+    "phi_jl": 2 * float(jnp.pi),
+    "phi_12": 2 * float(jnp.pi),
+    "s1_phi": 2 * float(jnp.pi),
+    "s2_phi": 2 * float(jnp.pi),
+}
+
+# Widest delay between the geocentre and a detector (Earth radius / c is
+# 0.0213 s), with a margin, in seconds.
+_MAX_DETECTOR_DELAY = 0.022
+
 
 def get_default_sample_transforms(
     prior: Prior,
@@ -53,7 +71,7 @@ def get_default_sample_transforms(
     *,
     detector_frame_time: bool = True,
     detector_frame_sky: bool = True,
-    unit_cube: bool = False,
+    space: Literal["default", "unit_cube", "unbounded"] = "default",
 ) -> list[BijectiveTransform]:
     """Default sample transforms (prior space to sampling space) for ``prior``.
 
@@ -63,9 +81,14 @@ def get_default_sample_transforms(
         detector_frame_time: Sample ``t_c`` as the arrival time at ``ifos[0]``.
         detector_frame_sky: Sample ``ra``/``dec`` as ``azimuth``/``zenith`` relative to
             the baseline of ``ifos[0]`` and ``ifos[1]``.
-        unit_cube: Also map every sampling parameter to [0, 1], as the NS AW sampler
-            requires.  Raises if a prior cannot be mapped exactly, e.g. ``t_c`` in the
-            detector frame or a non-isotropic ``ra``/``dec``.
+        space: ``"default"`` keeps each parameter in its prior range.
+            ``"unit_cube"`` maps every sampling parameter to [0, 1], as the NS AW
+            sampler requires; it raises if a prior cannot be mapped exactly, e.g.
+            ``t_c`` in the detector frame or a non-isotropic ``ra``/``dec``.
+            ``"unbounded"`` maps every sampling parameter to the real line (its
+            unit-cube map, then a logit), as the SMC sampler prefers, except the
+            periodic angles, which the sampler maps itself.  A detector-frame time
+            takes the ``t_c`` range widened by the largest detector delay.
 
     Returns:
         The transforms to pass to Jim as ``sample_transforms``.
@@ -81,12 +104,12 @@ def get_default_sample_transforms(
     if sky_transformed:
         transforms.append(SkyFrameToDetectorFrameSkyPositionTransform(ifos))
 
-    if not unit_cube:
+    if space == "default":
         return transforms
 
-    if time_transformed:
+    if time_transformed and space == "unit_cube":
         raise ValueError(
-            "unit_cube=True needs exact bounds, but sampling 't_c' in the detector "
+            "space='unit_cube' needs exact bounds, but sampling 't_c' in the detector "
             "frame shifts it by a sky-dependent delay. Put 't_det' in the prior, or "
             "pass detector_frame_time=False to sample 't_c' directly."
         )
@@ -102,9 +125,12 @@ def get_default_sample_transforms(
         else:
             leaves.append(component)
 
-    # ra/dec are consumed by the sky transform; azimuth/zenith get their own chain below.
+    # ra/dec are consumed by the sky transform and t_c by the time transform;
+    # azimuth/zenith and t_det get their own maps below.
     consumed = {"ra", "dec"} if sky_transformed else set()
-    if sky_transformed:
+    if time_transformed:
+        consumed.add("t_c")
+    if sky_transformed and space == "unit_cube":
         ra_prior = find_specific_prior(prior, "ra")
         isotropic_sky = (
             isinstance(ra_prior, UniformPrior)
@@ -113,105 +139,171 @@ def get_default_sample_transforms(
         )
         if not isotropic_sky:
             raise ValueError(
-                "unit_cube=True with detector_frame_sky=True assumes an isotropic sky "
-                "prior (ra uniform over one period, dec cosine). Put the prior on "
+                "space='unit_cube' with detector_frame_sky=True assumes an isotropic "
+                "sky prior (ra uniform over one period, dec cosine). Put the prior on "
                 "azimuth/zenith instead, or pass detector_frame_sky=False to map "
                 "ra/dec directly."
             )
 
+    unit_maps: list[list[BijectiveTransform]] = []
     for leaf in leaves:
         name = leaf.parameter_names[0]
         if name in consumed:
             continue
+        wraps_around = (
+            isinstance(leaf, UniformPrior)
+            and name in _PERIODS
+            and bool(jnp.isclose(leaf.xmax - leaf.xmin, _PERIODS[name]))
+        )
+        if space == "unbounded" and wraps_around:
+            continue
         if isinstance(leaf, UniformPrior):
-            transforms.append(
-                BoundToBound(
-                    name_mapping=([name], [f"{name}_unit"]),
-                    original_lower_bound=leaf.xmin,
-                    original_upper_bound=leaf.xmax,
-                    target_lower_bound=0.0,
-                    target_upper_bound=1.0,
-                )
+            unit_maps.append(
+                [
+                    BoundToBound(
+                        name_mapping=([name], [f"{name}_unit"]),
+                        original_lower_bound=leaf.xmin,
+                        original_upper_bound=leaf.xmax,
+                        target_lower_bound=0.0,
+                        target_upper_bound=1.0,
+                    )
+                ]
             )
         elif isinstance(leaf, SinePrior):
             # density proportional to sin(x): cos(x) is uniform on [-1, 1]
-            transforms.append(CosineTransform(name_mapping=([name], [f"cos_{name}"])))
-            transforms.append(
-                BoundToBound(
-                    name_mapping=([f"cos_{name}"], [f"cos_{name}_unit"]),
-                    original_lower_bound=-1.0,
-                    original_upper_bound=1.0,
-                    target_lower_bound=0.0,
-                    target_upper_bound=1.0,
-                )
+            unit_maps.append(
+                [
+                    CosineTransform(name_mapping=([name], [f"cos_{name}"])),
+                    BoundToBound(
+                        name_mapping=([f"cos_{name}"], [f"cos_{name}_unit"]),
+                        original_lower_bound=-1.0,
+                        original_upper_bound=1.0,
+                        target_lower_bound=0.0,
+                        target_upper_bound=1.0,
+                    ),
+                ]
             )
         elif isinstance(leaf, CosinePrior):
             # density proportional to cos(x): sin(x) is uniform on [-1, 1]
-            transforms.append(SineTransform(name_mapping=([name], [f"sin_{name}"])))
-            transforms.append(
-                BoundToBound(
-                    name_mapping=([f"sin_{name}"], [f"sin_{name}_unit"]),
-                    original_lower_bound=-1.0,
-                    original_upper_bound=1.0,
-                    target_lower_bound=0.0,
-                    target_upper_bound=1.0,
-                )
+            unit_maps.append(
+                [
+                    SineTransform(name_mapping=([name], [f"sin_{name}"])),
+                    BoundToBound(
+                        name_mapping=([f"sin_{name}"], [f"sin_{name}_unit"]),
+                        original_lower_bound=-1.0,
+                        original_upper_bound=1.0,
+                        target_lower_bound=0.0,
+                        target_upper_bound=1.0,
+                    ),
+                ]
             )
         elif isinstance(leaf, PowerLawPrior):
             # the inverse CDF, which PowerLawTransform maps [0, 1] -> [xmin, xmax]
-            transforms.append(
-                reverse_bijective_transform(
-                    PowerLawTransform(
-                        name_mapping=([f"{name}_unit"], [name]),
-                        xmin=leaf.xmin,
-                        xmax=leaf.xmax,
-                        alpha=leaf.alpha,
+            unit_maps.append(
+                [
+                    reverse_bijective_transform(
+                        PowerLawTransform(
+                            name_mapping=([f"{name}_unit"], [name]),
+                            xmin=leaf.xmin,
+                            xmax=leaf.xmax,
+                            alpha=leaf.alpha,
+                        )
                     )
-                )
+                ]
             )
         elif isinstance(leaf, RayleighPrior):
-            transforms.append(
-                reverse_bijective_transform(
-                    RayleighTransform(
-                        name_mapping=([f"{name}_unit"], [name]),
-                        sigma=leaf.sigma,
+            unit_maps.append(
+                [
+                    reverse_bijective_transform(
+                        RayleighTransform(
+                            name_mapping=([f"{name}_unit"], [name]),
+                            sigma=leaf.sigma,
+                        )
                     )
-                )
+                ]
             )
         elif isinstance(leaf, GaussianPrior):
-            transforms.append(
-                reverse_bijective_transform(
-                    GaussianTransform(
-                        name_mapping=([f"{name}_unit"], [name]),
-                        mu=leaf.mu,
-                        sigma=leaf.sigma,
+            unit_maps.append(
+                [
+                    reverse_bijective_transform(
+                        GaussianTransform(
+                            name_mapping=([f"{name}_unit"], [name]),
+                            mu=leaf.mu,
+                            sigma=leaf.sigma,
+                        )
                     )
-                )
+                ]
             )
         else:
             raise TypeError(
-                f"No default unit-cube transform for '{name}' ({type(leaf).__name__}). "
+                f"No default {space} transform for '{name}' ({type(leaf).__name__}). "
                 "Write the transforms for it by hand."
             )
 
     if sky_transformed:
-        transforms.append(
-            BoundToBound(
-                name_mapping=(["azimuth"], ["azimuth_unit"]),
-                original_lower_bound=0.0,
-                original_upper_bound=2 * float(jnp.pi),
-                target_lower_bound=0.0,
-                target_upper_bound=1.0,
+        if space == "unit_cube":
+            unit_maps.append(
+                [
+                    BoundToBound(
+                        name_mapping=(["azimuth"], ["azimuth_unit"]),
+                        original_lower_bound=0.0,
+                        original_upper_bound=2 * float(jnp.pi),
+                        target_lower_bound=0.0,
+                        target_upper_bound=1.0,
+                    )
+                ]
             )
+        unit_maps.append(
+            [
+                CosineTransform(name_mapping=(["zenith"], ["cos_zenith"])),
+                BoundToBound(
+                    name_mapping=(["cos_zenith"], ["cos_zenith_unit"]),
+                    original_lower_bound=-1.0,
+                    original_upper_bound=1.0,
+                    target_lower_bound=0.0,
+                    target_upper_bound=1.0,
+                ),
+            ]
         )
-        transforms.append(CosineTransform(name_mapping=(["zenith"], ["cos_zenith"])))
+
+    if space == "unit_cube":
+        return transforms + [t for unit_map in unit_maps for t in unit_map]
+
+    # space == "unbounded": a logit after each unit-cube map.  A linear map onto
+    # [0, 1] followed by a logit is a logit of the original range.
+    for unit_map in unit_maps:
+        last = unit_map[-1]
+        (unit_name,) = last.name_mapping[1]
+        unbounded_name = unit_name.removesuffix("_unit") + "_unbounded"
+        if isinstance(last, BoundToBound):
+            unit_map[-1] = BoundToUnbound(
+                name_mapping=(last.name_mapping[0], [unbounded_name]),
+                original_lower_bound=last.original_lower_bound,
+                original_upper_bound=last.original_upper_bound,
+            )
+        else:
+            unit_map.append(
+                BoundToUnbound(
+                    name_mapping=([unit_name], [unbounded_name]),
+                    original_lower_bound=0.0,
+                    original_upper_bound=1.0,
+                )
+            )
+        transforms.extend(unit_map)
+
+    if time_transformed:
+        t_c_prior = find_specific_prior(prior, "t_c")
+        if not isinstance(t_c_prior, UniformPrior):
+            raise ValueError(
+                "space='unbounded' with detector_frame_time=True needs a uniform 't_c' "
+                "prior, whose range sets the range of 't_det'. Put 't_det' in the "
+                "prior, or pass detector_frame_time=False to sample 't_c' directly."
+            )
         transforms.append(
-            BoundToBound(
-                name_mapping=(["cos_zenith"], ["cos_zenith_unit"]),
-                original_lower_bound=-1.0,
-                original_upper_bound=1.0,
-                target_lower_bound=0.0,
-                target_upper_bound=1.0,
+            BoundToUnbound(
+                name_mapping=(["t_det"], ["t_det_unbounded"]),
+                original_lower_bound=t_c_prior.xmin - _MAX_DETECTOR_DELAY,
+                original_upper_bound=t_c_prior.xmax + _MAX_DETECTOR_DELAY,
             )
         )
 
@@ -287,24 +379,13 @@ def get_default_periodic(
     Args:
         prior: The prior Jim will sample.
         sample_transforms: The sample transforms Jim will use.  If they map onto [0, 1]
-            (``unit_cube=True`` of ``get_default_sample_transforms``, for the NS AW
+            (``space="unit_cube"`` of ``get_default_sample_transforms``, for the NS AW
             sampler), the result is the list of names of the unit-cube parameters,
             whose bounds are implicit; otherwise it is a dict with bounds.
 
     Returns:
         ``{name: (lower, upper)}``, or a list of names for a unit-cube sampling space.
     """
-    periods = {
-        "psi": float(jnp.pi),
-        "ra": 2 * float(jnp.pi),
-        "azimuth": 2 * float(jnp.pi),
-        "phase_c": 2 * float(jnp.pi),
-        "phi_jl": 2 * float(jnp.pi),
-        "phi_12": 2 * float(jnp.pi),
-        "s1_phi": 2 * float(jnp.pi),
-        "s2_phi": 2 * float(jnp.pi),
-    }
-
     # The BoundToBound that maps a parameter onto [0, 1] knows its range.
     onto_unit_interval = [
         transform
@@ -322,8 +403,8 @@ def get_default_periodic(
                 transform.original_lower_bound,
                 transform.original_upper_bound,
             ):
-                if source in periods and bool(
-                    jnp.isclose(upper - lower, periods[source])
+                if source in _PERIODS and bool(
+                    jnp.isclose(upper - lower, _PERIODS[source])
                 ):
                     names.append(target)
         return names
@@ -333,7 +414,7 @@ def get_default_periodic(
         sampling_names = transform.propagate_name(sampling_names)
 
     bounds: dict[str, tuple[float, float]] = {}
-    for name, period in periods.items():
+    for name, period in _PERIODS.items():
         if name not in sampling_names:
             continue
         component = find_specific_prior(prior, name)

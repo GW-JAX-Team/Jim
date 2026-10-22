@@ -112,7 +112,7 @@ likelihood_transforms = [MassRatioToSymmetricMassRatioTransform()]  # TypeError
 
 The [BlackJAX NS AW sampler](samplers.md#blackjax-ns-aw) requires the **sampling space** to be the unit hypercube `[0, 1]^n_dims`.
 The `sample_transforms` must map every parameter from its physical support into `[0, 1]`.
-[`get_default_sample_transforms(prior, ifos, unit_cube=True)`](#default-transforms) builds all of the following for the standard prior types; the rest of this section shows what it does, for priors you handle yourself.
+[`get_default_sample_transforms(prior, ifos, space="unit_cube")`](#default-transforms) builds all of the following for the standard prior types; the rest of this section shows what it does, for priors you handle yourself.
 
 The key tool is `BoundToBound`, which linearly maps `[a, b] → [c, d]`:
 
@@ -244,10 +244,14 @@ jim = Jim(
 - **Likelihood transforms.**
   `q` to `eta`; J-frame spin angles and spherical spins to Cartesian spins; and a prior given in `azimuth`/`zenith` or `t_det` back to `ra`/`dec` and `t_c`.
 - **NS AW.**
-  Pass `unit_cube=True` to `get_default_sample_transforms` to map every sampled parameter to `[0, 1]` (see [above](#mapping-a-prior-to-the-unit-cube-for-ns-aw) for what that involves).
+  Pass `space="unit_cube"` to `get_default_sample_transforms` to map every sampled parameter to `[0, 1]` (see [above](#mapping-a-prior-to-the-unit-cube-for-ns-aw) for what that involves).
   This needs a prior made of `UniformPrior`, `SinePrior`, `CosinePrior`, `PowerLawPrior`, `RayleighPrior` and `GaussianPrior`.
   It also needs a `t_det` prior (or `detector_frame_time=False`) rather than `t_c`, because the delay between `t_c` and `t_det` depends on the sky position, so a `t_c` prior would not fill the unit interval exactly.
   Sampling `ra`/`dec` as `azimuth`/`zenith` additionally assumes an isotropic sky prior (`ra` uniform over one period, `dec` cosine); for any other sky prior, put the prior on `azimuth`/`zenith` directly or pass `detector_frame_sky=False`.
+- **SMC.**
+  Pass `space="unbounded"` to map every sampled parameter that does not wrap around to the real line: its unit-cube map, then a logit, so each of these priors becomes a standard logistic distribution.
+  Angles that wrap around (`psi`, `phase_c`, `azimuth`, ...) are left as they are; the SMC sampler handles them itself.
+  A `t_c` prior sampled in the detector frame gives `t_det` the `t_c` range widened by 0.022 s on each side, the largest delay between the geocentre and a detector; the prior is zero outside the true range, so the result is still exact, though `t_det` is not exactly logistic near its edges.
 
 These cover the common cases.
 For anything else, write the lists yourself as described above, or start from the default list and add to it.

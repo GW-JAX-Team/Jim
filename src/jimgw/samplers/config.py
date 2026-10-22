@@ -191,7 +191,7 @@ class _LiveSetConfigMixin(BaseModel):
 # ----------------------------------------------------------------------
 
 
-class ParallelTemperingConfig(BaseModel):
+class FlowMCParallelTemperingConfig(BaseModel):
     """Parallel-tempering settings for the flowMC backend.
 
     Construct directly or pass a plain ``dict`` to ``FlowMCConfig.parallel_tempering``.
@@ -205,7 +205,7 @@ class ParallelTemperingConfig(BaseModel):
     n_tempered_steps: int = Field(default=5, ge=1, strict=True)
 
 
-class MALAConfig(BaseModel):
+class FlowMCMALAConfig(BaseModel):
     """MALA local-kernel settings for the flowMC backend.
 
     ``step_size`` may be a scalar ``float`` (applied uniformly to all
@@ -223,7 +223,7 @@ class MALAConfig(BaseModel):
     step_size: float | np.ndarray = 2e-3
 
 
-class HMCConfig(BaseModel):
+class FlowMCHMCConfig(BaseModel):
     """HMC local-kernel settings for the flowMC backend.
 
     ``step_size`` may be a scalar ``float`` (applied uniformly) or a 1-D
@@ -244,7 +244,7 @@ class HMCConfig(BaseModel):
     n_leapfrog_steps: int = Field(default=10, ge=1, strict=True)
 
 
-class GRWConfig(BaseModel):
+class FlowMCGRWConfig(BaseModel):
     """Gaussian random-walk local-kernel settings for the flowMC backend.
 
     ``step_size`` may be a scalar ``float`` (applied uniformly to all
@@ -262,8 +262,8 @@ class GRWConfig(BaseModel):
     step_size: float | np.ndarray = 2e-3
 
 
-LocalKernelConfig = Annotated[
-    Union[MALAConfig, HMCConfig, GRWConfig], Discriminator("kernel")
+FlowMCLocalKernelConfig = Annotated[
+    Union[FlowMCMALAConfig, FlowMCHMCConfig, FlowMCGRWConfig], Discriminator("kernel")
 ]
 """Discriminated union of every flowMC local-kernel config, by its own
 ``kernel`` field -- the same pattern `SamplerConfig` itself uses (there via
@@ -275,17 +275,17 @@ class FlowMCConfig(BaseSamplerConfig[Literal["flowmc"]], _CheckpointMixin):
     """Configuration for [`FlowMCSampler`][jimgw.samplers.flowmc.FlowMCSampler].
 
     The ``local_kernel`` field selects the MCMC kernel used for local
-    proposals -- pass a ``MALAConfig`` (default), ``HMCConfig``, or
-    ``GRWConfig`` instance (or an equivalent ``dict`` with a ``"kernel"`` key,
+    proposals -- pass a ``FlowMCMALAConfig`` (default), ``FlowMCHMCConfig``, or
+    ``FlowMCGRWConfig`` instance (or an equivalent ``dict`` with a ``"kernel"`` key,
     or just the bare kernel name as a string for its defaults, e.g.
     ``local_kernel="HMC"``):
 
-    * ``MALAConfig`` — Metropolis-Adjusted Langevin; default.
-    * ``HMCConfig`` — Hamiltonian Monte Carlo.
-    * ``GRWConfig`` — Gaussian random walk.
+    * ``FlowMCMALAConfig`` — Metropolis-Adjusted Langevin; default.
+    * ``FlowMCHMCConfig`` — Hamiltonian Monte Carlo.
+    * ``FlowMCGRWConfig`` — Gaussian random walk.
 
     Parallel tempering is **off by default**.  To enable, pass a
-    [`ParallelTemperingConfig`][jimgw.samplers.config.ParallelTemperingConfig],
+    [`FlowMCParallelTemperingConfig`][jimgw.samplers.config.FlowMCParallelTemperingConfig],
     a ``dict`` of its fields, or simply ``True`` (uses all defaults).
     ``False`` disables it.
 
@@ -304,8 +304,8 @@ class FlowMCConfig(BaseSamplerConfig[Literal["flowmc"]], _CheckpointMixin):
     n_production_loops: int = Field(default=10, ge=1, strict=True)
     n_epochs: int = Field(default=20, ge=1, strict=True)
 
-    local_kernel: LocalKernelConfig = Field(default_factory=MALAConfig)
-    parallel_tempering: Optional[ParallelTemperingConfig] = None
+    local_kernel: FlowMCLocalKernelConfig = Field(default_factory=FlowMCMALAConfig)
+    parallel_tempering: Optional[FlowMCParallelTemperingConfig] = None
 
     rq_spline_hidden_units: list[Annotated[int, Field(strict=True, ge=1)]] = Field(
         default_factory=lambda: [128, 128]
@@ -344,18 +344,18 @@ class FlowMCConfig(BaseSamplerConfig[Literal["flowmc"]], _CheckpointMixin):
     @classmethod
     def _resolve_parallel_tempering(
         cls, v: object
-    ) -> Optional[ParallelTemperingConfig]:
+    ) -> Optional[FlowMCParallelTemperingConfig]:
         if v is None or v is False:
             return None
         if v is True:
-            return ParallelTemperingConfig()
+            return FlowMCParallelTemperingConfig()
         if isinstance(v, dict):
-            return ParallelTemperingConfig.model_validate(v)
-        if isinstance(v, ParallelTemperingConfig):
+            return FlowMCParallelTemperingConfig.model_validate(v)
+        if isinstance(v, FlowMCParallelTemperingConfig):
             return v
         raise ValueError(
-            "parallel_tempering must be None, False, True, a dict of ParallelTemperingConfig "
-            f"fields, or a ParallelTemperingConfig instance; got {type(v).__name__}."
+            "parallel_tempering must be None, False, True, a dict of FlowMCParallelTemperingConfig "
+            f"fields, or a FlowMCParallelTemperingConfig instance; got {type(v).__name__}."
         )
 
 
@@ -446,8 +446,85 @@ class BlackJAXSwiGConfig(
         return blocks
 
 
+# ----------------------------------------------------------------------
+# BlackJAX SMC sub-configs
+# ----------------------------------------------------------------------
+
+
+class SMCGRWConfig(BaseModel):
+    """Gaussian random-walk kernel settings for the BlackJAX SMC backend.
+
+    Each mutation runs ``n_mcmc_steps_per_dim * n_dims`` steps with proposal
+    covariance ``s * Cov(particles)``.  After it, ``s`` is multiplied by
+    ``exp(scale_adaptation_gain * (acceptance - target_acceptance_rate))``;
+    ``initial_cov_scale`` is the first ``s``.
+    """
+
+    model_config = {"extra": "forbid", "allow_inf_nan": False}
+
+    kernel: Literal["GRW"] = "GRW"
+    n_mcmc_steps_per_dim: int = Field(default=100, ge=1, strict=True)
+    initial_cov_scale: float = Field(default=0.5, gt=0.0)
+    target_acceptance_rate: float = Field(default=0.234, gt=0.0, lt=1.0)
+    scale_adaptation_gain: float = Field(default=3.0, gt=0.0)
+
+
+class SMCTPCNConfig(BaseModel):
+    """t-pCN kernel settings for the BlackJAX SMC backend.
+
+    A mutation stops once the particles' mean log posterior has not improved
+    for ``n_patience_per_dim * n_dims`` steps, a count that grows as the step
+    size shrinks, or after ``n_max_per_dim * n_dims`` steps.  The step size
+    adapts towards ``target_acceptance_rate``.
+    """
+
+    model_config = {"extra": "forbid", "allow_inf_nan": False}
+
+    kernel: Literal["tpCN"] = "tpCN"
+    n_patience_per_dim: int = Field(default=20, ge=1, strict=True)
+    n_max_per_dim: int = Field(default=100, ge=1, strict=True)
+    target_acceptance_rate: float = Field(default=0.15, gt=0.0, lt=1.0)
+
+
+SMCKernelConfig = Annotated[Union[SMCTPCNConfig, SMCGRWConfig], Discriminator("kernel")]
+"""Discriminated union of the BlackJAX SMC mutation kernels, by their own
+``kernel`` field, as `FlowMCLocalKernelConfig` is for flowMC."""
+
+
+class SMCFlowConfig(BaseModel):
+    """Normalizing-flow settings for the BlackJAX SMC backend.
+
+    At every mutation a newly initialised masked-coupling rational-quadratic
+    spline flow trains on the particles for ``n_epochs``, and the kernel moves
+    the particles in the flow's latent space.
+    """
+
+    model_config = {"extra": "forbid", "allow_inf_nan": False}
+
+    n_layers: int = Field(default=6, ge=1, strict=True)
+    hidden_size: list[Annotated[int, Field(strict=True, ge=1)]] = Field(
+        default_factory=lambda: [64, 64]
+    )
+    n_bins: int = Field(default=8, ge=1, strict=True)
+    n_epochs: int = Field(default=200, ge=1, strict=True)
+    batch_size: int = Field(default=500, ge=1, strict=True)
+    learning_rate: float = Field(default=1e-3, gt=0.0)
+
+
 class BlackJAXSMCConfig(BaseSamplerConfig[Literal["blackjax-smc"]], _CheckpointMixin):
     """Configuration for the BlackJAX SMC sampler.
+
+    ``mcmc_kernel`` selects the kernel that moves the particles at each
+    temperature: an ``SMCTPCNConfig`` (default) or an ``SMCGRWConfig``, an
+    equivalent ``dict`` with a ``"kernel"`` key, or the bare kernel name for
+    its defaults (``mcmc_kernel="GRW"``).  ``flow`` moves the particles in the
+    latent space of a normalizing flow, with either kernel: an
+    ``SMCFlowConfig`` (default), a ``dict`` of its fields, ``True`` for the
+    defaults, or ``False``/``None`` for no flow.
+
+    Without ``target_ess`` or ``target_ess_fraction``, the ESS target is
+    ``3.0 * n_particles`` with persistent sampling and ``0.9 * n_particles``
+    without.
 
     Parameters
     ----------
@@ -466,14 +543,13 @@ class BlackJAXSMCConfig(BaseSamplerConfig[Literal["blackjax-smc"]], _CheckpointM
     type: Literal["blackjax-smc"] = "blackjax-smc"
 
     n_particles: int = Field(default=5000, ge=1, strict=True)
-    n_mcmc_steps_per_dim: int = Field(default=100, ge=1, strict=True)
     target_ess: Optional[int] = Field(default=None, strict=True)
     target_ess_fraction: Optional[float] = None
     # 0 = full vmap; >0 = lax.map batch size to reduce peak memory
     batch_size: int = Field(default=0, ge=0, strict=True)
-    initial_cov_scale: float = Field(default=0.5, gt=0.0)
-    target_acceptance_rate: float = Field(default=0.234, gt=0.0, lt=1.0)
-    scale_adaptation_gain: float = Field(default=3.0, gt=0.0)
+
+    mcmc_kernel: SMCKernelConfig = Field(default_factory=SMCTPCNConfig)
+    flow: Union[SMCFlowConfig, Literal[False]] = Field(default_factory=SMCFlowConfig)
 
     persistent_sampling: bool = True
     temperature_ladder: Optional[list[float]] = None
@@ -481,6 +557,23 @@ class BlackJAXSMCConfig(BaseSamplerConfig[Literal["blackjax-smc"]], _CheckpointM
     # ------------------------------------------------------------------
     # Validation
     # ------------------------------------------------------------------
+
+    @field_validator("mcmc_kernel", mode="before")
+    @classmethod
+    def _resolve_mcmc_kernel(cls, v: object) -> object:
+        if isinstance(v, str):
+            return {"kernel": v}
+        return v
+
+    @field_validator("flow", mode="before")
+    @classmethod
+    def _resolve_flow(cls, v: object) -> object:
+        # False, not None, marks "no flow", so it survives a dump that drops None.
+        if v is None or v is False:
+            return False
+        if v is True:
+            return SMCFlowConfig()
+        return v
 
     @field_validator("temperature_ladder")
     @classmethod
@@ -511,7 +604,8 @@ class BlackJAXSMCConfig(BaseSamplerConfig[Literal["blackjax-smc"]], _CheckpointM
 
         # Apply default if neither was set.
         if self.target_ess is None and self.target_ess_fraction is None:
-            object.__setattr__(self, "target_ess_fraction", 0.9)
+            default_fraction = 3.0 if self.persistent_sampling else 0.9
+            object.__setattr__(self, "target_ess_fraction", default_fraction)
 
         # Validate target_ess.
         if self.target_ess is not None:

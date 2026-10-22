@@ -86,8 +86,8 @@ prior = CombinePrior(
 # Transforms
 # ----------------------------------------------------------------------
 
-# NS AW needs every sampled parameter in [0, 1], which unit_cube=True takes care of.
-sample_transforms = get_default_sample_transforms(prior, ifos, unit_cube=True)
+# NS AW needs every sampled parameter in [0, 1], which space="unit_cube" takes care of.
+sample_transforms = get_default_sample_transforms(prior, ifos, space="unit_cube")
 
 likelihood_transforms = get_default_likelihood_transforms(prior, ifos, waveform)
 

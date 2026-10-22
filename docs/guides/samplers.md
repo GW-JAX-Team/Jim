@@ -50,9 +50,9 @@ Key parameters:
 - `n_chains` — number of parallel MCMC chains.
 - `n_training_loops` / `n_production_loops` — how many rounds of training (flow updates) and production (sample collection) to run.
 - `n_local_steps` / `n_global_steps` — local MCMC steps and flow-proposal steps per loop.
-- `local_kernel` — MCMC kernel for local steps: a `MALAConfig` (default), `HMCConfig`, or `GRWConfig` instance (or an equivalent `dict` with a `"kernel"` key, or just the bare name, e.g. `local_kernel="HMC"`, for its defaults).
+- `local_kernel` — MCMC kernel for local steps: a `FlowMCMALAConfig` (default), `FlowMCHMCConfig`, or `FlowMCGRWConfig` instance (or an equivalent `dict` with a `"kernel"` key, or just the bare name, e.g. `local_kernel="HMC"`, for its defaults).
 - `parallel_tempering` — parallel tempering settings; disabled by default.
-  Enable with `parallel_tempering=True` (uses defaults), a plain dict of settings such as `{"n_temperatures": 8}`, or a `ParallelTemperingConfig` instance.
+  Enable with `parallel_tempering=True` (uses defaults), a plain dict of settings such as `{"n_temperatures": 8}`, or a `FlowMCParallelTemperingConfig` instance.
 
 **Repository:** [GW-JAX-Team/flowMC](https://github.com/GW-JAX-Team/flowMC)
 
@@ -64,11 +64,15 @@ Wong, K. W. K., Isi, M., Edwards, T. D. P., *"Fast Gravitational-wave Parameter 
 ## BlackJAX SMC
 
 Sequential Monte Carlo (SMC) maintains a population of particles and gradually shifts them from the prior toward the posterior through a sequence of intermediate temperature steps.
+At each temperature, a kernel moves the particles in the latent space of a normalizing flow trained on them; see the [technical notes](../notes/samplers.md#smc-mutation) for how.
 
 > **Normalised-prior requirement** — SMC computes a Bayesian evidence estimate and therefore requires a normalised prior.
 > All built-in Jim priors are normalised.
 > If you add custom constraints, check whether the resulting distribution is still normalised; if so, override `is_normalized` to return `True`.
 > Jim raises a `ValueError` at construction if this condition is not met.
+
+> **Unbounded sampling space** — the kernels work best when every parameter that does not wrap around lives on the real line.
+> Build the sample transforms with `get_default_sample_transforms(..., space="unbounded")` and declare the angles that wrap around as [periodic](#periodic-parameters); the CLI does both automatically.
 
 ```python
 from jimgw.samplers.config import BlackJAXSMCConfig
@@ -77,9 +81,12 @@ jim = Jim(
     likelihood,
     prior,
     sampler_config=BlackJAXSMCConfig(
-        n_particles=2000,
-        n_mcmc_steps_per_dim=100,
+        n_particles=5000,
+        mcmc_kernel="tpCN",
     ),
+    sample_transforms=sample_transforms,
+    likelihood_transforms=likelihood_transforms,
+    periodic=periodic,
 )
 jim.sample()
 samples = jim.get_samples()
@@ -88,8 +95,10 @@ samples = jim.get_samples()
 Key parameters:
 
 - `n_particles` — particle ensemble size.
-- `n_mcmc_steps_per_dim` — MCMC steps per dimension at each temperature step.
-- `target_ess_fraction` — target ESS as a fraction of `n_particles` (default `0.9`).
+- `mcmc_kernel` — kernel that moves the particles: an `SMCTPCNConfig` (default) or `SMCGRWConfig` instance (or an equivalent `dict` with a `"kernel"` key, or just the bare name, e.g. `mcmc_kernel="GRW"`, for its defaults).
+- `flow` — normalizing-flow settings; enabled by default.
+  Pass an `SMCFlowConfig` instance or a plain dict of settings such as `{"n_epochs": 100}`, or `flow=False` to move the particles without a flow.
+- `target_ess_fraction` — target ESS as a fraction of `n_particles` (default `3.0` with persistent sampling, `0.9` without).
   The algorithm advances the temperature when the fraction of effectively contributing particles hits this threshold.
   Values in `(0, 1]` are valid when `persistent_sampling=False`; persistent sampling may exceed `1.0` because particles are recycled across steps.
   Only used with adaptive temperature selection (no effect with a fixed `temperature_ladder`).
@@ -290,14 +299,14 @@ The same fields work identically for `FlowMCConfig`, `BlackJAXNSAWConfig`, `Blac
 > **Validation** — setting `checkpoint_interval > 0` without `checkpoint_dir` raises a `ValidationError` at config construction time.
 
 > **Cross-sampler checkpoints** — every checkpoint records which sampler backend wrote it.
-> Pointing a *different* backend at that `checkpoint_dir` (or, for SMC, the same backend in a different mode — persistent/tempered/adaptive) is handled differently depending on the backend you point there:
+> Pointing a *different* backend, or the same backend with incompatible settings, at that `checkpoint_dir` is handled differently depending on the backend you point there:
 >
 > - **flowMC** raises a `ValueError` immediately, before touching any sampler state.
 > - **BlackJAX NS AW / NSS / SwiG / SMC** log a warning ("incompatible or corrupt checkpoint
 >   … — starting fresh") and silently start a new run instead, the same way they handle a
 >   truly corrupt file.
 >
-> If you switch sampler backends or SMC modes between runs, point `checkpoint_dir` at a new, empty directory to avoid silently discarding an existing checkpoint.
+> If you switch sampler backends or their settings between runs, point `checkpoint_dir` at a new, empty directory to avoid silently discarding an existing checkpoint.
 
 When using the [CLI](cli.md), checkpointing is enabled automatically (600 s, writing to `output.dir`).
 Set `checkpoint_interval = 0` in the `[sampler]` block to opt out.
@@ -397,6 +406,9 @@ diag["log_Z_error"]               # float — standard deviation from 100 bootst
 
 # SMC
 diag["acceptance_history"]        # np.ndarray — mean acceptance rate at each step
+diag["n_steps_history"]           # np.ndarray — MCMC steps at each step
+diag["scale_history"]             # np.ndarray — kernel step size at each step (t-pCN rho, GRW s)
+diag["training_loss_history"]     # np.ndarray — flow loss per epoch at each step (with a flow)
 diag["ess_history"]               # np.ndarray — ESS at each step
 # Adaptive temperature only:
 diag["n_iterations"]              # int        — number of temperature steps

@@ -2,7 +2,7 @@ import logging
 import tomllib
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
-from typing import Annotated, Optional
+from typing import Annotated, Literal, Optional
 
 import typer
 from pydantic import ValidationError
@@ -181,13 +181,18 @@ def run(
     prior = build_prior(cfg.prior)
 
     # Stage 5: transforms and periodic parameters
-    ns_aw = cfg.sampler.type == "blackjax-ns-aw"
+    # NS AW samples the unit cube; SMC prefers every parameter on the real line.
+    space: Literal["default", "unit_cube", "unbounded"] = "default"
+    if cfg.sampler.type == "blackjax-ns-aw":
+        space = "unit_cube"
+    elif cfg.sampler.type == "blackjax-smc":
+        space = "unbounded"
     sample_transforms = get_default_sample_transforms(
         prior,
         ifos,
         detector_frame_time=cfg.sampling.detector_frame_time,
         detector_frame_sky=cfg.sampling.detector_frame_sky,
-        unit_cube=ns_aw,
+        space=space,
     )
     likelihood_transforms = get_default_likelihood_transforms(
         prior,

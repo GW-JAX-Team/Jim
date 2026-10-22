@@ -481,6 +481,14 @@ def test_injection_accepts_psd_files_for_ce():
     assert cfg.psd_files == {"CE": Path("ce_psd.txt")}
 
 
+def test_response_options_need_a_next_generation_detector():
+    # On H1/L1/V1 the keys would do nothing.
+    with pytest.raises(ValidationError, match="apply only to ET, ET_2L and CE"):
+        InjectionDataConfig.model_validate(
+            _injection_data(("H1",), earth_rotation=True)
+        )
+
+
 def test_injection_files_must_cover_every_detector():
     # No silent fallback to the built-in default for a detector missing from the table.
     with pytest.raises(ValidationError, match=r"asd_files missing for: \['H1'\]"):

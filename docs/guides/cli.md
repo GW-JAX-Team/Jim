@@ -164,6 +164,15 @@ L1 = "O3-L1_asd.txt"
     - An `.npz` archive holds `values` and `frequencies` arrays; the table it is listed under decides whether `values` is read as a PSD or an ASD.
     - Text files have two columns: frequency in Hz, then the value.
 
+!!! note "Next-generation detector response"
+    `injection` and `file` runs with `ET`, `ET_2L` or `CE` in `detectors` can turn on two options for those detectors; see [Next-generation detectors](data.md#next-generation-detectors) for when each matters.
+    The injected signal and the likelihood use the same response.
+
+    | Field | Type | Default | Description |
+    | --- | --- | --- | --- |
+    | `earth_rotation` | bool | `false` | Follow the Earth's rotation while the signal is in the frequency range of the data. |
+    | `finite_arm_length` | bool | `false` | Do not assume the arms are short compared to the gravitational wavelength. |
+
 ---
 
 ## `[waveform]`

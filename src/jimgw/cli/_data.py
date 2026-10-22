@@ -26,7 +26,10 @@ def build_data(
 
     For injection runs, *waveform* is required and is used to inject the signal.
     """
-    preset = get_detector_preset()
+    preset = get_detector_preset(
+        earth_rotation=data_cfg.earth_rotation,
+        finite_arm_length=data_cfg.finite_arm_length,
+    )
 
     ifos: list[GroundBased2G] = []
     for name in data_cfg.detectors:

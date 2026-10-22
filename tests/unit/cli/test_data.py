@@ -225,6 +225,23 @@ def test_injection_table_gives_each_detector_its_own_entry(
         np.testing.assert_allclose(np.asarray(sliced_psd(ifo)), expected, rtol=1e-12)
 
 
+def test_response_options_reach_the_injection(waveform):
+    def build(**fields):
+        return build_data(
+            _injection_cfg(("H1", "CE"), **fields),
+            f_min=F_MIN,
+            f_max=F_MAX,
+            waveform=waveform,
+        )
+
+    h1_off, ce_off = build()
+    h1_on, ce_on = build(earth_rotation=True, finite_arm_length=True)
+
+    assert ce_on.earth_rotation and ce_on.finite_arm_length
+    np.testing.assert_array_equal(sliced_fd_data(h1_on), sliced_fd_data(h1_off))
+    assert not np.allclose(sliced_fd_data(ce_on), sliced_fd_data(ce_off), atol=0.0)
+
+
 def test_file_data_asd_files_give_the_same_psd_as_psd_files(tmp_path):
     freqs, values = _fixture_psd("H1")
     asd_file = tmp_path / "h1_asd.txt"

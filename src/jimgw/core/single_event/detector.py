@@ -1684,8 +1684,16 @@ def get_CE(
     )
 
 
-def get_detector_preset() -> dict[str, GroundBased2G | list[GroundBased3G]]:
+def get_detector_preset(
+    *, earth_rotation: bool = False, finite_arm_length: bool = False
+) -> dict[str, GroundBased2G | list[GroundBased3G]]:
     """Return a dictionary of pre-configured detector instances.
+
+    Args:
+        earth_rotation (bool, optional): Passed to ``get_ET``, ``get_ET_2L`` and
+            ``get_CE``. Defaults to False.
+        finite_arm_length (bool, optional): Passed to ``get_ET``, ``get_ET_2L`` and
+            ``get_CE``. Defaults to False.
 
     Returns:
         dict: Mapping of detector name to detector object(s).
@@ -1698,7 +1706,13 @@ def get_detector_preset() -> dict[str, GroundBased2G | list[GroundBased3G]]:
         "H1": get_H1(),
         "L1": get_L1(),
         "V1": get_V1(),
-        "ET": get_ET(),
-        "ET_2L": get_ET_2L(),
-        "CE": get_CE(),
+        "ET": get_ET(
+            earth_rotation=earth_rotation, finite_arm_length=finite_arm_length
+        ),
+        "ET_2L": get_ET_2L(
+            earth_rotation=earth_rotation, finite_arm_length=finite_arm_length
+        ),
+        "CE": get_CE(
+            earth_rotation=earth_rotation, finite_arm_length=finite_arm_length
+        ),
     }

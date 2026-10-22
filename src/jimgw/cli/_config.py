@@ -45,6 +45,8 @@ class _DataBase(BaseModel):
     model_config = {"extra": "forbid", "allow_inf_nan": False}
     detectors: list[str]
     trigger_time: float = Field(allow_inf_nan=False)
+    earth_rotation: bool = False
+    finite_arm_length: bool = False
 
     # ------------------------------------------------------------------
     # Validation
@@ -65,6 +67,18 @@ class _DataBase(BaseModel):
             duplicates = [d for d in set(v) if v.count(d) > 1]
             raise ValueError(f"Duplicate detector name(s): {duplicates}")
         return v
+
+    @model_validator(mode="after")
+    def _check_response_options(self) -> "_DataBase":
+        # Only ET, ET_2L and CE have these responses; elsewhere the keys do nothing.
+        if (self.earth_rotation or self.finite_arm_length) and not (
+            set(self.detectors) & {"ET", "ET_2L", "CE"}
+        ):
+            raise ValueError(
+                "earth_rotation and finite_arm_length apply only to ET, ET_2L and "
+                f"CE, none of which is in data.detectors {self.detectors}."
+            )
+        return self
 
 
 class GWOSCDataConfig(_DataBase):

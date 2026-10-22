@@ -1515,7 +1515,9 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         def _log_likelihood(z: Float[Array, " n_dim"]) -> FloatScalar:
             """Evaluate -logL for a single normalized parameter vector."""
             x = prior_mean + prior_std * z
-            named_params = dict(zip(parameter_names, x, strict=True))
+            named_params: dict[str, FloatLike] = dict(
+                zip(parameter_names, x, strict=True)
+            )
             prior_log_prob = prior.log_prob(named_params)
             for transform in likelihood_transforms:
                 named_params = transform.forward(named_params)

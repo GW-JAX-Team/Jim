@@ -361,7 +361,7 @@ class Jim:
         def _sampling_array_to_likelihood_parameters(
             arr: Float[Array, " n_dims"],
         ) -> dict[str, FloatLike]:
-            named = dict(zip(names, arr, strict=True))
+            named: dict[str, FloatLike] = dict(zip(names, arr, strict=True))
             for transform in reversed(sample_transforms):
                 named, _ = transform.inverse(named)
             for transform in likelihood_transforms:

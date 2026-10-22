@@ -1430,6 +1430,7 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         evosax's own CMA-ES convergence/stall criterion (``cma_cond``, using
         its built-in default tolerances) detects that the search has
         converged or numerically degenerated — whichever comes first.
+        The population is evaluated in batches that fit in device memory.
 
         Args:
             prior: Prior used to seed the initial CMA-ES mean.
@@ -1528,8 +1529,6 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
                 jnp.inf,
             )
 
-        _log_likelihood_vmap = jax.vmap(_log_likelihood)
-
         # --------------------------------------------------------------
         # Set up CMA-ES in normalized space: init_mean=0, std_init=1e-3
         # --------------------------------------------------------------
@@ -1573,23 +1572,70 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
                 & ~_cma_stalled(state)
             )
 
-        def _step(carry):
-            state, key = carry
-            key, key_ask, key_tell = jax.random.split(key, 3)
-            population, state = es.ask(key_ask, state, es_params)
-            fitness = _log_likelihood_vmap(population)
-            # Replace NaN/inf with a large penalty so CMA-ES state is never
-            # corrupted by unphysical parameter samples (e.g. q < 0 → eta < 0
-            # → waveform returns NaN).  Without this, jnp.argmin treats NaN as
-            # the smallest value, best_solution never leaves its NaN initial
-            # value, and the entire optimizer output is NaN.
-            fitness = jnp.where(
-                jnp.isfinite(fitness), fitness, jnp.finfo(jnp.float64).max
-            )
-            state, _ = es.tell(key_tell, population, fitness, state, es_params)
-            return (state, key)
+        def _search(batch_size: int):
+            """Compile the CMA-ES loop, evaluating the population in batches."""
 
-        state, _ = jax.lax.while_loop(_cond, _step, (state, key))
+            def _step(carry):
+                state, key = carry
+                key, key_ask, key_tell = jax.random.split(key, 3)
+                population, state = es.ask(key_ask, state, es_params)
+                fitness = jax.lax.map(
+                    _log_likelihood, population, batch_size=batch_size
+                )
+                # Penalize NaN/inf, otherwise a single NaN makes the whole result NaN.
+                fitness = jnp.where(
+                    jnp.isfinite(fitness), fitness, jnp.finfo(jnp.float64).max
+                )
+                state, _ = es.tell(key_tell, population, fitness, state, es_params)
+                return (state, key)
+
+            def _run(state, key):
+                return jax.lax.while_loop(_cond, _step, (state, key))[0]
+
+            return jax.jit(_run).lower(state, key).compile()
+
+        # --------------------------------------------------------------
+        # Batch size that fits in device memory
+        # --------------------------------------------------------------
+
+        # cuda_async without preallocation reports no limit; OOM halving covers it.
+        batch_size = optimizer_popsize
+        search = _search(batch_size)
+        stats = jax.devices()[0].memory_stats() or {}
+        analysis = search.memory_analysis()
+        if stats.get("bytes_limit", 0) > 0 and analysis is not None:
+            free_bytes = 0.9 * (stats["bytes_limit"] - stats.get("bytes_in_use", 0))
+            temp_bytes = analysis.temp_size_in_bytes
+            if temp_bytes > free_bytes:
+                batch_size = max(1, int(optimizer_popsize * free_bytes / temp_bytes))
+                search = _search(batch_size)
+                while (
+                    batch_size > 1
+                    and search.memory_analysis().temp_size_in_bytes > free_bytes
+                ):
+                    batch_size //= 2
+                    search = _search(batch_size)
+                logger.info(
+                    f"CMA-ES needs {temp_bytes / 1e9:.1f} GB of device memory for "
+                    f"the whole population, {free_bytes / 1e9:.1f} GB is available; "
+                    f"evaluating it in batches of {batch_size}"
+                )
+
+        while True:
+            try:
+                final_state = search(state, key)
+                final_state.best_fitness.block_until_ready()
+                break
+            except jax.errors.JaxRuntimeError as error:
+                if "RESOURCE_EXHAUSTED" not in str(error) or batch_size == 1:
+                    raise
+                batch_size //= 2
+                logger.warning(
+                    f"CMA-ES ran out of device memory; retrying in batches of "
+                    f"{batch_size}"
+                )
+                search = _search(batch_size)
+        state = final_state
 
         best_fitness = float(state.best_fitness)
 
@@ -1607,7 +1653,7 @@ class HeterodynedTransientLikelihoodFD(SingleEventLikelihood):
         logger.debug(
             f"CMA-ES finished after {int(state.generation_counter)} generations "
             f"(limit {optimizer_n_steps}), best_fitness={best_fitness:.4f}, "
-            f"stop_reason={stop_reason}"
+            f"stop_reason={stop_reason}, batch_size={batch_size}"
         )
         best_z = state.best_solution
 

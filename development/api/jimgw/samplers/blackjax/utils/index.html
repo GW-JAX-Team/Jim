@@ -16,7 +16,7 @@
       
       
       
-        <link rel="prev" href="../smc/typing/">
+        <link rel="prev" href="../smc/sampler/">
       
       
         <link rel="next" href="../../config/">
@@ -26,7 +26,7 @@
       
       
       <link rel="icon" href="../../../../../assets/images/favicon.png">
-      <meta name="generator" content="zensical-0.0.71">
+      <meta name="generator" content="zensical-0.0.72">
     
     
       
@@ -37,7 +37,7 @@
       
         
       
-      <link rel="stylesheet" href="../../../../../assets/stylesheets/modern/main.e442bf79.min.css">
+      <link rel="stylesheet" href="../../../../../assets/stylesheets/modern/main.4ab2de0c.min.css">
       
         
           
@@ -107,9 +107,10 @@
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-book-open" viewBox="0 0 24 24"><path d="M12 5v16M20.001 19A2 2 0 0 0 22 17V5a2 2 0 0 0-1.999-2L16 3.002A5 5 0 0 0 12 5a5 5 0 0 0-4-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 1.999 2H8a5 5 0 0 1 4 2 5 5 0 0 1 4-2z"/></svg>
 
     </a>
-    <label class="md-header__button md-icon" for="__drawer" aria-label="Navigation">
+    <label class="md-header__button md-icon" for="__drawer">
       
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>
+      <span class="md-visually-hidden">Navigation</span>
     </label>
     <div class="md-header__title" data-md-component="header-title">
       <div class="md-header__ellipsis">
@@ -161,9 +162,10 @@
     
       
       
-        <label class="md-header__button md-icon" for="__search" aria-label="Search">
+        <label class="md-header__button md-icon" for="__search">
           
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+          <span class="md-visually-hidden">Search</span>
         </label>
         <div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
   <button type="button" class="md-search__button">
@@ -2759,14 +2761,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../smc/sampler/" class="md-nav__link">
+      <a href="../smc/mutation/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  sampler
+  mutation
 
     
   </span>
@@ -2786,14 +2788,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../smc/typing/" class="md-nav__link">
+      <a href="../smc/sampler/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  typing
+  sampler
 
     
   </span>
@@ -3210,8 +3212,8 @@
 (compute the path, try to resume, fall back to a fresh state on a corrupt or
 foreign checkpoint, gate saves on the configured interval, clean up on
 completion) are identical across the three; only the state shape, the extra
-per-run bookkeeping (SMC's acceptance/covariance histories vs. NS's <code>dead</code>
-point list), and a couple of backend-specific hooks differ. This module holds
+per-run bookkeeping (SMC's mutation history vs. NS's <code>dead</code> point list), and
+a couple of backend-specific hooks differ. This module holds
 that shared mechanics; each sampler supplies the differences via callbacks.</p>
 
 
@@ -3295,7 +3297,7 @@ that shared mechanics; each sampler supplies the differences via callbacks.</p>
         <p>Load a compatible checkpoint or initialize a new sampler state.</p>
 <p><code>initialize_state</code> builds a fresh state from <code>initial_particles</code>.
 <code>initial_extra</code>/<code>load_extra</code> supply and restore backend-specific
-extras (histories for SMC, the NS <code>dead</code> point list, ...). <code>after_load</code>
+extras (the SMC mutation history, the NS <code>dead</code> point list, ...). <code>after_load</code>
 post-processes a freshly loaded <code>state</code> — used for device/mesh placement
 (NSS) or other backend-specific reconstruction. <code>is_stale</code> optionally
 rejects a loaded checkpoint whose <code>n_iter</code> no longer fits the current
@@ -3359,7 +3361,7 @@ arbitrary code.</p>
         <p>Save a checkpoint when its interval has elapsed.</p>
 <p><code>extra</code> is merged into the common checkpoint payload (state, rng_key,
 n_iter, sampler_name, elapsed_time) — use it for backend-specific fields
-such as per-iteration histories or the NS <code>dead</code> point list.
+such as the SMC mutation history or the NS <code>dead</code> point list.
 <code>before_save</code> transforms <code>(state, rng_key, extra)</code> right before they
 are written — e.g. NSS's <code>jax.device_get</code> on all three. It is called
 only when a checkpoint is actually due, so a host transfer here doesn't
@@ -3441,7 +3443,7 @@ run every iteration. Returns the last checkpoint time.</p>
       <script id="__config" type="application/json">{"annotate":null,"base":"../../../../..","features":["content.code.copy","navigation.instant","navigation.tabs","navigation.top","toc.follow","header.autohide"],"redirect":null,"search":"../../../../../assets/javascripts/workers/search.c47bb847.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","clipboard.error":"Could not copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":{"default":"stable","provider":"mike"}}</script>
     
     
-      <script src="../../../../../assets/javascripts/bundle.a2388154.min.js"></script>
+      <script src="../../../../../assets/javascripts/bundle.10ee5ab6.min.js"></script>
       
         <script src="../../../../../javascripts/mathjax.js"></script>
       

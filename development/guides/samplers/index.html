@@ -26,7 +26,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="zensical-0.0.71">
+      <meta name="generator" content="zensical-0.0.72">
     
     
       
@@ -37,7 +37,7 @@
       
         
       
-      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.e442bf79.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.4ab2de0c.min.css">
       
         
           
@@ -107,9 +107,10 @@
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-book-open" viewBox="0 0 24 24"><path d="M12 5v16M20.001 19A2 2 0 0 0 22 17V5a2 2 0 0 0-1.999-2L16 3.002A5 5 0 0 0 12 5a5 5 0 0 0-4-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 1.999 2H8a5 5 0 0 1 4 2 5 5 0 0 1 4-2z"/></svg>
 
     </a>
-    <label class="md-header__button md-icon" for="__drawer" aria-label="Navigation">
+    <label class="md-header__button md-icon" for="__drawer">
       
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>
+      <span class="md-visually-hidden">Navigation</span>
     </label>
     <div class="md-header__title" data-md-component="header-title">
       <div class="md-header__ellipsis">
@@ -161,9 +162,10 @@
     
       
       
-        <label class="md-header__button md-icon" for="__search" aria-label="Search">
+        <label class="md-header__button md-icon" for="__search">
           
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+          <span class="md-visually-hidden">Search</span>
         </label>
         <div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
   <button type="button" class="md-search__button">
@@ -2923,14 +2925,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/jimgw/samplers/blackjax/smc/sampler/" class="md-nav__link">
+      <a href="../../api/jimgw/samplers/blackjax/smc/mutation/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  sampler
+  mutation
 
     
   </span>
@@ -2950,14 +2952,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/jimgw/samplers/blackjax/smc/typing/" class="md-nav__link">
+      <a href="../../api/jimgw/samplers/blackjax/smc/sampler/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  typing
+  sampler
 
     
   </span>
@@ -3411,21 +3413,24 @@ You select one by passing a typed config object to <code>Jim</code>.</p>
 <li><code>n_chains</code> — number of parallel MCMC chains.</li>
 <li><code>n_training_loops</code> / <code>n_production_loops</code> — how many rounds of training (flow updates) and production (sample collection) to run.</li>
 <li><code>n_local_steps</code> / <code>n_global_steps</code> — local MCMC steps and flow-proposal steps per loop.</li>
-<li><code>local_kernel</code> — MCMC kernel for local steps: a <code>MALAConfig</code> (default), <code>HMCConfig</code>, or <code>GRWConfig</code> instance (or an equivalent <code>dict</code> with a <code>"kernel"</code> key, or just the bare name, e.g. <code>local_kernel="HMC"</code>, for its defaults).</li>
+<li><code>local_kernel</code> — MCMC kernel for local steps: a <code>FlowMCMALAConfig</code> (default), <code>FlowMCHMCConfig</code>, or <code>FlowMCGRWConfig</code> instance (or an equivalent <code>dict</code> with a <code>"kernel"</code> key, or just the bare name, e.g. <code>local_kernel="HMC"</code>, for its defaults).</li>
 <li><code>parallel_tempering</code> — parallel tempering settings; disabled by default.
-  Enable with <code>parallel_tempering=True</code> (uses defaults), a plain dict of settings such as <code>{"n_temperatures": 8}</code>, or a <code>ParallelTemperingConfig</code> instance.</li>
+  Enable with <code>parallel_tempering=True</code> (uses defaults), a plain dict of settings such as <code>{"n_temperatures": 8}</code>, or a <code>FlowMCParallelTemperingConfig</code> instance.</li>
 </ul>
 <p><strong>Repository:</strong> <a href="https://github.com/GW-JAX-Team/flowMC">GW-JAX-Team/flowMC</a></p>
 <p><strong>References:</strong> Wong, K. W. K., Gabrié, M., Foreman-Mackey, D., <em>"flowMC: Normalizing flow enhanced sampling package for probabilistic inference in JAX"</em>, <a href="https://arxiv.org/abs/2211.06397">arXiv:2211.06397</a>, JOSS 8 (83) 5021 (2023).
 Wong, K. W. K., Isi, M., Edwards, T. D. P., <em>"Fast Gravitational-wave Parameter Estimation without Compromises"</em>, <a href="https://arxiv.org/abs/2302.05333">arXiv:2302.05333</a>, ApJ 958 129 (2023).</p>
 <hr />
 <h2 id="blackjax-smc">BlackJAX SMC<a class="headerlink" href="#blackjax-smc" title="Permanent link">¤</a></h2>
-<p>Sequential Monte Carlo (SMC) maintains a population of particles and gradually shifts them from the prior toward the posterior through a sequence of intermediate temperature steps.</p>
+<p>Sequential Monte Carlo (SMC) maintains a population of particles and gradually shifts them from the prior toward the posterior through a sequence of intermediate temperature steps.
+At each temperature, a kernel moves the particles in the latent space of a normalizing flow trained on them; see the <a href="../../notes/samplers/#smc-mutation">technical notes</a> for how.</p>
 <blockquote>
 <p><strong>Normalised-prior requirement</strong> — SMC computes a Bayesian evidence estimate and therefore requires a normalised prior.
 All built-in Jim priors are normalised.
 If you add custom constraints, check whether the resulting distribution is still normalised; if so, override <code>is_normalized</code> to return <code>True</code>.
 Jim raises a <code>ValueError</code> at construction if this condition is not met.</p>
+<p><strong>Unbounded sampling space</strong> — the kernels work best when every parameter that does not wrap around lives on the real line.
+Build the sample transforms with <code>get_default_sample_transforms(..., space="unbounded")</code> and declare the angles that wrap around as <a href="#periodic-parameters">periodic</a>; the CLI does both automatically.</p>
 </blockquote>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.samplers.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">BlackJAXSMCConfig</span>
 
@@ -3433,9 +3438,12 @@ Jim raises a <code>ValueError</code> at construction if this condition is not me
     <span class="n">likelihood</span><span class="p">,</span>
     <span class="n">prior</span><span class="p">,</span>
     <span class="n">sampler_config</span><span class="o">=</span><span class="n">BlackJAXSMCConfig</span><span class="p">(</span>
-        <span class="n">n_particles</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span>
-        <span class="n">n_mcmc_steps_per_dim</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+        <span class="n">n_particles</span><span class="o">=</span><span class="mi">5000</span><span class="p">,</span>
+        <span class="n">mcmc_kernel</span><span class="o">=</span><span class="s2">"tpCN"</span><span class="p">,</span>
     <span class="p">),</span>
+    <span class="n">sample_transforms</span><span class="o">=</span><span class="n">sample_transforms</span><span class="p">,</span>
+    <span class="n">likelihood_transforms</span><span class="o">=</span><span class="n">likelihood_transforms</span><span class="p">,</span>
+    <span class="n">periodic</span><span class="o">=</span><span class="n">periodic</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="n">jim</span><span class="o">.</span><span class="n">sample</span><span class="p">()</span>
 <span class="n">samples</span> <span class="o">=</span> <span class="n">jim</span><span class="o">.</span><span class="n">get_samples</span><span class="p">()</span>
@@ -3443,8 +3451,10 @@ Jim raises a <code>ValueError</code> at construction if this condition is not me
 <p>Key parameters:</p>
 <ul>
 <li><code>n_particles</code> — particle ensemble size.</li>
-<li><code>n_mcmc_steps_per_dim</code> — MCMC steps per dimension at each temperature step.</li>
-<li><code>target_ess_fraction</code> — target ESS as a fraction of <code>n_particles</code> (default <code>0.9</code>).
+<li><code>mcmc_kernel</code> — kernel that moves the particles: an <code>SMCTPCNConfig</code> (default) or <code>SMCGRWConfig</code> instance (or an equivalent <code>dict</code> with a <code>"kernel"</code> key, or just the bare name, e.g. <code>mcmc_kernel="GRW"</code>, for its defaults).</li>
+<li><code>flow</code> — normalizing-flow settings; enabled by default.
+  Pass an <code>SMCFlowConfig</code> instance or a plain dict of settings such as <code>{"n_epochs": 100}</code>, or <code>flow=False</code> to move the particles without a flow.</li>
+<li><code>target_ess_fraction</code> — target ESS as a fraction of <code>n_particles</code> (default <code>3.0</code> with persistent sampling, <code>0.9</code> without).
   The algorithm advances the temperature when the fraction of effectively contributing particles hits this threshold.
   Values in <code>(0, 1]</code> are valid when <code>persistent_sampling=False</code>; persistent sampling may exceed <code>1.0</code> because particles are recycled across steps.
   Only used with adaptive temperature selection (no effect with a fixed <code>temperature_ladder</code>).</li>
@@ -3635,14 +3645,14 @@ To resume after an interruption, construct the same config pointing at the same 
 <blockquote>
 <p><strong>Validation</strong> — setting <code>checkpoint_interval &gt; 0</code> without <code>checkpoint_dir</code> raises a <code>ValidationError</code> at config construction time.</p>
 <p><strong>Cross-sampler checkpoints</strong> — every checkpoint records which sampler backend wrote it.
-Pointing a <em>different</em> backend at that <code>checkpoint_dir</code> (or, for SMC, the same backend in a different mode — persistent/tempered/adaptive) is handled differently depending on the backend you point there:</p>
+Pointing a <em>different</em> backend, or the same backend with incompatible settings, at that <code>checkpoint_dir</code> is handled differently depending on the backend you point there:</p>
 <ul>
 <li><strong>flowMC</strong> raises a <code>ValueError</code> immediately, before touching any sampler state.</li>
 <li><strong>BlackJAX NS AW / NSS / SwiG / SMC</strong> log a warning ("incompatible or corrupt checkpoint
   … — starting fresh") and silently start a new run instead, the same way they handle a
   truly corrupt file.</li>
 </ul>
-<p>If you switch sampler backends or SMC modes between runs, point <code>checkpoint_dir</code> at a new, empty directory to avoid silently discarding an existing checkpoint.</p>
+<p>If you switch sampler backends or their settings between runs, point <code>checkpoint_dir</code> at a new, empty directory to avoid silently discarding an existing checkpoint.</p>
 </blockquote>
 <p>When using the <a href="../cli/">CLI</a>, checkpointing is enabled automatically (600 s, writing to <code>output.dir</code>).
 Set <code>checkpoint_interval = 0</code> in the <code>[sampler]</code> block to opt out.</p>
@@ -3714,6 +3724,9 @@ The <a href="../cli/">CLI</a> passes the same result to Jim.</p>
 
 <span class="c1"># SMC</span>
 <span class="n">diag</span><span class="p">[</span><span class="s2">"acceptance_history"</span><span class="p">]</span>        <span class="c1"># np.ndarray — mean acceptance rate at each step</span>
+<span class="n">diag</span><span class="p">[</span><span class="s2">"n_steps_history"</span><span class="p">]</span>           <span class="c1"># np.ndarray — MCMC steps at each step</span>
+<span class="n">diag</span><span class="p">[</span><span class="s2">"scale_history"</span><span class="p">]</span>             <span class="c1"># np.ndarray — kernel step size at each step (t-pCN rho, GRW s)</span>
+<span class="n">diag</span><span class="p">[</span><span class="s2">"training_loss_history"</span><span class="p">]</span>     <span class="c1"># np.ndarray — flow loss per epoch at each step (with a flow)</span>
 <span class="n">diag</span><span class="p">[</span><span class="s2">"ess_history"</span><span class="p">]</span>               <span class="c1"># np.ndarray — ESS at each step</span>
 <span class="c1"># Adaptive temperature only:</span>
 <span class="n">diag</span><span class="p">[</span><span class="s2">"n_iterations"</span><span class="p">]</span>              <span class="c1"># int        — number of temperature steps</span>
@@ -3854,7 +3867,7 @@ It requires familiarity with JAX and the Jim sampler internals.</p>
       <script id="__config" type="application/json">{"annotate":null,"base":"../..","features":["content.code.copy","navigation.instant","navigation.tabs","navigation.top","toc.follow","header.autohide"],"redirect":null,"search":"../../assets/javascripts/workers/search.c47bb847.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","clipboard.error":"Could not copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":{"default":"stable","provider":"mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.a2388154.min.js"></script>
+      <script src="../../assets/javascripts/bundle.10ee5ab6.min.js"></script>
       
         <script src="../../javascripts/mathjax.js"></script>
       

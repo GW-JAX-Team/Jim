@@ -26,7 +26,7 @@
       
       
       <link rel="icon" href="../../../../assets/images/favicon.png">
-      <meta name="generator" content="zensical-0.0.71">
+      <meta name="generator" content="zensical-0.0.72">
     
     
       
@@ -37,7 +37,7 @@
       
         
       
-      <link rel="stylesheet" href="../../../../assets/stylesheets/modern/main.e442bf79.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/modern/main.4ab2de0c.min.css">
       
         
           
@@ -107,9 +107,10 @@
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-book-open" viewBox="0 0 24 24"><path d="M12 5v16M20.001 19A2 2 0 0 0 22 17V5a2 2 0 0 0-1.999-2L16 3.002A5 5 0 0 0 12 5a5 5 0 0 0-4-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 1.999 2H8a5 5 0 0 1 4 2 5 5 0 0 1 4-2z"/></svg>
 
     </a>
-    <label class="md-header__button md-icon" for="__drawer" aria-label="Navigation">
+    <label class="md-header__button md-icon" for="__drawer">
       
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>
+      <span class="md-visually-hidden">Navigation</span>
     </label>
     <div class="md-header__title" data-md-component="header-title">
       <div class="md-header__ellipsis">
@@ -161,9 +162,10 @@
     
       
       
-        <label class="md-header__button md-icon" for="__search" aria-label="Search">
+        <label class="md-header__button md-icon" for="__search">
           
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+          <span class="md-visually-hidden">Search</span>
         </label>
         <div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
   <button type="button" class="md-search__button">
@@ -2757,14 +2759,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../blackjax/smc/sampler/" class="md-nav__link">
+      <a href="../blackjax/smc/mutation/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  sampler
+  mutation
 
     
   </span>
@@ -2784,14 +2786,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../blackjax/smc/typing/" class="md-nav__link">
+      <a href="../blackjax/smc/sampler/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  typing
+  sampler
 
     
   </span>
@@ -2922,10 +2924,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#jimgw.samplers.config.LocalKernelConfig" class="md-nav__link">
+  <a href="#jimgw.samplers.config.FlowMCLocalKernelConfig" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        LocalKernelConfig
+        FlowMCLocalKernelConfig
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jimgw.samplers.config.SMCKernelConfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        SMCKernelConfig
       </span>
     </span>
   </a>
@@ -3010,10 +3023,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#jimgw.samplers.config.GRWConfig" class="md-nav__link">
+  <a href="#jimgw.samplers.config.FlowMCGRWConfig" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        GRWConfig
+        FlowMCGRWConfig
       </span>
     </span>
   </a>
@@ -3021,10 +3034,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#jimgw.samplers.config.HMCConfig" class="md-nav__link">
+  <a href="#jimgw.samplers.config.FlowMCHMCConfig" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        HMCConfig
+        FlowMCHMCConfig
       </span>
     </span>
   </a>
@@ -3032,10 +3045,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#jimgw.samplers.config.MALAConfig" class="md-nav__link">
+  <a href="#jimgw.samplers.config.FlowMCMALAConfig" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        MALAConfig
+        FlowMCMALAConfig
       </span>
     </span>
   </a>
@@ -3043,10 +3056,43 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#jimgw.samplers.config.ParallelTemperingConfig" class="md-nav__link">
+  <a href="#jimgw.samplers.config.FlowMCParallelTemperingConfig" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        ParallelTemperingConfig
+        FlowMCParallelTemperingConfig
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jimgw.samplers.config.SMCFlowConfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        SMCFlowConfig
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jimgw.samplers.config.SMCGRWConfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        SMCGRWConfig
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jimgw.samplers.config.SMCTPCNConfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        SMCTPCNConfig
       </span>
     </span>
   </a>
@@ -3217,10 +3263,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#jimgw.samplers.config.LocalKernelConfig" class="md-nav__link">
+  <a href="#jimgw.samplers.config.FlowMCLocalKernelConfig" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        LocalKernelConfig
+        FlowMCLocalKernelConfig
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jimgw.samplers.config.SMCKernelConfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        SMCKernelConfig
       </span>
     </span>
   </a>
@@ -3305,10 +3362,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#jimgw.samplers.config.GRWConfig" class="md-nav__link">
+  <a href="#jimgw.samplers.config.FlowMCGRWConfig" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        GRWConfig
+        FlowMCGRWConfig
       </span>
     </span>
   </a>
@@ -3316,10 +3373,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#jimgw.samplers.config.HMCConfig" class="md-nav__link">
+  <a href="#jimgw.samplers.config.FlowMCHMCConfig" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        HMCConfig
+        FlowMCHMCConfig
       </span>
     </span>
   </a>
@@ -3327,10 +3384,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#jimgw.samplers.config.MALAConfig" class="md-nav__link">
+  <a href="#jimgw.samplers.config.FlowMCMALAConfig" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        MALAConfig
+        FlowMCMALAConfig
       </span>
     </span>
   </a>
@@ -3338,10 +3395,43 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#jimgw.samplers.config.ParallelTemperingConfig" class="md-nav__link">
+  <a href="#jimgw.samplers.config.FlowMCParallelTemperingConfig" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        ParallelTemperingConfig
+        FlowMCParallelTemperingConfig
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jimgw.samplers.config.SMCFlowConfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        SMCFlowConfig
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jimgw.samplers.config.SMCGRWConfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        SMCGRWConfig
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jimgw.samplers.config.SMCTPCNConfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        SMCTPCNConfig
       </span>
     </span>
   </a>
@@ -3404,16 +3494,30 @@ Each sampler has its own <code>*Config</code> class discriminated by a <code>typ
       </thead>
       <tbody>
           <tr class="doc-section-item">
-            <td><code><a class="autorefs autorefs-internal" title="LocalKernelConfig = Annotated[Union[MALAConfig, HMCConfig, GRWConfig], Discriminator(&#x27;kernel&#x27;)]
+            <td><code><a class="autorefs autorefs-internal" title="FlowMCLocalKernelConfig = Annotated[Union[FlowMCMALAConfig, FlowMCHMCConfig, FlowMCGRWConfig], Discriminator(&#x27;kernel&#x27;)]
 
   
       module-attribute
-   (jimgw.samplers.config.LocalKernelConfig)" href="./#jimgw.samplers.config.LocalKernelConfig">LocalKernelConfig</a></code></td>
+   (jimgw.samplers.config.FlowMCLocalKernelConfig)" href="./#jimgw.samplers.config.FlowMCLocalKernelConfig">FlowMCLocalKernelConfig</a></code></td>
             <td>
             </td>
             <td>
               <div class="doc-md-description">
                 <p>Discriminated union of every flowMC local-kernel config, by its own</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><a class="autorefs autorefs-internal" title="SMCKernelConfig = Annotated[Union[SMCTPCNConfig, SMCGRWConfig], Discriminator(&#x27;kernel&#x27;)]
+
+  
+      module-attribute
+   (jimgw.samplers.config.SMCKernelConfig)" href="./#jimgw.samplers.config.SMCKernelConfig">SMCKernelConfig</a></code></td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Discriminated union of the BlackJAX SMC mutation kernels, by their own</p>
               </div>
             </td>
           </tr>
@@ -3448,14 +3552,14 @@ Each sampler has its own <code>*Config</code> class discriminated by a <code>typ
 
 
 
-<h2 id="jimgw.samplers.config.LocalKernelConfig" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">LocalKernelConfig</span> <span class="o">=</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">MALAConfig</span><span class="p">,</span> <span class="n">HMCConfig</span><span class="p">,</span> <span class="n">GRWConfig</span><span class="p">],</span> <span class="n">Discriminator</span><span class="p">(</span><span class="s1">'kernel'</span><span class="p">)]</span></code>
+<h2 id="jimgw.samplers.config.FlowMCLocalKernelConfig" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">FlowMCLocalKernelConfig</span> <span class="o">=</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">FlowMCMALAConfig</span><span class="p">,</span> <span class="n">FlowMCHMCConfig</span><span class="p">,</span> <span class="n">FlowMCGRWConfig</span><span class="p">],</span> <span class="n">Discriminator</span><span class="p">(</span><span class="s1">'kernel'</span><span class="p">)]</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
   </span>
 
-<a href="#jimgw.samplers.config.LocalKernelConfig" class="headerlink" title="Permanent link">¤</a></h2>
+<a href="#jimgw.samplers.config.FlowMCLocalKernelConfig" class="headerlink" title="Permanent link">¤</a></h2>
 
 
     <div class="doc doc-contents ">
@@ -3464,6 +3568,29 @@ Each sampler has its own <code>*Config</code> class discriminated by a <code>typ
 <code>kernel</code> field -- the same pattern <code>SamplerConfig</code> itself uses (there via
 <code>type</code>), so the active kernel's settings live in exactly one place with no
 separate selector field to fall out of sync with it.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h2 id="jimgw.samplers.config.SMCKernelConfig" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">SMCKernelConfig</span> <span class="o">=</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">SMCTPCNConfig</span><span class="p">,</span> <span class="n">SMCGRWConfig</span><span class="p">],</span> <span class="n">Discriminator</span><span class="p">(</span><span class="s1">'kernel'</span><span class="p">)]</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+<a href="#jimgw.samplers.config.SMCKernelConfig" class="headerlink" title="Permanent link">¤</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Discriminated union of the BlackJAX SMC mutation kernels, by their own
+<code>kernel</code> field, as <code>FlowMCLocalKernelConfig</code> is for flowMC.</p>
 
     </div>
 
@@ -3679,6 +3806,16 @@ argument to <a class="autorefs autorefs-internal" href="../../core/jim/#jimgw.co
 
 
         <p>Configuration for the BlackJAX SMC sampler.</p>
+<p><code>mcmc_kernel</code> selects the kernel that moves the particles at each
+temperature: an <code>SMCTPCNConfig</code> (default) or an <code>SMCGRWConfig</code>, an
+equivalent <code>dict</code> with a <code>"kernel"</code> key, or the bare kernel name for
+its defaults (<code>mcmc_kernel="GRW"</code>).  <code>flow</code> moves the particles in the
+latent space of a normalizing flow, with either kernel: an
+<code>SMCFlowConfig</code> (default), a <code>dict</code> of its fields, <code>True</code> for the
+defaults, or <code>False</code>/<code>None</code> for no flow.</p>
+<p>Without <code>target_ess</code> or <code>target_ess_fraction</code>, the ESS target is
+<code>3.0 * n_particles</code> with persistent sampling and <code>0.9 * n_particles</code>
+without.</p>
 <h4 id="jimgw.samplers.config.BlackJAXSMCConfig--parameters">Parameters<a class="headerlink" href="#jimgw.samplers.config.BlackJAXSMCConfig--parameters" title="Permanent link">¤</a></h4>
 <p>batch_size : int, optional
     Number of particles to process per sequential batch during the MCMC
@@ -3795,17 +3932,17 @@ identifies which blocks refresh its cache.</p>
 
         <p>Configuration for <a class="autorefs autorefs-internal" href="../flowmc/#jimgw.samplers.flowmc.FlowMCSampler"><code>FlowMCSampler</code></a>.</p>
 <p>The <code>local_kernel</code> field selects the MCMC kernel used for local
-proposals -- pass a <code>MALAConfig</code> (default), <code>HMCConfig</code>, or
-<code>GRWConfig</code> instance (or an equivalent <code>dict</code> with a <code>"kernel"</code> key,
+proposals -- pass a <code>FlowMCMALAConfig</code> (default), <code>FlowMCHMCConfig</code>, or
+<code>FlowMCGRWConfig</code> instance (or an equivalent <code>dict</code> with a <code>"kernel"</code> key,
 or just the bare kernel name as a string for its defaults, e.g.
 <code>local_kernel="HMC"</code>):</p>
 <ul>
-<li><code>MALAConfig</code> — Metropolis-Adjusted Langevin; default.</li>
-<li><code>HMCConfig</code> — Hamiltonian Monte Carlo.</li>
-<li><code>GRWConfig</code> — Gaussian random walk.</li>
+<li><code>FlowMCMALAConfig</code> — Metropolis-Adjusted Langevin; default.</li>
+<li><code>FlowMCHMCConfig</code> — Hamiltonian Monte Carlo.</li>
+<li><code>FlowMCGRWConfig</code> — Gaussian random walk.</li>
 </ul>
 <p>Parallel tempering is <strong>off by default</strong>.  To enable, pass a
-<a class="autorefs autorefs-internal" href="./#jimgw.samplers.config.ParallelTemperingConfig"><code>ParallelTemperingConfig</code></a>,
+<a class="autorefs autorefs-internal" href="./#jimgw.samplers.config.FlowMCParallelTemperingConfig"><code>FlowMCParallelTemperingConfig</code></a>,
 a <code>dict</code> of its fields, or simply <code>True</code> (uses all defaults).
 <code>False</code> disables it.</p>
 <div class="admonition note">
@@ -3850,11 +3987,11 @@ parameter names to dimension indices and passes them to the sampler.</p>
 
 
 
-<h2 id="jimgw.samplers.config.GRWConfig" class="doc doc-heading">
-            <code>GRWConfig</code>
+<h2 id="jimgw.samplers.config.FlowMCGRWConfig" class="doc doc-heading">
+            <code>FlowMCGRWConfig</code>
 
 
-<a href="#jimgw.samplers.config.GRWConfig" class="headerlink" title="Permanent link">¤</a></h2>
+<a href="#jimgw.samplers.config.FlowMCGRWConfig" class="headerlink" title="Permanent link">¤</a></h2>
 
 
     <div class="doc doc-contents ">
@@ -3903,11 +4040,11 @@ per-dimension step sizes.</p>
 
 
 
-<h2 id="jimgw.samplers.config.HMCConfig" class="doc doc-heading">
-            <code>HMCConfig</code>
+<h2 id="jimgw.samplers.config.FlowMCHMCConfig" class="doc doc-heading">
+            <code>FlowMCHMCConfig</code>
 
 
-<a href="#jimgw.samplers.config.HMCConfig" class="headerlink" title="Permanent link">¤</a></h2>
+<a href="#jimgw.samplers.config.FlowMCHMCConfig" class="headerlink" title="Permanent link">¤</a></h2>
 
 
     <div class="doc doc-contents ">
@@ -3957,11 +4094,11 @@ as the mass matrix / preconditioning for HMC leapfrog steps.</p>
 
 
 
-<h2 id="jimgw.samplers.config.MALAConfig" class="doc doc-heading">
-            <code>MALAConfig</code>
+<h2 id="jimgw.samplers.config.FlowMCMALAConfig" class="doc doc-heading">
+            <code>FlowMCMALAConfig</code>
 
 
-<a href="#jimgw.samplers.config.MALAConfig" class="headerlink" title="Permanent link">¤</a></h2>
+<a href="#jimgw.samplers.config.FlowMCMALAConfig" class="headerlink" title="Permanent link">¤</a></h2>
 
 
     <div class="doc doc-contents ">
@@ -4010,11 +4147,11 @@ per-dimension step sizes.</p>
 
 
 
-<h2 id="jimgw.samplers.config.ParallelTemperingConfig" class="doc doc-heading">
-            <code>ParallelTemperingConfig</code>
+<h2 id="jimgw.samplers.config.FlowMCParallelTemperingConfig" class="doc doc-heading">
+            <code>FlowMCParallelTemperingConfig</code>
 
 
-<a href="#jimgw.samplers.config.ParallelTemperingConfig" class="headerlink" title="Permanent link">¤</a></h2>
+<a href="#jimgw.samplers.config.FlowMCParallelTemperingConfig" class="headerlink" title="Permanent link">¤</a></h2>
 
 
     <div class="doc doc-contents ">
@@ -4026,6 +4163,167 @@ per-dimension step sizes.</p>
         <p>Parallel-tempering settings for the flowMC backend.</p>
 <p>Construct directly or pass a plain <code>dict</code> to <code>FlowMCConfig.parallel_tempering</code>.
 Use <code>True</code> to enable with all defaults, <code>False</code> / <code>None</code> to disable.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="jimgw.samplers.config.SMCFlowConfig" class="doc doc-heading">
+            <code>SMCFlowConfig</code>
+
+
+<a href="#jimgw.samplers.config.SMCFlowConfig" class="headerlink" title="Permanent link">¤</a></h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
+
+
+
+        <p>Normalizing-flow settings for the BlackJAX SMC backend.</p>
+<p>At every mutation a newly initialised masked-coupling rational-quadratic
+spline flow trains on the particles for <code>n_epochs</code>, and the kernel moves
+the particles in the flow's latent space.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="jimgw.samplers.config.SMCGRWConfig" class="doc doc-heading">
+            <code>SMCGRWConfig</code>
+
+
+<a href="#jimgw.samplers.config.SMCGRWConfig" class="headerlink" title="Permanent link">¤</a></h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
+
+
+
+        <p>Gaussian random-walk kernel settings for the BlackJAX SMC backend.</p>
+<p>Each mutation runs <code>n_mcmc_steps_per_dim * n_dims</code> steps with proposal
+covariance <code>s * Cov(particles)</code>.  After it, <code>s</code> is multiplied by
+<code>exp(scale_adaptation_gain * (acceptance - target_acceptance_rate))</code>;
+<code>initial_cov_scale</code> is the first <code>s</code>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="jimgw.samplers.config.SMCTPCNConfig" class="doc doc-heading">
+            <code>SMCTPCNConfig</code>
+
+
+<a href="#jimgw.samplers.config.SMCTPCNConfig" class="headerlink" title="Permanent link">¤</a></h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
+
+
+
+        <p>t-pCN kernel settings for the BlackJAX SMC backend.</p>
+<p>A mutation stops once the particles' mean log posterior has not improved
+for <code>n_patience_per_dim * n_dims</code> steps, a count that grows as the step
+size shrinks, or after <code>n_max_per_dim * n_dims</code> steps.  The step size
+adapts towards <code>target_acceptance_rate</code>.</p>
 
 
 
@@ -4130,7 +4428,7 @@ Use <code>True</code> to enable with all defaults, <code>False</code> / <code>No
       <script id="__config" type="application/json">{"annotate":null,"base":"../../../..","features":["content.code.copy","navigation.instant","navigation.tabs","navigation.top","toc.follow","header.autohide"],"redirect":null,"search":"../../../../assets/javascripts/workers/search.c47bb847.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","clipboard.error":"Could not copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":{"default":"stable","provider":"mike"}}</script>
     
     
-      <script src="../../../../assets/javascripts/bundle.a2388154.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.10ee5ab6.min.js"></script>
       
         <script src="../../../../javascripts/mathjax.js"></script>
       

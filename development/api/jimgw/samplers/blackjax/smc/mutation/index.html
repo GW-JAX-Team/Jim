@@ -12,32 +12,32 @@
         <meta name="author" content="GW JAX Team">
       
       
-        <link rel="canonical" href="https://gw-jax-team.github.io/Jim/development/api/jimgw/samplers/blackjax/smc/typing/">
+        <link rel="canonical" href="https://gw-jax-team.github.io/Jim/development/api/jimgw/samplers/blackjax/smc/mutation/">
       
       
       
-        <link rel="prev" href="../sampler/">
+        <link rel="prev" href="../fixed_tempered/">
       
       
-        <link rel="next" href="../../utils/">
+        <link rel="next" href="../sampler/">
       
       
         
       
       
       <link rel="icon" href="../../../../../../assets/images/favicon.png">
-      <meta name="generator" content="zensical-0.0.71">
+      <meta name="generator" content="zensical-0.0.72">
     
     
       
-        <title>typing - Jim</title>
+        <title>mutation - Jim</title>
       
     
     
       
         
       
-      <link rel="stylesheet" href="../../../../../../assets/stylesheets/modern/main.e442bf79.min.css">
+      <link rel="stylesheet" href="../../../../../../assets/stylesheets/modern/main.4ab2de0c.min.css">
       
         
           
@@ -107,9 +107,10 @@
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-book-open" viewBox="0 0 24 24"><path d="M12 5v16M20.001 19A2 2 0 0 0 22 17V5a2 2 0 0 0-1.999-2L16 3.002A5 5 0 0 0 12 5a5 5 0 0 0-4-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 1.999 2H8a5 5 0 0 1 4 2 5 5 0 0 1 4-2z"/></svg>
 
     </a>
-    <label class="md-header__button md-icon" for="__drawer" aria-label="Navigation">
+    <label class="md-header__button md-icon" for="__drawer">
       
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>
+      <span class="md-visually-hidden">Navigation</span>
     </label>
     <div class="md-header__title" data-md-component="header-title">
       <div class="md-header__ellipsis">
@@ -121,7 +122,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              typing
+              mutation
             
           </span>
         </div>
@@ -161,9 +162,10 @@
     
       
       
-        <label class="md-header__button md-icon" for="__search" aria-label="Search">
+        <label class="md-header__button md-icon" for="__search">
           
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+          <span class="md-visually-hidden">Search</span>
         </label>
         <div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
   <button type="button" class="md-search__button">
@@ -2758,33 +2760,6 @@
                   
   
   
-  
-  
-    <li class="md-nav__item">
-      <a href="../sampler/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  sampler
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
     
   
   
@@ -2802,7 +2777,7 @@
   <span class="md-ellipsis">
     
   
-  typing
+  mutation
 
     
   </span>
@@ -2819,7 +2794,7 @@
   <span class="md-ellipsis">
     
   
-  typing
+  mutation
 
     
   </span>
@@ -2843,13 +2818,96 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#jimgw.samplers.blackjax.smc.typing" class="md-nav__link">
+  <a href="#jimgw.samplers.blackjax.smc.mutation" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        typing
+        mutation
       </span>
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jimgw.samplers.blackjax.smc.mutation.EnsembleMutation" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        EnsembleMutation
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="EnsembleMutation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#jimgw.samplers.blackjax.smc.mutation.EnsembleMutation.initial_parameter_value" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        initial_parameter_value
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#jimgw.samplers.blackjax.smc.mutation.EnsembleMutation.mcmc_init_fn" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        mcmc_init_fn
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#jimgw.samplers.blackjax.smc.mutation.EnsembleMutation.mcmc_parameter_update_fn" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        mcmc_parameter_update_fn
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#jimgw.samplers.blackjax.smc.mutation.EnsembleMutation.read_parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        read_parameters
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#jimgw.samplers.blackjax.smc.mutation.EnsembleMutation.summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        summary
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#jimgw.samplers.blackjax.smc.mutation.EnsembleMutation.update_strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        update_strategy
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -2857,6 +2915,33 @@
   
 </nav>
       
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sampler/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  sampler
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -3078,13 +3163,96 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#jimgw.samplers.blackjax.smc.typing" class="md-nav__link">
+  <a href="#jimgw.samplers.blackjax.smc.mutation" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        typing
+        mutation
       </span>
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jimgw.samplers.blackjax.smc.mutation.EnsembleMutation" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        EnsembleMutation
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="EnsembleMutation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#jimgw.samplers.blackjax.smc.mutation.EnsembleMutation.initial_parameter_value" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        initial_parameter_value
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#jimgw.samplers.blackjax.smc.mutation.EnsembleMutation.mcmc_init_fn" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        mcmc_init_fn
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#jimgw.samplers.blackjax.smc.mutation.EnsembleMutation.mcmc_parameter_update_fn" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        mcmc_parameter_update_fn
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#jimgw.samplers.blackjax.smc.mutation.EnsembleMutation.read_parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        read_parameters
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#jimgw.samplers.blackjax.smc.mutation.EnsembleMutation.summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        summary
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#jimgw.samplers.blackjax.smc.mutation.EnsembleMutation.update_strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        update_strategy
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -3108,16 +3276,23 @@
   
 
 
-  <h1>typing</h1>
+  <h1>mutation</h1>
 
 <div class="doc doc-object doc-module">
 
 
 
-<a id="jimgw.samplers.blackjax.smc.typing"></a>
+<a id="jimgw.samplers.blackjax.smc.mutation"></a>
     <div class="doc doc-contents first">
 
-        <p>Type aliases for the BlackJAX SMC backend.</p>
+        <p>Ensemble mutation for the BlackJAX SMC sampler modes.</p>
+<p>A mutation moves every particle at one temperature.  The particles first go to
+coordinates fitted to the current ensemble: periodic angles are re-centred onto
+the real line and, when a flow is configured, mapped through a normalizing flow
+trained on the particles.  A kernel (a Gaussian random walk or t-pCN) then takes
+Metropolis-Hastings steps in those coordinates.  The acceptance ratio includes
+the Jacobian of the map, so the particles still target Jim's posterior.  BlackJAX
+runs the mutation through its <code>update_strategy</code> hook.</p>
 
 
 
@@ -3139,6 +3314,316 @@
 
 
 
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="jimgw.samplers.blackjax.smc.mutation.EnsembleMutation" class="doc doc-heading">
+            <code>EnsembleMutation</code>
+
+
+<a href="#jimgw.samplers.blackjax.smc.mutation.EnsembleMutation" class="headerlink" title="Permanent link">¤</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Moves all SMC particles at one temperature, in coordinates fitted to them.</p>
+<p>Hand <code>read_parameters</code>, <code>mcmc_init_fn</code>, <code>update_strategy</code> and
+<code>mcmc_parameter_update_fn</code> to <code>blackjax.inner_kernel_tuning</code>, with
+<code>extend_params(initial_parameter_value())</code> as the initial parameter value and
+<code>max_steps</code> as <code>num_mcmc_steps</code>.  The only parameter carried from one
+mutation to the next is the kernel's step size; a flow is trained afresh
+at every mutation.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>n_dims</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Dimension of the sampling space.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>periodic</code>
+            </td>
+            <td>
+                  <code><span title="typing.Optional">Optional</span>[<span title="dict">dict</span>[<span title="int">int</span>, <span title="tuple">tuple</span>[<span title="float">float</span>, <span title="float">float</span>]]]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Periodic dimensions as <code>{index: (lower, upper)}</code>, or <code>None</code>.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>kernel_config</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="SMCKernelConfig = Annotated[Union[SMCTPCNConfig, SMCGRWConfig], Discriminator(&#x27;kernel&#x27;)]
+
+  
+      module-attribute
+   (jimgw.samplers.config.SMCKernelConfig)" href="../../../config/#jimgw.samplers.config.SMCKernelConfig">SMCKernelConfig</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Config of the kernel that moves the particles.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>flow_config</code>
+            </td>
+            <td>
+                  <code><span title="typing.Union">Union</span>[<a class="autorefs autorefs-internal" title="SMCFlowConfig (jimgw.samplers.config.SMCFlowConfig)" href="../../../config/#jimgw.samplers.config.SMCFlowConfig">SMCFlowConfig</a>, <span title="typing.Literal">Literal</span>[False]]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Config of the normalizing flow, or <code>False</code> for none.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+
+
+
+
+
+
+
+<p><span class="doc-section-title">Methods:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="initial_parameter_value() -&gt; dict[str, Array] (jimgw.samplers.blackjax.smc.mutation.EnsembleMutation.initial_parameter_value)" href="./#jimgw.samplers.blackjax.smc.mutation.EnsembleMutation.initial_parameter_value">initial_parameter_value</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Carried parameters for the first mutation (pass through <code>extend_params</code>).</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="mcmc_init_fn(position: Array, logdensity_fn: Callable) -&gt; Any (jimgw.samplers.blackjax.smc.mutation.EnsembleMutation.mcmc_init_fn)" href="./#jimgw.samplers.blackjax.smc.mutation.EnsembleMutation.mcmc_init_fn">mcmc_init_fn</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>BlackJAX's <code>mcmc_init_fn</code>; never called, as there is no per-particle state.</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="mcmc_parameter_update_fn(key: Key[Array, &#x27;&#x27;], state: Any, info: Any) -&gt; dict[str, Array] (jimgw.samplers.blackjax.smc.mutation.EnsembleMutation.mcmc_parameter_update_fn)" href="./#jimgw.samplers.blackjax.smc.mutation.EnsembleMutation.mcmc_parameter_update_fn">mcmc_parameter_update_fn</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>BlackJAX's <code>mcmc_parameter_update_fn</code>: carries the parameters forward.</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="read_parameters(**parameters: Array) -&gt; dict[str, Array] (jimgw.samplers.blackjax.smc.mutation.EnsembleMutation.read_parameters)" href="./#jimgw.samplers.blackjax.smc.mutation.EnsembleMutation.read_parameters">read_parameters</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>BlackJAX's <code>mcmc_step_fn</code>, used only to read the carried parameters.</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="summary(update_info: dict) -&gt; dict[str, Any] (jimgw.samplers.blackjax.smc.mutation.EnsembleMutation.summary)" href="./#jimgw.samplers.blackjax.smc.mutation.EnsembleMutation.summary">summary</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>One mutation's numbers as Python values, for the mutation history and logging.</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="update_strategy(mcmc_init_fn: Callable, logposterior_fn: Callable, shared_mcmc_step_fn: Callable, num_mcmc_steps: int, n_particles: int, batch_size: int = 0) -&gt; tuple[Callable, int] (jimgw.samplers.blackjax.smc.mutation.EnsembleMutation.update_strategy)" href="./#jimgw.samplers.blackjax.smc.mutation.EnsembleMutation.update_strategy">update_strategy</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>BlackJAX's <code>update_strategy</code>: returns <code>(update_fn, n_particles)</code>.</p>
+                </div>
+              </td>
+            </tr>
+      </tbody>
+    </table>
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="jimgw.samplers.blackjax.smc.mutation.EnsembleMutation.initial_parameter_value" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">initial_parameter_value</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Array</span><span class="p">]</span></code>
+
+<a href="#jimgw.samplers.blackjax.smc.mutation.EnsembleMutation.initial_parameter_value" class="headerlink" title="Permanent link">¤</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Carried parameters for the first mutation (pass through <code>extend_params</code>).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="jimgw.samplers.blackjax.smc.mutation.EnsembleMutation.mcmc_init_fn" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">mcmc_init_fn</span><span class="p">(</span><span class="n">position</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">logdensity_fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span></code>
+
+<a href="#jimgw.samplers.blackjax.smc.mutation.EnsembleMutation.mcmc_init_fn" class="headerlink" title="Permanent link">¤</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>BlackJAX's <code>mcmc_init_fn</code>; never called, as there is no per-particle state.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="jimgw.samplers.blackjax.smc.mutation.EnsembleMutation.mcmc_parameter_update_fn" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">mcmc_parameter_update_fn</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="n">Key</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">''</span><span class="p">],</span> <span class="n">state</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Array</span><span class="p">]</span></code>
+
+<a href="#jimgw.samplers.blackjax.smc.mutation.EnsembleMutation.mcmc_parameter_update_fn" class="headerlink" title="Permanent link">¤</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>BlackJAX's <code>mcmc_parameter_update_fn</code>: carries the parameters forward.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="jimgw.samplers.blackjax.smc.mutation.EnsembleMutation.read_parameters" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">read_parameters</span><span class="p">(</span><span class="o">**</span><span class="n">parameters</span><span class="p">:</span> <span class="n">Array</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Array</span><span class="p">]</span></code>
+
+<a href="#jimgw.samplers.blackjax.smc.mutation.EnsembleMutation.read_parameters" class="headerlink" title="Permanent link">¤</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>BlackJAX's <code>mcmc_step_fn</code>, used only to read the carried parameters.</p>
+<p>BlackJAX binds the carried parameters to <code>mcmc_step_fn</code>;
+<code>update_strategy</code> calls it with no arguments to get them back.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="jimgw.samplers.blackjax.smc.mutation.EnsembleMutation.summary" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">summary</span><span class="p">(</span><span class="n">update_info</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span></code>
+
+<a href="#jimgw.samplers.blackjax.smc.mutation.EnsembleMutation.summary" class="headerlink" title="Permanent link">¤</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>One mutation's numbers as Python values, for the mutation history and logging.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="jimgw.samplers.blackjax.smc.mutation.EnsembleMutation.update_strategy" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">update_strategy</span><span class="p">(</span><span class="n">mcmc_init_fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">logposterior_fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">shared_mcmc_step_fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">num_mcmc_steps</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">n_particles</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Callable</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span></code>
+
+<a href="#jimgw.samplers.blackjax.smc.mutation.EnsembleMutation.update_strategy" class="headerlink" title="Permanent link">¤</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>BlackJAX's <code>update_strategy</code>: returns <code>(update_fn, n_particles)</code>.</p>
+<p><code>update_fn</code> runs one mutation of all particles and returns the moved
+particles and the mutation's <code>info</code> dict.</p>
+
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
 
 
 
@@ -3212,7 +3697,7 @@
       <script id="__config" type="application/json">{"annotate":null,"base":"../../../../../..","features":["content.code.copy","navigation.instant","navigation.tabs","navigation.top","toc.follow","header.autohide"],"redirect":null,"search":"../../../../../../assets/javascripts/workers/search.c47bb847.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","clipboard.error":"Could not copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":{"default":"stable","provider":"mike"}}</script>
     
     
-      <script src="../../../../../../assets/javascripts/bundle.a2388154.min.js"></script>
+      <script src="../../../../../../assets/javascripts/bundle.10ee5ab6.min.js"></script>
       
         <script src="../../../../../../javascripts/mathjax.js"></script>
       

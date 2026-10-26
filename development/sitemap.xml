@@ -100,10 +100,10 @@
         <loc>https://gw-jax-team.github.io/Jim/development/api/jimgw/samplers/blackjax/smc/fixed_tempered/</loc>
       </url>
       <url>
-        <loc>https://gw-jax-team.github.io/Jim/development/api/jimgw/samplers/blackjax/smc/sampler/</loc>
+        <loc>https://gw-jax-team.github.io/Jim/development/api/jimgw/samplers/blackjax/smc/mutation/</loc>
       </url>
       <url>
-        <loc>https://gw-jax-team.github.io/Jim/development/api/jimgw/samplers/blackjax/smc/typing/</loc>
+        <loc>https://gw-jax-team.github.io/Jim/development/api/jimgw/samplers/blackjax/smc/sampler/</loc>
       </url>
       <url>
         <loc>https://gw-jax-team.github.io/Jim/development/api/jimgw/samplers/blackjax/utils/</loc>

@@ -26,7 +26,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="zensical-0.0.71">
+      <meta name="generator" content="zensical-0.0.72">
     
     
       
@@ -37,7 +37,7 @@
       
         
       
-      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.e442bf79.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.4ab2de0c.min.css">
       
         
           
@@ -107,9 +107,10 @@
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-book-open" viewBox="0 0 24 24"><path d="M12 5v16M20.001 19A2 2 0 0 0 22 17V5a2 2 0 0 0-1.999-2L16 3.002A5 5 0 0 0 12 5a5 5 0 0 0-4-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 1.999 2H8a5 5 0 0 1 4 2 5 5 0 0 1 4-2z"/></svg>
 
     </a>
-    <label class="md-header__button md-icon" for="__drawer" aria-label="Navigation">
+    <label class="md-header__button md-icon" for="__drawer">
       
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>
+      <span class="md-visually-hidden">Navigation</span>
     </label>
     <div class="md-header__title" data-md-component="header-title">
       <div class="md-header__ellipsis">
@@ -161,9 +162,10 @@
     
       
       
-        <label class="md-header__button md-icon" for="__search" aria-label="Search">
+        <label class="md-header__button md-icon" for="__search">
           
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+          <span class="md-visually-hidden">Search</span>
         </label>
         <div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
   <button type="button" class="md-search__button">
@@ -2962,14 +2964,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/jimgw/samplers/blackjax/smc/sampler/" class="md-nav__link">
+      <a href="../../api/jimgw/samplers/blackjax/smc/mutation/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  sampler
+  mutation
 
     
   </span>
@@ -2989,14 +2991,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/jimgw/samplers/blackjax/smc/typing/" class="md-nav__link">
+      <a href="../../api/jimgw/samplers/blackjax/smc/sampler/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  typing
+  sampler
 
     
   </span>
@@ -3577,7 +3579,7 @@ Jim applies them to prior samples to obtain the initial positions in sampling sp
 <h2 id="mapping-a-prior-to-the-unit-cube-for-ns-aw">Mapping a prior to the unit cube (for NS AW)<a class="headerlink" href="#mapping-a-prior-to-the-unit-cube-for-ns-aw" title="Permanent link">¤</a></h2>
 <p>The <a href="../samplers/#blackjax-ns-aw">BlackJAX NS AW sampler</a> requires the <strong>sampling space</strong> to be the unit hypercube <code>[0, 1]^n_dims</code>.
 The <code>sample_transforms</code> must map every parameter from its physical support into <code>[0, 1]</code>.
-<a href="#default-transforms"><code>get_default_sample_transforms(prior, ifos, unit_cube=True)</code></a> builds all of the following for the standard prior types; the rest of this section shows what it does, for priors you handle yourself.</p>
+<a href="#default-transforms"><code>get_default_sample_transforms(prior, ifos, space="unit_cube")</code></a> builds all of the following for the standard prior types; the rest of this section shows what it does, for priors you handle yourself.</p>
 <p>The key tool is <code>BoundToBound</code>, which linearly maps <code>[a, b] → [c, d]</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.transforms</span><span class="w"> </span><span class="kn">import</span> <span class="n">BoundToBound</span>
 
@@ -3681,10 +3683,14 @@ The forward direction maps <code>u ∈ (0, 1)</code> to <code>x = mu + sigma * n
 <li><strong>Likelihood transforms.</strong>
   <code>q</code> to <code>eta</code>; J-frame spin angles and spherical spins to Cartesian spins; and a prior given in <code>azimuth</code>/<code>zenith</code> or <code>t_det</code> back to <code>ra</code>/<code>dec</code> and <code>t_c</code>.</li>
 <li><strong>NS AW.</strong>
-  Pass <code>unit_cube=True</code> to <code>get_default_sample_transforms</code> to map every sampled parameter to <code>[0, 1]</code> (see <a href="#mapping-a-prior-to-the-unit-cube-for-ns-aw">above</a> for what that involves).
+  Pass <code>space="unit_cube"</code> to <code>get_default_sample_transforms</code> to map every sampled parameter to <code>[0, 1]</code> (see <a href="#mapping-a-prior-to-the-unit-cube-for-ns-aw">above</a> for what that involves).
   This needs a prior made of <code>UniformPrior</code>, <code>SinePrior</code>, <code>CosinePrior</code>, <code>PowerLawPrior</code>, <code>RayleighPrior</code> and <code>GaussianPrior</code>.
   It also needs a <code>t_det</code> prior (or <code>detector_frame_time=False</code>) rather than <code>t_c</code>, because the delay between <code>t_c</code> and <code>t_det</code> depends on the sky position, so a <code>t_c</code> prior would not fill the unit interval exactly.
   Sampling <code>ra</code>/<code>dec</code> as <code>azimuth</code>/<code>zenith</code> additionally assumes an isotropic sky prior (<code>ra</code> uniform over one period, <code>dec</code> cosine); for any other sky prior, put the prior on <code>azimuth</code>/<code>zenith</code> directly or pass <code>detector_frame_sky=False</code>.</li>
+<li><strong>SMC.</strong>
+  Pass <code>space="unbounded"</code> to map every sampled parameter that does not wrap around to the real line: its unit-cube map, then a logit, so each of these priors becomes a standard logistic distribution.
+  Angles that wrap around (<code>psi</code>, <code>phase_c</code>, <code>azimuth</code>, ...) are left as they are; the SMC sampler handles them itself.
+  A <code>t_c</code> prior sampled in the detector frame gives <code>t_det</code> the <code>t_c</code> range widened by 0.022 s on each side, the largest delay between the geocentre and a detector; the prior is zero outside the true range, so the result is still exact, though <code>t_det</code> is not exactly logistic near its edges.</li>
 </ul>
 <p>These cover the common cases.
 For anything else, write the lists yourself as described above, or start from the default list and add to it.</p>
@@ -3768,7 +3774,7 @@ If <code>likelihood_transforms=[]</code>, the waveform is called with the prior 
       <script id="__config" type="application/json">{"annotate":null,"base":"../..","features":["content.code.copy","navigation.instant","navigation.tabs","navigation.top","toc.follow","header.autohide"],"redirect":null,"search":"../../assets/javascripts/workers/search.c47bb847.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","clipboard.error":"Could not copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":{"default":"stable","provider":"mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.a2388154.min.js"></script>
+      <script src="../../assets/javascripts/bundle.10ee5ab6.min.js"></script>
       
         <script src="../../javascripts/mathjax.js"></script>
       

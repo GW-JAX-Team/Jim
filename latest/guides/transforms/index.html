@@ -15,17 +15,18 @@
         <link rel="canonical" href="https://gw-jax-team.github.io/Jim/latest/guides/transforms/">
       
       
+      
         <link rel="prev" href="../samplers/">
       
       
-        <link rel="next" href="../../FAQ/">
+        <link rel="next" href="../../how-to/">
       
       
         
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="zensical-0.0.69">
+      <meta name="generator" content="zensical-0.0.73">
     
     
       
@@ -36,12 +37,12 @@
       
         
       
-      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.e15858d4.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.4ab2de0c.min.css">
       
         
           
         
-        <link rel="stylesheet" href="../../assets/stylesheets/modern/palette.b27955a4.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/modern/palette.b60ce83d.min.css">
       
       
 
@@ -106,9 +107,10 @@
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-book-open" viewBox="0 0 24 24"><path d="M12 5v16M20.001 19A2 2 0 0 0 22 17V5a2 2 0 0 0-1.999-2L16 3.002A5 5 0 0 0 12 5a5 5 0 0 0-4-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 1.999 2H8a5 5 0 0 1 4 2 5 5 0 0 1 4-2z"/></svg>
 
     </a>
-    <label class="md-header__button md-icon" for="__drawer" aria-label="Navigation">
+    <label class="md-header__button md-icon" for="__drawer">
       
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>
+      <span class="md-visually-hidden">Navigation</span>
     </label>
     <div class="md-header__title" data-md-component="header-title">
       <div class="md-header__ellipsis">
@@ -160,9 +162,10 @@
     
       
       
-        <label class="md-header__button md-icon" for="__search" aria-label="Search">
+        <label class="md-header__button md-icon" for="__search">
           
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+          <span class="md-visually-hidden">Search</span>
         </label>
         <div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
   <button type="button" class="md-search__button">
@@ -285,6 +288,72 @@
           
   
   Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+      
+    
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../how-to/" class="md-tabs__link">
+          
+  
+  How-to
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+      
+    
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../notes/" class="md-tabs__link">
+          
+  
+  Technical Notes
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+      
+    
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../dev/" class="md-tabs__link">
+          
+  
+  Development
 
         </a>
       </li>
@@ -1075,6 +1144,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#default-transforms" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Default transforms
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#passing-transforms-to-jim" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1089,6 +1169,447 @@
   
 </nav>
       
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  How-to
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_6">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  How-to
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how-to/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  How-to
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how-to/reduce_gpu_memory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Reduce GPU Memory Use
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how-to/custom_likelihood/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Use Your Own Likelihood
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Technical Notes
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_7">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Technical Notes
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Technical Notes
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notes/detector_response/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Detector Response Conventions
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notes/detector_presets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Detector Presets
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notes/likelihood_details/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Likelihood Details
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notes/signal_duration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Signal-Duration Check
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notes/samplers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Sampler Details
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Development
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_8">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Development
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Development
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -1198,10 +1719,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12" >
         
           
-          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="0">
             
   
   
@@ -1219,8 +1740,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_9">
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_12">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -1247,10 +1768,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_1" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12_1" >
         
           
-          <label class="md-nav__link" for="__nav_9_1" id="__nav_9_1_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_12_1" id="__nav_12_1_label" tabindex="0">
             
   
   
@@ -1268,8 +1789,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_1_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_9_1">
+          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_12_1_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_12_1">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -1296,10 +1817,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_1_1" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12_1_1" >
         
           
-          <label class="md-nav__link" for="__nav_9_1_1" id="__nav_9_1_1_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_12_1_1" id="__nav_12_1_1_label" tabindex="0">
             
   
   
@@ -1317,8 +1838,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_9_1_1_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_9_1_1">
+          <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_12_1_1_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_12_1_1">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -1453,10 +1974,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_1_1_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12_1_1_5" >
         
           
-          <label class="md-nav__link" for="__nav_9_1_1_5" id="__nav_9_1_1_5_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_12_1_1_5" id="__nav_12_1_1_5_label" tabindex="0">
             
   
   
@@ -1474,8 +1995,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_9_1_1_5_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_9_1_1_5">
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_12_1_1_5_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_12_1_1_5">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -1572,6 +2093,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/jimgw/core/single_event/helpers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  helpers
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/jimgw/core/single_event/likelihood/" class="md-nav__link">
         
   
@@ -1607,6 +2155,33 @@
     
   
   marginalization_config
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/jimgw/core/single_event/mixins/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  mixins
 
     
   </span>
@@ -1898,10 +2473,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_1_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12_1_2" >
         
           
-          <label class="md-nav__link" for="__nav_9_1_2" id="__nav_9_1_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_12_1_2" id="__nav_12_1_2_label" tabindex="0">
             
   
   
@@ -1919,8 +2494,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_9_1_2_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_9_1_2">
+          <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_12_1_2_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_12_1_2">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -1974,10 +2549,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_1_2_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12_1_2_2" >
         
           
-          <label class="md-nav__link" for="__nav_9_1_2_2" id="__nav_9_1_2_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_12_1_2_2" id="__nav_12_1_2_2_label" tabindex="0">
             
   
   
@@ -1995,8 +2570,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_9_1_2_2_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_9_1_2_2">
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_12_1_2_2_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_12_1_2_2">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -2023,10 +2598,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_1_2_2_1" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12_1_2_2_1" >
         
           
-          <label class="md-nav__link" for="__nav_9_1_2_2_1" id="__nav_9_1_2_2_1_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_12_1_2_2_1" id="__nav_12_1_2_2_1_label" tabindex="0">
             
   
   
@@ -2044,8 +2619,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="5" aria-labelledby="__nav_9_1_2_2_1_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_9_1_2_2_1">
+          <nav class="md-nav" data-md-level="5" aria-labelledby="__nav_12_1_2_2_1_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_12_1_2_2_1">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -2189,10 +2764,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_1_2_2_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12_1_2_2_2" >
         
           
-          <label class="md-nav__link" for="__nav_9_1_2_2_2" id="__nav_9_1_2_2_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_12_1_2_2_2" id="__nav_12_1_2_2_2_label" tabindex="0">
             
   
   
@@ -2210,8 +2785,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="5" aria-labelledby="__nav_9_1_2_2_2_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_9_1_2_2_2">
+          <nav class="md-nav" data-md-level="5" aria-labelledby="__nav_12_1_2_2_2_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_12_1_2_2_2">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -2389,14 +2964,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/jimgw/samplers/blackjax/smc/sampler/" class="md-nav__link">
+      <a href="../../api/jimgw/samplers/blackjax/smc/mutation/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  sampler
+  mutation
 
     
   </span>
@@ -2416,14 +2991,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/jimgw/samplers/blackjax/smc/typing/" class="md-nav__link">
+      <a href="../../api/jimgw/samplers/blackjax/smc/sampler/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  typing
+  sampler
 
     
   </span>
@@ -2800,6 +3375,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#default-transforms" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Default transforms
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#passing-transforms-to-jim" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -2882,7 +3468,7 @@ Jim applies them to prior samples to obtain the initial positions in sampling sp
 
 <span class="c1"># Sampler explores (zenith, azimuth) in detector frame instead of (ra, dec)</span>
 <span class="n">sample_transforms</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="n">SkyFrameToDetectorFrameSkyPositionTransform</span><span class="p">(</span><span class="n">trigger_time</span><span class="o">=</span><span class="n">gps_time</span><span class="p">,</span> <span class="n">ifos</span><span class="o">=</span><span class="n">ifos</span><span class="p">),</span>
+    <span class="n">SkyFrameToDetectorFrameSkyPositionTransform</span><span class="p">(</span><span class="n">ifos</span><span class="o">=</span><span class="n">ifos</span><span class="p">),</span>
 <span class="p">]</span>
 </code></pre></div>
 <h2 id="available-transforms">Available Transforms<a class="headerlink" href="#available-transforms" title="Permanent link">¤</a></h2>
@@ -2969,17 +3555,17 @@ Jim applies them to prior samples to obtain the initial positions in sampling sp
 </thead>
 <tbody>
 <tr>
-<td><code>SkyFrameToDetectorFrameSkyPositionTransform(trigger_time, ifos)</code></td>
+<td><code>SkyFrameToDetectorFrameSkyPositionTransform(ifos)</code></td>
 <td><code>(ra, dec) → (zenith, azimuth)</code></td>
 <td>Reduces ra/dec correlation for detector networks</td>
 </tr>
 <tr>
-<td><code>GeocentricArrivalTimeToDetectorArrivalTimeTransform(trigger_time, ifo)</code></td>
+<td><code>GeocentricArrivalTimeToDetectorArrivalTimeTransform(ifo)</code></td>
 <td><code>t_c → t_det</code></td>
 <td>Conditional on ra, dec</td>
 </tr>
 <tr>
-<td><code>GeocentricArrivalPhaseToDetectorArrivalPhaseTransform(trigger_time, ifo)</code></td>
+<td><code>GeocentricArrivalPhaseToDetectorArrivalPhaseTransform(ifo)</code></td>
 <td><code>phase_c → phase_det</code></td>
 <td>Conditional on ra, dec, psi, iota. Assumes dominant quadrupolar mode only (<a href="https://arxiv.org/abs/2207.03508">arXiv:2207.03508</a>); <strong>not valid</strong> for waveforms with higher harmonics or precession.</td>
 </tr>
@@ -2992,7 +3578,8 @@ Jim applies them to prior samples to obtain the initial positions in sampling sp
 </table>
 <h2 id="mapping-a-prior-to-the-unit-cube-for-ns-aw">Mapping a prior to the unit cube (for NS AW)<a class="headerlink" href="#mapping-a-prior-to-the-unit-cube-for-ns-aw" title="Permanent link">¤</a></h2>
 <p>The <a href="../samplers/#blackjax-ns-aw">BlackJAX NS AW sampler</a> requires the <strong>sampling space</strong> to be the unit hypercube <code>[0, 1]^n_dims</code>.
-The <code>sample_transforms</code> must map every parameter from its physical support into <code>[0, 1]</code>.</p>
+The <code>sample_transforms</code> must map every parameter from its physical support into <code>[0, 1]</code>.
+<a href="#default-transforms"><code>get_default_sample_transforms(prior, ifos, space="unit_cube")</code></a> builds all of the following for the standard prior types; the rest of this section shows what it does, for priors you handle yourself.</p>
 <p>The key tool is <code>BoundToBound</code>, which linearly maps <code>[a, b] → [c, d]</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.transforms</span><span class="w"> </span><span class="kn">import</span> <span class="n">BoundToBound</span>
 
@@ -3069,6 +3656,44 @@ The forward direction maps <code>u ∈ (0, 1)</code> to <code>x = mu + sigma * n
     <span class="p">),</span>
 <span class="p">]</span>
 </code></pre></div>
+<h2 id="default-transforms">Default transforms<a class="headerlink" href="#default-transforms" title="Permanent link">¤</a></h2>
+<p>For standard compact-binary analyses you do not need to write the two lists yourself.
+<code>jimgw.core.single_event.helpers</code> derives them from your prior, the same way the <a href="../cli/">CLI</a> does:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.single_event.helpers</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">get_default_likelihood_transforms</span><span class="p">,</span>
+    <span class="n">get_default_sample_transforms</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># ifos must already have their data attached.</span>
+<span class="n">sample_transforms</span> <span class="o">=</span> <span class="n">get_default_sample_transforms</span><span class="p">(</span><span class="n">prior</span><span class="p">,</span> <span class="n">ifos</span><span class="p">)</span>
+<span class="n">likelihood_transforms</span> <span class="o">=</span> <span class="n">get_default_likelihood_transforms</span><span class="p">(</span><span class="n">prior</span><span class="p">,</span> <span class="n">ifos</span><span class="p">,</span> <span class="n">waveform</span><span class="p">)</span>
+
+<span class="n">jim</span> <span class="o">=</span> <span class="n">Jim</span><span class="p">(</span>
+    <span class="n">likelihood</span><span class="p">,</span>
+    <span class="n">prior</span><span class="p">,</span>
+    <span class="n">sampler_config</span><span class="o">=</span><span class="n">FlowMCConfig</span><span class="p">(),</span>
+    <span class="n">sample_transforms</span><span class="o">=</span><span class="n">sample_transforms</span><span class="p">,</span>
+    <span class="n">likelihood_transforms</span><span class="o">=</span><span class="n">likelihood_transforms</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<ul>
+<li><strong>Sample transforms.</strong>
+  <code>t_c</code> is sampled as the arrival time at <code>ifos[0]</code> and <code>ra</code>/<code>dec</code> as <code>azimuth</code>/<code>zenith</code> relative to the first two detectors.
+  Pass <code>detector_frame_time=False</code> or <code>detector_frame_sky=False</code> to sample <code>t_c</code> or <code>ra</code>/<code>dec</code> directly.</li>
+<li><strong>Likelihood transforms.</strong>
+  <code>q</code> to <code>eta</code>; J-frame spin angles and spherical spins to Cartesian spins; and a prior given in <code>azimuth</code>/<code>zenith</code> or <code>t_det</code> back to <code>ra</code>/<code>dec</code> and <code>t_c</code>.</li>
+<li><strong>NS AW.</strong>
+  Pass <code>space="unit_cube"</code> to <code>get_default_sample_transforms</code> to map every sampled parameter to <code>[0, 1]</code> (see <a href="#mapping-a-prior-to-the-unit-cube-for-ns-aw">above</a> for what that involves).
+  This needs a prior made of <code>UniformPrior</code>, <code>SinePrior</code>, <code>CosinePrior</code>, <code>PowerLawPrior</code>, <code>RayleighPrior</code> and <code>GaussianPrior</code>.
+  It also needs a <code>t_det</code> prior (or <code>detector_frame_time=False</code>) rather than <code>t_c</code>, because the delay between <code>t_c</code> and <code>t_det</code> depends on the sky position, so a <code>t_c</code> prior would not fill the unit interval exactly.
+  Sampling <code>ra</code>/<code>dec</code> as <code>azimuth</code>/<code>zenith</code> additionally assumes an isotropic sky prior (<code>ra</code> uniform over one period, <code>dec</code> cosine); for any other sky prior, put the prior on <code>azimuth</code>/<code>zenith</code> directly or pass <code>detector_frame_sky=False</code>.</li>
+<li><strong>SMC.</strong>
+  Pass <code>space="unbounded"</code> to map every sampled parameter that does not wrap around to the real line: its unit-cube map, then a logit, so each of these priors becomes a standard logistic distribution.
+  Angles that wrap around (<code>psi</code>, <code>phase_c</code>, <code>azimuth</code>, ...) are left as they are; the SMC sampler handles them itself.
+  A <code>t_c</code> prior sampled in the detector frame gives <code>t_det</code> the <code>t_c</code> range widened by 0.022 s on each side, the largest delay between the geocentre and a detector; the prior is zero outside the true range, so the result is still exact, though <code>t_det</code> is not exactly logistic near its edges.</li>
+</ul>
+<p>These cover the common cases.
+For anything else, write the lists yourself as described above, or start from the default list and add to it.</p>
 <h2 id="passing-transforms-to-jim">Passing Transforms to Jim<a class="headerlink" href="#passing-transforms-to-jim" title="Permanent link">¤</a></h2>
 <p>Both lists are passed to the <code>Jim</code> constructor:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.jim</span><span class="w"> </span><span class="kn">import</span> <span class="n">Jim</span>
@@ -3146,10 +3771,10 @@ If <code>likelihood_transforms=[]</code>, the waveform is called with the prior 
       
         
         
-      <script id="__config" type="application/json">{"annotate":null,"base":"../..","features":["content.code.copy","navigation.instant","navigation.tabs","navigation.top","toc.follow","header.autohide"],"redirect":null,"search":"../../assets/javascripts/workers/search.7d14d953.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","clipboard.error":"Could not copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":{"default":"stable","provider":"mike"}}</script>
+      <script id="__config" type="application/json">{"annotate":null,"base":"../..","features":["content.code.copy","navigation.instant","navigation.tabs","navigation.top","toc.follow","header.autohide"],"redirect":null,"search":"../../assets/javascripts/workers/search.c47bb847.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","clipboard.error":"Could not copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":{"default":"stable","provider":"mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.8b1c90bd.min.js"></script>
+      <script src="../../assets/javascripts/bundle.77dd0ce9.min.js"></script>
       
         <script src="../../javascripts/mathjax.js"></script>
       

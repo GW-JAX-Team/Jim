@@ -15,6 +15,7 @@
         <link rel="canonical" href="https://gw-jax-team.github.io/Jim/latest/guides/data/">
       
       
+      
         <link rel="prev" href="../cli/">
       
       
@@ -25,7 +26,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="zensical-0.0.69">
+      <meta name="generator" content="zensical-0.0.73">
     
     
       
@@ -36,12 +37,12 @@
       
         
       
-      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.e15858d4.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.4ab2de0c.min.css">
       
         
           
         
-        <link rel="stylesheet" href="../../assets/stylesheets/modern/palette.b27955a4.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/modern/palette.b60ce83d.min.css">
       
       
 
@@ -106,9 +107,10 @@
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-book-open" viewBox="0 0 24 24"><path d="M12 5v16M20.001 19A2 2 0 0 0 22 17V5a2 2 0 0 0-1.999-2L16 3.002A5 5 0 0 0 12 5a5 5 0 0 0-4-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 1.999 2H8a5 5 0 0 1 4 2 5 5 0 0 1 4-2z"/></svg>
 
     </a>
-    <label class="md-header__button md-icon" for="__drawer" aria-label="Navigation">
+    <label class="md-header__button md-icon" for="__drawer">
       
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>
+      <span class="md-visually-hidden">Navigation</span>
     </label>
     <div class="md-header__title" data-md-component="header-title">
       <div class="md-header__ellipsis">
@@ -160,9 +162,10 @@
     
       
       
-        <label class="md-header__button md-icon" for="__search" aria-label="Search">
+        <label class="md-header__button md-icon" for="__search">
           
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+          <span class="md-visually-hidden">Search</span>
         </label>
         <div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
   <button type="button" class="md-search__button">
@@ -285,6 +288,72 @@
           
   
   Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+      
+    
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../how-to/" class="md-tabs__link">
+          
+  
+  How-to
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+      
+    
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../notes/" class="md-tabs__link">
+          
+  
+  Technical Notes
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+      
+    
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../dev/" class="md-tabs__link">
+          
+  
+  Development
 
         </a>
       </li>
@@ -854,55 +923,16 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Load from File">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#numpy-archive-npz" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        NumPy archive (<code>.npz</code>)
-      </span>
-    </span>
-  </a>
-  
 </li>
         
           <li class="md-nav__item">
-  <a href="#gwf-lal-frame-file-gwf" class="md-nav__link">
+  <a href="#construct-from-time-domain-arrays" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        GWF / LAL frame file (<code>.gwf</code>)
+        Construct from Time-Domain Arrays
       </span>
     </span>
   </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#hdf5-file-hdf5-h5" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        HDF5 file (<code>.hdf5</code> / <code>.h5</code>)
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#csv-file-csv" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        CSV file (<code>.csv</code>)
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
         
@@ -934,6 +964,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#frequency-range-of-the-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Frequency range of the data
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#psd" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -946,10 +987,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#default-gwtc-2-asd" class="md-nav__link">
+  <a href="#default-design-sensitivity-asd" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Default GWTC-2 ASD
+        Default design-sensitivity ASD
       </span>
     </span>
   </a>
@@ -964,34 +1005,6 @@
       </span>
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Load from a file">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#one-liner-load_and_set_psd" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        One-liner: <code>load_and_set_psd</code>
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#explicit-powerspectrumfrom_file-set_psd" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Explicit: <code>PowerSpectrum.from_file</code> + <code>set_psd</code>
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
         
@@ -1012,10 +1025,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#injecting-a-simulated-signal" class="md-nav__link">
+  <a href="#injecting-simulated-signals" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Injecting a Simulated Signal
+        Injecting Simulated Signals
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-generation-detectors" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Next-Generation Detectors
       </span>
     </span>
   </a>
@@ -1153,6 +1177,447 @@
   
   
   
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  How-to
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_6">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  How-to
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how-to/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  How-to
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how-to/reduce_gpu_memory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Reduce GPU Memory Use
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how-to/custom_likelihood/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Use Your Own Likelihood
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Technical Notes
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_7">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Technical Notes
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Technical Notes
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notes/detector_response/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Detector Response Conventions
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notes/detector_presets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Detector Presets
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notes/likelihood_details/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Likelihood Details
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notes/signal_duration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Signal-Duration Check
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notes/samplers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Sampler Details
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Development
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_8">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Development
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Development
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     <li class="md-nav__item">
       <a href="../../FAQ/" class="md-nav__link">
         
@@ -1243,10 +1708,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12" >
         
           
-          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="0">
             
   
   
@@ -1264,8 +1729,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_9">
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_12">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -1292,10 +1757,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_1" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12_1" >
         
           
-          <label class="md-nav__link" for="__nav_9_1" id="__nav_9_1_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_12_1" id="__nav_12_1_label" tabindex="0">
             
   
   
@@ -1313,8 +1778,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_1_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_9_1">
+          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_12_1_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_12_1">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -1341,10 +1806,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_1_1" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12_1_1" >
         
           
-          <label class="md-nav__link" for="__nav_9_1_1" id="__nav_9_1_1_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_12_1_1" id="__nav_12_1_1_label" tabindex="0">
             
   
   
@@ -1362,8 +1827,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_9_1_1_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_9_1_1">
+          <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_12_1_1_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_12_1_1">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -1498,10 +1963,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_1_1_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12_1_1_5" >
         
           
-          <label class="md-nav__link" for="__nav_9_1_1_5" id="__nav_9_1_1_5_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_12_1_1_5" id="__nav_12_1_1_5_label" tabindex="0">
             
   
   
@@ -1519,8 +1984,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_9_1_1_5_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_9_1_1_5">
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_12_1_1_5_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_12_1_1_5">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -1617,6 +2082,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/jimgw/core/single_event/helpers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  helpers
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/jimgw/core/single_event/likelihood/" class="md-nav__link">
         
   
@@ -1652,6 +2144,33 @@
     
   
   marginalization_config
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/jimgw/core/single_event/mixins/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  mixins
 
     
   </span>
@@ -1943,10 +2462,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_1_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12_1_2" >
         
           
-          <label class="md-nav__link" for="__nav_9_1_2" id="__nav_9_1_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_12_1_2" id="__nav_12_1_2_label" tabindex="0">
             
   
   
@@ -1964,8 +2483,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_9_1_2_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_9_1_2">
+          <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_12_1_2_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_12_1_2">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -2019,10 +2538,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_1_2_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12_1_2_2" >
         
           
-          <label class="md-nav__link" for="__nav_9_1_2_2" id="__nav_9_1_2_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_12_1_2_2" id="__nav_12_1_2_2_label" tabindex="0">
             
   
   
@@ -2040,8 +2559,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_9_1_2_2_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_9_1_2_2">
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_12_1_2_2_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_12_1_2_2">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -2068,10 +2587,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_1_2_2_1" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12_1_2_2_1" >
         
           
-          <label class="md-nav__link" for="__nav_9_1_2_2_1" id="__nav_9_1_2_2_1_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_12_1_2_2_1" id="__nav_12_1_2_2_1_label" tabindex="0">
             
   
   
@@ -2089,8 +2608,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="5" aria-labelledby="__nav_9_1_2_2_1_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_9_1_2_2_1">
+          <nav class="md-nav" data-md-level="5" aria-labelledby="__nav_12_1_2_2_1_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_12_1_2_2_1">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -2234,10 +2753,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_1_2_2_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12_1_2_2_2" >
         
           
-          <label class="md-nav__link" for="__nav_9_1_2_2_2" id="__nav_9_1_2_2_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_12_1_2_2_2" id="__nav_12_1_2_2_2_label" tabindex="0">
             
   
   
@@ -2255,8 +2774,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="5" aria-labelledby="__nav_9_1_2_2_2_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_9_1_2_2_2">
+          <nav class="md-nav" data-md-level="5" aria-labelledby="__nav_12_1_2_2_2_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_12_1_2_2_2">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -2434,14 +2953,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/jimgw/samplers/blackjax/smc/sampler/" class="md-nav__link">
+      <a href="../../api/jimgw/samplers/blackjax/smc/mutation/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  sampler
+  mutation
 
     
   </span>
@@ -2461,14 +2980,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/jimgw/samplers/blackjax/smc/typing/" class="md-nav__link">
+      <a href="../../api/jimgw/samplers/blackjax/smc/sampler/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-  typing
+  sampler
 
     
   </span>
@@ -2732,55 +3251,16 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Load from File">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#numpy-archive-npz" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        NumPy archive (<code>.npz</code>)
-      </span>
-    </span>
-  </a>
-  
 </li>
         
           <li class="md-nav__item">
-  <a href="#gwf-lal-frame-file-gwf" class="md-nav__link">
+  <a href="#construct-from-time-domain-arrays" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        GWF / LAL frame file (<code>.gwf</code>)
+        Construct from Time-Domain Arrays
       </span>
     </span>
   </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#hdf5-file-hdf5-h5" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        HDF5 file (<code>.hdf5</code> / <code>.h5</code>)
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#csv-file-csv" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        CSV file (<code>.csv</code>)
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
         
@@ -2812,6 +3292,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#frequency-range-of-the-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Frequency range of the data
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#psd" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -2824,10 +3315,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#default-gwtc-2-asd" class="md-nav__link">
+  <a href="#default-design-sensitivity-asd" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Default GWTC-2 ASD
+        Default design-sensitivity ASD
       </span>
     </span>
   </a>
@@ -2842,34 +3333,6 @@
       </span>
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Load from a file">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#one-liner-load_and_set_psd" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        One-liner: <code>load_and_set_psd</code>
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#explicit-powerspectrumfrom_file-set_psd" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Explicit: <code>PowerSpectrum.from_file</code> + <code>set_psd</code>
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
         
@@ -2890,10 +3353,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#injecting-a-simulated-signal" class="md-nav__link">
+  <a href="#injecting-simulated-signals" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Injecting a Simulated Signal
+        Injecting Simulated Signals
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-generation-detectors" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Next-Generation Detectors
       </span>
     </span>
   </a>
@@ -2933,18 +3407,18 @@ Jim ships with convenience constructors for common detectors — LIGO Hanford (<
 <p>You can also retrieve all presets at once as a dictionary with <code>get_detector_preset()</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.single_event.detector</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_detector_preset</span>
 
-<span class="n">detectors</span> <span class="o">=</span> <span class="n">get_detector_preset</span><span class="p">()</span>  <span class="c1"># {"H1": ..., "L1": ..., "V1": ..., "ET": ..., "CE": ...}</span>
+<span class="n">detectors</span> <span class="o">=</span> <span class="n">get_detector_preset</span><span class="p">()</span>  <span class="c1"># {"H1": ..., "L1": ..., "V1": ..., "ET": ..., "ET_2L": ..., "CE": ...}</span>
 <span class="n">H1</span> <span class="o">=</span> <span class="n">detectors</span><span class="p">[</span><span class="s2">"H1"</span><span class="p">]</span>
 </code></pre></div>
-<p>Note that <code>get_ET()</code> returns a <strong>list</strong> of three <code>GroundBased2G</code> objects (one for each of ET's triangular arms), while all others return a single detector.</p>
+<p>Note that <code>get_ET()</code> returns a <strong>list</strong> of three detectors (one for each of ET's triangular arms) and <code>get_ET_2L()</code> a list of two, while all others return a single detector.</p>
 <p>Once you have a detector, you need to attach strain data and a PSD to it.</p>
 <h2 id="loading-data">Loading Data<a class="headerlink" href="#loading-data" title="Permanent link">¤</a></h2>
 <h3 id="fetch-from-gwosc">Fetch from GWOSC<a class="headerlink" href="#fetch-from-gwosc" title="Permanent link">¤</a></h3>
 <p>Use <code>Data.from_gwosc()</code> to download public strain data from the <a href="https://gwosc.org/">Gravitational Wave Open Science Center</a>:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.single_event.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">Data</span>
 
-<span class="n">gps_start</span> <span class="o">=</span> <span class="mi">1126259446</span>
-<span class="n">gps_end</span> <span class="o">=</span> <span class="mi">1126259478</span>
+<span class="n">gps_start</span> <span class="o">=</span> <span class="mf">1126259432.4</span>
+<span class="n">gps_end</span> <span class="o">=</span> <span class="mf">1126259464.4</span>
 
 <span class="n">data</span> <span class="o">=</span> <span class="n">Data</span><span class="o">.</span><span class="n">from_gwosc</span><span class="p">(</span><span class="s2">"H1"</span><span class="p">,</span> <span class="n">gps_start</span><span class="p">,</span> <span class="n">gps_end</span><span class="p">)</span>
 <span class="n">H1</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
@@ -2976,8 +3450,16 @@ If omitted, a set of common LIGO/Virgo channel names is tried automatically:</p>
 <div class="highlight"><pre><span></span><code><span class="n">data</span> <span class="o">=</span> <span class="n">Data</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">"path/to/data.csv"</span><span class="p">)</span>
 <span class="n">H1</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 </code></pre></div>
+<h3 id="construct-from-time-domain-arrays">Construct from Time-Domain Arrays<a class="headerlink" href="#construct-from-time-domain-arrays" title="Permanent link">¤</a></h3>
+<p>Use <code>Data.from_td()</code> when you already have time-domain strain:</p>
+<div class="highlight"><pre><span></span><code><span class="n">gps_time</span> <span class="o">=</span> <span class="mf">1126259462.4</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">Data</span><span class="o">.</span><span class="n">from_td</span><span class="p">(</span>
+    <span class="n">td_strain</span><span class="p">,</span> <span class="n">delta_t</span><span class="o">=</span><span class="mf">1.0</span> <span class="o">/</span> <span class="mi">4096</span><span class="p">,</span> <span class="n">start_time</span><span class="o">=</span><span class="n">gps_start</span><span class="p">,</span> <span class="n">trigger_time</span><span class="o">=</span><span class="n">gps_time</span>
+<span class="p">)</span>
+<span class="n">H1</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+</code></pre></div>
 <h3 id="construct-from-frequency-domain-arrays">Construct from Frequency-Domain Arrays<a class="headerlink" href="#construct-from-frequency-domain-arrays" title="Permanent link">¤</a></h3>
-<p>Use <code>Data.from_fd()</code> when you already have frequency-domain strain (e.g. from your own pipeline).
+<p>Use <code>Data.from_fd()</code> when you already have frequency-domain strain.
 The frequency array must form a valid rfft grid:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
 
@@ -2986,16 +3468,10 @@ The frequency array must form a valid rfft grid:</p>
 <span class="n">n</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">duration</span> <span class="o">*</span> <span class="n">sampling_frequency</span><span class="p">)</span>
 <span class="n">frequencies</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">rfftfreq</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">sampling_frequency</span><span class="p">)</span>
 
-<span class="n">fd_strain</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">frequencies</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">complex128</span><span class="p">)</span>  <span class="c1"># replace with your data</span>
-<span class="n">data</span> <span class="o">=</span> <span class="n">Data</span><span class="o">.</span><span class="n">from_fd</span><span class="p">(</span><span class="n">fd_strain</span><span class="p">,</span> <span class="n">frequencies</span><span class="p">,</span> <span class="n">start_time</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+<span class="n">fd</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">frequencies</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">complex128</span><span class="p">)</span>  <span class="c1"># replace with your data</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">Data</span><span class="o">.</span><span class="n">from_fd</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">frequencies</span><span class="p">,</span> <span class="n">start_time</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
 <span class="n">H1</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 </code></pre></div>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>The frequency array <strong>must</strong> come from <code>jnp.fft.rfftfreq</code>.
-Internally, <code>from_fd</code> reconstructs the full rfft grid and asserts it matches yours exactly.
-<code>jnp.linspace</code> produces floating-point values via a different arithmetic path, so the equality check will fail even for a nominally identical grid.</p>
-</div>
 <h2 id="time-domain-windowing">Time-domain windowing<a class="headerlink" href="#time-domain-windowing" title="Permanent link">¤</a></h2>
 <p>Time-domain data is multiplied by a Tukey window before its Fourier transform.
 This applies only to time-domain inputs: configure the window immediately after creating or loading the data, before starting frequency-domain analysis.
@@ -3015,12 +3491,58 @@ Consequently, the default requires a segment at least 0.8 seconds long.</p>
 <span class="n">time_data</span><span class="o">.</span><span class="n">set_tukey_window</span><span class="p">(</span><span class="n">roll_off</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>  <span class="c1"># seconds on each side</span>
 <span class="c1"># time_data.set_tukey_window(alpha=0.1)   # direct scipy Tukey parameter</span>
 </code></pre></div>
+<h2 id="frequency-range-of-the-data">Frequency range of the data<a class="headerlink" href="#frequency-range-of-the-data" title="Permanent link">¤</a></h2>
+<p>Each detector's data carry a frequency range, the range of frequencies on which they are used.
+<code>set_zero_noise</code> and <code>simulate_and_set_noise</code> set it from their <code>f_min</code> and <code>f_max</code> arguments.
+Data from GWOSC or from <code>Data.from_td</code> do not restrict it, so for them you give <code>f_min</code> and <code>f_max</code> to the likelihood; a <code>.npz</code> file written by <code>to_file</code> keeps the range it was saved with.
+Only injecting into such data needs the range on the data, see <a href="#injecting-simulated-signals">Injecting Simulated Signals</a>.
+A likelihood takes its <code>f_min</code> and <code>f_max</code> from the range of the data unless you pass them, and they may be narrower than the range of the data but not wider.
+Because waveforms are not defined at 0 Hz, data without a range need a positive <code>f_min</code> in the likelihood.</p>
 <h2 id="psd">PSD<a class="headerlink" href="#psd" title="Permanent link">¤</a></h2>
 <p>Before you can evaluate a likelihood, each detector also needs a power spectral density (PSD).</p>
-<h3 id="default-gwtc-2-asd">Default GWTC-2 ASD<a class="headerlink" href="#default-gwtc-2-asd" title="Permanent link">¤</a></h3>
-<p>The simplest approach downloads and sets the default GWTC-2 ASD for the detector:</p>
+<h3 id="default-design-sensitivity-asd">Default design-sensitivity ASD<a class="headerlink" href="#default-design-sensitivity-asd" title="Permanent link">¤</a></h3>
+<p>With no arguments, <code>load_and_set_psd</code> sets the design-sensitivity ASD that Jim ships for the detector:</p>
 <div class="highlight"><pre><span></span><code><span class="n">H1</span><span class="o">.</span><span class="n">load_and_set_psd</span><span class="p">()</span>
 </code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Detector</th>
+<th>Curve</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>H1, L1</td>
+<td>Advanced LIGO design</td>
+<td>LIGO-T1800044 (Barsotti, Fritschel, Evans, Gras)</td>
+</tr>
+<tr>
+<td>V1</td>
+<td>Advanced Virgo design</td>
+<td>LIGO-P1200087-v42 (LIGO Scientific Collaboration and Virgo Collaboration)</td>
+</tr>
+<tr>
+<td>ET1, ET2, ET3</td>
+<td>Einstein Telescope 10 km baseline</td>
+<td>ET-0482A-25 (ETO Design Task Force)</td>
+</tr>
+<tr>
+<td>ET_Sar, ET_EMR</td>
+<td>Einstein Telescope 15 km baseline</td>
+<td>ET-0482A-25 (ETO Design Task Force)</td>
+</tr>
+<tr>
+<td>CE</td>
+<td>Cosmic Explorer 40 km</td>
+<td>CE-T2000017 (Cosmic Explorer Project)</td>
+</tr>
+</tbody>
+</table>
+<p>Links, versions, frequency ranges and checksums are in the <a href="https://github.com/GW-JAX-Team/Jim/blob/main/src/jimgw/core/single_event/noise_curves/README.md">noise curve README</a>.
+Outside the frequency range of a curve, the value at its nearest end is used, so keep the frequency range of your data inside it.
+Please cite the source documents when you use these curves.</p>
 <h3 id="load-from-a-file">Load from a file<a class="headerlink" href="#load-from-a-file" title="Permanent link">¤</a></h3>
 <p>There are two ways to load a PSD from a local file, depending on how much control you need.</p>
 <h4 id="one-liner-load_and_set_psd">One-liner: <code>load_and_set_psd</code><a class="headerlink" href="#one-liner-load_and_set_psd" title="Permanent link">¤</a></h4>
@@ -3085,9 +3607,9 @@ Supported formats:</p>
 
 <span class="n">H1</span><span class="o">.</span><span class="n">set_psd</span><span class="p">(</span><span class="n">PowerSpectrum</span><span class="p">(</span><span class="n">psd_values</span><span class="p">,</span> <span class="n">frequencies</span><span class="p">))</span>
 </code></pre></div>
-<h2 id="injecting-a-simulated-signal">Injecting a Simulated Signal<a class="headerlink" href="#injecting-a-simulated-signal" title="Permanent link">¤</a></h2>
-<p>For testing and validation, you can inject a waveform directly into a detector.
-Set the PSD and frequency bounds first, then call <code>inject_signal</code>.</p>
+<h2 id="injecting-simulated-signals">Injecting Simulated Signals<a class="headerlink" href="#injecting-simulated-signals" title="Permanent link">¤</a></h2>
+<p>For testing and validation, you can inject waveforms directly into a detector.
+Set the PSD first, create the data segment, then call <code>inject_signal</code> once per signal.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.single_event.waveform</span><span class="w"> </span><span class="kn">import</span> <span class="n">RippleIMRPhenomD</span>
 
@@ -3104,18 +3626,44 @@ Set the PSD and frequency bounds first, then call <code>inject_signal</code>.</p
     <span class="s2">"psi"</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">,</span> <span class="s2">"ra"</span><span class="p">:</span> <span class="mf">1.5</span><span class="p">,</span> <span class="s2">"dec"</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span>
 <span class="p">}</span>
 
-<span class="n">H1</span><span class="o">.</span><span class="n">inject_signal</span><span class="p">(</span>
+<span class="n">H1</span><span class="o">.</span><span class="n">simulate_and_set_noise</span><span class="p">(</span>
     <span class="n">duration</span><span class="o">=</span><span class="mf">4.0</span><span class="p">,</span>
     <span class="n">sampling_frequency</span><span class="o">=</span><span class="mf">2048.0</span><span class="p">,</span>
     <span class="n">trigger_time</span><span class="o">=</span><span class="n">gps_time</span><span class="p">,</span>
-    <span class="n">waveform_model</span><span class="o">=</span><span class="n">waveform</span><span class="p">,</span>
-    <span class="n">parameters</span><span class="o">=</span><span class="n">injection_params</span><span class="p">,</span>
     <span class="n">f_min</span><span class="o">=</span><span class="mf">20.0</span><span class="p">,</span>
     <span class="n">f_max</span><span class="o">=</span><span class="mf">1024.0</span><span class="p">,</span>
     <span class="n">rng_key</span><span class="o">=</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">key</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
 <span class="p">)</span>
+<span class="n">optimal_snr</span><span class="p">,</span> <span class="n">match_filtered_snr</span> <span class="o">=</span> <span class="n">H1</span><span class="o">.</span><span class="n">inject_signal</span><span class="p">(</span><span class="n">waveform</span><span class="p">,</span> <span class="n">injection_params</span><span class="p">)</span>
 </code></pre></div>
-<p>Set <code>zero_noise=True</code> to get a noiseless injection.</p>
+<p>Use <code>set_zero_noise</code> instead of <code>simulate_and_set_noise</code> for a noiseless injection.
+<code>inject_signal</code> cuts the signal to the frequency range of the data, which these two functions set.
+To inject into other data, such as data from GWOSC, set the range first (rarely needed):</p>
+<p><div class="highlight"><pre><span></span><code><span class="n">H1</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">frequency_bounds</span> <span class="o">=</span> <span class="p">(</span><span class="mf">20.0</span><span class="p">,</span> <span class="mf">1024.0</span><span class="p">)</span>
+<span class="n">H1</span><span class="o">.</span><span class="n">inject_signal</span><span class="p">(</span><span class="n">waveform</span><span class="p">,</span> <span class="n">injection_params</span><span class="p">)</span>
+</code></pre></div>
+<code>inject_signal</code> returns the optimal SNR of the signal and its matched-filter SNR against all the data.
+Each call adds one signal to whatever the detector holds, so a second call adds an overlapping signal to the same data:</p>
+<div class="highlight"><pre><span></span><code><span class="n">second_params</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="n">injection_params</span><span class="p">,</span> <span class="s2">"M_c"</span><span class="p">:</span> <span class="mf">22.0</span><span class="p">,</span> <span class="s2">"eta"</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span> <span class="s2">"d_L"</span><span class="p">:</span> <span class="mf">300.0</span><span class="p">,</span> <span class="s2">"t_c"</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">}</span>
+<span class="n">H1</span><span class="o">.</span><span class="n">inject_signal</span><span class="p">(</span><span class="n">waveform</span><span class="p">,</span> <span class="n">second_params</span><span class="p">)</span>
+</code></pre></div>
+<h2 id="next-generation-detectors">Next-Generation Detectors<a class="headerlink" href="#next-generation-detectors" title="Permanent link">¤</a></h2>
+<p><code>get_ET()</code>, <code>get_ET_2L()</code> and <code>get_CE()</code> return <code>GroundBased3G</code> detectors, which respond like <code>GroundBased2G</code> unless you turn on one of two options:</p>
+<ul>
+<li><code>earth_rotation=True</code> follows the Earth's rotation while the signal is in band.
+  Turn it on for signals that stay in band for ten minutes or longer, such as binary neutron stars observed from about 10 Hz or lower, or for a few minutes if the signal is very loud.
+  It needs <code>M_c</code>, <code>eta</code>, <code>s1_z</code> and <code>s2_z</code> among the likelihood parameters.</li>
+<li><code>finite_arm_length=True</code> does not assume, as the usual antenna pattern does, that the arms are short compared to the gravitational wavelength.
+  The effect grows with frequency and arm length, so turn it on for loud signals (SNR of a few hundred or more) with power at high frequencies, more so for the 40 km arms of CE than for the 10 km arms of ET.
+  Unlike the rotation, it does not depend on the duration of the signal.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jimgw.core.single_event.detector</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_ET</span>
+
+<span class="n">ET</span> <span class="o">=</span> <span class="n">get_ET</span><span class="p">(</span><span class="n">earth_rotation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">finite_arm_length</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+<p>Both are off by default.
+Switching either on makes the likelihood more expensive.
+The phase convention of the finite-arm-length response is given in the <a href="../../notes/detector_response/#finite-arm-length-phase-convention">technical notes</a>.</p>
 
 
 
@@ -3177,10 +3725,10 @@ Set the PSD and frequency bounds first, then call <code>inject_signal</code>.</p
       
         
         
-      <script id="__config" type="application/json">{"annotate":null,"base":"../..","features":["content.code.copy","navigation.instant","navigation.tabs","navigation.top","toc.follow","header.autohide"],"redirect":null,"search":"../../assets/javascripts/workers/search.7d14d953.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","clipboard.error":"Could not copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":{"default":"stable","provider":"mike"}}</script>
+      <script id="__config" type="application/json">{"annotate":null,"base":"../..","features":["content.code.copy","navigation.instant","navigation.tabs","navigation.top","toc.follow","header.autohide"],"redirect":null,"search":"../../assets/javascripts/workers/search.c47bb847.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","clipboard.error":"Could not copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":{"default":"stable","provider":"mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.8b1c90bd.min.js"></script>
+      <script src="../../assets/javascripts/bundle.77dd0ce9.min.js"></script>
       
         <script src="../../javascripts/mathjax.js"></script>
       

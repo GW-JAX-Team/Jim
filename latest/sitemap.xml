@@ -28,10 +28,16 @@
         <loc>https://gw-jax-team.github.io/Jim/latest/api/jimgw/core/single_event/detector/</loc>
       </url>
       <url>
+        <loc>https://gw-jax-team.github.io/Jim/latest/api/jimgw/core/single_event/helpers/</loc>
+      </url>
+      <url>
         <loc>https://gw-jax-team.github.io/Jim/latest/api/jimgw/core/single_event/likelihood/</loc>
       </url>
       <url>
         <loc>https://gw-jax-team.github.io/Jim/latest/api/jimgw/core/single_event/marginalization_config/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/latest/api/jimgw/core/single_event/mixins/</loc>
       </url>
       <url>
         <loc>https://gw-jax-team.github.io/Jim/latest/api/jimgw/core/single_event/polarization/</loc>
@@ -94,10 +100,10 @@
         <loc>https://gw-jax-team.github.io/Jim/latest/api/jimgw/samplers/blackjax/smc/fixed_tempered/</loc>
       </url>
       <url>
-        <loc>https://gw-jax-team.github.io/Jim/latest/api/jimgw/samplers/blackjax/smc/sampler/</loc>
+        <loc>https://gw-jax-team.github.io/Jim/latest/api/jimgw/samplers/blackjax/smc/mutation/</loc>
       </url>
       <url>
-        <loc>https://gw-jax-team.github.io/Jim/latest/api/jimgw/samplers/blackjax/smc/typing/</loc>
+        <loc>https://gw-jax-team.github.io/Jim/latest/api/jimgw/samplers/blackjax/smc/sampler/</loc>
       </url>
       <url>
         <loc>https://gw-jax-team.github.io/Jim/latest/api/jimgw/samplers/blackjax/utils/</loc>
@@ -121,6 +127,9 @@
         <loc>https://gw-jax-team.github.io/Jim/latest/contributing/</loc>
       </url>
       <url>
+        <loc>https://gw-jax-team.github.io/Jim/latest/dev/</loc>
+      </url>
+      <url>
         <loc>https://gw-jax-team.github.io/Jim/latest/guides/</loc>
       </url>
       <url>
@@ -142,7 +151,34 @@
         <loc>https://gw-jax-team.github.io/Jim/latest/guides/transforms/</loc>
       </url>
       <url>
+        <loc>https://gw-jax-team.github.io/Jim/latest/how-to/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/latest/how-to/custom_likelihood/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/latest/how-to/reduce_gpu_memory/</loc>
+      </url>
+      <url>
         <loc>https://gw-jax-team.github.io/Jim/latest/installation/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/latest/notes/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/latest/notes/detector_presets/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/latest/notes/detector_response/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/latest/notes/likelihood_details/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/latest/notes/samplers/</loc>
+      </url>
+      <url>
+        <loc>https://gw-jax-team.github.io/Jim/latest/notes/signal_duration/</loc>
       </url>
       <url>
         <loc>https://gw-jax-team.github.io/Jim/latest/quickstart/</loc>

@@ -1,13 +1,10 @@
-"""Mode FT: plain (non-persistent) tempered SMC over an explicit ladder (``tempered_smc``)."""
+"""Mode FT: plain (non-persistent) tempered SMC over an explicit ladder (``tempered_smc`` + ``inner_kernel_tuning``)."""
 
 import time
 
 import jax
-import jax.numpy as jnp
 import numpy as np
-from blackjax import rmh, tempered_smc
-from blackjax.smc import extend_params
-from blackjax.smc.resampling import systematic
+from blackjax import inner_kernel_tuning, tempered_smc
 from jaxtyping import Array, Key
 
 from jimgw.samplers.blackjax.smc import diagnostics
@@ -30,26 +27,13 @@ class FixedTemperedSMCSampler(_BlackJAXSMCBase):
         config = self._config
         ladder = config.temperature_ladder
         assert ladder is not None
-        n_mcmc_steps = config.n_mcmc_steps_per_dim * self.n_dims
         tempering_parameters = ladder[1:]  # skip 0.0
         n_temperature_steps = len(tempering_parameters)
         checkpoint_path, run_start_time = prepare_checkpointing(config)
-        log_label = f"{self.sampler_name} ({self.mode.upper()})"
 
-        mcmc_step = self._build_mcmc_step()
-        initial_covariance = (
-            jnp.atleast_2d(jnp.cov(initial_particles.T)) * config.initial_cov_scale
-        )
-
-        smc_algorithm = tempered_smc(
-            logprior_fn=self._log_prior_fn,
-            loglikelihood_fn=self._log_likelihood_fn,
-            mcmc_step_fn=mcmc_step,
-            mcmc_init_fn=rmh.init,
-            mcmc_parameters=extend_params({"cov": initial_covariance}),  # ty: ignore[invalid-argument-type]  # blackjax stubs: extend_params accepts dict
-            resampling_fn=systematic,
-            num_mcmc_steps=n_mcmc_steps,
-            batch_size=config.batch_size,
+        smc_algorithm = inner_kernel_tuning(
+            smc_algorithm=tempered_smc,
+            **self._common_arguments(),
         )
 
         state, rng_key, n_completed_iterations, mode_checkpoint_data = (
@@ -60,18 +44,21 @@ class FixedTemperedSMCSampler(_BlackJAXSMCBase):
                 rng_key,
                 initial_particles,
                 smc_algorithm.init,
-                initial_extra={"accept_history": [], "is_weights_history": []},
+                initial_extra={
+                    "mutation_history": self._new_mutation_history(),
+                    "is_weights_history": [],
+                },
                 load_extra=lambda checkpoint: {
-                    "accept_history": list(checkpoint["accept_history"]),
+                    "mutation_history": checkpoint["mutation_history"],
                     "is_weights_history": list(checkpoint["is_weights_history"]),
                 },
-                log_label=log_label,
+                log_label=self._log_label,
                 is_stale=lambda n_iter: n_iter > n_temperature_steps,
                 stale_message="checkpoint n_iter exceeds current schedule length"
                 f"={n_temperature_steps}",
             )
         )
-        acceptance_history: list[float] = mode_checkpoint_data["accept_history"]
+        mutation_history: dict[str, list] = mode_checkpoint_data["mutation_history"]
         importance_weight_history: list[np.ndarray] = mode_checkpoint_data[
             "is_weights_history"
         ]
@@ -81,10 +68,19 @@ class FixedTemperedSMCSampler(_BlackJAXSMCBase):
 
         for tempering_parameter in tempering_parameters[n_completed_iterations:]:
             rng_key, step_key = jax.random.split(rng_key)
-            state, info = run_temperature_step(step_key, state, tempering_parameter)
-            acceptance_history.append(float(info.update_info.acceptance_rate.mean()))
-            importance_weight_history.append(np.asarray(state.weights))
+            step_start_time = time.perf_counter()
+            state, info = run_temperature_step(
+                step_key, state, tempering_param=tempering_parameter
+            )
             n_completed_iterations += 1
+            importance_weight_history.append(np.asarray(state.sampler_state.weights))
+            self._record_mutation_history(
+                mutation_history,
+                info.update_info,
+                tempering_parameter,
+                n_completed_iterations,
+                step_start_time,
+            )
             last_checkpoint_write_time = save_checkpoint_if_due(
                 self,
                 config,
@@ -95,15 +91,15 @@ class FixedTemperedSMCSampler(_BlackJAXSMCBase):
                 rng_key,
                 n_completed_iterations,
                 self._checkpoint_extra(
-                    accept_history=acceptance_history.copy(),
+                    mutation_history=self._copy_mutation_history(mutation_history),
                     is_weights_history=np.stack(importance_weight_history),
                 ),
-                log_label=log_label,
+                log_label=self._log_label,
             )
 
         self._final_state = state
         self._n_iterations = n_temperature_steps
-        self._acceptance_history = np.asarray(acceptance_history)
+        self._mutation_history = mutation_history
         self._is_weights_history = (
             np.stack(importance_weight_history)
             if importance_weight_history
@@ -120,7 +116,7 @@ class FixedTemperedSMCSampler(_BlackJAXSMCBase):
         """
         if not self._sampled:
             raise RuntimeError("get_samples() called before sample()")
-        particles = self._final_state.particles
+        particles = self._final_state.sampler_state.particles
         pbs = self._config.batch_size
         log_likelihoods = np.array(
             jax.lax.map(self._log_likelihood_fn, particles, batch_size=pbs)
@@ -133,17 +129,20 @@ class FixedTemperedSMCSampler(_BlackJAXSMCBase):
         """Return SMC run diagnostics.
 
         Returns a dict with keys ``"n_likelihood_evaluations"``,
-        ``"acceptance_history"``, ``"ess_history"``, ``"log_Z_error"``.
+        ``"acceptance_history"``, ``"n_steps_history"``, ``"scale_history"``,
+        ``"training_loss_history"`` (with a flow), ``"ess_history"``,
+        ``"log_Z_error"``.
         """
         if not self._sampled:
             raise RuntimeError("get_diagnostics() called before sample()")
-        cfg = self._config
-        n_mcmc = cfg.n_mcmc_steps_per_dim * self.n_dims
-        n_iter = self._n_iterations
 
         return {
-            "n_likelihood_evaluations": n_mcmc * n_iter * cfg.n_particles,
-            "acceptance_history": self._acceptance_history,
+            # Per iteration: one pass over the mutation's starting particles
+            # and one where BlackJAX reweights the particles.
+            "n_likelihood_evaluations": self._n_likelihood_evaluations(
+                n_initial_passes=0, n_extra_passes_per_iteration=2
+            ),
+            **self._mutation_history_diagnostics(),
             "ess_history": diagnostics.kish_ess_history(self._is_weights_history),
             "log_Z_error": diagnostics.kish_log_z_error(self._is_weights_history),
         }

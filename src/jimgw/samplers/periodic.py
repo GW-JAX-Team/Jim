@@ -6,8 +6,8 @@ sampler backend expects.
 Each backend wants a different shape: flowMC already accepts an index-keyed dict
 directly; BlackJAX NS AW needs a stepper function on flat arrays; BlackJAX NSS
 needs a ``proposal`` factory with the same interface as
-``blackjax.ns.nss.covariance_proposal``; BlackJAX SMC needs a displacement
-wrapper.  The adapters below handle those conversions.
+``blackjax.ns.nss.covariance_proposal``; BlackJAX SMC needs a re-centring map
+onto the real line.  The adapters below handle those conversions.
 
 All adapters operate on flat JAX arrays of shape ``(n_dims,)``.
 """
@@ -16,7 +16,9 @@ from collections.abc import Callable
 from numbers import Integral
 from typing import Optional
 
+import jax
 import jax.numpy as jnp
+from jax.scipy.special import logit
 
 # ----------------------------------------------------------------------
 # Shared helpers
@@ -143,28 +145,48 @@ def to_prior_space_proposal(
 # ----------------------------------------------------------------------
 
 
-def to_displacement_wrapper(
+def to_recentring_map(
     periodic_index: Optional[dict[int, tuple[float, float]]],
     n_dims: int,
-) -> Callable:
-    """Displacement wrapper for BlackJAX SMC (prior space).
+) -> tuple[Callable, Callable, Callable]:
+    """Re-centring map for BlackJAX SMC (sampling space to the real line).
 
-    Signature: ``wrapper_fn(proposed_displacement, current_position) -> wrapped_displacement``
+    For each periodic dimension, the cut goes in the middle of the widest arc
+    that holds no particle.  The value is rotated so that the cut sits at the
+    ends of the period, then mapped to the real line with a logit.  The map is
+    a bijection for fixed cuts, so an MCMC move in ``u`` is exact once the
+    log-Jacobian is included.  Other dimensions pass through unchanged.
 
-    Displacement and position are flat JAX arrays of shape ``(n_dims,)``.
-    SMC's inner kernel operates on displacements. For periodic parameters the
-    displacement is adjusted so that ``current + wrapped_displacement`` stays
-    within ``[lower, upper)``:
+    Returns:
+        ``(cuts_fn, forward_fn, inverse_fn)`` with
 
-        wrapped_displacement = lower + mod(current + disp - lower, period) - current
+        * ``cuts_fn(particles) -> cuts``, particles of shape ``(n, n_dims)``
+          and cuts of shape ``(n_dims,)`` (0 for non-periodic dimensions);
+        * ``forward_fn(x, cuts) -> u``;
+        * ``inverse_fn(u, cuts) -> (x, log_det)``, with ``log_det = log|dx/du|``.
     """
     mask, lower, period = _build_masks_arrays(periodic_index, n_dims)
 
-    def wrapper(
-        proposed_displacement: jnp.ndarray, current_position: jnp.ndarray
-    ) -> jnp.ndarray:
-        new_pos = current_position + proposed_displacement
-        wrapped_pos = jnp.where(mask, lower + jnp.mod(new_pos - lower, period), new_pos)
-        return wrapped_pos - current_position
+    def cuts_fn(particles: jnp.ndarray) -> jnp.ndarray:
+        positions = jnp.sort(lower + jnp.mod(particles - lower, period), axis=0)
+        gaps = jnp.concatenate(
+            [jnp.diff(positions, axis=0), positions[:1] + period - positions[-1:]]
+        )
+        widest = jnp.argmax(gaps, axis=0)[None]
+        start = jnp.take_along_axis(positions, widest, axis=0)[0]
+        width = jnp.take_along_axis(gaps, widest, axis=0)[0]
+        return jnp.where(
+            mask, lower + jnp.mod(start + 0.5 * width - lower, period), 0.0
+        )
 
-    return wrapper
+    def forward_fn(x: jnp.ndarray, cuts: jnp.ndarray) -> jnp.ndarray:
+        return jnp.where(mask, logit(jnp.mod(x - cuts, period) / period), x)
+
+    def inverse_fn(
+        u: jnp.ndarray, cuts: jnp.ndarray
+    ) -> tuple[jnp.ndarray, jnp.ndarray]:
+        x = lower + jnp.mod(cuts - lower + period * jax.nn.sigmoid(u), period)
+        log_det = jnp.log(period) + jax.nn.log_sigmoid(u) + jax.nn.log_sigmoid(-u)
+        return jnp.where(mask, x, u), jnp.sum(jnp.where(mask, log_det, 0.0))
+
+    return cuts_fn, forward_fn, inverse_fn

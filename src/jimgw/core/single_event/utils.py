@@ -7,17 +7,16 @@ and the fixed-parameter application helper.
 """
 
 from collections.abc import Callable, Mapping
-from typing import TypeAlias
 
 import jax.numpy as jnp
 from jaxtyping import Array, Float, Inexact
 
 from jimgw.typing import ComplexScalar, FloatLike, FloatScalar
 
-FixedParameter: TypeAlias = (
+type FixedParameter = (
     FloatLike | Callable[[dict[str, FloatLike]], FloatLike | dict[str, FloatLike]]
 )
-FixedParameters: TypeAlias = Mapping[str, FixedParameter]
+type FixedParameters = Mapping[str, FixedParameter]
 
 
 def apply_fixed_parameters(

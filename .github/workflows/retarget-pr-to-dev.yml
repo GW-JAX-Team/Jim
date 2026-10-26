@@ -16,7 +16,7 @@ permissions: {}
 
 jobs:
   retarget:
-    if: ${{ github.actor != 'dependabot[bot]' && !(github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'jim-dev') }}
+    if: ${{ github.event.pull_request.user.login != 'dependabot[bot]' && !(github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'jim-dev') }}
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write

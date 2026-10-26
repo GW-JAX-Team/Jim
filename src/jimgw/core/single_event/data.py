@@ -274,7 +274,7 @@ class Data(_Freezable, ABC):
         epoch, time step and sample count rather than the requested boundaries.
 
         Args:
-            ifo: Interferometer name.
+            ifo: Detector name.
             gps_start_time: Requested GPS start time of the data.
             gps_end_time: Requested GPS end time of the data.
             cache: Whether to cache the data (default: True).

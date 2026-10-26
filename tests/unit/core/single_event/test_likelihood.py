@@ -2145,6 +2145,118 @@ class TestHeterodynedTransientLikelihoodFD:
         assert generations == 1
         assert "stop_reason=stalled" in finished_message
 
+    @pytest.fixture
+    def search_likelihood(self, detectors_and_waveform):
+        """Heterodyned likelihood whose search varies only the masses."""
+        ifos, waveform, fmin, fmax, gps = detectors_and_waveform
+        true_params = example_params()
+        for ifo in ifos:
+            ifo.set_zero_noise(
+                duration=4.0,
+                sampling_frequency=fmax * 2,
+                trigger_time=gps,
+                f_min=fmin,
+                f_max=fmax,
+            )
+            ifo.inject_signal(waveform, true_params)
+        likelihood = HeterodynedTransientLikelihoodFD(
+            detectors=ifos,
+            waveform=waveform,
+            f_min=fmin,
+            f_max=fmax,
+            fixed_parameters={
+                k: v for k, v in true_params.items() if k not in ("M_c", "eta")
+            },
+            reference_parameters=true_params,
+        )
+        prior = CombinePrior(
+            [
+                UniformPrior(25.0, 35.0, parameter_names=["M_c"]),
+                UniformPrior(0.125, 1.0, parameter_names=["q"]),
+            ]
+        )
+        return likelihood, prior
+
+    def test_maximize_likelihood_batches_to_fit_reported_memory(
+        self, search_likelihood, monkeypatch, caplog
+    ):
+        likelihood, prior = search_likelihood
+
+        class FullDevice:
+            def memory_stats(self):
+                return {"bytes_limit": 1, "bytes_in_use": 0}
+
+        monkeypatch.setattr(likelihood_module.jax, "devices", lambda: [FullDevice()])
+        with caplog.at_level(
+            logging.DEBUG, logger="jimgw.core.single_event.likelihood"
+        ):
+            result = likelihood.maximize_likelihood(
+                prior,
+                [MassRatioToSymmetricMassRatioTransform],
+                optimizer_popsize=8,
+                optimizer_n_steps=3,
+            )
+        assert "evaluating it in batches of 1" in caplog.text
+        assert "batch_size=1" in caplog.text
+        assert jnp.isfinite(result["M_c"])
+
+    @pytest.mark.parametrize(
+        ("max_batch", "message", "retries"),
+        [
+            (2, "RESOURCE_EXHAUSTED: out of memory", [4, 2]),
+            (0, "RESOURCE_EXHAUSTED: out of memory", [4, 2, 1]),
+            (0, "unrelated failure", []),
+        ],
+    )
+    def test_maximize_likelihood_halves_batch_on_resource_exhausted(
+        self, search_likelihood, monkeypatch, caplog, max_batch, message, retries
+    ):
+        likelihood, prior = search_likelihood
+
+        class BatchLimitedObjective:
+            """Raises ``message`` for batches larger than ``max_batch``."""
+
+            def __init__(self, *args, **kwargs):
+                pass
+
+            def evaluate(self, params):
+                def log_likelihood(m_c):
+                    if m_c.shape[0] > max_batch:
+                        raise RuntimeError(message)
+                    return -((m_c - 30.0) ** 2)
+
+                return jax.pure_callback(
+                    log_likelihood,
+                    jax.ShapeDtypeStruct((), jnp.float64),
+                    params["M_c"],
+                    vmap_method="expand_dims",
+                )
+
+        monkeypatch.setattr(
+            likelihood_module, "TransientLikelihoodFD", BatchLimitedObjective
+        )
+        with caplog.at_level(
+            logging.DEBUG, logger="jimgw.core.single_event.likelihood"
+        ):
+            try:
+                result = likelihood.maximize_likelihood(
+                    prior,
+                    [MassRatioToSymmetricMassRatioTransform],
+                    optimizer_popsize=8,
+                    optimizer_n_steps=3,
+                )
+            except jax.errors.JaxRuntimeError as error:
+                assert max_batch == 0 and message in str(error)
+            else:
+                assert max_batch > 0 and jnp.isfinite(result["M_c"])
+                assert f"batch_size={max_batch}" in caplog.text
+        assert [
+            r.message for r in caplog.records if "ran out of device" in r.message
+        ] == [
+            f"CMA-ES ran out of device memory; retrying in batches of {size}"
+            for size in retries
+        ]
+
     @pytest.mark.slow
     def test_low_frequency_reference_cutoff_does_not_reindex_summary_data(
         self, detectors_and_waveform, monkeypatch

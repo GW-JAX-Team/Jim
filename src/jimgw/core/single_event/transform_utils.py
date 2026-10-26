@@ -327,7 +327,7 @@ def spin_angles_to_cartesian_spin(
     N = jnp.array([0.0, jnp.sin(theta_jn), jnp.cos(theta_jn)])
     iota = jnp.arccos(jnp.clip(jnp.dot(N, LNh), -1.0, 1.0))
 
-    thetaLJ, phiL = carte_to_spherical_angles(*LNh)
+    thetaLJ, phiL = carte_to_spherical_angles(LNh[0], LNh[1], LNh[2])
 
     # Rotations 4-6 combined.
     # N only needs R4 and R5; s1hat/s2hat need all three: R6 @ R5 @ R4.

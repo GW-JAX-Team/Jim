@@ -138,7 +138,7 @@ def load_jim_detectors():
 
 
 def build_bilby_ifo_from_jim(jim_ifo, f_min: float, f_max: float):
-    """Create a bilby interferometer backed by the same FD data as *jim_ifo*.
+    """Create a bilby detector backed by the same FD data as *jim_ifo*.
 
     We extract jim's windowed FD strain (the full one-sided array) and the
     interpolated PSD and hand them directly to bilby.  Because the FD data

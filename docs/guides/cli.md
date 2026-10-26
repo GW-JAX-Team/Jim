@@ -103,14 +103,14 @@ PSD and ASD formats are described in the note on PSD and ASD files below.
 | --- | --- | --- | --- |
 | `detectors` | list[str] | — | Detector identifiers |
 | `trigger_time` | float | — | GPS trigger time |
-| `strain_files` | dict[str, path] | — | Map from individual interferometer name to strain file (any supported format) |
+| `strain_files` | dict[str, path] | — | Map from individual detector name to strain file (any supported format) |
 | `psd_files` | dict[str, path] | — | Map from detector name to PSD file. Exactly one of `psd_files` and `asd_files` is required. |
 | `asd_files` | dict[str, path] | — | Map from detector name to ASD file. Exactly one of `psd_files` and `asd_files` is required. |
 | `strain_channels` | dict[str, str] | `{}` | Channel name per detector for GWF/HDF5 files (e.g. `"H1:GDS-CALIB_STRAIN"`). If omitted, common LIGO/Virgo preset channel names are tried for `.gwf` files. |
 
-For `detectors = ["ET"]`, provide separate `strain_files` entries for `ET1`,
-`ET2` and `ET3`. Use those individual names in `strain_channels` too. The three
-interferometers share the `ET` entry in `psd_files` or `asd_files`.
+For `detectors = ["ET"]`, provide separate entries for `ET1`, `ET2` and `ET3` in
+`strain_files`, `strain_channels`, `psd_files` and `asd_files`.
+`detectors = ["ET_2L"]` works the same way with `ET_Sar` and `ET_EMR`.
 
 Example with `.npz` files (no channels required):
 
@@ -160,9 +160,18 @@ L1 = "O3-L1_asd.txt"
 
     - Set at most one of the two tables.
     - Once a table is set it must name every detector in `detectors`; there is no per-detector fallback to the built-in default.
-    - One `ET` entry covers all three ET interferometers.
+    - `ET` and `ET_2L` are named by their individual detectors: `ET1`, `ET2` and `ET3`, or `ET_Sar` and `ET_EMR`.
     - An `.npz` archive holds `values` and `frequencies` arrays; the table it is listed under decides whether `values` is read as a PSD or an ASD.
     - Text files have two columns: frequency in Hz, then the value.
+
+!!! note "Next-generation detector response"
+    `injection` and `file` runs with `ET`, `ET_2L` or `CE` in `detectors` can turn on two options for those detectors; see [Next-generation detectors](data.md#next-generation-detectors) for when each matters.
+    The injected signal and the likelihood use the same response.
+
+    | Field | Type | Default | Description |
+    | --- | --- | --- | --- |
+    | `earth_rotation` | bool | `false` | Follow the Earth's rotation while the signal is in the frequency range of the data. |
+    | `finite_arm_length` | bool | `false` | Do not assume the arms are short compared to the gravitational wavelength. |
 
 ---
 

@@ -33,15 +33,17 @@ from jimgw.typing import ComplexLike, ComplexScalar, FloatLike, FloatScalar
 
 logger = logging.getLogger(__name__)
 
-# Design-sensitivity ASD packaged for each interferometer; the sources are
+# Design-sensitivity ASD packaged for each detector; the sources are
 # credited in noise_curves/README.md.
 default_asd_files = {
     "H1": "aLIGO_design_asd.txt",
     "L1": "aLIGO_design_asd.txt",
     "V1": "AdV_design_asd.txt",
-    "ET1": "ET_D_asd.txt",
-    "ET2": "ET_D_asd.txt",
-    "ET3": "ET_D_asd.txt",
+    "ET1": "ET_10km_asd.txt",
+    "ET2": "ET_10km_asd.txt",
+    "ET3": "ET_10km_asd.txt",
+    "ET_Sar": "ET_15km_asd.txt",
+    "ET_EMR": "ET_15km_asd.txt",
     "CE": "CE_40km_asd.txt",
 }
 
@@ -1526,7 +1528,7 @@ def get_ET(
 ) -> list[GroundBased3G]:
     """Return a list of three instances for the triangular Einstein Telescope (ET).
 
-    The design is a triangle of three interferometers with 10 km arms at the
+    The design is a triangle of three detectors with 10 km arms at the
     Euregio Meuse-Rhine site, with the arm azimuths of the Virgo arms.
 
     Args:
@@ -1604,7 +1606,7 @@ def get_ET_2L(
 ) -> list[GroundBased3G]:
     """Return the two L-shaped detectors of the Einstein Telescope 2L design.
 
-    The design has two L-shaped interferometers with 15 km arms, ``ET_Sar`` in
+    The design has two L-shaped detectors with 15 km arms, ``ET_Sar`` in
     Sardinia and ``ET_EMR`` in the Euregio Meuse-Rhine. The arms of ``ET_Sar`` have
     the azimuths of the Virgo arms. The arms of ``ET_EMR`` are rotated from those
     of ``ET_Sar`` by ``alignment_angle``, a difference of azimuths, each measured
@@ -1682,20 +1684,35 @@ def get_CE(
     )
 
 
-def get_detector_preset() -> dict[str, GroundBased2G | list[GroundBased3G]]:
+def get_detector_preset(
+    *, earth_rotation: bool = False, finite_arm_length: bool = False
+) -> dict[str, GroundBased2G | list[GroundBased3G]]:
     """Return a dictionary of pre-configured detector instances.
+
+    Args:
+        earth_rotation (bool, optional): Passed to ``get_ET``, ``get_ET_2L`` and
+            ``get_CE``. Defaults to False.
+        finite_arm_length (bool, optional): Passed to ``get_ET``, ``get_ET_2L`` and
+            ``get_CE``. Defaults to False.
 
     Returns:
         dict: Mapping of detector name to detector object(s).
             Keys are ``"H1"``, ``"L1"``, ``"V1"`` (single
             [`GroundBased2G`][jimgw.core.single_event.detector.GroundBased2G]),
-            ``"CE"`` (single [`GroundBased3G`][jimgw.core.single_event.detector.GroundBased3G])
-            and ``"ET"`` (list of three).
+            ``"CE"`` (single [`GroundBased3G`][jimgw.core.single_event.detector.GroundBased3G]),
+            ``"ET"`` (list of three) and ``"ET_2L"`` (list of two).
     """
     return {
         "H1": get_H1(),
         "L1": get_L1(),
         "V1": get_V1(),
-        "ET": get_ET(),
-        "CE": get_CE(),
+        "ET": get_ET(
+            earth_rotation=earth_rotation, finite_arm_length=finite_arm_length
+        ),
+        "ET_2L": get_ET_2L(
+            earth_rotation=earth_rotation, finite_arm_length=finite_arm_length
+        ),
+        "CE": get_CE(
+            earth_rotation=earth_rotation, finite_arm_length=finite_arm_length
+        ),
     }

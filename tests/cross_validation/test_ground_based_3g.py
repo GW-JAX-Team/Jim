@@ -65,7 +65,7 @@ def _jim_response(det, params):
     return np.asarray(plus), np.asarray(cross)
 
 
-def _bilby_interferometer(det, cls):
+def _bilby_detector(det, cls):
     return cls(
         name=det.name,
         power_spectral_density=bilby.gw.detector.PowerSpectralDensity.from_aligo(),
@@ -117,7 +117,7 @@ def test_rotating_response_matches_bilby_at_emission_times():
     t_c = 0.3
     jim_plus, jim_cross = _jim_response(det, _jim_params(t_c))
 
-    ifo = _bilby_interferometer(det, bilby.gw.detector.Interferometer)
+    ifo = _bilby_detector(det, bilby.gw.detector.Interferometer)
     tau = np.asarray(
         GroundBased3G.time_to_merger(jnp.asarray(FREQUENCIES), M_C, ETA, CHI1, CHI2)
     )
@@ -149,7 +149,7 @@ def test_response_matches_bilby_xg(finite_arm_length):
     )
     jim_plus, jim_cross = _jim_response(det, _jim_params())
 
-    ifo = _bilby_interferometer(det, bilby_xg.Interferometer)
+    ifo = _bilby_detector(det, bilby_xg.Interferometer)
     tau = xg_utils.calculate_time_to_merger_for_any_mode(
         FREQUENCIES, M1, M2, CHI1, CHI2, mode=2, safety=1
     )
@@ -170,7 +170,7 @@ def test_response_matches_bilby_xg(finite_arm_length):
     np.testing.assert_allclose(jim_cross, xg_cross, rtol=0.0, atol=1e-6)
 
 
-# The interferometer files of the 2L design with arms misaligned by 45 degrees,
+# The detector files of the 2L design with arms misaligned by 45 degrees,
 # as bilby reads them: lengths in km, angles in degrees.
 ET_2L_BILBY_FILES = {
     "ET_Sar": {

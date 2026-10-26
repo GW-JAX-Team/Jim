@@ -51,7 +51,7 @@ Fetches public LIGO/Virgo/KAGRA strain and PSD from the Gravitational-Wave Open 
 
 Injects a waveform into simulated Gaussian noise drawn from the detector PSD.
 
-By default the PSD is the built-in O3 ASD, available for `H1`, `L1` and `V1`.
+By default the PSD is the design-sensitivity ASD Jim ships for each detector; see [Default design-sensitivity ASD](data.md#default-design-sensitivity-asd).
 To use your own, set `psd_files` or `asd_files`; see the note on PSD and ASD files below.
 
 | Field | Type | Default | Description |
@@ -63,7 +63,7 @@ To use your own, set `psd_files` or `asd_files`; see the note on PSD and ASD fil
 | `injection_parameters` | dict[str, float] | — | Signal parameters to inject |
 | `zero_noise` | bool | `false` | If `true`, inject into zero noise. |
 | `noise_seed` | int | — | Seed for the injected noise. Required unless `zero_noise = true`. |
-| `psd_files` | dict[str, path] | — | Map from detector name to PSD file. Mutually exclusive with `asd_files`. Omit both to use the built-in O3 ASD. |
+| `psd_files` | dict[str, path] | — | Map from detector name to PSD file. Mutually exclusive with `asd_files`. Omit both to use the built-in design-sensitivity ASD. |
 | `asd_files` | dict[str, path] | — | Map from detector name to ASD file. Mutually exclusive with `psd_files`. |
 
 Example:
@@ -103,10 +103,14 @@ PSD and ASD formats are described in the note on PSD and ASD files below.
 | --- | --- | --- | --- |
 | `detectors` | list[str] | — | Detector identifiers |
 | `trigger_time` | float | — | GPS trigger time |
-| `strain_files` | dict[str, path] | — | Map from detector name to strain file (any supported format) |
+| `strain_files` | dict[str, path] | — | Map from individual detector name to strain file (any supported format) |
 | `psd_files` | dict[str, path] | — | Map from detector name to PSD file. Exactly one of `psd_files` and `asd_files` is required. |
 | `asd_files` | dict[str, path] | — | Map from detector name to ASD file. Exactly one of `psd_files` and `asd_files` is required. |
 | `strain_channels` | dict[str, str] | `{}` | Channel name per detector for GWF/HDF5 files (e.g. `"H1:GDS-CALIB_STRAIN"`). If omitted, common LIGO/Virgo preset channel names are tried for `.gwf` files. |
+
+For `detectors = ["ET"]`, provide separate entries for `ET1`, `ET2` and `ET3` in
+`strain_files`, `strain_channels`, `psd_files` and `asd_files`.
+`detectors = ["ET_2L"]` works the same way with `ET_Sar` and `ET_EMR`.
 
 Example with `.npz` files (no channels required):
 
@@ -156,9 +160,18 @@ L1 = "O3-L1_asd.txt"
 
     - Set at most one of the two tables.
     - Once a table is set it must name every detector in `detectors`; there is no per-detector fallback to the built-in default.
-    - One `ET` entry covers all three ET interferometers.
+    - `ET` and `ET_2L` are named by their individual detectors: `ET1`, `ET2` and `ET3`, or `ET_Sar` and `ET_EMR`.
     - An `.npz` archive holds `values` and `frequencies` arrays; the table it is listed under decides whether `values` is read as a PSD or an ASD.
     - Text files have two columns: frequency in Hz, then the value.
+
+!!! note "Next-generation detector response"
+    `injection` and `file` runs with `ET`, `ET_2L` or `CE` in `detectors` can turn on two options for those detectors; see [Next-generation detectors](data.md#next-generation-detectors) for when each matters.
+    The injected signal and the likelihood use the same response.
+
+    | Field | Type | Default | Description |
+    | --- | --- | --- | --- |
+    | `earth_rotation` | bool | `false` | Follow the Earth's rotation while the signal is in the frequency range of the data. |
+    | `finite_arm_length` | bool | `false` | Do not assume the arms are short compared to the gravitational wavelength. |
 
 ---
 
@@ -250,12 +263,12 @@ Use for 3-D spin vectors.
 ## `[sampling]`
 
 Optional section that controls the coordinate system the sampler explores.
-The CLI auto-infers transforms for all other cases.
+The CLI auto-infers transforms for all other cases and declares the angles that wrap around as [periodic](samplers.md#periodic-parameters) for every sampler whenever their prior covers one full period.
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `time_frame` | str | `"detector"` | Controls the sampling parameter space of signal arrival times. `"detector"` (default): sample detector time rather than geocentric. Set to an explicit detector name (e.g. `"H1"`) to use a specific detector. `"geocentric"`: sample geocentric time directly. |
-| `sky_frame` | str | `"detector"` | Controls the sampling parameter space of sky position. `"detector"` (default): sample `azimuth`/`zenith` relative to the detector baseline (requires ≥ 2 detectors). `"geocentric"`: sample `ra`/`dec` directly. |
+| `detector_frame_time` | bool | `true` | Sample the arrival time at the first detector in `data.detectors` rather than the geocentric time. Set to `false` to sample the geocentric `t_c` directly. |
+| `detector_frame_sky` | bool | `true` | Sample `azimuth`/`zenith` relative to the detector baseline (requires ≥ 2 detectors) rather than `ra`/`dec`. Set to `false` to sample `ra`/`dec` directly. |
 
 ---
 
@@ -377,16 +390,49 @@ n_tempered_steps = 5
 
 | Field | Default | Description |
 | --- | --- | --- |
-| `n_particles` | `2000` | Number of particles |
-| `n_mcmc_steps_per_dim` | `100` | MCMC steps per dimension per temperature |
-| `target_ess_fraction` | `0.9` | Optional — target effective sample size as a fraction of `n_particles`; use instead of `target_ess`, not both |
+| `n_particles` | `5000` | Number of particles |
+| `mcmc_kernel` | `"tpCN"` | Kernel that moves the particles: `"tpCN"` or `"GRW"`, or a sub-table for kernel-specific settings (see below) |
+| `flow` | enabled | Normalizing-flow coordinates for the kernel: a sub-table for custom settings (see below), or `false` to disable |
+| `target_ess_fraction` | `3.0` (`0.9` if `persistent_sampling = false`) | Optional — target effective sample size as a fraction of `n_particles`; use instead of `target_ess`, not both |
 | `target_ess` | — | Optional — target absolute ESS count; use instead of `target_ess_fraction`, not both |
-| `initial_cov_scale` | `0.5` | Initial covariance scale factor |
-| `target_acceptance_rate` | `0.234` | Target MCMC acceptance rate |
+| `batch_size` | `0` | Particles per sequential batch when evaluating the posterior; `0` evaluates all at once |
 | `persistent_sampling` | `true` | Reuse particles across temperatures |
 | `temperature_ladder` | — | Optional — fixed list of temperatures from 0.0 to 1.0; omit to use adaptive tempering |
 | `checkpoint_dir` | `{output.dir}/` | Directory for `checkpoint.pkl`; set by the CLI automatically |
 | `checkpoint_interval` | `600.0` | Seconds between checkpoint writes; `0` disables checkpointing |
+
+Kernel sub-table, t-pCN (the default):
+
+```toml
+[sampler.mcmc_kernel]
+kernel = "tpCN"
+n_patience_per_dim = 20       # stop after this many steps per dimension without improvement
+n_max_per_dim = 100           # at most this many steps per dimension per temperature
+target_acceptance_rate = 0.15
+```
+
+Kernel sub-table, Gaussian random walk:
+
+```toml
+[sampler.mcmc_kernel]
+kernel = "GRW"
+n_mcmc_steps_per_dim = 100    # steps per dimension per temperature
+initial_cov_scale = 0.5       # first scale of the proposal covariance
+target_acceptance_rate = 0.234
+scale_adaptation_gain = 3.0
+```
+
+Flow sub-table:
+
+```toml
+[sampler.flow]
+n_layers = 6
+hidden_size = [64, 64]
+n_bins = 8
+n_epochs = 200                # training epochs per temperature
+batch_size = 500
+learning_rate = 1e-3
+```
 
 ### `type = "blackjax-nss"`
 
@@ -425,7 +471,6 @@ The CLI enforces this automatically.
 | `n_delete_frac` | `0.5` | Fraction of live points replaced per iteration |
 | `n_target` | `60` | Target number of accepted steps per replacement |
 | `max_mcmc` | `5000` | Maximum MCMC steps per replacement attempt |
-| `max_proposals` | `1000` | Maximum proposals per MCMC step |
 | `termination_dlogz` | `0.1` | Termination criterion on remaining log-evidence |
 | `checkpoint_dir` | `{output.dir}/` | Directory for `checkpoint.pkl`; set by the CLI automatically |
 | `checkpoint_interval` | `600.0` | Seconds between checkpoint writes; `0` disables checkpointing |

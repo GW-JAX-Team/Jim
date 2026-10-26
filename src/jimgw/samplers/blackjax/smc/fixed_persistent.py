@@ -1,14 +1,11 @@
-"""Mode FP: persistent SMC over an explicit temperature ladder (``persistent_sampling_smc``)."""
+"""Mode FP: persistent SMC over an explicit temperature ladder (``persistent_sampling_smc`` + ``inner_kernel_tuning``)."""
 
 import time
 
 import jax
-import jax.numpy as jnp
 import numpy as np
-from blackjax import persistent_sampling_smc, rmh
-from blackjax.smc import extend_params
-from blackjax.smc.resampling import systematic
-from jaxtyping import Key
+from blackjax import inner_kernel_tuning, persistent_sampling_smc
+from jaxtyping import Array, Key
 
 from jimgw.samplers.blackjax.smc import diagnostics
 from jimgw.samplers.blackjax.smc.base import _BlackJAXSMCBase
@@ -25,31 +22,18 @@ class FixedPersistentSMCSampler(_BlackJAXSMCBase):
 
     mode = "fp"
 
-    def _run(self, rng_key: Key, initial_particles) -> None:
+    def _run(self, rng_key: Key[Array, ""], initial_particles) -> None:
         config = self._config
         ladder = config.temperature_ladder
         assert ladder is not None
-        n_mcmc_steps = config.n_mcmc_steps_per_dim * self.n_dims
         tempering_parameters = ladder[1:]  # skip 0.0 (already in init state)
         n_temperature_steps = len(tempering_parameters)
         checkpoint_path, run_start_time = prepare_checkpointing(config)
-        log_label = f"{self.sampler_name} ({self.mode.upper()})"
 
-        mcmc_step = self._build_mcmc_step()
-        initial_covariance = (
-            jnp.atleast_2d(jnp.cov(initial_particles.T)) * config.initial_cov_scale
-        )
-
-        smc_algorithm = persistent_sampling_smc(
-            logprior_fn=self._log_prior_fn,
-            loglikelihood_fn=self._log_likelihood_fn,
+        smc_algorithm = inner_kernel_tuning(
+            smc_algorithm=persistent_sampling_smc,
             n_schedule=n_temperature_steps,
-            mcmc_step_fn=mcmc_step,
-            mcmc_init_fn=rmh.init,
-            mcmc_parameters=extend_params({"cov": initial_covariance}),  # type: ignore[arg-type]  # blackjax stubs: extend_params accepts dict
-            resampling_fn=systematic,
-            num_mcmc_steps=n_mcmc_steps,
-            batch_size=config.batch_size,
+            **self._common_arguments(),
         )
 
         state, rng_key, n_completed_iterations, mode_checkpoint_data = (
@@ -60,26 +44,35 @@ class FixedPersistentSMCSampler(_BlackJAXSMCBase):
                 rng_key,
                 initial_particles,
                 smc_algorithm.init,
-                initial_extra={"accept_history": []},
+                initial_extra={"mutation_history": self._new_mutation_history()},
                 load_extra=lambda checkpoint: {
-                    "accept_history": list(checkpoint["accept_history"])
+                    "mutation_history": checkpoint["mutation_history"]
                 },
-                log_label=log_label,
+                log_label=self._log_label,
                 is_stale=lambda n_iter: n_iter > n_temperature_steps,
                 stale_message="checkpoint n_iter exceeds current schedule length"
                 f"={n_temperature_steps}",
             )
         )
-        acceptance_history: list[float] = mode_checkpoint_data["accept_history"]
+        mutation_history: dict[str, list] = mode_checkpoint_data["mutation_history"]
 
         run_temperature_step = jax.jit(smc_algorithm.step)
         last_checkpoint_write_time = time.perf_counter()
 
         for tempering_parameter in tempering_parameters[n_completed_iterations:]:
             rng_key, step_key = jax.random.split(rng_key)
-            state, info = run_temperature_step(step_key, state, tempering_parameter)
-            acceptance_history.append(float(info.update_info.acceptance_rate.mean()))
+            step_start_time = time.perf_counter()
+            state, info = run_temperature_step(
+                step_key, state, lmbda=tempering_parameter
+            )
             n_completed_iterations += 1
+            self._record_mutation_history(
+                mutation_history,
+                info.update_info,
+                tempering_parameter,
+                n_completed_iterations,
+                step_start_time,
+            )
             last_checkpoint_write_time = save_checkpoint_if_due(
                 self,
                 config,
@@ -89,13 +82,15 @@ class FixedPersistentSMCSampler(_BlackJAXSMCBase):
                 state,
                 rng_key,
                 n_completed_iterations,
-                self._checkpoint_extra(accept_history=acceptance_history.copy()),
-                log_label=log_label,
+                self._checkpoint_extra(
+                    mutation_history=self._copy_mutation_history(mutation_history)
+                ),
+                log_label=self._log_label,
             )
 
         self._final_state = state
         self._n_iterations = n_temperature_steps
-        self._acceptance_history = np.asarray(acceptance_history)
+        self._mutation_history = mutation_history
         remove_checkpoint_and_jax_cache(config, checkpoint_path)
 
     def get_samples(self) -> dict[str, np.ndarray]:
@@ -112,28 +107,32 @@ class FixedPersistentSMCSampler(_BlackJAXSMCBase):
         """
         if not self._sampled:
             raise RuntimeError("get_samples() called before sample()")
-        return diagnostics.resample_persistent_particles(self._final_state, self.n_dims)
+        return diagnostics.resample_persistent_particles(
+            self._final_state.sampler_state, self.n_dims
+        )
 
     def _get_diagnostics(self) -> dict[str, object]:
         """Return SMC run diagnostics.
 
         Returns a dict with keys ``"n_likelihood_evaluations"``,
-        ``"acceptance_history"``, ``"persistent_log_Z"``, ``"log_Z"``,
-        ``"ess_history"``, ``"log_Z_error"``.
+        ``"acceptance_history"``, ``"n_steps_history"``, ``"scale_history"``,
+        ``"training_loss_history"`` (with a flow), ``"persistent_log_Z"``,
+        ``"log_Z"``, ``"ess_history"``, ``"log_Z_error"``.
         """
         if not self._sampled:
             raise RuntimeError("get_diagnostics() called before sample()")
-        cfg = self._config
-        n_mcmc = cfg.n_mcmc_steps_per_dim * self.n_dims
-        n_iter = self._n_iterations
-
-        ps = self._final_state
+        ps = self._final_state.sampler_state
         n = int(ps.iteration)
         log_Z_traj = np.asarray(ps.persistent_log_Z[1 : n + 1])
 
         return {
-            "n_likelihood_evaluations": n_mcmc * n_iter * cfg.n_particles,
-            "acceptance_history": self._acceptance_history,
+            # One pass over the initial particles; per iteration, one over the
+            # mutation's starting particles and one where BlackJAX re-evaluates
+            # the moved particles.
+            "n_likelihood_evaluations": self._n_likelihood_evaluations(
+                n_initial_passes=1, n_extra_passes_per_iteration=2
+            ),
+            **self._mutation_history_diagnostics(),
             "persistent_log_Z": log_Z_traj,
             "log_Z": float(log_Z_traj[-1]),
             "ess_history": diagnostics.persistent_ess_history(ps, self._n_iterations),

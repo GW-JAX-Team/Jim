@@ -3,8 +3,12 @@ from itertools import combinations
 import jax
 import jax.numpy as jnp
 import numpy as np
+import pytest
 
 from jimgw.core.single_event.detector import get_detector_preset
+from jimgw.core.single_event.time_utils import (
+    greenwich_mean_sidereal_time as compute_gmst,
+)
 from jimgw.core.single_event.transforms import (
     ChirpMassMassRatioToComponentMassesTransform,
     ChirpMassSymmetricMassRatioToComponentMassesTransform,
@@ -19,7 +23,7 @@ from jimgw.core.single_event.transforms import (
     SpinAnglesToCartesianSpinTransform,
     SymmetricMassRatioToMassRatioTransform,
 )
-from tests.utils import assert_all_finite, common_keys_allclose
+from tests.utils import assert_all_finite, attach_data, common_keys_allclose
 
 detector_preset = get_detector_preset()
 H1 = detector_preset["H1"]
@@ -27,14 +31,68 @@ L1 = detector_preset["L1"]
 V1 = detector_preset["V1"]
 
 
+class TestTriggerTimeOfTheData:
+    """The transforms read the trigger time from the data of their detectors when they need it."""
+
+    TRANSFORMS = (
+        (SkyFrameToDetectorFrameSkyPositionTransform, lambda: {"ifos": [H1, L1]}),
+        (GeocentricArrivalTimeToDetectorArrivalTimeTransform, lambda: {"ifo": H1}),
+        (GeocentricArrivalPhaseToDetectorArrivalPhaseTransform, lambda: {"ifo": H1}),
+        (DistanceToSNRWeightedDistanceTransform, lambda: {"ifos": [H1, L1]}),
+    )
+
+    @pytest.mark.parametrize(("transform_class", "arguments"), TRANSFORMS)
+    def test_gmst_is_that_of_the_trigger_time(self, transform_class, arguments):
+        gps_time = 1126259462.4
+        attach_data(gps_time, [H1, L1])
+        assert transform_class(**arguments()).gmst == compute_gmst(gps_time)
+
+    @pytest.mark.parametrize(("transform_class", "arguments"), TRANSFORMS)
+    def test_the_default_trigger_time_is_two_seconds_before_the_end(
+        self, transform_class, arguments
+    ):
+        attach_data(1126259462.4, [H1, L1])
+        for ifo in (H1, L1):
+            ifo.data.trigger_time = None
+        data = H1.data
+        expected = compute_gmst(data.start_time + data.duration - 2.0)
+        assert transform_class(**arguments()).gmst == expected
+
+    @pytest.mark.parametrize(("transform_class", "arguments"), TRANSFORMS)
+    def test_gmst_follows_the_trigger_time_of_the_data(
+        self, transform_class, arguments
+    ):
+        # The data own the trigger time: a transform built earlier must not keep a copy.
+        attach_data(1126259462.4, [H1, L1])
+        transform = transform_class(**arguments())
+        for ifo in (H1, L1):
+            ifo.data.trigger_time = 1126259472.4
+        assert transform.gmst == compute_gmst(1126259472.4)
+
+    @pytest.mark.parametrize(("transform_class", "arguments"), TRANSFORMS)
+    def test_detectors_without_data_raise_when_gmst_is_needed(
+        self, transform_class, arguments
+    ):
+        empty = get_detector_preset()
+        ifos = {"ifo": empty["H1"], "ifos": [empty["H1"], empty["L1"]]}
+        name = next(iter(arguments()))
+        transform = transform_class(**{name: ifos[name]})
+        with pytest.raises(ValueError, match="Empty data have no trigger time"):
+            _ = transform.gmst
+
+
 class TestDistanceTransform:
+    def test_requires_nonempty_detector_network(self):
+        with pytest.raises(ValueError, match="at least one detector"):
+            DistanceToSNRWeightedDistanceTransform(ifos=[])
+
     def test_forward_distance_transform(self):
         """
         Test transformation from distance to SNR-weighted distance (boundaries excluded)
         """
+        attach_data(1126259462.4, [H1, L1])
         output, jacobian = DistanceToSNRWeightedDistanceTransform(
-            trigger_time=1126259462.4,
-            ifos=[H1, L1],
+            ifos=[H1, L1]
         ).transform(
             {
                 "d_L": 200.0,
@@ -53,9 +111,9 @@ class TestDistanceTransform:
         """
         Test transformation from SNR-weighted distance to distance (boundaries excluded)
         """
+        attach_data(1126259462.4, [H1, L1])
         output, jacobian = DistanceToSNRWeightedDistanceTransform(
-            trigger_time=1126259462.4,
-            ifos=[H1, L1],
+            ifos=[H1, L1]
         ).inverse(
             {
                 "d_hat": 100.0,
@@ -88,10 +146,8 @@ class TestDistanceTransform:
         inputs = jnp.stack([dL, M_c, ra, dec, psi, iota], axis=-1).T
         param_name = ["d_L", "M_c", "ra", "dec", "psi", "iota"]
         inputs = dict(zip(param_name, inputs))
-        distance_transform = DistanceToSNRWeightedDistanceTransform(
-            trigger_time=1126259462.4,
-            ifos=[H1, L1],
-        )
+        attach_data(1126259462.4, [H1, L1])
+        distance_transform = DistanceToSNRWeightedDistanceTransform(ifos=[H1, L1])
         forward_transform_output = jax.vmap(distance_transform.forward)(inputs)
         output = jax.vmap(distance_transform.backward)(forward_transform_output)
         assert np.allclose(output["d_L"], dL)
@@ -121,16 +177,14 @@ class TestDistanceTransform:
         ]
         sample_dict = dict(zip(["d_L", "M_c", "ra", "dec", "psi", "iota"], sample))
 
+        attach_data(1126259462.4, [H1, L1])
         jit_transform = jax.jit(
-            DistanceToSNRWeightedDistanceTransform(
-                trigger_time=1126259462.4,
-                ifos=[H1, L1],
-            ).transform
+            DistanceToSNRWeightedDistanceTransform(ifos=[H1, L1]).transform
         )
         jitted_output, jitted_jacobian = jit_transform(sample_dict)
+        attach_data(1126259462.4, [H1, L1])
         non_jitted_output = DistanceToSNRWeightedDistanceTransform(
-            trigger_time=1126259462.4,
-            ifos=[H1, L1],
+            ifos=[H1, L1]
         ).forward(sample_dict)
 
         assert common_keys_allclose(jitted_output, non_jitted_output)
@@ -161,16 +215,14 @@ class TestDistanceTransform:
         ]
         sample_dict = dict(zip(["d_hat", "M_c", "ra", "dec", "psi", "iota"], sample))
 
+        attach_data(1126259462.4, [H1, L1])
         jit_inverse_transform = jax.jit(
-            DistanceToSNRWeightedDistanceTransform(
-                trigger_time=1126259462.4,
-                ifos=[H1, L1],
-            ).inverse
+            DistanceToSNRWeightedDistanceTransform(ifos=[H1, L1]).inverse
         )
         jitted_output, jitted_jacobian = jit_inverse_transform(sample_dict)
+        attach_data(1126259462.4, [H1, L1])
         non_jitted_output = DistanceToSNRWeightedDistanceTransform(
-            trigger_time=1126259462.4,
-            ifos=[H1, L1],
+            ifos=[H1, L1]
         ).backward(sample_dict)
 
         assert common_keys_allclose(jitted_output, non_jitted_output)
@@ -497,13 +549,18 @@ class TestSpinAnglesToCartesianSpinTransform:
 
 
 class TestSkyFrameToDetectorFrameSkyPositionTransform:
+    def test_one_detector_does_not_define_a_sky_frame(self):
+        attach_data(1126259642.4, [H1])
+        with pytest.raises(ValueError, match="two detectors"):
+            SkyFrameToDetectorFrameSkyPositionTransform(ifos=[H1])
+
     def test_forward_transform(self):
         """
         Test the forward transformation from sky frame to detector frame sky position
         """
+        attach_data(1126259642.4, [H1, L1])
         output, jacobian = SkyFrameToDetectorFrameSkyPositionTransform(
-            trigger_time=1126259642.4,
-            ifos=[H1, L1],
+            ifos=[H1, L1]
         ).transform(
             {
                 "ra": 1.0,
@@ -517,9 +574,9 @@ class TestSkyFrameToDetectorFrameSkyPositionTransform:
         """
         Test the backward transformation from detector frame to sky frame sky position
         """
+        attach_data(1126259642.4, [H1, L1])
         output, jacobian = SkyFrameToDetectorFrameSkyPositionTransform(
-            trigger_time=1126259642.4,
-            ifos=[H1, L1],
+            ifos=[H1, L1]
         ).inverse(
             {
                 "zenith": 1.0,
@@ -548,9 +605,9 @@ class TestSkyFrameToDetectorFrameSkyPositionTransform:
                         subkeys[1], (10,), minval=0, maxval=2 * jnp.pi
                     ),
                 }
+                attach_data(time, list(ifo_pair))
                 transform = SkyFrameToDetectorFrameSkyPositionTransform(
-                    trigger_time=time,
-                    ifos=list(ifo_pair),
+                    ifos=list(ifo_pair)
                 )
                 forward_transform_output = jax.vmap(transform.backward)(inputs)
                 outputs = jax.vmap(transform.forward)(forward_transform_output)
@@ -566,7 +623,8 @@ class TestSkyFrameToDetectorFrameSkyPositionTransform:
             "ra": jax.random.uniform(subkeys[0], (1,), minval=0, maxval=2 * jnp.pi)[0],
             "dec": jax.random.uniform(subkeys[1], (1,), minval=0, maxval=jnp.pi)[0],
         }
-        class_args = {"trigger_time": 1126259642.4, "ifos": [H1, L1]}
+        attach_data(1126259642.4, [H1, L1])
+        class_args = {"ifos": [H1, L1]}
 
         jit_transform = jax.jit(
             lambda data: SkyFrameToDetectorFrameSkyPositionTransform(
@@ -593,7 +651,8 @@ class TestSkyFrameToDetectorFrameSkyPositionTransform:
                 subkeys[1], (1,), minval=0, maxval=2 * jnp.pi
             )[0],
         }
-        class_args = {"trigger_time": 1126259642.4, "ifos": [H1, L1]}
+        attach_data(1126259642.4, [H1, L1])
+        class_args = {"ifos": [H1, L1]}
 
         jit_inverse_transform = jax.jit(
             lambda data: SkyFrameToDetectorFrameSkyPositionTransform(
@@ -615,10 +674,8 @@ class TestGeocentricArrivalTimeToDetectorArrivalTimeTransform:
         Test the forward transformation from geocentric to detector arrival time
         """
         gps_time = 1126259462.4
-        transform = GeocentricArrivalTimeToDetectorArrivalTimeTransform(
-            trigger_time=gps_time,
-            ifo=H1,
-        )
+        attach_data(gps_time, H1)
+        transform = GeocentricArrivalTimeToDetectorArrivalTimeTransform(ifo=H1)
 
         sample_dict = {
             "t_c": 0.1,
@@ -637,10 +694,8 @@ class TestGeocentricArrivalTimeToDetectorArrivalTimeTransform:
         Test the inverse transformation from detector to geocentric arrival time
         """
         gps_time = 1126259462.4
-        transform = GeocentricArrivalTimeToDetectorArrivalTimeTransform(
-            trigger_time=gps_time,
-            ifo=L1,
-        )
+        attach_data(gps_time, L1)
+        transform = GeocentricArrivalTimeToDetectorArrivalTimeTransform(ifo=L1)
 
         sample_dict = {
             "t_det": 0.05,
@@ -659,10 +714,8 @@ class TestGeocentricArrivalTimeToDetectorArrivalTimeTransform:
         Test that forward and inverse transforms are consistent
         """
         gps_time = 1126259462.4
-        transform = GeocentricArrivalTimeToDetectorArrivalTimeTransform(
-            trigger_time=gps_time,
-            ifo=H1,
-        )
+        attach_data(gps_time, H1)
+        transform = GeocentricArrivalTimeToDetectorArrivalTimeTransform(ifo=H1)
 
         original = {
             "t_c": 0.15,
@@ -688,7 +741,8 @@ class TestGeocentricArrivalTimeToDetectorArrivalTimeTransform:
             "dec": -0.5,
         }
 
-        class_args = {"trigger_time": gps_time, "ifo": H1}
+        attach_data(gps_time, H1)
+        class_args = {"ifo": H1}
 
         jit_transform = jax.jit(
             lambda data: GeocentricArrivalTimeToDetectorArrivalTimeTransform(
@@ -715,7 +769,8 @@ class TestGeocentricArrivalTimeToDetectorArrivalTimeTransform:
             "dec": 0.3,
         }
 
-        class_args = {"trigger_time": gps_time, "ifo": L1}
+        attach_data(gps_time, L1)
+        class_args = {"ifo": L1}
 
         jit_inverse_transform = jax.jit(
             lambda data: GeocentricArrivalTimeToDetectorArrivalTimeTransform(
@@ -743,10 +798,8 @@ class TestGeocentricArrivalTimeToDetectorArrivalTimeTransform:
         }
 
         for ifo in [H1, L1, V1]:
-            transform = GeocentricArrivalTimeToDetectorArrivalTimeTransform(
-                trigger_time=gps_time,
-                ifo=ifo,
-            )
+            attach_data(gps_time, ifo)
+            transform = GeocentricArrivalTimeToDetectorArrivalTimeTransform(ifo=ifo)
             output = transform.forward(sample_dict.copy())
             assert "t_det" in output
             assert np.isfinite(output["t_det"])
@@ -758,10 +811,8 @@ class TestGeocentricArrivalPhaseToDetectorArrivalPhaseTransform:
         Test the forward transformation from geocentric to detector arrival phase
         """
         gps_time = 1126259462.4
-        transform = GeocentricArrivalPhaseToDetectorArrivalPhaseTransform(
-            trigger_time=gps_time,
-            ifo=H1,
-        )
+        attach_data(gps_time, H1)
+        transform = GeocentricArrivalPhaseToDetectorArrivalPhaseTransform(ifo=H1)
 
         sample_dict = {
             "phase_c": 1.5,
@@ -783,10 +834,8 @@ class TestGeocentricArrivalPhaseToDetectorArrivalPhaseTransform:
         Test the inverse transformation from detector to geocentric arrival phase
         """
         gps_time = 1126259462.4
-        transform = GeocentricArrivalPhaseToDetectorArrivalPhaseTransform(
-            trigger_time=gps_time,
-            ifo=L1,
-        )
+        attach_data(gps_time, L1)
+        transform = GeocentricArrivalPhaseToDetectorArrivalPhaseTransform(ifo=L1)
 
         sample_dict = {
             "phase_det": 2.5,
@@ -808,10 +857,8 @@ class TestGeocentricArrivalPhaseToDetectorArrivalPhaseTransform:
         Test that forward and inverse transforms are approximately consistent
         """
         gps_time = 1126259462.4
-        transform = GeocentricArrivalPhaseToDetectorArrivalPhaseTransform(
-            trigger_time=gps_time,
-            ifo=H1,
-        )
+        attach_data(gps_time, H1)
+        transform = GeocentricArrivalPhaseToDetectorArrivalPhaseTransform(ifo=H1)
 
         original = {
             "phase_c": 3.0,
@@ -845,7 +892,8 @@ class TestGeocentricArrivalPhaseToDetectorArrivalPhaseTransform:
             "iota": 2.5,
         }
 
-        class_args = {"trigger_time": gps_time, "ifo": H1}
+        attach_data(gps_time, H1)
+        class_args = {"ifo": H1}
 
         jit_transform = jax.jit(
             lambda data: GeocentricArrivalPhaseToDetectorArrivalPhaseTransform(
@@ -874,7 +922,8 @@ class TestGeocentricArrivalPhaseToDetectorArrivalPhaseTransform:
             "iota": 1.5,
         }
 
-        class_args = {"trigger_time": gps_time, "ifo": L1}
+        attach_data(gps_time, L1)
+        class_args = {"ifo": L1}
 
         jit_inverse_transform = jax.jit(
             lambda data: GeocentricArrivalPhaseToDetectorArrivalPhaseTransform(
@@ -904,10 +953,8 @@ class TestGeocentricArrivalPhaseToDetectorArrivalPhaseTransform:
         }
 
         for ifo in [H1, L1, V1]:
-            transform = GeocentricArrivalPhaseToDetectorArrivalPhaseTransform(
-                trigger_time=gps_time,
-                ifo=ifo,
-            )
+            attach_data(gps_time, ifo)
+            transform = GeocentricArrivalPhaseToDetectorArrivalPhaseTransform(ifo=ifo)
             output = transform.forward(sample_dict.copy())
             assert "phase_det" in output
             assert np.isfinite(output["phase_det"])
@@ -918,10 +965,8 @@ class TestGeocentricArrivalPhaseToDetectorArrivalPhaseTransform:
         Test that phase values are properly wrapped to [0, 2π)
         """
         gps_time = 1126259462.4
-        transform = GeocentricArrivalPhaseToDetectorArrivalPhaseTransform(
-            trigger_time=gps_time,
-            ifo=H1,
-        )
+        attach_data(gps_time, H1)
+        transform = GeocentricArrivalPhaseToDetectorArrivalPhaseTransform(ifo=H1)
 
         sample_dict = {
             "phase_c": 2.0 * jnp.pi - 0.1,

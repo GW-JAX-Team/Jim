@@ -4,7 +4,7 @@ import equinox as eqx
 import jax.numpy as jnp
 from jaxtyping import Array, Float
 
-from jimgw.typing import FloatScalar
+from jimgw.typing import FloatLike
 
 KNOWN_POLS = "pcxybl"
 
@@ -54,10 +54,10 @@ class Polarization(eqx.Module):
 
     def tensor_from_sky(
         self,
-        ra: FloatScalar,
-        dec: FloatScalar,
-        psi: FloatScalar,
-        gmst: FloatScalar,
+        ra: FloatLike,
+        dec: FloatLike,
+        psi: FloatLike,
+        gmst: FloatLike,
     ) -> Float[Array, "3 3"]:
         """Computes {name} polarization tensor in celestial
         coordinates from sky location and orientation parameters.
@@ -72,8 +72,8 @@ class Polarization(eqx.Module):
             Float[Array, "3 3"]: 3x3 polarization tensor.
         """
         gmst = jnp.mod(gmst, 2 * jnp.pi)
-        phi = ra - gmst
-        theta = jnp.pi / 2 - dec
+        # Broadcast so that an array of gmst gives one tensor per element.
+        phi, theta = jnp.broadcast_arrays(ra - gmst, jnp.pi / 2 - dec)
 
         u = jnp.array(
             [

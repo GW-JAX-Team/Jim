@@ -3,7 +3,7 @@ name = "JimGW"
 dynamic = ["version"]
 description = "A JAX-based gravitational-wave inference toolkit"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 authors = [
 	{name = "Kaze W. K. Wong", email = "kazewong.physics@gmail.com"},
 ]
@@ -12,9 +12,9 @@ maintainers = [
 ]
 license = {file = "LICENSE"}
 classifiers = [
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "License :: OSI Approved :: MIT License",
     "Intended Audience :: Science/Research",
     "Operating System :: OS Independent",
@@ -28,15 +28,14 @@ dependencies = [
     "corner>=2.2.3",
     "equinox>=0.11",
     "evosax>=0.3.1",
-    "flowmc>=0.6.1",
+    "flowmc>=0.6.5",
     "gwpy>=3.0.12",
     "jax>=0.8.2",
     "jaxtyping>=0.3.3",
     "matplotlib>=3.10.7",
     "numpy>=1.26",
     "pydantic>=2",
-    "requests>=2.32.3",
-    "ripplegw>=0.4.0",
+    "ripplegw>=0.5.0",
     "scipy>=1.17.1",
     "tomli-w>=1.0",
     "typer>=0.12",
@@ -58,11 +57,11 @@ test = [
     "pytest>=8.3.3",
     "pytest-cov>=6.0.0",
     "ruff>=0.12.2",
-    "pyright>=1.1.402",
 ]
 cross-validation = [
     "lalsuite>=7.26.4",
     "bilby[gw]>=2.8.0",
+    "bilby-xg",
 ]
 doc = [
     "nbconvert",
@@ -79,6 +78,7 @@ Changelog = "https://github.com/GW-JAX-Team/Jim/releases"
 
 [tool.uv.sources]
 jimgw = { workspace = true }
+bilby-xg = { git = "https://github.com/Pratyusava/bilby_xG", rev = "11ee11607a531b2d7f286eb438d2c971d4c045cf" }
 
 [build-system]
 requires = ["hatchling", "hatch-vcs"]
@@ -96,10 +96,6 @@ markers = [
     "slow: slow tests",
 ]
 
-[tool.pyright]
-include = ["src"]
-reportUnnecessaryTypeIgnoreComment = "error"
-
 [tool.ruff.lint]
 ignore = ["F722", "UP007", "UP045"]
 
@@ -110,15 +106,9 @@ ignore = ["F722", "UP007", "UP045"]
 [tool.ty.src]
 include = ["src"]
 
-[tool.ty.analysis]
-# These libraries expose dynamic APIs or annotation helpers that ty cannot yet model.
-# Pyright remains responsible for checking their richer type information.
-replace-imports-with-any = [
-    "astropy.**",
-    "blackjax.**",
-    "flowMC.**",
-    "jaxtyping.**",
-]
+[tool.ty.rules]
+possibly-unresolved-reference = "error"
+unused-ignore-comment = "error"
 
 [tool.coverage.report]
 exclude_also = [

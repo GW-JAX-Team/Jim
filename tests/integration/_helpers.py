@@ -57,8 +57,6 @@ class _GaussianWaveformCacheLikelihood(SingleEventLikelihood):
     def __init__(self) -> None:
         self.waveform = _WaveformStub()
         self.fixed_parameters: dict = {}
-        self.trigger_time = 0.0
-        self.gmst = 0.0
         self.time_marginalization = False
         self.phase_marginalization = False
         self.distance_marginalization = False

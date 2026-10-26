@@ -63,7 +63,7 @@ from jimgw.core.single_event.transforms import SkyFrameToDetectorFrameSkyPositio
 
 # Sampler explores (zenith, azimuth) in detector frame instead of (ra, dec)
 sample_transforms = [
-    SkyFrameToDetectorFrameSkyPositionTransform(trigger_time=gps_time, ifos=ifos),
+    SkyFrameToDetectorFrameSkyPositionTransform(ifos=ifos),
 ]
 ```
 
@@ -103,15 +103,16 @@ likelihood_transforms = [MassRatioToSymmetricMassRatioTransform()]  # TypeError
 
 | Transform | Mapping | Notes |
 | --- | --- | --- |
-| `SkyFrameToDetectorFrameSkyPositionTransform(trigger_time, ifos)` | `(ra, dec) → (zenith, azimuth)` | Reduces ra/dec correlation for detector networks |
-| `GeocentricArrivalTimeToDetectorArrivalTimeTransform(trigger_time, ifo)` | `t_c → t_det` | Conditional on ra, dec |
-| `GeocentricArrivalPhaseToDetectorArrivalPhaseTransform(trigger_time, ifo)` | `phase_c → phase_det` | Conditional on ra, dec, psi, iota. Assumes dominant quadrupolar mode only ([arXiv:2207.03508](https://arxiv.org/abs/2207.03508)); **not valid** for waveforms with higher harmonics or precession. |
+| `SkyFrameToDetectorFrameSkyPositionTransform(ifos)` | `(ra, dec) → (zenith, azimuth)` | Reduces ra/dec correlation for detector networks |
+| `GeocentricArrivalTimeToDetectorArrivalTimeTransform(ifo)` | `t_c → t_det` | Conditional on ra, dec |
+| `GeocentricArrivalPhaseToDetectorArrivalPhaseTransform(ifo)` | `phase_c → phase_det` | Conditional on ra, dec, psi, iota. Assumes dominant quadrupolar mode only ([arXiv:2207.03508](https://arxiv.org/abs/2207.03508)); **not valid** for waveforms with higher harmonics or precession. |
 | `DistanceToSNRWeightedDistanceTransform` | `d_L → d_hat` | SNR-weighted distance parameterisation ([arXiv:2207.03508](https://arxiv.org/abs/2207.03508)). Assumes dominant quadrupolar mode only; **not valid** for waveforms with higher harmonics or precession. |
 
 ## Mapping a prior to the unit cube (for NS AW)
 
 The [BlackJAX NS AW sampler](samplers.md#blackjax-ns-aw) requires the **sampling space** to be the unit hypercube `[0, 1]^n_dims`.
 The `sample_transforms` must map every parameter from its physical support into `[0, 1]`.
+[`get_default_sample_transforms(prior, ifos, space="unit_cube")`](#default-transforms) builds all of the following for the standard prior types; the rest of this section shows what it does, for priors you handle yourself.
 
 The key tool is `BoundToBound`, which linearly maps `[a, b] → [c, d]`:
 
@@ -212,6 +213,48 @@ sample_transforms += [
     ),
 ]
 ```
+
+## Default transforms
+
+For standard compact-binary analyses you do not need to write the two lists yourself.
+`jimgw.core.single_event.helpers` derives them from your prior, the same way the [CLI](cli.md) does:
+
+```python
+from jimgw.core.single_event.helpers import (
+    get_default_likelihood_transforms,
+    get_default_sample_transforms,
+)
+
+# ifos must already have their data attached.
+sample_transforms = get_default_sample_transforms(prior, ifos)
+likelihood_transforms = get_default_likelihood_transforms(prior, ifos, waveform)
+
+jim = Jim(
+    likelihood,
+    prior,
+    sampler_config=FlowMCConfig(),
+    sample_transforms=sample_transforms,
+    likelihood_transforms=likelihood_transforms,
+)
+```
+
+- **Sample transforms.**
+  `t_c` is sampled as the arrival time at `ifos[0]` and `ra`/`dec` as `azimuth`/`zenith` relative to the first two detectors.
+  Pass `detector_frame_time=False` or `detector_frame_sky=False` to sample `t_c` or `ra`/`dec` directly.
+- **Likelihood transforms.**
+  `q` to `eta`; J-frame spin angles and spherical spins to Cartesian spins; and a prior given in `azimuth`/`zenith` or `t_det` back to `ra`/`dec` and `t_c`.
+- **NS AW.**
+  Pass `space="unit_cube"` to `get_default_sample_transforms` to map every sampled parameter to `[0, 1]` (see [above](#mapping-a-prior-to-the-unit-cube-for-ns-aw) for what that involves).
+  This needs a prior made of `UniformPrior`, `SinePrior`, `CosinePrior`, `PowerLawPrior`, `RayleighPrior` and `GaussianPrior`.
+  It also needs a `t_det` prior (or `detector_frame_time=False`) rather than `t_c`, because the delay between `t_c` and `t_det` depends on the sky position, so a `t_c` prior would not fill the unit interval exactly.
+  Sampling `ra`/`dec` as `azimuth`/`zenith` additionally assumes an isotropic sky prior (`ra` uniform over one period, `dec` cosine); for any other sky prior, put the prior on `azimuth`/`zenith` directly or pass `detector_frame_sky=False`.
+- **SMC.**
+  Pass `space="unbounded"` to map every sampled parameter that does not wrap around to the real line: its unit-cube map, then a logit, so each of these priors becomes a standard logistic distribution.
+  Angles that wrap around (`psi`, `phase_c`, `azimuth`, ...) are left as they are; the SMC sampler handles them itself.
+  A `t_c` prior sampled in the detector frame gives `t_det` the `t_c` range widened by 0.022 s on each side, the largest delay between the geocentre and a detector; the prior is zero outside the true range, so the result is still exact, though `t_det` is not exactly logistic near its edges.
+
+These cover the common cases.
+For anything else, write the lists yourself as described above, or start from the default list and add to it.
 
 ## Passing Transforms to Jim
 

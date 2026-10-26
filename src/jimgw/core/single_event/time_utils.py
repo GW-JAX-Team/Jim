@@ -9,8 +9,10 @@ There is the new `jax_datetime` package, but it does not compute the year and mo
 See: https://github.com/google/jax-datetime/
 """
 
+import functools
+
 import jax.numpy as jnp
-from jax import config
+from jax import config, ensure_compile_time_eval
 from jaxtyping import Array, Bool, Int
 
 from jimgw.typing import FloatLike, FloatScalar, IntScalar
@@ -240,6 +242,25 @@ def greenwich_mean_sidereal_time(
     return greenwich_sidereal_time(gps_time, 0.0)
 
 
+@functools.lru_cache(maxsize=128)
+def cached_greenwich_mean_sidereal_time(gps_time: float) -> FloatScalar:
+    """Compute the GMST from the GPS time, once per GPS time.
+
+    For a GPS time that is a known constant, such as the trigger time of an event.
+    It is evaluated while tracing, so inside ``jax.jit`` the result is a constant of
+    the compiled program and costs nothing per call.
+
+    Args:
+        gps_time (float): GPS time in seconds. It must be a concrete number, not a
+            traced value.
+
+    Returns:
+        Float: Greenwich Mean Sidereal Time in radians.
+    """
+    with ensure_compile_time_eval():
+        return greenwich_mean_sidereal_time(gps_time)
+
+
 def greenwich_sidereal_time(
     gps_time: FloatLike, equation_of_equinoxes: float
 ) -> FloatScalar:
@@ -247,14 +268,13 @@ def greenwich_sidereal_time(
     Compute the Greenwich mean sidereal time from the GPS time and equation of
     equinoxes.
 
-    Based on XLALGreenwichSiderealTime in lalsuite/lal/lib/XLALSiderealTime.c.
-
     Args:
         gps_time (float): The GPS time to convert
         equation_of_equinoxes (float): The equation of equinoxes
     Returns:
         float: The Greenwich sidereal time in radians.
     """
+    # As XLALGreenwichSiderealTime in LAL's XLALSiderealTime.c.
     julian_day = gps_to_julian_day(gps_time)
     t_hi = (julian_day - EPOCH_J2000_0_JD) / 36525.0
     t_lo = (gps_time % 1) / (36525.0 * 86400.0)

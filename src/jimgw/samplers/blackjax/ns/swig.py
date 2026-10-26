@@ -266,6 +266,6 @@ class BlackJAXSwiGSampler(BlackJAXNSSSampler):
 
         # `_sample` initializes state directly; BlackJAX still requires an init callable.
         return SamplingAlgorithm(
-            lambda position, rng_key=None: position,  # type: ignore[return-value]
+            lambda position, rng_key=None: position,
             kernel,
         )

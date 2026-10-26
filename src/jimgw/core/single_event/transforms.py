@@ -5,9 +5,7 @@ from beartype import beartype as typechecker
 from jaxtyping import Array, Float, jaxtyped
 
 from jimgw.core.single_event.detector import GroundBased2G
-from jimgw.core.single_event.time_utils import (
-    greenwich_mean_sidereal_time as compute_gmst,
-)
+from jimgw.core.single_event.time_utils import cached_greenwich_mean_sidereal_time
 from jimgw.core.single_event.transform_utils import (
     Mc_eta_to_m1_m2,
     Mc_q_to_m1_m2,
@@ -255,8 +253,8 @@ class SkyFrameToDetectorFrameSkyPositionTransform(BijectiveTransform):
     """Transform sky position from equatorial (RA/Dec) to detector-frame (zenith/azimuth).
 
     Converts ``(ra, dec)`` to ``(zenith, azimuth)`` relative to the baseline between
-    two detectors at the given trigger time. The rotation matrix is computed from the
-    baseline vector between the first two detectors in ``ifos``.
+    two detectors at the trigger time of their data. The rotation matrix is computed
+    from the baseline vector between the first two detectors in ``ifos``.
 
     Attributes:
         gmst (Float): Greenwich Mean Sidereal Time at the trigger time in radians.
@@ -264,28 +262,34 @@ class SkyFrameToDetectorFrameSkyPositionTransform(BijectiveTransform):
         rotation_inv (Float[Array, "3 3"]): Inverse rotation matrix.
     """
 
-    gmst: FloatScalar
+    ifos: Sequence[GroundBased2G]
     rotation: Float[Array, "3 3"]
     rotation_inv: Float[Array, "3 3"]
+
+    @property
+    def gmst(self) -> FloatScalar:
+        """Greenwich Mean Sidereal Time at the trigger time of the data of ``ifos[0]``."""
+        return cached_greenwich_mean_sidereal_time(self.ifos[0].data.trigger_time)
 
     def __repr__(self):
         return f"SkyFrameToDetectorFrameSkyPositionTransform(gmst={self.gmst})"
 
-    def __init__(
-        self,
-        trigger_time: float,
-        ifos: Sequence[GroundBased2G],
-    ) -> None:
+    def __init__(self, ifos: Sequence[GroundBased2G]) -> None:
         """
         Args:
-            trigger_time (Float): GPS trigger time in seconds.
             ifos (Sequence[GroundBased2G]): At least two detectors; the rotation is
-                computed from the baseline vector between ``ifos[0]`` and ``ifos[1]``.
+                computed from the baseline vector between ``ifos[0]`` and
+                ``ifos[1]``. The trigger time is read from the data of ``ifos[0]``.
         """
+        if len(ifos) < 2:
+            raise ValueError(
+                "The detector-frame sky position is defined by the baseline between "
+                f"two detectors, but only {len(ifos)} was given."
+            )
         name_mapping = (["ra", "dec"], ["zenith", "azimuth"])
         super().__init__(name_mapping)
 
-        self.gmst = compute_gmst(trigger_time)
+        self.ifos = ifos
         delta_x = ifos[0].vertex - ifos[1].vertex
         self.rotation = euler_rotation(delta_x)
         self.rotation_inv = jnp.linalg.inv(self.rotation)
@@ -325,32 +329,27 @@ class GeocentricArrivalTimeToDetectorArrivalTimeTransform(
         ifo (GroundBased2G): The target detector.
     """
 
-    gmst: FloatScalar
     ifo: GroundBased2G
+
+    @property
+    def gmst(self) -> FloatScalar:
+        """Greenwich Mean Sidereal Time at the trigger time of the data of ``ifo``."""
+        return cached_greenwich_mean_sidereal_time(self.ifo.data.trigger_time)
 
     def __repr__(self):
         return f"GeocentricArrivalTimeToDetectorArrivalTimeTransform(gmst={self.gmst}, ifo={self.ifo.name})"
 
-    def __init__(
-        self,
-        trigger_time: float,
-        ifo: GroundBased2G,
-    ) -> None:
+    def __init__(self, ifo: GroundBased2G) -> None:
         """
         Args:
-            trigger_time (Float): GPS trigger time in seconds.
             ifo (GroundBased2G): The target detector for which to compute the
-                time delay from the geocentre.
+                time delay from the geocentre. Its data carry the trigger time.
         """
         name_mapping = (["t_c"], ["t_det"])
         conditional_names = ["ra", "dec"]
         super().__init__(name_mapping, conditional_names)
 
-        self.gmst = compute_gmst(trigger_time)
         self.ifo = ifo
-
-        assert "t_c" in name_mapping[0] and "t_det" in name_mapping[1]
-        assert "ra" in conditional_names and "dec" in conditional_names
 
         def time_delay(ra, dec, gmst):
             return self.ifo.delay_from_geocenter(ra, dec, gmst)
@@ -408,37 +407,27 @@ class GeocentricArrivalPhaseToDetectorArrivalPhaseTransform(
         ifo (GroundBased2G): The target detector.
     """
 
-    gmst: FloatScalar
     ifo: GroundBased2G
+
+    @property
+    def gmst(self) -> FloatScalar:
+        """Greenwich Mean Sidereal Time at the trigger time of the data of ``ifo``."""
+        return cached_greenwich_mean_sidereal_time(self.ifo.data.trigger_time)
 
     def __repr__(self):
         return f"GeocentricArrivalPhaseToDetectorArrivalPhaseTransform(gmst={self.gmst}, ifo={self.ifo.name})"
 
-    def __init__(
-        self,
-        trigger_time: float,
-        ifo: GroundBased2G,
-    ) -> None:
+    def __init__(self, ifo: GroundBased2G) -> None:
         """
         Args:
-            trigger_time (Float): GPS trigger time in seconds.
             ifo (GroundBased2G): The target detector used to compute the complex
-                antenna response.
+                antenna response. Its data carry the trigger time.
         """
         name_mapping = (["phase_c"], ["phase_det"])
         conditional_names = ["ra", "dec", "psi", "iota"]
         super().__init__(name_mapping, conditional_names)
 
-        self.gmst = compute_gmst(trigger_time)
         self.ifo = ifo
-
-        assert "phase_c" in name_mapping[0] and "phase_det" in name_mapping[1]
-        assert (
-            "ra" in conditional_names
-            and "dec" in conditional_names
-            and "psi" in conditional_names
-            and "iota" in conditional_names
-        )
 
         def _calc_R_det_arg(ra, dec, psi, iota, gmst):
             p_iota_term = (1.0 + jnp.cos(iota) ** 2) / 2.0
@@ -499,38 +488,34 @@ class DistanceToSNRWeightedDistanceTransform(ConditionalBijectiveTransform):
         ifos (Sequence[GroundBased2G]): List of detectors forming the network.
     """
 
-    gmst: FloatScalar
     ifos: Sequence[GroundBased2G]
+
+    @property
+    def gmst(self) -> FloatScalar:
+        """Greenwich Mean Sidereal Time at the trigger time of the data of ``ifos[0]``."""
+        return cached_greenwich_mean_sidereal_time(self.ifos[0].data.trigger_time)
 
     def __repr__(self):
         return f"DistanceToSNRWeightedDistanceTransform(gmst={self.gmst}, ifos={[ifo.name for ifo in self.ifos]})"
 
-    def __init__(
-        self,
-        trigger_time: float,
-        ifos: Sequence[GroundBased2G],
-    ) -> None:
+    def __init__(self, ifos: Sequence[GroundBased2G]) -> None:
         """
         Args:
-            trigger_time (Float): GPS trigger time in seconds.
-            ifos (Sequence[GroundBased2G]): Detectors that form the network;
-                used to compute the network antenna response ``R_net``.
+            ifos (Sequence[GroundBased2G]): Detectors that form the network; used to
+                compute the network antenna response ``R_net``. The trigger time is
+                read from the data of ``ifos[0]``.
         """
+        # --------------------------------------------------------------
+        # Detector network validation
+        # --------------------------------------------------------------
+
+        if not ifos:
+            raise ValueError("The distance transform requires at least one detector.")
         name_mapping = (["d_L"], ["d_hat"])
         conditional_names = ["M_c", "ra", "dec", "psi", "iota"]
         super().__init__(name_mapping, conditional_names)
 
-        self.gmst = compute_gmst(trigger_time)
         self.ifos = ifos
-
-        assert "d_L" in name_mapping[0] and "d_hat" in name_mapping[1]
-        assert (
-            "ra" in conditional_names
-            and "dec" in conditional_names
-            and "psi" in conditional_names
-            and "iota" in conditional_names
-            and "M_c" in conditional_names
-        )
 
         def _calc_R_dets(ra, dec, psi, iota):
             p_iota_term = (1.0 + jnp.cos(iota) ** 2) / 2.0

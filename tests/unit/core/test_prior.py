@@ -1,4 +1,5 @@
-from typing import cast
+import subprocess
+import sys
 
 import jax
 import jax.numpy as jnp
@@ -48,7 +49,157 @@ class TestPriorLookup:
         assert find_specific_prior(prior, "t_c") is None
 
 
+class TestPriorConstructorValidation:
+    @pytest.mark.parametrize("parameter_names", [[], ["x", "y"]])
+    @pytest.mark.parametrize(
+        "prior_type, settings",
+        [
+            (LogisticDistribution, {}),
+            (StandardNormalDistribution, {}),
+            (UniformDistribution, {}),
+            (UniformPrior, {"xmin": 0.0, "xmax": 1.0}),
+            (GaussianPrior, {"mu": 0.0, "sigma": 1.0}),
+            (SinePrior, {}),
+            (CosinePrior, {}),
+            (UniformSpherePrior, {}),
+            (RayleighPrior, {"sigma": 1.0}),
+            (PowerLawPrior, {"xmin": 1.0, "xmax": 2.0, "alpha": 2.0}),
+        ],
+    )
+    def test_univariate_priors_require_exactly_one_parameter(
+        self, prior_type, settings, parameter_names
+    ):
+        with pytest.raises(ValueError, match="1D|name of the vector"):
+            prior_type(parameter_names=parameter_names, **settings)
+
+    @pytest.mark.parametrize("base_prior", [[], [UniformPrior(0.0, 1.0, ["x"])] * 2])
+    def test_sequential_prior_requires_exactly_one_base_prior(self, base_prior):
+        with pytest.raises(ValueError, match="one base prior"):
+            SequentialTransformPrior(base_prior, [])
+
+    def test_validation_remains_enabled_with_python_optimization(self):
+        program = """
+from jimgw.core.prior import UniformPrior, GaussianPrior, SequentialTransformPrior
+from jimgw.cli._config import GaussianSpec, PriorConfig, SamplingConfig
+from jimgw.cli._prior import adapt_prior_for_ns_time
+
+cases = [
+    lambda: UniformPrior(0.0, 1.0, []),
+    lambda: UniformPrior(1.0, 0.0, ['x']),
+    lambda: GaussianPrior(0.0, -1.0, ['x']),
+    lambda: SequentialTransformPrior([], []),
+    lambda: adapt_prior_for_ns_time(
+        PriorConfig({'t_c': GaussianSpec(loc=0.0, scale=0.1)}),
+        SamplingConfig(),
+    ),
+]
+for index, make in enumerate(cases):
+    try:
+        make()
+    except ValueError:
+        continue
+    raise RuntimeError(f'Invalid input {index} was accepted under python -O')
+"""
+        result = subprocess.run(
+            [sys.executable, "-O", "-c", program],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
+
+    @pytest.mark.parametrize("bad", [jnp.nan, jnp.inf, -jnp.inf])
+    @pytest.mark.parametrize(
+        "prior_type, settings, field",
+        [
+            (UniformPrior, {"xmin": -1.0, "xmax": 2.0}, "xmin"),
+            (UniformPrior, {"xmin": -1.0, "xmax": 2.0}, "xmax"),
+            (GaussianPrior, {"mu": 0.0, "sigma": 1.0}, "mu"),
+            (GaussianPrior, {"mu": 0.0, "sigma": 1.0}, "sigma"),
+            (RayleighPrior, {"sigma": 1.0}, "sigma"),
+            (UniformSpherePrior, {"max_mag": 1.0}, "max_mag"),
+            (PowerLawPrior, {"xmin": 1.0, "xmax": 2.0, "alpha": 2.0}, "xmin"),
+            (PowerLawPrior, {"xmin": 1.0, "xmax": 2.0, "alpha": 2.0}, "xmax"),
+            (PowerLawPrior, {"xmin": 1.0, "xmax": 2.0, "alpha": 2.0}, "alpha"),
+        ],
+    )
+    def test_numeric_prior_settings_must_be_finite(
+        self, prior_type, settings, field, bad
+    ):
+        with pytest.raises(ValueError, match="finite"):
+            prior_type(parameter_names=["x"], **{**settings, field: bad})
+
+    @pytest.mark.parametrize(
+        "prior_type, settings",
+        [
+            (UniformPrior, {"xmin": 1.0, "xmax": 1.0}),
+            (UniformPrior, {"xmin": 2.0, "xmax": 1.0}),
+            (GaussianPrior, {"mu": 0.0, "sigma": 0.0}),
+            (GaussianPrior, {"mu": 0.0, "sigma": -1.0}),
+            (RayleighPrior, {"sigma": 0.0}),
+            (RayleighPrior, {"sigma": -1.0}),
+            (UniformSpherePrior, {"max_mag": 0.0}),
+            (UniformSpherePrior, {"max_mag": -1.0}),
+            (PowerLawPrior, {"xmin": 0.0, "xmax": 2.0, "alpha": 2.0}),
+            (PowerLawPrior, {"xmin": -1.0, "xmax": 2.0, "alpha": 2.0}),
+            (PowerLawPrior, {"xmin": 2.0, "xmax": 1.0, "alpha": 2.0}),
+        ],
+    )
+    def test_invalid_domains_raise_value_error(self, prior_type, settings):
+        with pytest.raises(ValueError):
+            prior_type(parameter_names=["x"], **settings)
+
+    def test_uniform_interval_width_must_not_overflow(self):
+        with pytest.raises(ValueError, match="interval width must be finite"):
+            UniformPrior(-1e308, 1e308, ["x"])
+
+    def test_rayleigh_retains_its_valid_unbounded_support(self):
+        prior = RayleighPrior(1.0, ["x"])
+        assert prior.get_bounds() == (0.0, jnp.inf)
+        assert jnp.isfinite(prior.log_prob({"x": jnp.asarray(1.0)}))
+
+
 class TestUnivariatePrior:
+    @pytest.mark.parametrize("dtype", [jnp.float32, jnp.float64])
+    @pytest.mark.parametrize("direction", [-1.0, 1.0])
+    def test_logistic_at_largest_finite_values(self, dtype, direction):
+        prior = LogisticDistribution(["x"])
+        value = jnp.asarray(direction * jnp.finfo(dtype).max, dtype=dtype)
+        density, gradient = jax.jit(
+            jax.value_and_grad(lambda x: prior.log_prob({"x": x}))
+        )(value)
+        assert jnp.isfinite(density)
+        assert density == -jnp.abs(value)
+        assert gradient == -direction
+
+    @pytest.mark.parametrize("dtype", [jnp.float32, jnp.float64])
+    @pytest.mark.parametrize("value", [-20.0, -2.0, -0.01, -0.0, 0.0, 0.01, 2.0, 20.0])
+    def test_logistic_density_gradient_and_curvature(self, dtype, value):
+        prior = LogisticDistribution(["x"])
+        log_prob = lambda x: prior.log_prob({"x": x})
+        x = jnp.asarray(value, dtype=dtype)
+        density, gradient = jax.jit(jax.value_and_grad(log_prob))(x)
+        curvature = jax.jit(jax.grad(jax.grad(log_prob)))(x)
+        expected_gradient = -jnp.tanh(x / 2)
+        expected_curvature = -0.5 * (1 - expected_gradient**2)
+        tolerance = 2e-6 if dtype == jnp.float32 else 1e-12
+        assert jnp.allclose(
+            density, stats.logistic.logpdf(value), rtol=tolerance, atol=tolerance
+        )
+        assert jnp.allclose(gradient, expected_gradient, rtol=tolerance, atol=tolerance)
+        assert jnp.allclose(
+            curvature, expected_curvature, rtol=tolerance, atol=tolerance
+        )
+
+    @pytest.mark.parametrize("value", [-1e300, -1000.0, 1000.0, 1e300])
+    def test_logistic_tail_density_and_gradient_remain_finite(self, value):
+        prior = LogisticDistribution(["x"])
+        log_prob = lambda x: prior.log_prob({"x": x})
+        density, gradient = jax.jit(jax.value_and_grad(log_prob))(jnp.asarray(value))
+        assert jnp.isfinite(density)
+        assert jnp.isclose(density, -abs(value))
+        assert jnp.isclose(gradient, -jnp.sign(value))
+
     def test_logistic_distribution(self):
         """Test the LogisticDistribution prior."""
         p = LogisticDistribution(["x"])
@@ -442,7 +593,7 @@ class TestOther:
             def sample(self, rng_key, n_samples):
                 return {"x": jnp.zeros(n_samples)}
 
-        class MockLikelihood:
+        class MockLikelihood(LikelihoodBase):
             def evaluate(self, params):
                 return jnp.array(0.0)
 
@@ -455,7 +606,7 @@ class TestOther:
         ):
             with pytest.raises(ValueError, match="normalized prior"):
                 Jim(
-                    likelihood=cast(LikelihoodBase, lh),
+                    likelihood=lh,
                     prior=prior,
                     sampler_config=sampler_config,
                 )

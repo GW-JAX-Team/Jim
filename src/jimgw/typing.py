@@ -1,10 +1,13 @@
-"""Convenience type aliases for jaxtyping scalar annotations."""
+"""Scalar JAX array annotations with explicit float, integer or complex dtypes.
 
-from typing import TypeAlias
+``FloatLike`` and ``ComplexLike`` also accept Python floats and complex numbers. Jaxtyping's ``Scalar`` and
+``ScalarLike`` accept other dtypes, so they cannot replace these aliases.
+"""
 
 from jaxtyping import Array, Complex, Float, Int
 
-FloatScalar: TypeAlias = Float[Array, ""]
-IntScalar: TypeAlias = Int[Array, ""]
-ComplexScalar: TypeAlias = Complex[Array, ""]
-FloatLike: TypeAlias = float | Float[Array, ""]
+type FloatScalar = Float[Array, ""]
+type IntScalar = Int[Array, ""]
+type ComplexScalar = Complex[Array, ""]
+type FloatLike = float | Float[Array, ""]
+type ComplexLike = complex | Complex[Array, ""]

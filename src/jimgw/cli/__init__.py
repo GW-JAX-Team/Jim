@@ -2,7 +2,7 @@ import logging
 import tomllib
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
-from typing import Annotated, Optional
+from typing import Annotated, Literal, Optional
 
 import typer
 from pydantic import ValidationError
@@ -152,13 +152,12 @@ def run(
     from jimgw.cli._likelihood import build_likelihood
     from jimgw.cli._output import write_outputs
     from jimgw.cli._prior import adapt_prior_for_ns_time, build_prior
-    from jimgw.cli._transforms import (
-        infer_likelihood_transforms,
-        infer_sample_transforms,
-    )
     from jimgw.cli._waveform import build_waveform
-
-    trigger_time: float = cfg.data.trigger_time
+    from jimgw.core.single_event.helpers import (
+        get_default_likelihood_transforms,
+        get_default_periodic,
+        get_default_sample_transforms,
+    )
 
     # Stage 2: waveform
     waveform = build_waveform(cfg.waveform)
@@ -169,12 +168,10 @@ def run(
         f_min=cfg.likelihood.f_min,
         f_max=cfg.likelihood.f_max,
         waveform=waveform,
-        time_frame=cfg.sampling.time_frame,
     )
 
     # NS AW requires all sampling-space parameters in [0, 1].
-    # Must run before build_prior so the built prior and
-    # prior_params already reflect the substitution.
+    # Must run before build_prior so the built prior already reflects the substitution.
     if cfg.sampler.type == "blackjax-ns-aw":
         modified_prior = adapt_prior_for_ns_time(cfg.prior, cfg.sampling)
         if modified_prior is not None:
@@ -183,37 +180,41 @@ def run(
     # Stage 4: prior
     prior = build_prior(cfg.prior)
 
-    # Stage 5: transform inference
-    prior_params = frozenset(prior.parameter_names)
-    ns_aw = cfg.sampler.type == "blackjax-ns-aw"
-    sample_transforms = infer_sample_transforms(
-        prior_params,
-        trigger_time,
+    # Stage 5: transforms and periodic parameters
+    # NS AW samples the unit cube; SMC prefers every parameter on the real line.
+    space: Literal["default", "unit_cube", "unbounded"] = "default"
+    if cfg.sampler.type == "blackjax-ns-aw":
+        space = "unit_cube"
+    elif cfg.sampler.type == "blackjax-smc":
+        space = "unbounded"
+    sample_transforms = get_default_sample_transforms(
+        prior,
         ifos,
-        cfg.sampling,
-        unit_cube=ns_aw,
-        prior_cfg=cfg.prior,
+        detector_frame_time=cfg.sampling.detector_frame_time,
+        detector_frame_sky=cfg.sampling.detector_frame_sky,
+        space=space,
     )
-    likelihood_transforms = infer_likelihood_transforms(
-        prior_params,
-        trigger_time,
+    likelihood_transforms = get_default_likelihood_transforms(
+        prior,
         ifos,
-        cfg.sampling,
-        cfg.waveform.f_ref,
+        waveform,
         phase_marginalization=cfg.likelihood.phase_marginalization,
     )
+    periodic = get_default_periodic(prior, sample_transforms)
+    logger.info("sample transforms: %s", [type(t).__name__ for t in sample_transforms])
+    logger.info(
+        "likelihood transforms: %s", [type(t).__name__ for t in likelihood_transforms]
+    )
+    logger.info("periodic parameters: %s", periodic)
 
     # Stage 6: likelihood
     likelihood = build_likelihood(
         cfg.likelihood,
         ifos,
         waveform,
-        trigger_time,
-        cfg.waveform.f_ref,
         prior=prior,
         likelihood_transforms=likelihood_transforms,
         data_cfg=cfg.data,
-        time_frame=cfg.sampling.time_frame,
     )
 
     # Stage 7: build Jim + run sampler
@@ -222,6 +223,7 @@ def run(
         prior,
         sample_transforms,
         likelihood_transforms,
+        periodic,
         cfg,
         verbose=verbose,
     )

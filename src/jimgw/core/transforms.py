@@ -1,5 +1,5 @@
 from abc import ABC
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 
 import jax
 import jax.numpy as jnp
@@ -7,7 +7,7 @@ from beartype import beartype as typechecker
 from jax.scipy.special import logit
 from jaxtyping import Array, Float, jaxtyped
 
-from jimgw.typing import FloatScalar
+from jimgw.typing import FloatLike, FloatScalar
 
 
 class Transform(ABC):
@@ -61,12 +61,12 @@ class NtoMTransform(Transform):
         transform_func (Callable): Callable that maps an input dict to an output dict.
     """
 
-    transform_func: Callable[[dict[str, Float]], dict[str, Float]]
+    transform_func: Callable[[dict[str, FloatLike]], dict[str, FloatLike]]
 
     def __repr__(self):
         return f"NtoMTransform(name_mapping={self.name_mapping})"
 
-    def forward(self, x: dict[str, Float]) -> dict[str, Float]:
+    def forward(self, x: Mapping[str, FloatLike]) -> dict[str, FloatLike]:
         """Push forward the input to the transformed coordinate.
 
         Args:
@@ -75,7 +75,7 @@ class NtoMTransform(Transform):
         Returns:
             Parameter dictionary in the transformed space.
         """
-        x_copy = x.copy()
+        x_copy = dict(x)
         output_params = self.transform_func(x_copy)
         jax.tree.map(
             lambda key: x_copy.pop(key),
@@ -103,7 +103,9 @@ class NtoNTransform(NtoMTransform):
         """Number of parameters consumed/produced by this transform."""
         return len(self.name_mapping[0])
 
-    def transform(self, x: dict[str, Float]) -> tuple[dict[str, Float], FloatScalar]:
+    def transform(
+        self, x: Mapping[str, FloatLike]
+    ) -> tuple[dict[str, FloatLike], FloatScalar]:
         """Transform to the output coordinate and return the log-Jacobian determinant.
 
         Args:
@@ -113,7 +115,7 @@ class NtoNTransform(NtoMTransform):
             Tuple of the transformed parameter dictionary and the log absolute
             Jacobian determinant.
         """
-        x_copy = x.copy()
+        x_copy = dict(x)
         transform_params = {key: x_copy[key] for key in self.name_mapping[0]}
         output_params = self.transform_func(transform_params)
         jacobian = jax.jacfwd(self.transform_func)(transform_params)
@@ -142,12 +144,14 @@ class BijectiveTransform(NtoNTransform):
         inverse_transform_func: Callable implementing the inverse map.
     """
 
-    inverse_transform_func: Callable[[dict[str, Float]], dict[str, Float]]
+    inverse_transform_func: Callable[[dict[str, FloatLike]], dict[str, FloatLike]]
 
     def __repr__(self):
         return f"BijectiveTransform(name_mapping={self.name_mapping})"
 
-    def inverse(self, y: dict[str, Float]) -> tuple[dict[str, Float], FloatScalar]:
+    def inverse(
+        self, y: Mapping[str, FloatLike]
+    ) -> tuple[dict[str, FloatLike], FloatScalar]:
         """Inverse transform from the output coordinate back to the input coordinate.
 
         Args:
@@ -157,7 +161,7 @@ class BijectiveTransform(NtoNTransform):
             Tuple of the inverse-transformed parameter dictionary and the log
             absolute Jacobian determinant.
         """
-        y_copy = y.copy()
+        y_copy = dict(y)
         transform_params = {key: y_copy[key] for key in self.name_mapping[1]}
         output_params = self.inverse_transform_func(transform_params)
         jacobian = jax.jacfwd(self.inverse_transform_func)(transform_params)
@@ -175,7 +179,7 @@ class BijectiveTransform(NtoNTransform):
         )
         return y_copy, jacobian
 
-    def backward(self, y: dict[str, Float]) -> dict[str, Float]:
+    def backward(self, y: Mapping[str, FloatLike]) -> dict[str, FloatLike]:
         """Pull back from the output coordinate to the input coordinate (no Jacobian).
 
         Args:
@@ -184,7 +188,7 @@ class BijectiveTransform(NtoNTransform):
         Returns:
             Parameter dictionary in the original (input) space.
         """
-        y_copy = y.copy()
+        y_copy = dict(y)
         output_params = self.inverse_transform_func(y_copy)
         jax.tree.map(
             lambda key: y_copy.pop(key),
@@ -229,7 +233,9 @@ class ConditionalBijectiveTransform(BijectiveTransform):
         super().__init__(name_mapping)
         self.conditional_names = conditional_names
 
-    def transform(self, x: dict[str, Float]) -> tuple[dict[str, Float], FloatScalar]:
+    def transform(
+        self, x: Mapping[str, FloatLike]
+    ) -> tuple[dict[str, FloatLike], FloatScalar]:
         """Apply the conditional forward transform and compute the log-Jacobian.
 
         Args:
@@ -239,7 +245,7 @@ class ConditionalBijectiveTransform(BijectiveTransform):
             The transformed parameter dictionary and the log absolute Jacobian
             determinant w.r.t. the primary parameters.
         """
-        x_copy = x.copy()
+        x_copy = dict(x)
         transform_params = {key: x_copy[key] for key in self.name_mapping[0]}
         transform_params.update({key: x_copy[key] for key in self.conditional_names})
         output_params = self.transform_func(transform_params)
@@ -262,7 +268,9 @@ class ConditionalBijectiveTransform(BijectiveTransform):
         )
         return x_copy, jacobian
 
-    def inverse(self, y: dict[str, Float]) -> tuple[dict[str, Float], FloatScalar]:
+    def inverse(
+        self, y: Mapping[str, FloatLike]
+    ) -> tuple[dict[str, FloatLike], FloatScalar]:
         """Apply the conditional inverse transform and compute the log-Jacobian.
 
         Args:
@@ -273,7 +281,7 @@ class ConditionalBijectiveTransform(BijectiveTransform):
             The inverse-transformed parameter dictionary and the log absolute
             Jacobian determinant w.r.t. the primary output parameters.
         """
-        y_copy = y.copy()
+        y_copy = dict(y)
         transform_params = {key: y_copy[key] for key in self.name_mapping[1]}
         transform_params.update({key: y_copy[key] for key in self.conditional_names})
         output_params = self.inverse_transform_func(transform_params)

@@ -29,6 +29,22 @@ nav = [
         {"Samplers" = "guides/samplers.md"},
         {"Transforms" = "guides/transforms.md"},
     ]},
+    {"How-to" = [
+        "how-to/index.md",
+        {"Reduce GPU Memory Use" = "how-to/reduce_gpu_memory.md"},
+        {"Use Your Own Likelihood" = "how-to/custom_likelihood.md"},
+    ]},
+    {"Technical Notes" = [
+        "notes/index.md",
+        {"Detector Response Conventions" = "notes/detector_response.md"},
+        {"Detector Presets" = "notes/detector_presets.md"},
+        {"Likelihood Details" = "notes/likelihood_details.md"},
+        {"Signal-Duration Check" = "notes/signal_duration.md"},
+        {"Sampler Details" = "notes/samplers.md"},
+    ]},
+    {"Development" = [
+        "dev/index.md",
+    ]},
     {"FAQ" = "FAQ.md"},
     {"Citing Jim" = "citing.md"},
     {"Contributing" = "contributing.md"},
@@ -64,7 +80,7 @@ custom_fences = [{name = "mermaid", class = "mermaid", format = "pymdownx.superf
 
 [project.markdown_extensions.toc]
 permalink = "¤"
-toc_depth = 4
+toc_depth = 3
 
 [project.plugins.mkdocstrings.handlers.python]
 paths = ["src"]
@@ -82,4 +98,4 @@ show_if_no_docstring = false
 show_signature_annotations = true
 show_source = false
 members_order = ["__all__", "alphabetical"]
-heading_level = 3
+heading_level = 2

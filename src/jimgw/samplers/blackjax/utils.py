@@ -6,8 +6,8 @@ The four BlackJAX SMC mode samplers, ``BlackJAXNSSSampler``, and
 (compute the path, try to resume, fall back to a fresh state on a corrupt or
 foreign checkpoint, gate saves on the configured interval, clean up on
 completion) are identical across the three; only the state shape, the extra
-per-run bookkeeping (SMC's acceptance/covariance histories vs. NS's ``dead``
-point list), and a couple of backend-specific hooks differ. This module holds
+per-run bookkeeping (SMC's mutation history vs. NS's ``dead`` point list), and
+a couple of backend-specific hooks differ. This module holds
 that shared mechanics; each sampler supplies the differences via callbacks.
 """
 
@@ -20,7 +20,8 @@ from pathlib import Path
 from typing import Any, Optional
 
 import jax
-from jaxtyping import Key
+from jax.experimental.compilation_cache import compilation_cache
+from jaxtyping import Array, Key
 
 from jimgw.samplers.base import Sampler
 from jimgw.samplers.config import _CheckpointMixin
@@ -43,7 +44,7 @@ def load_or_initialize_checkpoint(
     sampler: Sampler,
     checkpoint_path: Optional[Path],
     config: _CheckpointMixin,
-    rng_key: Key,
+    rng_key: Key[Array, ""],
     initial_particles: Any,
     initialize_state: Callable[..., Any],
     initial_extra: dict[str, Any],
@@ -53,12 +54,12 @@ def load_or_initialize_checkpoint(
     after_load: Optional[Callable[[Any], Any]] = None,
     is_stale: Optional[Callable[[int], bool]] = None,
     stale_message: str = "checkpoint exceeds current schedule",
-) -> tuple[Any, Key, int, dict[str, Any]]:
+) -> tuple[Any, Key[Array, ""], int, dict[str, Any]]:
     """Load a compatible checkpoint or initialize a new sampler state.
 
     ``initialize_state`` builds a fresh state from ``initial_particles``.
     ``initial_extra``/``load_extra`` supply and restore backend-specific
-    extras (histories for SMC, the NS ``dead`` point list, ...). ``after_load``
+    extras (the SMC mutation history, the NS ``dead`` point list, ...). ``after_load``
     post-processes a freshly loaded ``state`` — used for device/mesh placement
     (NSS) or other backend-specific reconstruction. ``is_stale`` optionally
     rejects a loaded checkpoint whose ``n_iter`` no longer fits the current
@@ -143,20 +144,23 @@ def save_checkpoint_if_due(
     last_checkpoint_write_time: float,
     run_start_time: float,
     state: Any,
-    rng_key: Key,
+    rng_key: Key[Array, ""],
     n_completed_iterations: int,
     extra: dict[str, Any],
     *,
     log_label: str,
     before_save: Optional[
-        Callable[[Any, Key, dict[str, Any]], tuple[Any, Key, dict[str, Any]]]
+        Callable[
+            [Any, Key[Array, ""], dict[str, Any]],
+            tuple[Any, Key[Array, ""], dict[str, Any]],
+        ]
     ] = None,
 ) -> float:
     """Save a checkpoint when its interval has elapsed.
 
     ``extra`` is merged into the common checkpoint payload (state, rng_key,
     n_iter, sampler_name, elapsed_time) — use it for backend-specific fields
-    such as per-iteration histories or the NS ``dead`` point list.
+    such as the SMC mutation history or the NS ``dead`` point list.
     ``before_save`` transforms ``(state, rng_key, extra)`` right before they
     are written — e.g. NSS's ``jax.device_get`` on all three. It is called
     only when a checkpoint is actually due, so a host transfer here doesn't
@@ -192,5 +196,8 @@ def remove_checkpoint_and_jax_cache(
     if checkpoint_path is not None:
         checkpoint_path.unlink(missing_ok=True)
     if config.checkpoint_dir is not None:
-        shutil.rmtree(config.checkpoint_dir / "jax_cache", ignore_errors=True)
-        jax.config.update("jax_compilation_cache_dir", None)
+        cache_dir = config.checkpoint_dir / "jax_cache"
+        if jax.config.jax_compilation_cache_dir == str(cache_dir):
+            jax.config.update("jax_compilation_cache_dir", None)
+            compilation_cache.reset_cache()
+        shutil.rmtree(cache_dir, ignore_errors=True)

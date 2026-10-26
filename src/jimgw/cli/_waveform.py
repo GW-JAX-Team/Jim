@@ -8,14 +8,15 @@ from jimgw.core.single_event.waveform import (
     RippleIMRPhenomD,
     RippleIMRPhenomD_NRTidalv2,
     RippleIMRPhenomHM,
+    RippleIMRPhenomNSBH,
     RippleIMRPhenomPv2,
+    RippleIMRPhenomPv2_NRTidalv2,
     RippleIMRPhenomXAS,
     RippleIMRPhenomXAS_NRTidalv3,
     RippleIMRPhenomXHM,
     RippleIMRPhenomXP,
     RippleIMRPhenomXP_NRTidalv3,
     RippleIMRPhenomXPHM,
-    RippleSineGaussian,
     RippleTaylorF2,
 )
 
@@ -26,7 +27,9 @@ _REGISTRY: dict[str, Callable[..., Waveform]] = {
     "IMRPhenomD": RippleIMRPhenomD,
     "IMRPhenomD_NRTidalv2": RippleIMRPhenomD_NRTidalv2,
     "IMRPhenomHM": RippleIMRPhenomHM,
+    "IMRPhenomNSBH": RippleIMRPhenomNSBH,
     "IMRPhenomPv2": RippleIMRPhenomPv2,
+    "IMRPhenomPv2_NRTidalv2": RippleIMRPhenomPv2_NRTidalv2,
     "IMRPhenomXAS": RippleIMRPhenomXAS,
     "IMRPhenomXAS_NRTidalv3": RippleIMRPhenomXAS_NRTidalv3,
     "IMRPhenomXHM": RippleIMRPhenomXHM,
@@ -38,11 +41,6 @@ _REGISTRY: dict[str, Callable[..., Waveform]] = {
 
 def build_waveform(cfg: WaveformConfig) -> Waveform:
     """Instantiate the ripple waveform specified by *cfg*."""
-    if cfg.approximant == "SineGaussian":
-        waveform = RippleSineGaussian()
-        logger.info("Built waveform: %s", type(waveform).__name__)
-        return waveform
-
     waveform = _REGISTRY[cfg.approximant](f_ref=cfg.f_ref)
     logger.info("Built waveform: %s(f_ref=%.1f)", type(waveform).__name__, cfg.f_ref)
     return waveform

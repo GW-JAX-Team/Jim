@@ -129,7 +129,7 @@ class BlackJAXNSSSampler(Sampler):
             )
             # `_sample` initializes state directly; BlackJAX still requires an init callable.
             return SamplingAlgorithm(
-                lambda position, rng_key=None: position,  # type: ignore[return-value]
+                lambda position, rng_key=None: position,
                 kernel,
             )
         return nss(
@@ -142,7 +142,7 @@ class BlackJAXNSSSampler(Sampler):
 
     def _sample(
         self,
-        rng_key: Key,
+        rng_key: Key[Array, ""],
         initial_position: Float[Array, "n_live n_dims"],
     ) -> None:
         """Run the BlackJAX NSS sampler.

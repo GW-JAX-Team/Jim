@@ -15,12 +15,15 @@ import functools
 import jax
 import jax.numpy as jnp
 import pytest
+from ripplegw.registry import list_waveforms
 
 import jimgw.core.single_event.waveform as waveform_module
 from tests.utils import assert_all_finite
 
 _SLOW_BINDINGS = frozenset(
     {
+        "RippleIMRPhenomHM",
+        "RippleIMRPhenomXAS",
         "RippleIMRPhenomXAS_NRTidalv3",
         "RippleIMRPhenomXHM",
         "RippleIMRPhenomXP",
@@ -65,6 +68,17 @@ _ALL_PARAMS = {
 
 _FD_FREQUENCIES = jnp.linspace(20.0, 1024.0, 256)
 _TD_TIMES = jnp.arange(-1.0, 1.0, 1.0 / 2048.0)
+
+
+def test_every_ripple_binary_and_burst_model_has_a_binding():
+    """A model added to ripple must get a ``Ripple*`` binding here."""
+    wanted = set(list_waveforms()) - set(list_waveforms(source_type="cw"))
+    bound = {
+        name.removeprefix("Ripple")
+        for name, binding in vars(waveform_module).items()
+        if isinstance(binding, functools.partial)
+    }
+    assert bound == wanted
 
 
 def _build(name):

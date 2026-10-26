@@ -159,3 +159,14 @@ class TestPolarization:
             assert_all_finite(tensor)
             # Tensor should be non-trivial
             assert jnp.any(jnp.abs(tensor) > 0)
+
+    def test_tensor_from_sky_broadcasts_over_gmst(self):
+        """An array of gmst gives one tensor per element."""
+        pol = Polarization("p")
+        gmst = jnp.array([0.3, 2.0, 5.5])
+
+        tensors = pol.tensor_from_sky(1.5, 0.5, 0.3, gmst)
+
+        assert tensors.shape == (3, 3, 3)
+        for i, g in enumerate(gmst):
+            assert jnp.allclose(tensors[..., i], pol.tensor_from_sky(1.5, 0.5, 0.3, g))

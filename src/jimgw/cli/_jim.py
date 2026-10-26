@@ -39,6 +39,7 @@ def build_jim(
     prior,
     sample_transforms: Sequence[BijectiveTransform],
     likelihood_transforms: Sequence[NtoMTransform],
+    periodic: dict[str, tuple[float, float]] | list[str],
     cfg,
     verbose: bool = False,
 ):
@@ -50,6 +51,7 @@ def build_jim(
         sampler_config=sampler_config,
         sample_transforms=sample_transforms,
         likelihood_transforms=likelihood_transforms,
+        periodic=periodic,
         seed=cfg.seed,
         verbose=verbose,
     )

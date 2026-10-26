@@ -1,7 +1,7 @@
 import astropy.units as u
 import jax.numpy as jnp
 from astropy.constants import (
-    pc,  # type: ignore[attr-defined]  # astropy stubs incomplete
+    pc,  # ty: ignore[unresolved-import]  # astropy stubs incomplete
 )
 
 C_SI = 299792458.0
@@ -17,7 +17,7 @@ MRSUN = 1.476625061404649406193430731479084713e3
 """ Geometrised Nominal solar mass, m """
 
 # Astropy's stubs model a unit conversion as optional; ``yr`` is always concrete.
-year = (1 * u.yr).cgs.value  # type: ignore[union-attr]
+year = (1 * u.yr).cgs.value
 Mpc = 1e6 * pc.value  # m
 euler_gamma = 0.577215664901532860606512090082
 
@@ -26,6 +26,11 @@ EARTH_SEMI_MINOR_AXIS = 6356752.314  # in m
 EARTH_RADIUS_LIGHT_S = EARTH_SEMI_MAJOR_AXIS / C_SI  # equatorial radius / c, in seconds
 
 DAYSID_SI = 86164.09053133354
+""" Mean sidereal day, s """
+
+EARTH_ROTATION_RATE = 2 * jnp.pi / DAYSID_SI
+""" Sidereal rotation rate of the Earth (rate of change of GMST), rad/s """
+
 DAYJUL_SI: int = 86400
 
 DEG_TO_RAD = jnp.pi / 180

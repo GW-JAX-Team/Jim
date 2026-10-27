@@ -37,8 +37,6 @@ def _flat_params(key):
         scale=2.38 / jnp.sqrt(2.0),
         num_walks=jnp.array(1),
         walks_float=jnp.array(1.0),
-        n_accept_total=jnp.array(0),
-        n_likelihood_evals_total=jnp.array(0),
     )
     _, top_indices = jax.lax.top_k(loglikelihoods, _NUM_SURVIVORS)
     return params, top_indices
@@ -155,3 +153,21 @@ def test_walks_adapt_to_the_accepts_of_the_same_step():
         )
         new_params = state.inner_kernel_params["params"]
         assert float(new_params.walks_float) == pytest.approx(expected, rel=1e-5)
+
+
+def test_step_keeps_the_state_types():
+    """A step returns a state of the same types, so the step compiles only once."""
+    nlive, num_delete = 40, 4
+    sampler = bilby_adaptive_de_sampler(
+        _log_prior,
+        lambda x: -0.5 * jnp.sum(((x - 0.5) / 0.1) ** 2),
+        nlive=nlive,
+        num_delete=num_delete,
+        stepper_fn=to_unit_cube_stepper(None, 2),
+    )
+    init_key, step_key = jax.random.split(jax.random.key(0))
+    state = sampler.init(jax.random.uniform(init_key, (nlive, 2)))
+
+    new_state, _ = jax.jit(sampler.step)(step_key, state)
+
+    assert jax.tree.map(jax.typeof, new_state) == jax.tree.map(jax.typeof, state)

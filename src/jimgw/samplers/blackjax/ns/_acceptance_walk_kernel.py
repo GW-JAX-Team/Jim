@@ -58,8 +58,6 @@ class DEKernelParams(NamedTuple):
     scale: FloatScalar
     num_walks: IntScalar
     walks_float: FloatScalar
-    n_accept_total: IntScalar
-    n_likelihood_evals_total: IntScalar
 
 
 def _de_one_step(
@@ -228,8 +226,6 @@ def _update_bilby_walks(
     flat_particle, _ = jax.flatten_util.ravel_pytree(example_particle)
     n_dim = flat_particle.shape[0]
 
-    # n_accept_total / n_likelihood_evals_total are immediately overwritten by
-    # update_fn with the per-batch counts; the zeros below are placeholders.
     return DEKernelParams(
         live_points=ns_state.particles.position,
         loglikelihoods=ns_state.particles.loglikelihood,
@@ -237,8 +233,6 @@ def _update_bilby_walks(
         scale=2.38 / jnp.sqrt(2 * n_dim),
         num_walks=jnp.array(num_walks_int, dtype=jnp.int32),
         walks_float=jnp.array(new_walks_float, dtype=jnp.float32),
-        n_accept_total=jnp.array(0, dtype=jnp.int32),
-        n_likelihood_evals_total=jnp.array(0, dtype=jnp.int32),
     )
 
 
@@ -259,20 +253,14 @@ def bilby_adaptive_de_sampler(
     delete_fn = partial(default_delete_fn, num_delete=num_delete)
 
     def update_fn(rng_key, ns_state, info, current_params):
-        batch_n_accept = jnp.sum(info.update_info.n_accept)
         new_params = _update_bilby_walks(
             ns_state=ns_state,
-            n_accept_total=batch_n_accept,
+            n_accept_total=jnp.sum(info.update_info.n_accept),
             logprior_fn=logprior_fn,
             loglikelihood_fn=loglikelihood_fn,
             n_target=n_target,
             max_mcmc=max_mcmc,
             n_delete=num_delete,
-        )
-        batch_n_likelihood_evals = jnp.sum(info.update_info.n_likelihood_evals)
-        new_params = new_params._replace(
-            n_accept_total=batch_n_accept,
-            n_likelihood_evals_total=batch_n_likelihood_evals,
         )
         return {"params": new_params}
 
@@ -337,8 +325,6 @@ def bilby_adaptive_de_sampler(
                 scale=scale,
                 num_walks=jnp.array(100, dtype=jnp.int32),
                 walks_float=jnp.array(100.0, dtype=jnp.float32),
-                n_accept_total=jnp.array(-1, dtype=jnp.int32),
-                n_likelihood_evals_total=jnp.array(-1, dtype=jnp.int32),
             )
             return {"params": initial_de_params}
 

@@ -235,6 +235,14 @@ class BlackJAXSwiGSampler(BlackJAXNSSSampler):
     def _update_inner_kernel_params_fn(self) -> Callable:
         return self._update_block_covariances
 
+    @property
+    def _n_slices_per_inner_step(self) -> int:
+        n_block_slices = sum(
+            self._swig_config.num_inner_steps_per_dim * len(parameter_indices)
+            for parameter_indices in self._rebuild_required_by_block
+        )
+        return self._swig_config.num_gibbs_sweeps * n_block_slices
+
     def _build_nested_sampler(
         self, n_delete: int, mesh: Optional[Mesh] = None
     ) -> SamplingAlgorithm:

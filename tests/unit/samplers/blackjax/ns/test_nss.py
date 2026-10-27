@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import pickle
+import threading
 from pathlib import Path
+from typing import Optional
 
 import jax
 import numpy as np
@@ -26,7 +28,12 @@ class _GaussianLikelihood:
         return -0.5 * ((x - _MU) ** 2 + (y - _MU) ** 2) / _SIGMA**2
 
 
-def _make_sampler(n_live: int = 100) -> BlackJAXNSSSampler:
+def _make_sampler(
+    n_live: int = 100,
+    n_delete_frac: float = 0.5,
+    counter: Optional[list[int]] = None,
+) -> BlackJAXNSSSampler:
+    """The sampler for the Gaussian; ``counter[0]`` counts likelihood calls if given."""
     prior = CombinePrior(
         [
             UniformPrior(0.0, 1.0, parameter_names=["x"]),
@@ -36,17 +43,24 @@ def _make_sampler(n_live: int = 100) -> BlackJAXNSSSampler:
     likelihood = _GaussianLikelihood()
     config = BlackJAXNSSConfig(
         n_live=n_live,
-        n_delete_frac=0.5,
+        n_delete_frac=n_delete_frac,
         num_inner_steps_per_dim=5,
         termination_dlogz=0.5,
     )
     parameter_names = prior.parameter_names  # ("x", "y")
+    lock = threading.Lock()
+
+    def count(marker):
+        with lock:
+            counter[0] += int(np.size(marker))
 
     def log_prior_fn(arr):
         named = dict(zip(parameter_names, arr, strict=True))
         return prior.log_prob(named)
 
     def log_likelihood_fn(arr):
+        if counter is not None:
+            jax.debug.callback(count, arr[0] * 0 + 1)
         named = dict(zip(parameter_names, arr, strict=True))
         return likelihood.evaluate(named)
 
@@ -139,6 +153,14 @@ def test_nss_diagnostics():
     assert np.isfinite(diag["log_Z"])
     assert "sampling_time" in diag
     assert diag["sampling_time"] >= 0.0
+
+
+def test_nss_likelihood_count_matches_the_calls_made():
+    """With one point replaced per iteration every call is counted."""
+    counter = [0]
+    sampler = _make_sampler(n_delete_frac=0.01, counter=counter)
+    sampler.sample(jax.random.key(4), _init_pos(100))
+    assert sampler.get_diagnostics()["n_likelihood_evaluations"] == counter[0]
 
 
 def test_nss_checkpoint_file_created(tmp_path, monkeypatch):

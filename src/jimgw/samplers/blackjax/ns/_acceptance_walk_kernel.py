@@ -197,34 +197,17 @@ def _de_walk(
 
 def _update_bilby_walks(
     ns_state: NSState,
+    n_accept_total: IntScalar,
     logprior_fn,
     loglikelihood_fn,
     n_target: int,
     max_mcmc: int,
     n_delete: int,
 ) -> DEKernelParams:
+    # The params this step ran with, so n_accept_total pairs with current_walks.
     prev_params = ns_state.inner_kernel_params["params"]  # ty: ignore[unresolved-attribute]  # blackjax stubs
-    is_uninitialized = prev_params.n_accept_total < 0
-
-    default_walks_float = jnp.array(100.0, dtype=jnp.float32)
-    default_n_accept_total = jnp.array(0, dtype=jnp.int32)
-    default_current_walks = jnp.array(100, dtype=jnp.int32)
-
-    walks_float = jnp.where(
-        is_uninitialized,
-        default_walks_float,
-        prev_params.walks_float.astype(jnp.float32),
-    )
-    n_accept_total = jnp.where(
-        is_uninitialized,
-        default_n_accept_total,
-        prev_params.n_accept_total.astype(jnp.int32),
-    )
-    current_walks = jnp.where(
-        is_uninitialized,
-        default_current_walks,
-        prev_params.num_walks.astype(jnp.int32),
-    )
+    walks_float = prev_params.walks_float.astype(jnp.float32)
+    current_walks = prev_params.num_walks.astype(jnp.int32)
 
     leaves = jax.tree_util.tree_leaves(ns_state.particles)
     nlive = leaves[0].shape[0]
@@ -276,15 +259,16 @@ def bilby_adaptive_de_sampler(
     delete_fn = partial(default_delete_fn, num_delete=num_delete)
 
     def update_fn(rng_key, ns_state, info, current_params):
+        batch_n_accept = jnp.sum(info.update_info.n_accept)
         new_params = _update_bilby_walks(
             ns_state=ns_state,
+            n_accept_total=batch_n_accept,
             logprior_fn=logprior_fn,
             loglikelihood_fn=loglikelihood_fn,
             n_target=n_target,
             max_mcmc=max_mcmc,
             n_delete=num_delete,
         )
-        batch_n_accept = jnp.sum(info.update_info.n_accept)
         batch_n_likelihood_evals = jnp.sum(info.update_info.n_likelihood_evals)
         new_params = new_params._replace(
             n_accept_total=batch_n_accept,

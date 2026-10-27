@@ -13,6 +13,7 @@ from blackjax.ns.base import StateWithLogLikelihood
 from jimgw.samplers.blackjax.ns._acceptance_walk_kernel import (
     DEKernelParams,
     _de_one_step,
+    bilby_adaptive_de_sampler,
 )
 from jimgw.samplers.periodic import to_unit_cube_stepper
 
@@ -125,3 +126,32 @@ def test_step_keeps_a_uniform_distribution_uniform():
     central_fraction = float(jnp.mean((stepped > 0.25) & (stepped < 0.75)))
     standard_error = (0.25 / n_points) ** 0.5
     assert abs(central_fraction - 0.5) < 4 * standard_error
+
+
+def test_walks_adapt_to_the_accepts_of_the_same_step():
+    """Each update divides the accepts of a step by the walk length of that step."""
+    nlive, num_delete, n_target = 200, 10, 60
+    sampler = bilby_adaptive_de_sampler(
+        _log_prior,
+        lambda x: -0.5 * jnp.sum(((x - 0.5) / 0.1) ** 2),
+        nlive=nlive,
+        n_target=n_target,
+        num_delete=num_delete,
+        stepper_fn=to_unit_cube_stepper(None, 2),
+    )
+    init_key, run_key = jax.random.split(jax.random.key(0))
+    state = sampler.init(jax.random.uniform(init_key, (nlive, 2)))
+    step = jax.jit(sampler.step)
+    delay = max((nlive // 10 - 1) // num_delete, 1)
+
+    for step_key in jax.random.split(run_key, 4):
+        used = state.inner_kernel_params["params"]
+        state, info = step(step_key, state)
+        accept = float(jnp.sum(info.update_info.n_accept)) / num_delete
+        assert accept > 0
+        accept_prob = max(0.5, accept) / int(used.num_walks)
+        expected = (float(used.walks_float) * delay + n_target / accept_prob) / (
+            delay + 1
+        )
+        new_params = state.inner_kernel_params["params"]
+        assert float(new_params.walks_float) == pytest.approx(expected, rel=1e-5)

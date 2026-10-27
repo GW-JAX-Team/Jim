@@ -217,7 +217,6 @@ def _update_bilby_walks(
         1.0, current_walks
     )
     new_walks_float = (walks_float * delay + n_target / accept_prob) / (delay + 1)
-    new_walks_float = jnp.where(n_accept_total == 0, walks_float, new_walks_float)
     num_walks_int = jnp.minimum(jnp.ceil(new_walks_float).astype(jnp.int32), max_mcmc)
 
     example_particle = jax.tree_util.tree_map(

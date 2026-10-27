@@ -155,6 +155,31 @@ def test_walks_adapt_to_the_accepts_of_the_same_step():
         assert float(new_params.walks_float) == pytest.approx(expected, rel=1e-5)
 
 
+def test_walks_grow_after_a_step_without_accepts():
+    """A step without accepts lengthens the walks, counting it as half an accept."""
+    nlive, num_delete, n_target = 200, 10, 60
+    sampler = bilby_adaptive_de_sampler(
+        _log_prior,
+        lambda x: 0.0 * x[0],
+        nlive=nlive,
+        n_target=n_target,
+        num_delete=num_delete,
+        stepper_fn=to_unit_cube_stepper(None, 1),
+    )
+    init_key, step_key = jax.random.split(jax.random.key(0))
+    state = sampler.init(jax.random.uniform(init_key, (nlive, 1)))
+    used = state.inner_kernel_params["params"]
+
+    state, info = jax.jit(sampler.step)(step_key, state)
+
+    assert int(jnp.sum(info.update_info.n_accept)) == 0
+    delay = max((nlive // 10 - 1) // num_delete, 1)
+    accept_prob = 0.5 / int(used.num_walks)
+    expected = (float(used.walks_float) * delay + n_target / accept_prob) / (delay + 1)
+    new_params = state.inner_kernel_params["params"]
+    assert float(new_params.walks_float) == pytest.approx(expected, rel=1e-5)
+
+
 def test_step_keeps_the_state_types():
     """A step returns a state of the same types, so the step compiles only once."""
     nlive, num_delete = 40, 4

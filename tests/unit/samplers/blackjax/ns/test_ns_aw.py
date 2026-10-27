@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import pickle
+import threading
 from pathlib import Path
+from typing import Optional
 
 import jax
 import numpy as np
@@ -32,7 +34,12 @@ class _GaussianLikelihood:
         return -0.5 * ((x - _MU) ** 2 + (y - _MU) ** 2) / _SIGMA**2
 
 
-def _make_sampler(n_live: int = 200) -> BlackJAXNSAWSampler:
+def _make_sampler(
+    n_live: int = 200,
+    periodic: Optional[list[int]] = None,
+    counter: Optional[list[int]] = None,
+) -> BlackJAXNSAWSampler:
+    """The sampler for the Gaussian; ``counter[0]`` counts likelihood calls if given."""
     prior = CombinePrior(
         [
             UniformPrior(0.0, 1.0, parameter_names=["x"]),
@@ -48,12 +55,19 @@ def _make_sampler(n_live: int = 200) -> BlackJAXNSAWSampler:
         termination_dlogz=0.5,
     )
     parameter_names = prior.parameter_names  # ("x", "y")
+    lock = threading.Lock()
+
+    def count(marker):
+        with lock:
+            counter[0] += int(np.size(marker))
 
     def log_prior_fn(arr):
         named = dict(zip(parameter_names, arr, strict=True))
         return prior.log_prob(named)
 
     def log_likelihood_fn(arr):
+        if counter is not None:
+            jax.debug.callback(count, arr[0] * 0 + 1)
         named = dict(zip(parameter_names, arr, strict=True))
         return likelihood.evaluate(named)
 
@@ -66,6 +80,7 @@ def _make_sampler(n_live: int = 200) -> BlackJAXNSAWSampler:
         log_likelihood_fn=log_likelihood_fn,
         log_posterior_fn=log_posterior_fn,
         config=config,
+        periodic=periodic,
     )
 
 
@@ -149,6 +164,15 @@ def test_ns_aw_diagnostics():
     assert np.isfinite(diag["log_Z"])
     assert "sampling_time" in diag
     assert diag["sampling_time"] >= 0.0
+
+
+def test_ns_aw_likelihood_count_matches_the_calls_made():
+    """With every dimension periodic no proposal leaves the cube, so the count
+    matches the calls made."""
+    counter = [0]
+    sampler = _make_sampler(n_live=100, periodic=[0, 1], counter=counter)
+    sampler.sample(jax.random.key(4), _init_pos(100))
+    assert sampler.get_diagnostics()["n_likelihood_evaluations"] == counter[0]
 
 
 def test_ns_aw_checkpoint_file_created(tmp_path, monkeypatch):

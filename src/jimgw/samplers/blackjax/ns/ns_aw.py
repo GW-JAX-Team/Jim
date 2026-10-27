@@ -238,7 +238,8 @@ class BlackJAXNSAWSampler(Sampler):
 
         Returns a dict with the following keys:
 
-        * ``"n_likelihood_evaluations"`` — total likelihood calls.
+        * ``"n_likelihood_evaluations"`` — total likelihood calls, including the
+          ``n_live`` calls for the initial live points.
         * ``"n_iterations"`` — total nested-sampling iterations.
         * ``"n_accept_history"`` — accepted proposal count per NS iteration.
         * ``"n_walks_history"`` — completed walk count per NS iteration.
@@ -250,7 +251,7 @@ class BlackJAXNSAWSampler(Sampler):
         ui: Any = (
             self._final_state.update_info
         )  # DEWalkInfo — blackjax stubs type this as base NamedTuple
-        n_evals = int(jnp.sum(ui.n_likelihood_evals))
+        n_evals = self._config.n_live + int(jnp.sum(ui.n_likelihood_evals))
 
         log_Z = np.asarray(self._nested_samples.logZ()).item()
         log_Z_error = np.std(np.asarray(self._nested_samples.logZ(nsamples=100))).item()

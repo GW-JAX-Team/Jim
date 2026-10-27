@@ -130,7 +130,8 @@ def test_nss_diagnostics():
     assert diag["n_likelihood_evaluations_stepping_out"] is not None
     assert diag["n_likelihood_evaluations_shrinking"] is not None
     assert diag["n_likelihood_evaluations"] == (
-        diag["n_likelihood_evaluations_stepping_out"]
+        100
+        + diag["n_likelihood_evaluations_stepping_out"]
         + diag["n_likelihood_evaluations_shrinking"]
     )
     assert "log_Z" in diag

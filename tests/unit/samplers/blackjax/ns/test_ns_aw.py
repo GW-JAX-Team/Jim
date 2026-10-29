@@ -36,7 +36,7 @@ class _GaussianLikelihood:
 
 def _make_sampler(
     n_live: int = 200,
-    periodic: Optional[list[int]] = None,
+    n_delete_frac: float = 0.5,
     counter: Optional[list[int]] = None,
 ) -> BlackJAXNSAWSampler:
     """The sampler for the Gaussian; ``counter[0]`` counts likelihood calls if given."""
@@ -49,7 +49,7 @@ def _make_sampler(
     likelihood = _GaussianLikelihood()
     config = BlackJAXNSAWConfig(
         n_live=n_live,
-        n_delete_frac=0.5,
+        n_delete_frac=n_delete_frac,
         n_target=10,
         max_mcmc=500,
         termination_dlogz=0.5,
@@ -80,7 +80,6 @@ def _make_sampler(
         log_likelihood_fn=log_likelihood_fn,
         log_posterior_fn=log_posterior_fn,
         config=config,
-        periodic=periodic,
     )
 
 
@@ -167,10 +166,9 @@ def test_ns_aw_diagnostics():
 
 
 def test_ns_aw_likelihood_count_matches_the_calls_made():
-    """With every dimension periodic no proposal leaves the cube, so the count
-    matches the calls made."""
+    """With one point replaced per iteration every call is counted."""
     counter = [0]
-    sampler = _make_sampler(n_live=100, periodic=[0, 1], counter=counter)
+    sampler = _make_sampler(n_live=100, n_delete_frac=0.01, counter=counter)
     sampler.sample(jax.random.key(4), _init_pos(100))
     assert sampler.get_diagnostics()["n_likelihood_evaluations"] == counter[0]
 

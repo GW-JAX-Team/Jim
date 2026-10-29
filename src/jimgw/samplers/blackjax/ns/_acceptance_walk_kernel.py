@@ -42,7 +42,6 @@ from jimgw.typing import FloatScalar, IntScalar
 
 class DEInfo(NamedTuple):
     is_accepted: Bool[Array, ""]
-    likelihood_evals: IntScalar
     steps: IntScalar
 
 
@@ -71,7 +70,7 @@ def _de_one_step(
     stepper_fn,
     num_survivors: int,
     top_indices: Int[Array, " num_survivors"],
-    max_steps_remaining: IntScalar = 1,
+    max_steps_remaining: IntScalar,
     num_candidates: int = 16,
 ):
     """Take walk steps from ``state`` until one proposal lands in the unit cube.
@@ -79,7 +78,7 @@ def _de_one_step(
     A proposal outside the cube is a spent, rejected walk step and the point stays
     where it is, so the next step proposes from the same point again. Up to
     ``num_candidates`` such steps are proposed at once, and the likelihood is
-    evaluated only at the first proposal inside the cube. At most
+    evaluated once per call, at the first proposal inside the cube. At most
     ``min(max_steps_remaining, num_candidates)`` steps are taken; if all of them
     leave the cube, the point is unchanged. ``info.steps`` is the number of walk
     steps taken.
@@ -124,7 +123,7 @@ def _de_one_step(
     logp_prop = candidate_logps[first]
 
     # When every candidate left the cube, the likelihood is evaluated at the
-    # current point and discarded (not counted).
+    # current point and discarded.
     eval_pos = jax.tree_util.tree_map(
         lambda p, c: jnp.where(is_valid, p, c), pos_prop, state.position
     )
@@ -140,11 +139,7 @@ def _de_one_step(
     new_state = StateWithLogLikelihood(
         final_pos, final_logp, final_logl, loglikelihood_0
     )
-    info = DEInfo(
-        is_accepted=is_accepted,
-        likelihood_evals=is_valid.astype(jnp.int32),
-        steps=steps,
-    )
+    info = DEInfo(is_accepted=is_accepted, steps=steps)
 
     return new_state, info
 
@@ -205,7 +200,7 @@ def _de_walk(
             next_key,
             new_state,
             n_accept + info.is_accepted,
-            n_likelihood_evals + info.likelihood_evals,
+            n_likelihood_evals + 1,
             walks_completed + info.steps,
         )
 

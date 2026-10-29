@@ -60,6 +60,7 @@ def _step(key, position, params, top_indices, loglikelihood_fn, stepper_fn):
         stepper_fn,
         _NUM_SURVIVORS,
         top_indices,
+        max_steps_remaining=1,
     )
 
 
@@ -82,7 +83,6 @@ def test_out_of_cube_proposal_is_a_spent_step():
 
     assert not bool(info.is_accepted)
     assert float(new_state.position[0]) == pytest.approx(0.75)
-    assert int(info.likelihood_evals) == 0
     assert int(info.steps) == 1
 
 
@@ -100,7 +100,7 @@ def test_in_cube_proposal_is_accepted():
 
     assert bool(info.is_accepted)
     assert float(new_state.position[0]) == pytest.approx(0.25)
-    assert int(info.likelihood_evals) == 1
+    assert int(info.steps) == 1
 
 
 def test_step_keeps_a_uniform_distribution_uniform():
@@ -149,7 +149,6 @@ def test_out_of_cube_proposals_are_redrawn_as_steps():
     )
 
     assert int(info.steps) == 5
-    assert int(info.likelihood_evals) == 0
     assert not bool(info.is_accepted)
     assert float(new_state.position[0]) == pytest.approx(0.75)
 
@@ -261,7 +260,7 @@ def test_walk_matches_one_proposal_per_step():
         )
 
         def body(state, step_key):
-            new_state, info = _de_one_step(
+            new_state, _ = _de_one_step(
                 step_key,
                 state,
                 loglikelihood_0,
@@ -273,22 +272,17 @@ def test_walk_matches_one_proposal_per_step():
                 top_indices,
                 max_steps_remaining=1,
             )
-            return new_state, info.likelihood_evals
+            return new_state, None
 
-        final, evals = jax.lax.scan(body, state, jax.random.split(key, num_walks))
-        return final, jnp.sum(evals)
+        final, _ = jax.lax.scan(body, state, jax.random.split(key, num_walks))
+        return final
 
     final, info = jax.vmap(walk)(jax.random.split(walk_key, n_points), starts)
-    ref_final, ref_evals = jax.vmap(reference)(
-        jax.random.split(ref_key, n_points), starts
-    )
+    ref_final = jax.vmap(reference)(jax.random.split(ref_key, n_points), starts)
 
     assert bool(jnp.all(info.walks_completed == num_walks))
     # Most proposals leave the cube here, so most steps need no likelihood.
     assert float(jnp.mean(info.n_likelihood_evals)) < 0.75 * num_walks
-    assert float(jnp.mean(info.n_likelihood_evals)) == pytest.approx(
-        float(jnp.mean(ref_evals)), rel=0.05
-    )
     # Two-sample Kolmogorov-Smirnov distance per dimension (critical value at 0.1%).
     critical = 1.95 * (2.0 / n_points) ** 0.5
     for d in range(n_dim):

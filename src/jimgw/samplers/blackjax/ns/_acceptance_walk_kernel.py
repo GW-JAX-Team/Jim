@@ -43,6 +43,7 @@ from jimgw.typing import FloatScalar, IntScalar
 class DEInfo(NamedTuple):
     is_accepted: Bool[Array, ""]
     likelihood_evals: IntScalar
+    steps: IntScalar
 
 
 class DEWalkInfo(NamedTuple):
@@ -70,34 +71,60 @@ def _de_one_step(
     stepper_fn,
     num_survivors: int,
     top_indices: Int[Array, " num_survivors"],
+    max_steps_remaining: IntScalar = 1,
+    num_candidates: int = 16,
 ):
-    key_a, key_b, key_mix, key_gamma = jax.random.split(rng_key, 4)
+    """Take walk steps from ``state`` until one proposal lands in the unit cube.
 
-    pos_a = jax.random.randint(key_a, (), 0, num_survivors)
-    pos_b_raw = jax.random.randint(key_b, (), 0, num_survivors - 1)
-    pos_b = jnp.where(pos_b_raw >= pos_a, pos_b_raw + 1, pos_b_raw)
+    A proposal outside the cube is a spent, rejected walk step and the point stays
+    where it is, so the next step proposes from the same point again. Up to
+    ``num_candidates`` such steps are proposed at once, and the likelihood is
+    evaluated only at the first proposal inside the cube. At most
+    ``min(max_steps_remaining, num_candidates)`` steps are taken; if all of them
+    leave the cube, the point is unchanged. ``info.steps`` is the number of walk
+    steps taken.
+    """
 
-    point_a = jax.tree_util.tree_map(
-        lambda x: x[top_indices[pos_a]], params.live_points
+    def propose(key):
+        key_a, key_b, key_mix, key_gamma = jax.random.split(key, 4)
+
+        pos_a = jax.random.randint(key_a, (), 0, num_survivors)
+        pos_b_raw = jax.random.randint(key_b, (), 0, num_survivors - 1)
+        pos_b = jnp.where(pos_b_raw >= pos_a, pos_b_raw + 1, pos_b_raw)
+
+        point_a = jax.tree_util.tree_map(
+            lambda x: x[top_indices[pos_a]], params.live_points
+        )
+        point_b = jax.tree_util.tree_map(
+            lambda x: x[top_indices[pos_b]], params.live_points
+        )
+        delta = jax.tree_util.tree_map(lambda a, b: a - b, point_a, point_b)
+
+        is_small_step = jax.random.uniform(key_mix) < params.mix
+        gamma = jnp.where(
+            is_small_step,
+            params.scale * jax.random.gamma(key_gamma, 4.0) * 0.25,
+            1.0,
+        )
+
+        pos_prop = stepper_fn(state.position, delta, gamma)
+        return pos_prop, logprior_fn(pos_prop)
+
+    # The candidates are independent draws from the same point, so drawing them
+    # at once matches drawing them one walk step at a time.
+    candidates, candidate_logps = jax.vmap(propose)(
+        jax.random.split(rng_key, num_candidates)
     )
-    point_b = jax.tree_util.tree_map(
-        lambda x: x[top_indices[pos_b]], params.live_points
-    )
-    delta = jax.tree_util.tree_map(lambda a, b: a - b, point_a, point_b)
+    usable = jnp.arange(num_candidates) < max_steps_remaining
+    in_cube = jnp.isfinite(candidate_logps) & usable
+    is_valid = jnp.any(in_cube)
+    first = jnp.argmax(in_cube)
+    steps = jnp.where(is_valid, first + 1, jnp.sum(usable)).astype(jnp.int32)
+    pos_prop = jax.tree_util.tree_map(lambda x: x[first], candidates)
+    logp_prop = candidate_logps[first]
 
-    is_small_step = jax.random.uniform(key_mix) < params.mix
-    gamma = jnp.where(
-        is_small_step,
-        params.scale * jax.random.gamma(key_gamma, 4.0) * 0.25,
-        1.0,
-    )
-
-    pos_prop = stepper_fn(state.position, delta, gamma)
-    logp_prop = logprior_fn(pos_prop)
-    is_valid = jnp.isfinite(logp_prop)
-
-    # A proposal outside the unit cube is a spent step and the point stays where
-    # it is.  The likelihood is only evaluated at a valid position.
+    # When every candidate left the cube, the likelihood is evaluated at the
+    # current point and discarded (not counted).
     eval_pos = jax.tree_util.tree_map(
         lambda p, c: jnp.where(is_valid, p, c), pos_prop, state.position
     )
@@ -113,7 +140,11 @@ def _de_one_step(
     new_state = StateWithLogLikelihood(
         final_pos, final_logp, final_logl, loglikelihood_0
     )
-    info = DEInfo(is_accepted=is_accepted, likelihood_evals=is_valid.astype(jnp.int32))
+    info = DEInfo(
+        is_accepted=is_accepted,
+        likelihood_evals=is_valid.astype(jnp.int32),
+        steps=steps,
+    )
 
     return new_state, info
 
@@ -138,7 +169,9 @@ def _de_walk(
         top_indices=top_indices,
     )
 
-    def single_step(rng_key, state, loglikelihood_0):
+    walk_length = jnp.minimum(params.num_walks, max_mcmc)
+
+    def single_step(rng_key, state, loglikelihood_0, max_steps_remaining):
         return one_step(
             rng_key=rng_key,
             state=state,
@@ -147,13 +180,12 @@ def _de_walk(
             loglikelihood_0=loglikelihood_0,
             params=params,
             stepper_fn=stepper_fn,
+            max_steps_remaining=max_steps_remaining,
         )
 
     def cond_fun(carry):
         _, _, _, _, walks_completed = carry
-        return jnp.logical_and(
-            walks_completed < params.num_walks, walks_completed < max_mcmc
-        )
+        return walks_completed < walk_length
 
     def body_fun(carry):
         (
@@ -164,13 +196,17 @@ def _de_walk(
             walks_completed,
         ) = carry
         step_key, next_key = jax.random.split(key)
-        new_state, info = single_step(step_key, current_state, loglikelihood_0)
+        # One iteration may take several walk steps (all but the last outside the
+        # cube) for a single likelihood evaluation.
+        new_state, info = single_step(
+            step_key, current_state, loglikelihood_0, walk_length - walks_completed
+        )
         return (
             next_key,
             new_state,
             n_accept + info.is_accepted,
             n_likelihood_evals + info.likelihood_evals,
-            walks_completed + 1,
+            walks_completed + info.steps,
         )
 
     init_val = (

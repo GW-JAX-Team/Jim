@@ -170,6 +170,7 @@ def test_ns_aw_likelihood_count_matches_the_calls_made():
     counter = [0]
     sampler = _make_sampler(n_live=100, n_delete_frac=0.01, counter=counter)
     sampler.sample(jax.random.key(4), _init_pos(100))
+    jax.effects_barrier()
     assert sampler.get_diagnostics()["n_likelihood_evaluations"] == counter[0]
 
 

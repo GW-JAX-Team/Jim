@@ -145,6 +145,7 @@ def test_swig_likelihood_count_matches_the_calls_made():
     sampler = _make_sampler(n_delete_frac=0.05, counter=counter)
     initial = jax.random.uniform(jax.random.key(8), (24, 2))
     sampler.sample(jax.random.key(7), initial)
+    jax.effects_barrier()
     assert sampler.get_diagnostics()["n_likelihood_evaluations"] == counter[0]
 
 

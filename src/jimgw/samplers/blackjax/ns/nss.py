@@ -103,6 +103,11 @@ class BlackJAXNSSSampler(Sampler):
     def _update_inner_kernel_params_fn(self) -> Callable:
         return live_covariance
 
+    @property
+    def _n_slices_per_inner_step(self) -> int:
+        """Number of univariate slices in one inner step."""
+        return 1
+
     def _build_nested_sampler(self, n_delete: int, mesh: Optional[Mesh] = None):
         config = self._config
         num_inner_steps = config.num_inner_steps_per_dim * self.n_dims
@@ -301,11 +306,13 @@ class BlackJAXNSSSampler(Sampler):
 
         Returns a dict with the following keys:
 
-        * ``"n_likelihood_evaluations"`` — total likelihood calls.
+        * ``"n_likelihood_evaluations"`` — total likelihood calls, including the
+          ``n_live`` calls for the initial live points.
         * ``"n_iterations"`` — total nested-sampling iterations.
-        * ``"n_stepping_out_history"`` — stepping-out evaluations per iteration.
+        * ``"n_stepping_out_history"`` — stepping-out expansions per iteration.
         * ``"n_shrinking_history"`` — shrinking evaluations per iteration.
-        * ``"n_likelihood_evaluations_stepping_out"`` — total stepping-out evaluations.
+        * ``"n_likelihood_evaluations_stepping_out"`` — total stepping-out evaluations:
+          the expansions plus the two ends of every starting interval.
         * ``"n_likelihood_evaluations_shrinking"`` — total shrinking evaluations.
         * ``"acceptance_history"`` — per-iteration acceptance flag.
         * ``"log_Z"`` — log Bayesian evidence (anesthetic mean estimate).
@@ -316,14 +323,17 @@ class BlackJAXNSSSampler(Sampler):
         ui: Any = (
             self._final_state.update_info
         )  # SliceInfo — blackjax stubs type this as base NamedTuple
-        total_steps = int(jnp.sum(ui.num_expansions))
+        n_slices = np.size(ui.num_expansions) * self._n_slices_per_inner_step
+        # Stepping out evaluates both ends of the starting interval before expanding.
+        total_steps = int(jnp.sum(ui.num_expansions)) + 2 * n_slices
         total_shrink = int(jnp.sum(ui.num_shrink))
+        n_evals = self._config.n_live + total_steps + total_shrink
 
         log_Z = np.asarray(self._nested_samples.logZ()).item()
         log_Z_error = np.std(np.asarray(self._nested_samples.logZ(nsamples=100))).item()
 
         return {
-            "n_likelihood_evaluations": total_steps + total_shrink,
+            "n_likelihood_evaluations": n_evals,
             "n_iterations": self._n_iterations,
             "n_stepping_out_history": np.asarray(ui.num_expansions),
             "n_shrinking_history": np.asarray(ui.num_shrink),

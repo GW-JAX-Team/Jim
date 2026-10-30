@@ -1,6 +1,7 @@
 """Tests for cache-aware Nested Slice within Gibbs."""
 
 import pickle
+import threading
 from pathlib import Path
 from typing import Optional
 
@@ -31,11 +32,28 @@ def _log_likelihood(position):
 
 def _make_sampler(
     checkpoint_dir: Optional[Path] = None,
+    n_delete_frac: float = 0.25,
+    counter: Optional[list[int]] = None,
 ) -> BlackJAXSwiGSampler:
+    """The SwiG sampler; ``counter[0]`` counts likelihood calls if given."""
+    lock = threading.Lock()
+
+    def count(marker):
+        with lock:
+            counter[0] += int(np.size(marker))
+
+    def log_likelihood_from_cache(position, cache):
+        if counter is not None:
+            jax.debug.callback(count, position[0] * 0 + 1)
+        return _log_likelihood_from_cache(position, cache)
+
+    def log_likelihood(position):
+        return log_likelihood_from_cache(position, _build_cache(position))
+
     config = BlackJAXSwiGConfig(
         blocks=[["slow"], ["fast"]],
         n_live=24,
-        n_delete_frac=0.25,
+        n_delete_frac=n_delete_frac,
         termination_dlogz=1.5,
         checkpoint_dir=checkpoint_dir,
         checkpoint_interval=1e-9 if checkpoint_dir is not None else 0.0,
@@ -43,12 +61,12 @@ def _make_sampler(
     return BlackJAXSwiGSampler(
         n_dims=2,
         log_prior_fn=_log_prior,
-        log_likelihood_fn=_log_likelihood,
+        log_likelihood_fn=log_likelihood,
         log_posterior_fn=lambda x: _log_prior(x) + _log_likelihood(x),
         config=config,
         rebuild_required_by_block={(0,): True, (1,): False},
         build_cache=_build_cache,
-        log_likelihood_from_cache_fn=_log_likelihood_from_cache,
+        log_likelihood_from_cache_fn=log_likelihood_from_cache,
     )
 
 
@@ -110,7 +128,8 @@ def test_swig_diagnostics():
     assert diag["n_likelihood_evaluations_stepping_out"] is not None
     assert diag["n_likelihood_evaluations_shrinking"] is not None
     assert diag["n_likelihood_evaluations"] == (
-        diag["n_likelihood_evaluations_stepping_out"]
+        24
+        + diag["n_likelihood_evaluations_stepping_out"]
         + diag["n_likelihood_evaluations_shrinking"]
     )
     assert "log_Z" in diag
@@ -118,6 +137,16 @@ def test_swig_diagnostics():
     assert np.isfinite(diag["log_Z"])
     assert "sampling_time" in diag
     assert diag["sampling_time"] >= 0.0
+
+
+def test_swig_likelihood_count_matches_the_calls_made():
+    """With one point replaced per iteration every call is counted."""
+    counter = [0]
+    sampler = _make_sampler(n_delete_frac=0.05, counter=counter)
+    initial = jax.random.uniform(jax.random.key(8), (24, 2))
+    sampler.sample(jax.random.key(7), initial)
+    jax.effects_barrier()
+    assert sampler.get_diagnostics()["n_likelihood_evaluations"] == counter[0]
 
 
 def test_swig_checkpoint_records_sampler_name(tmp_path, monkeypatch):

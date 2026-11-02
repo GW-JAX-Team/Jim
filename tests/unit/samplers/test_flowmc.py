@@ -15,7 +15,7 @@ import pytest
 
 from jimgw.core.base import LikelihoodBase
 from jimgw.core.prior import CombinePrior, UniformPrior
-from jimgw.samplers.config import FlowMCConfig
+from jimgw.samplers.config import FlowMCConfig, FlowMCParallelTemperingConfig
 from jimgw.samplers.flowmc import FlowMCSampler
 
 
@@ -119,6 +119,52 @@ def test_flowmc_rejects_named_foreign_checkpoint(tmp_path, monkeypatch):
     sampler = _make_sampler(config=config)
     with pytest.raises(ValueError, match="different sampler"):
         sampler.sample(jax.random.key(0), jnp.ones((10, 2)) * 0.5)
+
+
+def test_flowmc_parallel_tempering_tempers_only_the_likelihood(monkeypatch):
+    """The tempered density is ``L / T + prior``, so ``T = 1`` is the posterior."""
+    from jimgw.samplers import flowmc as flowmc_module
+
+    captured = {}
+
+    class FakeFlowMCSampler:
+        def __init__(self, **kwargs):
+            captured["resources"] = kwargs["resource_strategy_bundles"].resources
+            self.rng_key = None
+            self.resources = {}
+
+        def sample(self, *args):
+            del args
+
+    monkeypatch.setattr(flowmc_module, "FlowMCSamplerBackend", FakeFlowMCSampler)
+
+    def log_prior_fn(arr):
+        return -jnp.sum(arr**2)
+
+    def log_likelihood_fn(arr):
+        return -3.0 * jnp.sum((arr - 0.5) ** 2)
+
+    config = _make_tiny_config().model_copy(
+        update={"parallel_tempering": FlowMCParallelTemperingConfig(n_temperatures=3)}
+    )
+    sampler = FlowMCSampler(
+        n_dims=2,
+        log_prior_fn=log_prior_fn,
+        log_likelihood_fn=log_likelihood_fn,
+        log_posterior_fn=lambda arr: log_prior_fn(arr) + log_likelihood_fn(arr),
+        config=config,
+    )
+    sampler.sample(jax.random.key(0), jnp.ones((10, 2)) * 0.2)
+
+    tempered = captured["resources"]["tempered_logpdf"]
+    x = jnp.array([0.2, 0.7])
+    # The exchange step tempers this value, so it must be the likelihood alone.
+    np.testing.assert_allclose(tempered(x, {}), log_likelihood_fn(x))
+    for temperature in (1.0, 2.0):
+        np.testing.assert_allclose(
+            tempered.tempered_log_pdf(temperature, x, {}),
+            log_likelihood_fn(x) / temperature + log_prior_fn(x),
+        )
 
 
 @pytest.mark.slow

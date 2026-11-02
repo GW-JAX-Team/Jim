@@ -13,6 +13,7 @@ from typing import Any, Optional
 import jax
 import jax.numpy as jnp
 import numpy as np
+from flowMC.resource.logPDF import TemperedPDF
 from flowMC.resource.states import State
 from flowMC.resource_strategy_bundle.RQSpline_GRW import RQSpline_GRW_Bundle
 from flowMC.resource_strategy_bundle.RQSpline_GRW_PT import RQSpline_GRW_PT_Bundle
@@ -112,6 +113,11 @@ class FlowMCSampler(Sampler):
         self, params: Float[Array, " n_dims"], _data: dict
     ) -> FloatScalar:
         return self._log_posterior_fn(params)
+
+    def _loglikelihood_flowmc(
+        self, params: Float[Array, " n_dims"], _data: dict
+    ) -> FloatScalar:
+        return self._log_likelihood_fn(params)
 
     def _logprior_flowmc(
         self, params: Float[Array, " n_dims"], _data: dict
@@ -216,9 +222,18 @@ class FlowMCSampler(Sampler):
             common_kwargs["n_temperatures"] = pt.n_temperatures
             common_kwargs["max_temperature"] = pt.max_temperature
             common_kwargs["n_tempered_steps"] = pt.n_tempered_steps
-            common_kwargs["logprior"] = self._logprior_flowmc
-
-        resource_strategy_bundle = bundle_cls(**common_kwargs)
+            resource_strategy_bundle = bundle_cls(**common_kwargs)
+            # Replace the tempered density the bundle built: it tempers the
+            # bundle's ``logpdf``, the posterior here, but only the likelihood
+            # should be tempered so that the first temperature is the posterior.
+            resource_strategy_bundle.resources["tempered_logpdf"] = TemperedPDF(
+                self._loglikelihood_flowmc,
+                self._logprior_flowmc,
+                n_dims=self.n_dims,
+                n_temps=pt.n_temperatures,
+            )
+        else:
+            resource_strategy_bundle = bundle_cls(**common_kwargs)
 
         outdir = (
             str(config.checkpoint_dir)

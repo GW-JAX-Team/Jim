@@ -134,6 +134,14 @@ class Sampler(ABC):
     def get_diagnostics(self) -> dict[str, Any]:
         """Return run-level diagnostics.
 
+        Every backend reports ``"n_likelihood_evaluations"``, the number of
+        likelihood calls the sampler made: every call, including ones that
+        re-evaluate a known point or whose result is discarded.  Calls that
+        ``vmap`` runs for chains that have already finished a loop are not
+        counted.  ``"n_likelihood_gradient_evaluations"`` is how many of those
+        calls also computed the gradient, which costs more than a plain call.
+        ``"sampling_time"`` is the wall-clock sampling time in seconds.
+
         Only valid after `sample` has been called.
         """
         if not self._sampled:

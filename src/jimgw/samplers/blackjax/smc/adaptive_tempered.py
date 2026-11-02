@@ -129,6 +129,7 @@ class AdaptiveTemperedSMCSampler(_BlackJAXSMCBase):
         """Return SMC run diagnostics.
 
         Returns a dict with keys ``"n_likelihood_evaluations"``,
+        ``"n_likelihood_gradient_evaluations"`` (always 0),
         ``"n_iterations"``, ``"acceptance_history"``, ``"n_steps_history"``,
         ``"scale_history"``, ``"training_loss_history"`` (with a flow),
         ``"tempering_schedule"``, ``"ess_history"``, ``"log_Z_error"``.
@@ -143,6 +144,7 @@ class AdaptiveTemperedSMCSampler(_BlackJAXSMCBase):
             "n_likelihood_evaluations": self._n_likelihood_evaluations(
                 n_initial_passes=0, n_extra_passes_per_iteration=3
             ),
+            "n_likelihood_gradient_evaluations": 0,
             "n_iterations": self._n_iterations,
             **self._mutation_history_diagnostics(),
             "tempering_schedule": self._tempering_schedule,

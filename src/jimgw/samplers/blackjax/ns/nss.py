@@ -306,8 +306,10 @@ class BlackJAXNSSSampler(Sampler):
 
         Returns a dict with the following keys:
 
-        * ``"n_likelihood_evaluations"`` — total likelihood calls, including the
-          ``n_live`` calls for the initial live points.
+        * ``"n_likelihood_evaluations"`` — likelihood calls made, see
+          `Sampler.get_diagnostics`, including the ``n_live`` calls for the
+          initial live points.
+        * ``"n_likelihood_gradient_evaluations"`` — always 0; NSS uses no gradients.
         * ``"n_iterations"`` — total nested-sampling iterations.
         * ``"n_stepping_out_history"`` — stepping-out expansions per iteration.
         * ``"n_shrinking_history"`` — shrinking evaluations per iteration.
@@ -334,6 +336,7 @@ class BlackJAXNSSSampler(Sampler):
 
         return {
             "n_likelihood_evaluations": n_evals,
+            "n_likelihood_gradient_evaluations": 0,
             "n_iterations": self._n_iterations,
             "n_stepping_out_history": np.asarray(ui.num_expansions),
             "n_shrinking_history": np.asarray(ui.num_shrink),

@@ -52,6 +52,7 @@ Key parameters:
 - `n_local_steps` / `n_global_steps` — local MCMC steps and flow-proposal steps per loop.
 - `local_kernel` — MCMC kernel for local steps: a `FlowMCMALAConfig` (default), `FlowMCHMCConfig`, or `FlowMCGRWConfig` instance (or an equivalent `dict` with a `"kernel"` key, or just the bare name, e.g. `local_kernel="HMC"`, for its defaults).
 - `parallel_tempering` — parallel tempering settings; disabled by default.
+  Chains at temperature $T$ sample the likelihood raised to $1/T$ times the prior, so the $T = 1$ chains sample the posterior.
   Enable with `parallel_tempering=True` (uses defaults), a plain dict of settings such as `{"n_temperatures": 8}`, or a `FlowMCParallelTemperingConfig` instance.
 
 **Repository:** [GW-JAX-Team/flowMC](https://github.com/GW-JAX-Team/flowMC)
@@ -384,9 +385,15 @@ samples = jim.get_samples(n_samples=2000)
 ```python
 diag = jim.get_diagnostics()
 
-diag["n_likelihood_evaluations"]  # int   — total number of likelihood calls
-diag["sampling_time"]             # float — wall-clock sampling time in seconds
+diag["n_likelihood_evaluations"]           # int   — number of likelihood calls the sampler made
+diag["n_likelihood_gradient_evaluations"]  # int   — how many of those also computed the gradient
+diag["sampling_time"]                      # float — wall-clock sampling time in seconds
 ```
+
+`n_likelihood_evaluations` counts every call the sampler makes, including calls that re-evaluate a point it has already evaluated, so it can be compared across samplers.
+It leaves out the calls `vmap` keeps running for chains that have already finished a loop, which use compute but are not part of the algorithm.
+A call that also computes the gradient costs more, so `n_likelihood_gradient_evaluations` counts those separately; only flowMC's MALA and HMC kernels make them.
+See [Sampler Details](../notes/samplers.md) for the SMC and flowMC counts and SwiG's waveform count.
 
 Backend-specific keys:
 
@@ -399,10 +406,12 @@ diag["acceptance_training_global"]      # np.ndarray — global acceptance rate 
 diag["acceptance_production_local"]     # np.ndarray — local acceptance rate per production loop
 diag["acceptance_production_global"]    # np.ndarray — global acceptance rate per production loop
 
-# NS AW and NSS — also include evidence estimate
+# NS AW, NSS and SwiG — also include evidence estimate
 diag["n_iterations"]              # int   — number of nested-sampling steps
 diag["log_Z"]                     # float — log Bayesian evidence
 diag["log_Z_error"]               # float — standard deviation from 100 bootstrap samples
+# SwiG only:
+diag["n_waveform_evaluations"]    # int   — waveform generations; calls that reuse the cache are cheaper
 
 # SMC
 diag["acceptance_history"]        # np.ndarray — mean acceptance rate at each step
@@ -482,6 +491,7 @@ class MySampler(Sampler):
             raise RuntimeError("call sample() first")
         return {
             "n_likelihood_evaluations": self._config.n_steps,
+            "n_likelihood_gradient_evaluations": 0,
         }
 
 

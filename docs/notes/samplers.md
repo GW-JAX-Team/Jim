@@ -12,6 +12,10 @@ Otherwise a `d_L` block refreshes it like any other waveform parameter.
 
 The likelihood decides which parameters the waveform depends on after the sample transforms, the likelihood transforms, the fixed parameters and the analytic marginalisation have been applied.
 
+`n_likelihood_evaluations` counts calls that reuse the cache like any other, so SwiG also reports `n_waveform_evaluations`.
+It counts one waveform for each initial live point, one when each inner step builds the cache of its starting point, and one per likelihood call in a block that refreshes the cache.
+When generating the waveform dominates the cost of the likelihood, compare SwiG with other samplers by this number.
+
 ## SMC mutation
 
 At every temperature, the SMC sampler moves all particles together, in coordinates fitted to them.
@@ -64,3 +68,13 @@ With $S_t$ MCMC steps at temperature step $t$, `n_likelihood_evaluations` is the
 ### Credits
 
 The t-pCN move, its step-size adaptation and the plateau stopping rule follow minipcn (M. J. Williams), Grumitt et al. 2024 ([arXiv:2407.07781](https://arxiv.org/abs/2407.07781)) and pocoMC (Karamanis et al.).
+
+## flowMC likelihood evaluations
+
+Each training and production loop runs a local stepper and a global stepper, and each evaluates the starting point of every chain once before it steps.
+A MALA step makes 2 evaluations, because it evaluates the current point again, an HMC step makes $L + 3$ with $L$ = `n_leapfrog_steps`, and a GRW or flow step makes 1.
+Both MALA evaluations and $L + 2$ of the HMC ones also compute the gradient, and `n_likelihood_gradient_evaluations` counts those; the evaluations of a stepper's starting point do not.
+
+With parallel tempering, every loop also steps all $T$ = `n_temperatures` chains, the untempered one included, for $n_\text{temp}$ = `n_tempered_steps` local steps from an evaluated starting point, and then evaluates all $T$ once more to exchange them.
+With $C$ chains, $n_\text{loc}$ local and $n_\text{glob}$ global steps, $c$ evaluations per local step and $K$ loops run, `n_likelihood_evaluations` is $C K\,[(1 + c\,n_\text{loc}) + (1 + n_\text{glob}) + T\,(2 + c\,n_\text{temp})]$, without the last term when parallel tempering is off.
+flowMC also evaluates the posterior once whenever it writes or resumes from a checkpoint, to check that the likelihood has not changed; those calls are not counted.

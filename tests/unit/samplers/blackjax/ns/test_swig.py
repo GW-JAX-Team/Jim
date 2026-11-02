@@ -2,6 +2,7 @@
 
 import pickle
 import threading
+from functools import partial
 from pathlib import Path
 from typing import Optional
 
@@ -34,21 +35,31 @@ def _make_sampler(
     checkpoint_dir: Optional[Path] = None,
     n_delete_frac: float = 0.25,
     counter: Optional[list[int]] = None,
+    waveform_counter: Optional[list[int]] = None,
 ) -> BlackJAXSwiGSampler:
-    """The SwiG sampler; ``counter[0]`` counts likelihood calls if given."""
+    """The SwiG sampler.
+
+    ``counter[0]`` counts likelihood calls and ``waveform_counter[0]`` cache
+    builds, if given.
+    """
     lock = threading.Lock()
 
-    def count(marker):
+    def count(tally, marker):
         with lock:
-            counter[0] += int(np.size(marker))
+            tally[0] += int(np.size(marker))
+
+    def build_cache(position):
+        if waveform_counter is not None:
+            jax.debug.callback(partial(count, waveform_counter), position[0] * 0 + 1)
+        return _build_cache(position)
 
     def log_likelihood_from_cache(position, cache):
         if counter is not None:
-            jax.debug.callback(count, position[0] * 0 + 1)
+            jax.debug.callback(partial(count, counter), position[0] * 0 + 1)
         return _log_likelihood_from_cache(position, cache)
 
     def log_likelihood(position):
-        return log_likelihood_from_cache(position, _build_cache(position))
+        return log_likelihood_from_cache(position, build_cache(position))
 
     config = BlackJAXSwiGConfig(
         blocks=[["slow"], ["fast"]],
@@ -65,7 +76,7 @@ def _make_sampler(
         log_posterior_fn=lambda x: _log_prior(x) + _log_likelihood(x),
         config=config,
         rebuild_required_by_block={(0,): True, (1,): False},
-        build_cache=_build_cache,
+        build_cache=build_cache,
         log_likelihood_from_cache_fn=log_likelihood_from_cache,
     )
 
@@ -147,6 +158,20 @@ def test_swig_likelihood_count_matches_the_calls_made():
     sampler.sample(jax.random.key(7), initial)
     jax.effects_barrier()
     assert sampler.get_diagnostics()["n_likelihood_evaluations"] == counter[0]
+
+
+def test_swig_waveform_count_matches_the_cache_builds():
+    """With one point replaced per iteration every cache build is counted."""
+    waveform_counter = [0]
+    sampler = _make_sampler(n_delete_frac=0.05, waveform_counter=waveform_counter)
+    initial = jax.random.uniform(jax.random.key(8), (24, 2))
+    sampler.sample(jax.random.key(7), initial)
+    jax.effects_barrier()
+    diagnostics = sampler.get_diagnostics()
+    assert diagnostics["n_waveform_evaluations"] == waveform_counter[0]
+    assert (
+        diagnostics["n_waveform_evaluations"] < diagnostics["n_likelihood_evaluations"]
+    )
 
 
 def test_swig_checkpoint_records_sampler_name(tmp_path, monkeypatch):

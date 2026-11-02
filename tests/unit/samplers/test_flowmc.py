@@ -5,6 +5,8 @@ sampler runs and returns well-formed dicts from get_samples() and get_diagnostic
 """
 
 import pickle
+import threading
+from functools import partial
 from pathlib import Path
 from typing import Optional
 
@@ -15,7 +17,12 @@ import pytest
 
 from jimgw.core.base import LikelihoodBase
 from jimgw.core.prior import CombinePrior, UniformPrior
-from jimgw.samplers.config import FlowMCConfig
+from jimgw.samplers.config import (
+    FlowMCConfig,
+    FlowMCGRWConfig,
+    FlowMCHMCConfig,
+    FlowMCParallelTemperingConfig,
+)
 from jimgw.samplers.flowmc import FlowMCSampler
 
 
@@ -44,7 +51,16 @@ def _make_tiny_config() -> FlowMCConfig:
     )
 
 
-def _make_sampler(config: Optional[FlowMCConfig] = None) -> FlowMCSampler:
+def _make_sampler(
+    config: Optional[FlowMCConfig] = None,
+    counter: Optional[list[int]] = None,
+    gradient_counter: Optional[list[int]] = None,
+) -> FlowMCSampler:
+    """The sampler for the Gaussian.
+
+    ``counter[0]`` counts likelihood calls and ``gradient_counter[0]`` the ones
+    that computed the gradient, if given.
+    """
     prior = CombinePrior(
         [
             UniformPrior(0.0, 1.0, parameter_names=["x"]),
@@ -54,14 +70,37 @@ def _make_sampler(config: Optional[FlowMCConfig] = None) -> FlowMCSampler:
     likelihood = _GaussianLikelihood()
     parameter_names = prior.parameter_names  # ("x", "y")
     n_dims = len(parameter_names)
+    lock = threading.Lock()
+
+    def count(tally, marker):
+        with lock:
+            tally[0] += int(np.size(marker))
+
+    # The identity, counting each gradient taken through it.
+    @jax.custom_vjp
+    def count_gradients(value):
+        return value
+
+    def count_gradients_fwd(value):
+        return value, value
+
+    def count_gradients_bwd(value, cotangent):
+        # The cotangent is not batched under vmap, but the forward value is.
+        jax.debug.callback(partial(count, gradient_counter), value * 0 + 1)
+        return (cotangent,)
+
+    count_gradients.defvjp(count_gradients_fwd, count_gradients_bwd)
 
     def log_prior_fn(arr):
         named = dict(zip(parameter_names, arr, strict=True))
         return prior.log_prob(named)
 
     def log_likelihood_fn(arr):
+        if counter is not None:
+            jax.debug.callback(partial(count, counter), arr[0] * 0 + 1)
         named = dict(zip(parameter_names, arr, strict=True))
-        return likelihood.evaluate(named)
+        value = likelihood.evaluate(named)
+        return count_gradients(value) if gradient_counter is not None else value
 
     def log_posterior_fn(arr):
         return log_prior_fn(arr) + log_likelihood_fn(arr)
@@ -119,6 +158,52 @@ def test_flowmc_rejects_named_foreign_checkpoint(tmp_path, monkeypatch):
     sampler = _make_sampler(config=config)
     with pytest.raises(ValueError, match="different sampler"):
         sampler.sample(jax.random.key(0), jnp.ones((10, 2)) * 0.5)
+
+
+def test_flowmc_parallel_tempering_tempers_only_the_likelihood(monkeypatch):
+    """The tempered density is ``L / T + prior``, so ``T = 1`` is the posterior."""
+    from jimgw.samplers import flowmc as flowmc_module
+
+    captured = {}
+
+    class FakeFlowMCSampler:
+        def __init__(self, **kwargs):
+            captured["resources"] = kwargs["resource_strategy_bundles"].resources
+            self.rng_key = None
+            self.resources = {}
+
+        def sample(self, *args):
+            del args
+
+    monkeypatch.setattr(flowmc_module, "FlowMCSamplerBackend", FakeFlowMCSampler)
+
+    def log_prior_fn(arr):
+        return -jnp.sum(arr**2)
+
+    def log_likelihood_fn(arr):
+        return -3.0 * jnp.sum((arr - 0.5) ** 2)
+
+    config = _make_tiny_config().model_copy(
+        update={"parallel_tempering": FlowMCParallelTemperingConfig(n_temperatures=3)}
+    )
+    sampler = FlowMCSampler(
+        n_dims=2,
+        log_prior_fn=log_prior_fn,
+        log_likelihood_fn=log_likelihood_fn,
+        log_posterior_fn=lambda arr: log_prior_fn(arr) + log_likelihood_fn(arr),
+        config=config,
+    )
+    sampler.sample(jax.random.key(0), jnp.ones((10, 2)) * 0.2)
+
+    tempered = captured["resources"]["tempered_logpdf"]
+    x = jnp.array([0.2, 0.7])
+    # The exchange step tempers this value, so it must be the likelihood alone.
+    np.testing.assert_allclose(tempered(x, {}), log_likelihood_fn(x))
+    for temperature in (1.0, 2.0):
+        np.testing.assert_allclose(
+            tempered.tempered_log_pdf(temperature, x, {}),
+            log_likelihood_fn(x) / temperature + log_prior_fn(x),
+        )
 
 
 @pytest.mark.slow
@@ -179,6 +264,35 @@ def test_flowmc_diagnostics():
     assert diag["acceptance_production_global"] is not None
     assert "sampling_time" in diag
     assert diag["sampling_time"] >= 0.0
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize(
+    "fields",
+    [
+        pytest.param({}, id="mala"),
+        pytest.param({"local_kernel": FlowMCHMCConfig(n_leapfrog_steps=3)}, id="hmc"),
+        pytest.param({"local_kernel": FlowMCGRWConfig()}, id="grw"),
+        pytest.param(
+            {
+                "parallel_tempering": FlowMCParallelTemperingConfig(
+                    n_temperatures=3, n_tempered_steps=2
+                )
+            },
+            id="mala-pt",
+        ),
+    ],
+)
+def test_flowmc_likelihood_count_matches_the_calls_made(fields):
+    counter = [0]
+    gradient_counter = [0]
+    config = _make_tiny_config().model_copy(update=fields)
+    s = _make_sampler(config=config, counter=counter, gradient_counter=gradient_counter)
+    s.sample(jax.random.key(3), jnp.ones((10, 2)) * 0.5)
+    jax.effects_barrier()
+    diagnostics = s.get_diagnostics()
+    assert diagnostics["n_likelihood_evaluations"] == counter[0]
+    assert diagnostics["n_likelihood_gradient_evaluations"] == gradient_counter[0]
 
 
 @pytest.mark.slow

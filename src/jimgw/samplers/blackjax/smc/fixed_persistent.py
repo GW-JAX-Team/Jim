@@ -115,6 +115,7 @@ class FixedPersistentSMCSampler(_BlackJAXSMCBase):
         """Return SMC run diagnostics.
 
         Returns a dict with keys ``"n_likelihood_evaluations"``,
+        ``"n_likelihood_gradient_evaluations"`` (always 0),
         ``"acceptance_history"``, ``"n_steps_history"``, ``"scale_history"``,
         ``"training_loss_history"`` (with a flow), ``"persistent_log_Z"``,
         ``"log_Z"``, ``"ess_history"``, ``"log_Z_error"``.
@@ -132,6 +133,7 @@ class FixedPersistentSMCSampler(_BlackJAXSMCBase):
             "n_likelihood_evaluations": self._n_likelihood_evaluations(
                 n_initial_passes=1, n_extra_passes_per_iteration=2
             ),
+            "n_likelihood_gradient_evaluations": 0,
             **self._mutation_history_diagnostics(),
             "persistent_log_Z": log_Z_traj,
             "log_Z": float(log_Z_traj[-1]),

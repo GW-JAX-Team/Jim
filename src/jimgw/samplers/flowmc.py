@@ -13,6 +13,7 @@ from typing import Any, Optional
 import jax
 import jax.numpy as jnp
 import numpy as np
+from flowMC.resource.logPDF import TemperedPDF
 from flowMC.resource.states import State
 from flowMC.resource_strategy_bundle.RQSpline_GRW import RQSpline_GRW_Bundle
 from flowMC.resource_strategy_bundle.RQSpline_GRW_PT import RQSpline_GRW_PT_Bundle
@@ -112,6 +113,11 @@ class FlowMCSampler(Sampler):
         self, params: Float[Array, " n_dims"], _data: dict
     ) -> FloatScalar:
         return self._log_posterior_fn(params)
+
+    def _loglikelihood_flowmc(
+        self, params: Float[Array, " n_dims"], _data: dict
+    ) -> FloatScalar:
+        return self._log_likelihood_fn(params)
 
     def _logprior_flowmc(
         self, params: Float[Array, " n_dims"], _data: dict
@@ -216,9 +222,17 @@ class FlowMCSampler(Sampler):
             common_kwargs["n_temperatures"] = pt.n_temperatures
             common_kwargs["max_temperature"] = pt.max_temperature
             common_kwargs["n_tempered_steps"] = pt.n_tempered_steps
-            common_kwargs["logprior"] = self._logprior_flowmc
 
         resource_strategy_bundle = bundle_cls(**common_kwargs)
+        if config.parallel_tempering is not None:
+            # The bundle would temper its ``logpdf``, which is the posterior here;
+            # temper the likelihood alone so the first temperature is the posterior.
+            resource_strategy_bundle.resources["tempered_logpdf"] = TemperedPDF(
+                self._loglikelihood_flowmc,
+                self._logprior_flowmc,
+                n_dims=self.n_dims,
+                n_temps=config.parallel_tempering.n_temperatures,
+            )
 
         outdir = (
             str(config.checkpoint_dir)
@@ -312,12 +326,53 @@ class FlowMCSampler(Sampler):
 
         return {"samples": prod_positions, "log_likelihood": log_likelihood}
 
+    def _n_likelihood_evaluations(self, n_loops: int) -> tuple[int, int]:
+        """Likelihood calls in ``n_loops`` training or production loops.
+
+        Returns the number of calls and how many of them computed the gradient.
+        Per chain and loop, each stepper evaluates its starting point once
+        without the gradient and then takes its steps.  A MALA step makes 2
+        calls with the gradient (it re-evaluates the current point), an HMC
+        step ``n_leapfrog_steps + 2`` with the gradient and 1 without, and a
+        GRW or flow step 1 without.  Parallel tempering runs every temperature,
+        the first included, for ``n_tempered_steps`` local steps from an
+        evaluated starting point, then evaluates every temperature once more
+        for the exchange.
+        """
+        cfg = self._config
+        local_kernel = cfg.local_kernel
+        if isinstance(local_kernel, FlowMCMALAConfig):
+            n_per_local_step, n_gradient_per_local_step = 2, 2
+        elif isinstance(local_kernel, FlowMCHMCConfig):
+            n_gradient_per_local_step = local_kernel.n_leapfrog_steps + 2
+            n_per_local_step = n_gradient_per_local_step + 1
+        else:
+            n_per_local_step, n_gradient_per_local_step = 1, 0
+        n_per_loop = (1 + cfg.n_local_steps * n_per_local_step) + (
+            1 + cfg.n_global_steps
+        )
+        n_gradient_per_loop = cfg.n_local_steps * n_gradient_per_local_step
+        pt = cfg.parallel_tempering
+        if pt is not None:
+            n_per_loop += pt.n_temperatures * (
+                2 + pt.n_tempered_steps * n_per_local_step
+            )
+            n_gradient_per_loop += (
+                pt.n_temperatures * pt.n_tempered_steps * n_gradient_per_local_step
+            )
+        n_chain_loops = cfg.n_chains * n_loops
+        return n_chain_loops * n_per_loop, n_chain_loops * n_gradient_per_loop
+
     def _get_diagnostics(self) -> dict[str, Any]:
         """Return flowMC run diagnostics.
 
         Returns a dict with the following keys:
 
-        * ``"n_likelihood_evaluations"`` — total likelihood calls.
+        * ``"n_likelihood_evaluations"`` — likelihood calls made, see
+          `Sampler.get_diagnostics`, except the one flowMC makes to fingerprint
+          each checkpoint it writes or resumes from.
+        * ``"n_likelihood_gradient_evaluations"`` — how many of those calls also
+          computed the gradient (MALA and HMC).
         * ``"n_training_loops_actual"`` — training loops actually run
           (may be fewer than configured if early stopping triggered).
         * ``"training_loss_history"`` — normalizing-flow loss per epoch.
@@ -336,15 +391,13 @@ class FlowMCSampler(Sampler):
             if "check_early_stop" in self._flowmc_sampler.strategies
             else cfg.n_training_loops
         )
-
-        n_evals = int(
-            cfg.n_chains
-            * (cfg.n_local_steps + cfg.n_global_steps)
-            * (actual_training_loops + cfg.n_production_loops)
+        n_evaluations, n_gradient_evaluations = self._n_likelihood_evaluations(
+            actual_training_loops + cfg.n_production_loops
         )
 
         return {
-            "n_likelihood_evaluations": n_evals,
+            "n_likelihood_evaluations": n_evaluations,
+            "n_likelihood_gradient_evaluations": n_gradient_evaluations,
             "n_training_loops_actual": actual_training_loops,
             "training_loss_history": np.asarray(res["loss_buffer"].data),  # ty: ignore[unresolved-attribute]  # flowMC stubs
             "acceptance_training_local": np.asarray(res["local_accs_training"].data),  # ty: ignore[unresolved-attribute]  # flowMC stubs

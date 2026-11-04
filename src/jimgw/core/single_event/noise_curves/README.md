@@ -7,8 +7,8 @@ Each file has two columns, frequency in Hz and strain ASD in $\mathrm{Hz}^{-1/2}
 | --- | --- | --- | --- | --- |
 | H1, L1 | `aLIGO_design_asd.txt` | Advanced LIGO design | LIGO-T1800044-v5, L. Barsotti, P. Fritschel, M. Evans, S. Gras (2018), file `aLIGODesign.txt`. <https://dcc.ligo.org/LIGO-T1800044/public> | 5 - 5000 Hz |
 | V1 | `AdV_design_asd.txt` | Advanced Virgo design | LIGO-P1200087-v42, LIGO Scientific Collaboration and Virgo Collaboration, Living Rev. Relativ. 19, 1 (2016), [arXiv:1304.0670](https://arxiv.org/abs/1304.0670), file `fig1_adv_sensitivity.txt`. <https://dcc.ligo.org/LIGO-P1200087-v42/public> | 10 - 10000 Hz |
-| ET1, ET2, ET3 | `ET_10km_asd.txt` | Einstein Telescope 10 km baseline (LF+HF) | ETO Design Task Force baseline, F. Sorrentino et al., ET-0482A-25 (2025), <https://apps.et-gw.eu/tds/?r=19915>. Data: <https://gitlab.et-gw.eu/pub/et-sensitivity-curves>, commit `66177ccf4626c77fee243ef21367ac934b2c0ccc`, `10_km/{HF,LF}/data/total.txt` | 1 - 10000 Hz |
-| ET_Sar, ET_EMR | `ET_15km_asd.txt` | Einstein Telescope 15 km baseline (LF+HF) | As above, `15_km/{HF,LF}/data/total.txt` | 1 - 10000 Hz |
+| ET1, ET2, ET3 | `ET_10km_asd.txt` | Einstein Telescope ET2026a, 10 km (LF+HF) | ETO Design Task Force baseline, F. Sorrentino et al., ET-0482A-25 (2025), <https://apps.et-gw.eu/tds/?r=19915>. Data: <https://gitlab.et-gw.eu/pub/et-sensitivity-curves>, commit `66177ccf4626c77fee243ef21367ac934b2c0ccc`, `10_km/{HF,LF}/data/total.txt` | 1 - 10000 Hz |
+| ET_Sar, ET_EMR | `ET_15km_asd.txt` | Einstein Telescope ET2026a, 15 km (LF+HF) | As above, `15_km/{HF,LF}/data/total.txt` | 1 - 10000 Hz |
 | CE | `CE_40km_asd.txt` | Cosmic Explorer baseline 40 km | CE-T2000017-v8, Cosmic Explorer Project, file `ce_strain.zip`, `cosmic_explorer_strain.txt`. <https://dcc.cosmicexplorer.org/CE-T2000017/public>. Detector designs: [arXiv:2201.10668](https://arxiv.org/abs/2201.10668), [arXiv:2109.09882](https://arxiv.org/abs/2109.09882) | 5 - 5000 Hz |
 
 The data rows of the LIGO, Virgo and CE files are unchanged from the upstream files; only the header was added.

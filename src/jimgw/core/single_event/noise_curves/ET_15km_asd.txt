@@ -1,4 +1,4 @@
-# Einstein Telescope 15 km LF+HF xylophone baseline sensitivity, strain amplitude
+# Einstein Telescope ET2026a sensitivity, 15 km LF+HF xylophone, strain amplitude
 # spectral density of one L-shaped detector with a 90 degree arm opening angle.
 # Columns: frequency [Hz], strain ASD [Hz^(-1/2)].
 #

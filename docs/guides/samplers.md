@@ -399,10 +399,12 @@ diag["acceptance_training_global"]      # np.ndarray — global acceptance rate 
 diag["acceptance_production_local"]     # np.ndarray — local acceptance rate per production loop
 diag["acceptance_production_global"]    # np.ndarray — global acceptance rate per production loop
 
-# NS AW and NSS — also include evidence estimate
+# NS AW, NSS and SwiG — also include evidence estimate
 diag["n_iterations"]              # int   — number of nested-sampling steps
 diag["log_Z"]                     # float — log Bayesian evidence
 diag["log_Z_error"]               # float — standard deviation from 100 bootstrap samples
+# SwiG only:
+diag["n_waveform_evaluations"]    # int   — waveform generations
 
 # SMC
 diag["acceptance_history"]        # np.ndarray — mean acceptance rate at each step

@@ -8,8 +8,8 @@ from typing import NamedTuple, Optional
 import jax
 import jax.numpy as jnp
 from blackjax import SamplingAlgorithm
-from blackjax.mcmc.slice import SliceInfo, stepping_out
 from blackjax.mcmc.slice import build_kernel as build_slice_kernel
+from blackjax.mcmc.slice import stepping_out
 from blackjax.ns.from_mcmc import build_kernel as build_from_mcmc_kernel
 from blackjax.ns.nss import sample_direction_from_covariance
 from blackjax.smc.tuning.from_particles import particles_covariance_matrix
@@ -31,6 +31,17 @@ class CachedSliceState(NamedTuple):
     loglikelihood: FloatScalar
     loglikelihood_birth: FloatScalar
     cache: object
+
+
+class SwiGSliceInfo(NamedTuple):
+    """BlackJAX's ``SliceInfo`` plus the waveform generations of one inner step."""
+
+    is_accepted: Array
+    num_expansions: Array
+    num_shrink: Array
+    bracket_left: Array
+    bracket_right: Array
+    num_waveform_evaluations: Array
 
 
 def _build_swig_constrained_step(
@@ -72,6 +83,7 @@ def _build_swig_constrained_step(
         accepted = jnp.asarray(True)
         num_expansions = jnp.asarray(0)
         num_shrink = jnp.asarray(0)
+        num_waveform_evaluations = jnp.asarray(1)  # the cache built above
 
         for _ in range(num_gibbs_sweeps):
             for (parameter_indices, requires_rebuild), covariance in zip(
@@ -87,7 +99,7 @@ def _build_swig_constrained_step(
                     covariance=covariance,
                     requires_rebuild=requires_rebuild,
                 ):
-                    current, all_accepted, expansions, shrink = carry
+                    current, all_accepted, expansions, shrink, waveforms = carry
 
                     def proposal_generator(direction_key, position, logdensity_fn):
                         del logdensity_fn
@@ -126,18 +138,39 @@ def _build_swig_constrained_step(
                     new_state, info = slice_kernel(
                         key, current, None, proposal_generator
                     )
+                    if requires_rebuild:
+                        # Every slice evaluation in this block builds a cache.
+                        waveforms = (
+                            waveforms + 2 + info.num_expansions + info.num_shrink
+                        )
                     return (
                         new_state,
                         all_accepted & info.is_accepted,
                         expansions + info.num_expansions,
                         shrink + info.num_shrink,
+                        waveforms,
                     ), None
 
                 keys = jax.random.split(rng_key, n_steps + 1)
                 rng_key = keys[0]
-                (cached_state, accepted, num_expansions, num_shrink), _ = jax.lax.scan(
+                (
+                    (
+                        cached_state,
+                        accepted,
+                        num_expansions,
+                        num_shrink,
+                        num_waveform_evaluations,
+                    ),
+                    _,
+                ) = jax.lax.scan(
                     one_slice,
-                    (cached_state, accepted, num_expansions, num_shrink),
+                    (
+                        cached_state,
+                        accepted,
+                        num_expansions,
+                        num_shrink,
+                        num_waveform_evaluations,
+                    ),
                     keys[1:],
                 )
 
@@ -147,12 +180,13 @@ def _build_swig_constrained_step(
             loglikelihood=cached_state.loglikelihood,
             loglikelihood_birth=jnp.asarray(loglikelihood_0),
         )
-        info = SliceInfo(
+        info = SwiGSliceInfo(
             is_accepted=accepted,
             num_expansions=num_expansions,
             num_shrink=num_shrink,
             bracket_left=jnp.zeros(n_dims),
             bracket_right=jnp.zeros(n_dims),
+            num_waveform_evaluations=num_waveform_evaluations,
         )
         return final_state, info
 
@@ -277,3 +311,12 @@ class BlackJAXSwiGSampler(BlackJAXNSSSampler):
             lambda position, rng_key=None: position,
             kernel,
         )
+
+    def _get_diagnostics(self) -> dict[str, object]:
+        """Return the NSS diagnostics plus ``"n_waveform_evaluations"``."""
+        diagnostics = super()._get_diagnostics()
+        ui = self._final_state.update_info
+        diagnostics["n_waveform_evaluations"] = self._config.n_live + int(
+            jnp.sum(ui.num_waveform_evaluations)  # ty: ignore[unresolved-attribute]  # blackjax stubs
+        )
+        return diagnostics

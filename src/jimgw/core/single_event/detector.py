@@ -47,6 +47,38 @@ default_asd_files = {
     "CE": "CE_40km_asd.txt",
 }
 
+# Frequencies per chunk of a GroundBased3G response on a long grid. The
+# frequency-dependent response builds several (3, 3, n_freq) float64 arrays, 72
+# bytes per frequency each, so a chunk of 2**22 needs a few hundred MB.
+DEFAULT_CHUNK_SIZE = 2**22
+
+
+def _evaluate_in_chunks(function, n_freq: int, chunk_size: int | None):
+    """Evaluate ``function`` on consecutive chunks of a frequency grid and join the results.
+
+    Every frequency is computed independently of the others, so the joined result
+    is the one of a single call on the whole grid, with a peak memory set by
+    ``chunk_size`` instead of ``n_freq``. The chunks are Python-level slices of
+    static size, so this also works under ``jit``.
+
+    Args:
+        function: Maps a ``slice`` of the grid to an array or a pytree of arrays
+            (e.g. a dict of polarizations) whose leading axis is that slice.
+        n_freq (int): Length of the grid.
+        chunk_size (int | None): Frequencies per chunk. ``None``, or a grid that
+            fits in one chunk, evaluates the whole grid in one call.
+
+    Returns:
+        The result of ``function(slice(0, n_freq))``.
+    """
+    if chunk_size is None or n_freq <= chunk_size:
+        return function(slice(0, n_freq))
+    pieces = [
+        function(slice(start, start + chunk_size))
+        for start in range(0, n_freq, chunk_size)
+    ]
+    return jax.tree.map(lambda *leaves: jnp.concatenate(leaves), *pieces)
+
 
 class Detector(_Freezable, ABC):
     """Base class for all detectors.
@@ -260,11 +292,17 @@ class GroundBased2G(Detector):
             include non-GR modes.
         data (Data): Array of frequency-domain strain data.
         psd (PowerSpectrum): Power spectral density object.
+        chunk_size (int | None): Frequencies per chunk when ``inject_signal``
+            evaluates the waveform model on the frequency grid of the data, to bound
+            its peak memory on long grids. ``None`` evaluates the whole grid at
+            once. Set it before the detector is frozen.
     """
 
     polarization_mode: list[Polarization] | tuple[Polarization, ...]
     data: Data
     psd: PowerSpectrum
+
+    chunk_size: int | None = None
 
     latitude: float = 0
     longitude: float = 0
@@ -892,6 +930,9 @@ class GroundBased2G(Detector):
         ``data.frequency_bounds`` first. The trigger time is that of the data
         (``Data.trigger_time``), by default 2 s before their end.
 
+        The waveform model is evaluated on the frequency grid of the data in chunks
+        of ``chunk_size`` frequencies, if the detector sets one.
+
         Args:
             waveform_model: The frequency-domain waveform model to be injected.
             parameters (dict): Likelihood-space source parameters: those of the
@@ -970,9 +1011,15 @@ class GroundBased2G(Detector):
             data, f_min, f_max
         )
 
-        # 1. Compute the projected strain from parameters
+        # 1. Compute the projected strain from parameters. The model is evaluated
+        # in chunks of self.chunk_size frequencies, as the response of
+        # GroundBased3G is: a long signal has a long grid.
         grid = data.frequencies
-        polarisations = waveform_model(grid, parameters)
+        polarisations = _evaluate_in_chunks(
+            lambda chunk: waveform_model(grid[chunk], parameters),
+            grid.shape[0],
+            self.chunk_size,
+        )
         projected_strain = self.fd_response(grid, polarisations, parameters)
         mask = data.frequency_mask
         masked_signal = projected_strain[mask]
@@ -1171,15 +1218,26 @@ class GroundBased3G(GroundBased2G):
     With both switched off, the response is identical to
     [`GroundBased2G`][jimgw.core.single_event.detector.GroundBased2G].
 
+    The frequency-dependent response needs several arrays of shape (3, 3) per
+    frequency. A signal that is in band for hours, such as a binary neutron star
+    from a few Hz, has a frequency grid of ~10^8 points, so the response (and the
+    waveform in ``inject_signal``) is evaluated in chunks of ``chunk_size``
+    frequencies, which bounds the peak memory without changing the result. The
+    grids used while sampling, such as the bin edges of the heterodyned likelihood,
+    are shorter than a chunk and are evaluated in one call.
+
     Attributes:
         arm_length (float): Arm length in meters, used by the finite-arm-length response.
         earth_rotation (bool): Whether the response follows the Earth's rotation.
         finite_arm_length (bool): Whether the finite-arm-length response is included.
+        chunk_size (int | None): Frequencies per chunk of the response and of the
+            injected waveform on long grids. ``None`` evaluates the whole grid at once.
     """
 
     arm_length: float = 0.0
     earth_rotation: bool = True
     finite_arm_length: bool = False
+    chunk_size: int | None = DEFAULT_CHUNK_SIZE
 
     _geometry_names = (*GroundBased2G._geometry_names, "arm_length")
 
@@ -1201,6 +1259,7 @@ class GroundBased3G(GroundBased2G):
         arm_length: float = 0.0,
         earth_rotation: bool = True,
         finite_arm_length: bool = False,
+        chunk_size: int | None = DEFAULT_CHUNK_SIZE,
     ):
         """Initialize a ground-based detector with an Earth-rotating response.
 
@@ -1219,9 +1278,13 @@ class GroundBased3G(GroundBased2G):
                 frequencies. Defaults to True.
             finite_arm_length (bool, optional): Include the finite-arm-length response.
                 Defaults to False.
+            chunk_size (int | None, optional): Frequencies per chunk of the response
+                and of the injected waveform on long grids; ``None`` evaluates the
+                whole grid at once. Defaults to ``DEFAULT_CHUNK_SIZE`` (2**22).
 
         Raises:
-            ValueError: If ``finite_arm_length`` is True and ``arm_length`` is not positive.
+            ValueError: If ``finite_arm_length`` is True and ``arm_length`` is not
+                positive, or if ``chunk_size`` is neither None nor a positive integer.
         """
         # --------------------------------------------------------------
         # Validation
@@ -1230,6 +1293,14 @@ class GroundBased3G(GroundBased2G):
         if finite_arm_length and not arm_length > 0:
             raise ValueError(
                 f"finite_arm_length=True needs a positive arm_length, got {arm_length}."
+            )
+        if chunk_size is not None and (
+            isinstance(chunk_size, bool)
+            or not isinstance(chunk_size, int)
+            or chunk_size < 1
+        ):
+            raise ValueError(
+                f"chunk_size must be a positive integer or None, got {chunk_size!r}."
             )
         super().__init__(
             name,
@@ -1245,6 +1316,7 @@ class GroundBased3G(GroundBased2G):
         self.arm_length = arm_length
         self.earth_rotation = earth_rotation
         self.finite_arm_length = finite_arm_length
+        self.chunk_size = chunk_size
 
     @classmethod
     def from_detector(
@@ -1253,6 +1325,7 @@ class GroundBased3G(GroundBased2G):
         arm_length: float = 0.0,
         earth_rotation: bool = True,
         finite_arm_length: bool = False,
+        chunk_size: int | None = DEFAULT_CHUNK_SIZE,
     ) -> Self:
         """Build a detector with the geometry of an existing ground-based detector.
 
@@ -1265,6 +1338,9 @@ class GroundBased3G(GroundBased2G):
                 frequencies. Defaults to True.
             finite_arm_length (bool, optional): Include the finite-arm-length response.
                 Defaults to False.
+            chunk_size (int | None, optional): Frequencies per chunk on long grids;
+                ``None`` evaluates the whole grid at once. Defaults to
+                ``DEFAULT_CHUNK_SIZE`` (2**22).
 
         Returns:
             GroundBased3G: The new detector.
@@ -1282,6 +1358,7 @@ class GroundBased3G(GroundBased2G):
             arm_length=arm_length,
             earth_rotation=earth_rotation,
             finite_arm_length=finite_arm_length,
+            chunk_size=chunk_size,
         )
 
     # ------------------------------------------------------------------
@@ -1451,9 +1528,29 @@ class GroundBased3G(GroundBased2G):
                 plus ``M_c``, ``eta``, ``s1_z`` and ``s2_z`` when the Earth's
                 rotation is switched on.
 
+        A grid longer than ``chunk_size`` is evaluated in chunks of that many
+        frequencies, with the same result.
+
         Returns:
             Complex[Array, "n_sample"]: Complex strain measured by the detector in frequency domain.
         """
+        return _evaluate_in_chunks(
+            lambda chunk: self._fd_response(
+                frequency[chunk],
+                {name: h[chunk] for name, h in h_sky.items()},
+                params,
+            ),
+            frequency.shape[0],
+            self.chunk_size,
+        )
+
+    def _fd_response(
+        self,
+        frequency: Float[Array, " n_sample"],
+        h_sky: dict[str, Float[Array, " n_sample"]],
+        params: Mapping[str, FloatLike],
+    ) -> Complex[Array, " n_sample"]:
+        """The response of ``fd_response`` on one chunk of frequencies."""
         if not (self.earth_rotation or self.finite_arm_length):
             return super().fd_response(frequency, h_sky, params)
 

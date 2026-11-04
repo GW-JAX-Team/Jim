@@ -3717,10 +3717,12 @@ The <a href="../cli/">CLI</a> passes the same result to Jim.</p>
 <span class="n">diag</span><span class="p">[</span><span class="s2">"acceptance_production_local"</span><span class="p">]</span>     <span class="c1"># np.ndarray — local acceptance rate per production loop</span>
 <span class="n">diag</span><span class="p">[</span><span class="s2">"acceptance_production_global"</span><span class="p">]</span>    <span class="c1"># np.ndarray — global acceptance rate per production loop</span>
 
-<span class="c1"># NS AW and NSS — also include evidence estimate</span>
+<span class="c1"># NS AW, NSS and SwiG — also include evidence estimate</span>
 <span class="n">diag</span><span class="p">[</span><span class="s2">"n_iterations"</span><span class="p">]</span>              <span class="c1"># int   — number of nested-sampling steps</span>
 <span class="n">diag</span><span class="p">[</span><span class="s2">"log_Z"</span><span class="p">]</span>                     <span class="c1"># float — log Bayesian evidence</span>
 <span class="n">diag</span><span class="p">[</span><span class="s2">"log_Z_error"</span><span class="p">]</span>               <span class="c1"># float — standard deviation from 100 bootstrap samples</span>
+<span class="c1"># SwiG only:</span>
+<span class="n">diag</span><span class="p">[</span><span class="s2">"n_waveform_evaluations"</span><span class="p">]</span>    <span class="c1"># int   — waveform generations</span>
 
 <span class="c1"># SMC</span>
 <span class="n">diag</span><span class="p">[</span><span class="s2">"acceptance_history"</span><span class="p">]</span>        <span class="c1"># np.ndarray — mean acceptance rate at each step</span>

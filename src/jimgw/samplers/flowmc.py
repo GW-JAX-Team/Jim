@@ -327,12 +327,40 @@ class FlowMCSampler(Sampler):
 
         return {"samples": prod_positions, "log_likelihood": log_likelihood}
 
+    def _n_likelihood_evaluations(self, n_loops: int) -> tuple[int, int]:
+        """Return the likelihood and gradient calls in ``n_loops`` loops."""
+        cfg = self._config
+        local_kernel = cfg.local_kernel
+        # Calls per step in flowMC 0.6.5; each stepper also evaluates its start.
+        if isinstance(local_kernel, FlowMCMALAConfig):
+            n_per_local_step, n_gradient_per_local_step = 2, 2
+        elif isinstance(local_kernel, FlowMCHMCConfig):
+            n_gradient_per_local_step = local_kernel.n_leapfrog_steps + 2
+            n_per_local_step = n_gradient_per_local_step + 1
+        else:
+            n_per_local_step, n_gradient_per_local_step = 1, 0
+        n_per_loop = (1 + cfg.n_local_steps * n_per_local_step) + (
+            1 + cfg.n_global_steps
+        )
+        n_gradient_per_loop = cfg.n_local_steps * n_gradient_per_local_step
+        pt = cfg.parallel_tempering
+        if pt is not None:
+            n_per_loop += pt.n_temperatures * (
+                2 + pt.n_tempered_steps * n_per_local_step
+            )
+            n_gradient_per_loop += (
+                pt.n_temperatures * pt.n_tempered_steps * n_gradient_per_local_step
+            )
+        n_chain_loops = cfg.n_chains * n_loops
+        return n_chain_loops * n_per_loop, n_chain_loops * n_gradient_per_loop
+
     def _get_diagnostics(self) -> dict[str, Any]:
         """Return flowMC run diagnostics.
 
         Returns a dict with the following keys:
 
         * ``"n_likelihood_evaluations"`` — total likelihood calls.
+        * ``"n_likelihood_gradient_evaluations"`` — calls with the gradient.
         * ``"n_training_loops_actual"`` — training loops actually run
           (may be fewer than configured if early stopping triggered).
         * ``"training_loss_history"`` — normalizing-flow loss per epoch.
@@ -351,15 +379,13 @@ class FlowMCSampler(Sampler):
             if "check_early_stop" in self._flowmc_sampler.strategies
             else cfg.n_training_loops
         )
-
-        n_evals = int(
-            cfg.n_chains
-            * (cfg.n_local_steps + cfg.n_global_steps)
-            * (actual_training_loops + cfg.n_production_loops)
+        n_evaluations, n_gradient_evaluations = self._n_likelihood_evaluations(
+            actual_training_loops + cfg.n_production_loops
         )
 
         return {
-            "n_likelihood_evaluations": n_evals,
+            "n_likelihood_evaluations": n_evaluations,
+            "n_likelihood_gradient_evaluations": n_gradient_evaluations,
             "n_training_loops_actual": actual_training_loops,
             "training_loss_history": np.asarray(res["loss_buffer"].data),  # ty: ignore[unresolved-attribute]  # flowMC stubs
             "acceptance_training_local": np.asarray(res["local_accs_training"].data),  # ty: ignore[unresolved-attribute]  # flowMC stubs

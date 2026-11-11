@@ -250,10 +250,7 @@ def spin_angles_to_cartesian_spin(
     FloatScalar,
 ]:
     """
-    Transforming the spin parameters.
-
-    The code is based on the approach used in LALsimulation:
-    https://lscsoft.docs.ligo.org/lalsuite/lalsimulation/group__lalsimulation__inference.html
+    Convert the spin angles to Cartesian spins in the LALSimulation source frame.
 
     Args:
         theta_jn (Float): Zenith angle between the total angular momentum and the line of sight.
@@ -280,66 +277,61 @@ def spin_angles_to_cartesian_spin(
             - S2y: The y-component of the secondary spin.
             - S2z: The z-component of the secondary spin.
     """
-
-    # Starting frame: LNh along the z-axis
-    # S1hat on the x-z plane
-    LNh = jnp.array([0.0, 0.0, 1.0])
-
-    # Define the spin vectors in the LNh frame
-    s1hat = jnp.array(
-        [
-            jnp.sin(tilt_1) * jnp.cos(phiRef),
-            jnp.sin(tilt_1) * jnp.sin(phiRef),
-            jnp.cos(tilt_1),
-        ]
-    )
-    s2hat = jnp.array(
-        [
-            jnp.sin(tilt_2) * jnp.cos(phi_12 + phiRef),
-            jnp.sin(tilt_2) * jnp.sin(phi_12 + phiRef),
-            jnp.cos(tilt_2),
-        ]
-    )
-
     m1, m2 = Mc_q_to_m1_m2(M_c, q)
     v0 = jnp.cbrt((m1 + m2) * MTSUN * jnp.pi * fRef)
 
-    # Define S1, S2, and J
-    Lmag = _Lmag_2PN(m1, m2, v0)
-    s1 = m1 * m1 * chi_1 * s1hat
-    s2 = m2 * m2 * chi_2 * s2hat
-    J = s1 + s2 + jnp.array([0.0, 0.0, Lmag])
+    # Work in a frame with L along z and the primary spin in the x-z plane.
+    s1_dir = jnp.array([jnp.sin(tilt_1), 0.0, jnp.cos(tilt_1)])
+    s2_dir = jnp.array(
+        [
+            jnp.sin(tilt_2) * jnp.cos(phi_12),
+            jnp.sin(tilt_2) * jnp.sin(phi_12),
+            jnp.cos(tilt_2),
+        ]
+    )
+    J = (
+        m1 * m1 * chi_1 * s1_dir
+        + m2 * m2 * chi_2 * s2_dir
+        + jnp.array([0.0, 0.0, _Lmag_2PN(m1, m2, v0)])
+    )
+    J_dir = J / jnp.linalg.norm(J)
+    theta_JL, phi_J = carte_to_spherical_angles(*J_dir)
 
-    # Normalize J, and find theta0 and phi0 (the angles in starting frame)
-    Jhat = J / jnp.linalg.norm(J)
-    theta0, phi0 = carte_to_spherical_angles(*Jhat)
+    # theta_jn and phi_jl are angles in the frame with J along z and N in the y-z
+    # plane, where L has azimuth phi_jl. u is the unit vector along the part of L
+    # perpendicular to J and w = J x u; both are written out so that they stay
+    # defined when L is parallel to J.
+    u = jnp.array(
+        [
+            -jnp.cos(theta_JL) * jnp.cos(phi_J),
+            -jnp.cos(theta_JL) * jnp.sin(phi_J),
+            jnp.sin(theta_JL),
+        ]
+    )
+    w = jnp.array([jnp.sin(phi_J), -jnp.cos(phi_J), 0.0])
+    N = (
+        jnp.sin(theta_jn) * (jnp.sin(phi_jl) * u + jnp.cos(phi_jl) * w)
+        + jnp.cos(theta_jn) * J_dir
+    )
+    iota = jnp.arccos(jnp.clip(N[2], -1.0, 1.0))
 
-    # Rotations 1-3 combined.
-    # LNh only needs R2 and R3 (it starts along z, so R1 has no effect).
-    # s1hat and s2hat need all three: R3 @ R2 @ R1.
-    R_23 = _rotate_z(phi_jl - jnp.pi) @ _rotate_y(-theta0)
-    R_123 = R_23 @ _rotate_z(-phi0)
-    LNh = R_23 @ LNh
-    s1hat = R_123 @ s1hat
-    s2hat = R_123 @ s2hat
-
-    # Compute iota
-    N = jnp.array([0.0, jnp.sin(theta_jn), jnp.cos(theta_jn)])
-    iota = jnp.arccos(jnp.clip(jnp.dot(N, LNh), -1.0, 1.0))
-
-    thetaLJ, phiL = carte_to_spherical_angles(LNh[0], LNh[1], LNh[2])
-
-    # Rotations 4-6 combined.
-    # N only needs R4 and R5; s1hat/s2hat need all three: R6 @ R5 @ R4.
-    R_45 = _rotate_y(-thetaLJ) @ _rotate_z(-phiL)
-    N = R_45 @ N
-    phiN = safe_arctan2(N[1], N[0])
-    R_456 = _rotate_z(jnp.pi / 2.0 - phiN - phiRef) @ R_45
-    s1hat = R_456 @ s1hat
-    s2hat = R_456 @ s2hat
-
-    S1 = s1hat * chi_1
-    S2 = s2hat * chi_2
+    # The output frame keeps L along z and puts N at azimuth pi/2 - phiRef, so the
+    # spins turn about z by the angle that takes N there.
+    alpha = jnp.pi / 2.0 - phiRef - safe_arctan2(N[1], N[0])
+    S1 = chi_1 * jnp.array(
+        [
+            jnp.sin(tilt_1) * jnp.cos(alpha),
+            jnp.sin(tilt_1) * jnp.sin(alpha),
+            jnp.cos(tilt_1),
+        ]
+    )
+    S2 = chi_2 * jnp.array(
+        [
+            jnp.sin(tilt_2) * jnp.cos(alpha + phi_12),
+            jnp.sin(tilt_2) * jnp.sin(alpha + phi_12),
+            jnp.cos(tilt_2),
+        ]
+    )
     return iota, S1[0], S1[1], S1[2], S2[0], S2[1], S2[2]
 
 
@@ -365,10 +357,7 @@ def cartesian_spin_to_spin_angles(
     FloatScalar,
 ]:
     """
-    Transforming the cartesian spin parameters to the spin angles.
-
-    The code is based on the approach used in LALsimulation:
-    https://lscsoft.docs.ligo.org/lalsuite/lalsimulation/group__lalsimulation__inference.html
+    Convert Cartesian spins in the LALSimulation source frame to the spin angles.
 
     Args:
         iota (Float): Zenith angle between the orbital angular momentum and the line of sight.
@@ -394,62 +383,39 @@ def cartesian_spin_to_spin_angles(
             - chi_1: Primary object aligned spin.
             - chi_2: Secondary object aligned spin.
     """
-    # Starting frame: LNh along the z-axis
-    LNh = jnp.array([0.0, 0.0, 1.0])
+    s1 = jnp.array([S1x, S1y, S1z])
+    s2 = jnp.array([S2x, S2y, S2z])
+    chi_1 = jnp.linalg.norm(s1)
+    chi_2 = jnp.linalg.norm(s2)
+    s1_dir = jnp.where(chi_1 > 0, s1 / chi_1, jnp.zeros_like(s1))
+    s2_dir = jnp.where(chi_2 > 0, s2 / chi_2, jnp.zeros_like(s2))
+    tilt_1, phi_1 = carte_to_spherical_angles(*s1_dir, default_value=0.0)
+    tilt_2, phi_2 = carte_to_spherical_angles(*s2_dir, default_value=0.0)
+    phi_12 = jnp.mod(phi_2 - phi_1, 2 * jnp.pi)
 
-    # Define the dimensionless component spin vectors and magnitudes
-    s1_vec = jnp.array([S1x, S1y, S1z])
-    s2_vec = jnp.array([S2x, S2y, S2z])
-    chi_1 = jnp.linalg.norm(s1_vec)
-    chi_2 = jnp.linalg.norm(s2_vec)
-
-    # Define the spin unit vectors in the LNh frame
-    s1hat = jnp.where(chi_1 > 0, s1_vec / chi_1, jnp.zeros_like(s1_vec))
-    s2hat = jnp.where(chi_2 > 0, s2_vec / chi_2, jnp.zeros_like(s2_vec))
-
-    # Azimuthal and polar angles of the spin vectors
-    tilt_1, phi1 = carte_to_spherical_angles(*s1hat, default_value=0.0)
-    tilt_2, phi2 = carte_to_spherical_angles(*s2hat, default_value=0.0)
-
-    phi_12 = phi2 - phi1
-    phi_12 = (phi_12 + 2 * jnp.pi) % (2 * jnp.pi)  # Ensure 0 <= phi_12 < 2pi
-
-    # Get angles in the J-N frame
     m1, m2 = Mc_q_to_m1_m2(M_c, q)
     v0 = jnp.cbrt((m1 + m2) * MTSUN * jnp.pi * fRef)
+    J = m1 * m1 * s1 + m2 * m2 * s2 + jnp.array([0.0, 0.0, _Lmag_2PN(m1, m2, v0)])
+    J_dir = J / jnp.linalg.norm(J)
 
-    # Define S1, S2, J
-    S1 = m1 * m1 * s1_vec
-    S2 = m2 * m2 * s2_vec
-
-    Lmag = _Lmag_2PN(m1, m2, v0)
-    J = S1 + S2 + Lmag * LNh
-
-    # Normalize J
-    Jhat = J / jnp.linalg.norm(J)
-    thetaJL, phiJ = carte_to_spherical_angles(*Jhat)
-
-    # Azimuthal angle from phase angle
-    phi0 = 0.5 * jnp.pi - phiRef
-    # Line-of-sight vector in L-frame
+    # L is along z and N is at azimuth pi/2 - phiRef.
     N = jnp.array(
-        [jnp.sin(iota) * jnp.cos(phi0), jnp.sin(iota) * jnp.sin(phi0), jnp.cos(iota)]
+        [
+            jnp.sin(iota) * jnp.sin(phiRef),
+            jnp.sin(iota) * jnp.cos(phiRef),
+            jnp.cos(iota),
+        ]
     )
+    N_dot_J = jnp.dot(N, J_dir)
+    theta_jn = jnp.arccos(jnp.clip(N_dot_J, -1.0, 1.0))
 
-    # Inclination w.r.t. J
-    theta_jn = jnp.arccos(jnp.clip(jnp.dot(Jhat, N), -1.0, 1.0))
-
-    # Rotate from L-frame to J-frame: combine the two rotations into one matrix.
-    # N and LNh both need Ry(-thetaJL) @ Rz(-phiJ).
-    R_JL = _rotate_y(-thetaJL) @ _rotate_z(-phiJ)
-    N = R_JL @ N
-    LNh = R_JL @ LNh
-
-    phiN = safe_arctan2(N[1], N[0])
-    LNh = _rotate_z(0.5 * jnp.pi - phiN) @ LNh
-
-    phi_jl = safe_arctan2(LNh[1], LNh[0])
-    phi_jl = (phi_jl + 2 * jnp.pi) % (2 * jnp.pi)  # Ensure 0 <= phi_jl < 2pi
+    # phi_jl is the azimuth of L about J, measured in the frame where the part of N
+    # perpendicular to J is the y-axis (so x = N x J). Both components below are
+    # that frame's components of L times the same positive factor, which arctan2
+    # ignores.
+    L_y = N[2] - N_dot_J * J_dir[2]
+    L_x = N[0] * J_dir[1] - N[1] * J_dir[0]
+    phi_jl = jnp.mod(safe_arctan2(L_y, L_x), 2 * jnp.pi)
 
     return theta_jn, phi_jl, tilt_1, tilt_2, phi_12, chi_1, chi_2
 
@@ -457,34 +423,6 @@ def cartesian_spin_to_spin_angles(
 # ----------------------------------------------------------------------
 # Sky / detector coordinate transforms
 # ----------------------------------------------------------------------
-
-
-def _rotate_y(angle: FloatScalar) -> Float[Array, "3 3"]:
-    """Return the 3x3 rotation matrix for a rotation about the y-axis.
-
-    Args:
-        angle (Float): Rotation angle in radians.
-
-    Returns:
-        Float[Array, "3 3"]: Rotation matrix Ry(angle).
-    """
-    cos_angle = jnp.cos(angle)
-    sin_angle = jnp.sin(angle)
-    return jnp.array([[cos_angle, 0, sin_angle], [0, 1, 0], [-sin_angle, 0, cos_angle]])
-
-
-def _rotate_z(angle: FloatScalar) -> Float[Array, "3 3"]:
-    """Return the 3x3 rotation matrix for a rotation about the z-axis.
-
-    Args:
-        angle (Float): Rotation angle in radians.
-
-    Returns:
-        Float[Array, "3 3"]: Rotation matrix Rz(angle).
-    """
-    cos_angle = jnp.cos(angle)
-    sin_angle = jnp.sin(angle)
-    return jnp.array([[cos_angle, -sin_angle, 0], [sin_angle, cos_angle, 0], [0, 0, 1]])
 
 
 def euler_rotation(delta_x: Float[Array, "3"]) -> Float[Array, "3 3"]:

@@ -1,7 +1,7 @@
 import astropy.units as u
 import jax.numpy as jnp
 from astropy.constants import (
-    pc,  # ty: ignore[unresolved-import]  # astropy stubs incomplete
+    pc,  # ty: ignore[import-not-found]  # astropy stubs incomplete
 )
 
 C_SI = 299792458.0

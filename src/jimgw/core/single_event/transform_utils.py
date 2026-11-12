@@ -18,7 +18,7 @@ import jax.numpy as jnp
 from jaxtyping import Array, Float
 
 from jimgw.core.constants import MTSUN
-from jimgw.core.utils import carte_to_spherical_angles, safe_arctan2
+from jimgw.core.utils import carte_to_spherical_angles, safe_arctan2, safe_polar_angle
 from jimgw.typing import FloatLike, FloatScalar
 
 # ----------------------------------------------------------------------
@@ -295,25 +295,19 @@ def spin_angles_to_cartesian_spin(
         + jnp.array([0.0, 0.0, _Lmag_2PN(m1, m2, v0)])
     )
     J_dir = J / jnp.linalg.norm(J)
-    theta_JL, phi_J = carte_to_spherical_angles(*J_dir)
+    phi_J = safe_arctan2(J_dir[1], J_dir[0], default_value=-phiRef)
 
     # theta_jn and phi_jl are angles in the frame with J along z and N in the y-z
-    # plane, where L has azimuth phi_jl. u is the unit vector along the part of L
-    # perpendicular to J and w = J x u; both are written out so that they stay
-    # defined when L is parallel to J.
-    u = jnp.array(
-        [
-            -jnp.cos(theta_JL) * jnp.cos(phi_J),
-            -jnp.cos(theta_JL) * jnp.sin(phi_J),
-            jnp.sin(theta_JL),
-        ]
-    )
+    # plane, where L has azimuth phi_jl. w is the unit vector along J x L, written
+    # with phi_J so that it stays defined when L is parallel to J, and u = w x J is
+    # the unit vector along the part of L perpendicular to J.
     w = jnp.array([jnp.sin(phi_J), -jnp.cos(phi_J), 0.0])
+    u = jnp.cross(w, J_dir)
     N = (
         jnp.sin(theta_jn) * (jnp.sin(phi_jl) * u + jnp.cos(phi_jl) * w)
         + jnp.cos(theta_jn) * J_dir
     )
-    iota = jnp.arccos(jnp.clip(N[2], -1.0, 1.0))
+    iota = safe_polar_angle(N[0], N[1], N[2])
 
     # The output frame keeps L along z and puts N at azimuth pi/2 - phiRef, so the
     # spins turn about z by the angle that takes N there.
@@ -391,7 +385,7 @@ def cartesian_spin_to_spin_angles(
     s2_dir = jnp.where(chi_2 > 0, s2 / chi_2, jnp.zeros_like(s2))
     tilt_1, phi_1 = carte_to_spherical_angles(*s1_dir, default_value=0.0)
     tilt_2, phi_2 = carte_to_spherical_angles(*s2_dir, default_value=0.0)
-    phi_12 = jnp.mod(phi_2 - phi_1, 2 * jnp.pi)
+    phi_12 = (phi_2 - phi_1 + 2 * jnp.pi) % (2 * jnp.pi)
 
     m1, m2 = Mc_q_to_m1_m2(M_c, q)
     v0 = jnp.cbrt((m1 + m2) * MTSUN * jnp.pi * fRef)
@@ -406,16 +400,15 @@ def cartesian_spin_to_spin_angles(
             jnp.cos(iota),
         ]
     )
-    N_dot_J = jnp.dot(N, J_dir)
-    theta_jn = jnp.arccos(jnp.clip(N_dot_J, -1.0, 1.0))
-
-    # phi_jl is the azimuth of L about J, measured in the frame where the part of N
-    # perpendicular to J is the y-axis (so x = N x J). Both components below are
-    # that frame's components of L times the same positive factor, which arctan2
-    # ignores.
-    L_y = N[2] - N_dot_J * J_dir[2]
-    L_x = N[0] * J_dir[1] - N[1] * J_dir[0]
-    phi_jl = jnp.mod(safe_arctan2(L_y, L_x), 2 * jnp.pi)
+    # Components of N along w, u and J, the axes used in spin_angles_to_cartesian_spin.
+    # If L is parallel to J, phi_J follows the primary spin so phi_jl keeps its azimuth.
+    phi_J_default = safe_arctan2(s1_dir[1], s1_dir[0], default_value=jnp.pi) - phiRef
+    phi_J = safe_arctan2(J_dir[1], J_dir[0], default_value=phi_J_default)
+    w = jnp.array([jnp.sin(phi_J), -jnp.cos(phi_J), 0.0])
+    u = jnp.cross(w, J_dir)
+    N_w, N_u, N_J = jnp.dot(N, w), jnp.dot(N, u), jnp.dot(N, J_dir)
+    theta_jn = safe_polar_angle(N_w, N_u, N_J)
+    phi_jl = (safe_arctan2(N_u, N_w) + 2 * jnp.pi) % (2 * jnp.pi)
 
     return theta_jn, phi_jl, tilt_1, tilt_2, phi_12, chi_1, chi_2
 

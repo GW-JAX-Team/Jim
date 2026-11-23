@@ -22,7 +22,6 @@ classifiers = [
 
 dependencies = [
     "anesthetic>=2",
-    "astropy>=7.0.1",
     "beartype>=0.19.0",
     "blackjax>=1.7.1",
     "corner>=2.2.3",

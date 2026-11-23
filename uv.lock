@@ -6,10 +6,10 @@ resolution-markers = [
     "python_full_version >= '3.14' and sys_platform == 'emscripten'",
     "python_full_version >= '3.14' and sys_platform != 'emscripten' and sys_platform != 'win32'",
     "python_full_version == '3.13.*' and sys_platform == 'win32'",
-    "python_full_version < '3.13' and sys_platform == 'win32'",
     "python_full_version == '3.13.*' and sys_platform == 'emscripten'",
-    "python_full_version < '3.13' and sys_platform == 'emscripten'",
     "python_full_version == '3.13.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "python_full_version < '3.13' and sys_platform == 'win32'",
+    "python_full_version < '3.13' and sys_platform == 'emscripten'",
     "python_full_version < '3.13' and sys_platform != 'emscripten' and sys_platform != 'win32'",
 ]
 
@@ -1971,7 +1971,6 @@ name = "jimgw"
 source = { editable = "." }
 dependencies = [
     { name = "anesthetic" },
-    { name = "astropy" },
     { name = "beartype" },
     { name = "blackjax" },
     { name = "corner" },
@@ -2019,7 +2018,6 @@ test = [
 [package.metadata]
 requires-dist = [
     { name = "anesthetic", specifier = ">=2" },
-    { name = "astropy", specifier = ">=7.0.1" },
     { name = "beartype", specifier = ">=0.19.0" },
     { name = "blackjax", specifier = ">=1.7.1" },
     { name = "corner", specifier = ">=2.2.3" },

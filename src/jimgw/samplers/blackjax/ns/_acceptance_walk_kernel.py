@@ -234,7 +234,7 @@ def _update_bilby_walks(
     n_delete: int,
 ) -> DEKernelParams:
     # The params this step ran with, so n_accept_total pairs with current_walks.
-    prev_params = ns_state.inner_kernel_params["params"]  # ty: ignore[unresolved-attribute]  # blackjax stubs
+    prev_params = ns_state.inner_kernel_params["params"]  # ty: ignore[missing-attribute]  # blackjax stubs
     walks_float = prev_params.walks_float.astype(jnp.float32)
     current_walks = prev_params.num_walks.astype(jnp.int32)
 

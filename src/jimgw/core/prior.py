@@ -339,7 +339,7 @@ class SequentialTransformPrior(CompositePrior):
             Transformed samples keyed by parameter name.
         """
         output = self.base_prior[0].sample(rng_key, n_samples)
-        return jax.vmap(self.transform)(output)  # ty: ignore[invalid-return-type]  # vmap output is batched arrays
+        return jax.vmap(self.transform)(output)  # ty: ignore[invalid-explicit-return]  # vmap output is batched arrays
 
     def log_prob(self, z: Mapping[str, FloatLike]) -> FloatScalar:
         """Evaluate the log-probability of a transformed sample z.
@@ -404,7 +404,7 @@ class BoundedMixin:
     def log_prob(self, z: Mapping[str, FloatLike]) -> FloatScalar:
         x = z[self.parameter_names[0]]
         # The next class in the cooperative MRO supplies Prior.log_prob.
-        base_log_prob = super().log_prob(z)  # ty: ignore[unresolved-attribute]
+        base_log_prob = super().log_prob(z)  # ty: ignore[missing-attribute]
         return jnp.where(
             jnp.logical_and(x >= self.xmin, x <= self.xmax),
             base_log_prob,

@@ -292,7 +292,7 @@ class EnsembleMutation:
         self, key: Key[Array, ""], state: Any, info: Any
     ) -> dict[str, Array]:
         """BlackJAX's ``mcmc_parameter_update_fn``: carries the parameters forward."""
-        return extend_params(info.update_info["next_parameters"])  # ty: ignore[invalid-return-type]  # blackjax stubs: extend_params returns its dict
+        return extend_params(info.update_info["next_parameters"])  # ty: ignore[invalid-explicit-return]  # blackjax stubs: extend_params returns its dict
 
     def update_strategy(
         self,

@@ -317,6 +317,6 @@ class BlackJAXSwiGSampler(BlackJAXNSSSampler):
         diagnostics = super()._get_diagnostics()
         ui = self._final_state.update_info
         diagnostics["n_waveform_evaluations"] = self._config.n_live + int(
-            jnp.sum(ui.num_waveform_evaluations)  # ty: ignore[unresolved-attribute]  # blackjax stubs
+            jnp.sum(ui.num_waveform_evaluations)  # ty: ignore[missing-attribute]  # blackjax stubs
         )
         return diagnostics

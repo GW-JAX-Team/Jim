@@ -39,15 +39,15 @@ class Polarization(eqx.Module):
         elif self.name == "c":
             return jnp.einsum(outer_fmt, x, y) + jnp.einsum(outer_fmt, y, x)
         elif self.name == "x":
-            z = jnp.cross(x, y)
+            z = jnp.cross(x, y, axis=0)
             return jnp.einsum(outer_fmt, x, z) + jnp.einsum(outer_fmt, z, x)
         elif self.name == "y":
-            z = jnp.cross(x, y)
+            z = jnp.cross(x, y, axis=0)
             return jnp.einsum(outer_fmt, y, z) + jnp.einsum(outer_fmt, z, y)
         elif self.name == "b":
             return jnp.einsum(outer_fmt, x, x) + jnp.einsum(outer_fmt, y, y)
         elif self.name == "l":
-            z = jnp.cross(x, y)
+            z = jnp.cross(x, y, axis=0)
             return jnp.einsum(outer_fmt, z, z)
         else:
             raise ValueError(f"unrecognized polarization {self.name}")

@@ -3183,10 +3183,15 @@ It receives a dictionary of parameter values and returns the log-likelihood:</p>
 <div class="admonition note">
 <p class="admonition-title">Things to know</p>
 <ul>
-<li><strong><code>evaluate</code> is compiled by JAX.</strong> Use <code>jnp</code> functions, and <code>jnp.where</code> or <code>jax.lax.cond</code> instead of a Python <code>if</code> on a parameter value, which raises <code>TracerBoolConversionError</code>.</li>
-<li><strong>Parameter names are not checked.</strong> The keys you read in <code>evaluate</code> must match the prior's <code>parameter_names</code>. A misspelt key raises <code>KeyError</code> when <code>Jim</code> is built, but a prior parameter that <code>evaluate</code> never reads is accepted without warning, and its posterior is just its prior.</li>
-<li><strong>Samplers and priors have their own constraints</strong>, such as a normalised prior or, for NS AW, the unit cube. They are listed in the <a href="../../guides/samplers/#sampler-overview">sampler overview</a>; the <a href="../../guides/transforms/#mapping-a-prior-to-the-unit-cube-for-ns-aw">Transforms guide</a> shows how to map a prior to the unit cube.</li>
-<li><strong>Importing <code>Jim</code> turns on 64-bit floats</strong> for all JAX code in the process, as a side effect of importing ripple. It matters if you rely on single precision.</li>
+<li><strong><code>evaluate</code> is compiled by JAX.</strong>
+  Use <code>jnp</code> functions, and <code>jnp.where</code> or <code>jax.lax.cond</code> instead of a Python <code>if</code> on a parameter value, which raises <code>TracerBoolConversionError</code>.</li>
+<li><strong>Parameter names are not checked.</strong>
+  The keys you read in <code>evaluate</code> must match the prior's <code>parameter_names</code>.
+  A misspelt key raises <code>KeyError</code> when <code>Jim</code> is built, but a prior parameter that <code>evaluate</code> never reads is accepted without warning, and its posterior is just its prior.</li>
+<li><strong>Samplers and priors have their own constraints</strong>, such as a normalised prior or, for NS AW, the unit cube.
+  They are listed in the <a href="../../guides/samplers/#sampler-overview">sampler overview</a>; the <a href="../../guides/transforms/#mapping-a-prior-to-the-unit-cube-for-ns-aw">Transforms guide</a> shows how to map a prior to the unit cube.</li>
+<li><strong>Importing <code>Jim</code> turns on 64-bit floats</strong> for all JAX code in the process, as a side effect of importing ripple.
+  It matters if you rely on single precision.</li>
 <li><strong>Not available:</strong> the SwiG sampler, which needs a gravitational-wave likelihood with waveform caching, and the <code>jim-run</code> command, which cannot load a custom likelihood.</li>
 </ul>
 </div>

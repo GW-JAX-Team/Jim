@@ -3536,10 +3536,8 @@ Jim raises a <code>ValueError</code> at construction if this condition is not me
 <li><code>n_live</code> — number of live points.</li>
 <li><code>n_delete_frac</code> — fraction of live points replaced per iteration.</li>
 <li><code>num_inner_steps_per_dim</code> — slice-sampler steps per dimension per dead point; increase for strongly correlated posteriors.</li>
-<li><code>n_devices</code> — number of local devices used to shard the live points and
-  replacement chains.
-  Both <code>n_live</code> and <code>int(n_live * n_delete_frac)</code> must be
-  divisible by this value.
+<li><code>n_devices</code> — number of local devices used to shard the live points and replacement chains.
+  Both <code>n_live</code> and <code>int(n_live * n_delete_frac)</code> must be divisible by this value.
   The default <code>1</code> uses the unsharded kernel.</li>
 </ul>
 <p><strong>Repository:</strong> <a href="https://github.com/blackjax-devs/blackjax">blackjax-devs/blackjax</a></p>
@@ -3582,10 +3580,8 @@ Parameters that are analytically marginalised must not appear in the blocks — 
 <li><code>n_live</code> / <code>n_delete_frac</code> — live-set size and replacement fraction, matching NSS.</li>
 <li><code>num_inner_steps_per_dim</code> — random-direction slice steps per block dimension.</li>
 <li><code>num_gibbs_sweeps</code> — complete block sweeps per particle replacement.</li>
-<li><code>n_devices</code> — number of local devices used to shard the live points and
-  replacement chains.
-  The waveform cache remains local to each replacement
-  chain; only live-point state participates in collectives.</li>
+<li><code>n_devices</code> — number of local devices used to shard the live points and replacement chains.
+  The waveform cache remains local to each replacement chain; only live-point state participates in collectives.</li>
 </ul>
 <div class="admonition tip">
 <p class="admonition-title">Sharding without a GPU/TPU cluster</p>

@@ -3166,15 +3166,19 @@ The signal fits if</p>
 <p>With <span class="arithmatex">\(M\)</span> the total mass in seconds (<span class="arithmatex">\(GM/c^3\)</span>) and <span class="arithmatex">\(f_{\text{start}}\)</span> the frequency at which the signal enters the frequency range of the data,</p>
 <div class="arithmatex">\[T_{\text{before}} = T_{\text{chirp}}(f_{\text{start}}) + 200\,M + \frac{1}{f_{\text{start}}} + \frac{R_\oplus}{c}, \qquad T_{\text{after}} = 1000\,M + \frac{1}{f_{\text{start}}} + \frac{R_\oplus}{c}.\]</div>
 <ul>
-<li><strong>Chirp time.</strong> The 2PN inspiral time from <code>XLALSimInspiralChirpTimeBound</code> in LALSimulation, which drops the negative terms so that it never underestimates:
+<li><strong>Chirp time.</strong>
+  The 2PN inspiral time from <code>XLALSimInspiralChirpTimeBound</code> in LALSimulation, which drops the negative terms so that it never underestimates:
   $<span class="arithmatex">\(T_{\text{chirp}} = \frac{5M}{256\,\eta\,v^8}\left[1 + \left(\frac{743}{252} + \frac{11}{3}\eta\right)v^2 + \frac{226}{15}\chi\,v^3 + \left(\frac{3058673}{508032} + \frac{5429}{504}\eta + \frac{617}{72}\eta^2\right)v^4\right], \quad v = (\pi M f_{\text{start}})^{1/3}.\)</span>$
   Here <span class="arithmatex">\(\chi\)</span> is the larger of the two spin magnitudes, taken from the spin components the waveform declares (<code>s1_x</code>, <code>s1_y</code>, <code>s1_z</code>, <code>s2_x</code>, <code>s2_y</code>, <code>s2_z</code>), or 1 if it declares none.
   For aligned-spin waveforms this is LAL's value; for precessing ones the full spin vector is used instead of its <span class="arithmatex">\(z\)</span> component, which can only make the estimate longer.</li>
-<li><strong>Starting frequency.</strong> <span class="arithmatex">\(f_{\text{start}} = 2 f_{\min} / m_{\max}\)</span>, with <span class="arithmatex">\(f_{\min}\)</span> the lower end of the frequency range of the data and <span class="arithmatex">\(m_{\max}\)</span> the <code>highest_mode</code> of the waveform (2 for waveforms with only the 22 mode, 4 for the higher-mode ones).
+<li><strong>Starting frequency.</strong>
+  <span class="arithmatex">\(f_{\text{start}} = 2 f_{\min} / m_{\max}\)</span>, with <span class="arithmatex">\(f_{\min}\)</span> the lower end of the frequency range of the data and <span class="arithmatex">\(m_{\max}\)</span> the <code>highest_mode</code> of the waveform (2 for waveforms with only the 22 mode, 4 for the higher-mode ones).
   A harmonic with azimuthal number <span class="arithmatex">\(m\)</span> reaches <span class="arithmatex">\(f_{\min}\)</span> when the orbital frequency is <span class="arithmatex">\(f_{\min}/m\)</span>, which is earlier for larger <span class="arithmatex">\(m\)</span>.</li>
-<li><strong>Merger and ringdown.</strong> <span class="arithmatex">\(200\,M\)</span> before the peak and <span class="arithmatex">\(1000\,M\)</span> after it.
+<li><strong>Merger and ringdown.</strong>
+  <span class="arithmatex">\(200\,M\)</span> before the peak and <span class="arithmatex">\(1000\,M\)</span> after it.
   LAL's merger bound is <span class="arithmatex">\(54\pi M \approx 170\,M\)</span>, and its ringdown bound (11 e-folds) goes from <span class="arithmatex">\(127\,M\)</span> at zero final spin to <span class="arithmatex">\(704\,M\)</span> at 0.998.</li>
-<li><strong>Padding.</strong> One cycle at <span class="arithmatex">\(f_{\text{start}}\)</span>, and the light travel time from the geocentre to a detector, at most <span class="arithmatex">\(R_\oplus/c \approx 21\)</span> ms.</li>
+<li><strong>Padding.</strong>
+  One cycle at <span class="arithmatex">\(f_{\text{start}}\)</span>, and the light travel time from the geocentre to a detector, at most <span class="arithmatex">\(R_\oplus/c \approx 21\)</span> ms.</li>
 </ul>
 <p>For a binary with chirp mass 28 and symmetric mass ratio 0.24 observed from 20 Hz, this gives about 1.3 s before the peak for no spin and 1.5 s for maximal spin, and about 0.4 s after it.</p>
 <h2 id="what-it-does-not-cover">What it does not cover<a class="headerlink" href="#what-it-does-not-cover" title="Permanent link">¤</a></h2>

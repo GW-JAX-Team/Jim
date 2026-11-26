@@ -8,7 +8,7 @@ __pycache__/
 
 # Packaging / build
 .Python
-build*
+build/
 develop-eggs/
 dist/
 downloads/
@@ -112,8 +112,8 @@ celerybeat.pid
 # --- Repo-specific (Jim) ---
 
 # Detector data files
-data
-test_data
+/data
+/test_data
 *H1.txt
 *L1.txt
 *V1.txt
@@ -122,10 +122,10 @@ test_data
 slurm_script*
 
 # Log files from runs (Jim-only: would also match e.g. logging.py in other repos)
-log*
+/log*
 
 # Run output directory
-outdir
+/outdir
 
 # VS Code workspace file
 jim.code-workspace

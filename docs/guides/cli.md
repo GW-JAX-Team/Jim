@@ -108,8 +108,7 @@ PSD and ASD formats are described in the note on PSD and ASD files below.
 | `asd_files` | dict[str, path] | — | Map from detector name to ASD file. Exactly one of `psd_files` and `asd_files` is required. |
 | `strain_channels` | dict[str, str] | `{}` | Channel name per detector for GWF/HDF5 files (e.g. `"H1:GDS-CALIB_STRAIN"`). If omitted, common LIGO/Virgo preset channel names are tried for `.gwf` files. |
 
-For `detectors = ["ET"]`, provide separate entries for `ET1`, `ET2` and `ET3` in
-`strain_files`, `strain_channels`, `psd_files` and `asd_files`.
+For `detectors = ["ET"]`, provide separate entries for `ET1`, `ET2` and `ET3` in `strain_files`, `strain_channels`, `psd_files` and `asd_files`.
 `detectors = ["ET_2L"]` works the same way with `ET_Sar` and `ET_EMR`.
 
 Example with `.npz` files (no channels required):

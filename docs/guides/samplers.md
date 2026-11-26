@@ -186,10 +186,8 @@ Key parameters:
 - `n_live` — number of live points.
 - `n_delete_frac` — fraction of live points replaced per iteration.
 - `num_inner_steps_per_dim` — slice-sampler steps per dimension per dead point; increase for strongly correlated posteriors.
-- `n_devices` — number of local devices used to shard the live points and
-  replacement chains.
-  Both `n_live` and `int(n_live * n_delete_frac)` must be
-  divisible by this value.
+- `n_devices` — number of local devices used to shard the live points and replacement chains.
+  Both `n_live` and `int(n_live * n_delete_frac)` must be divisible by this value.
   The default `1` uses the unsharded kernel.
 
 **Repository:** [blackjax-devs/blackjax](https://github.com/blackjax-devs/blackjax)
@@ -240,10 +238,8 @@ Key parameters:
 - `n_live` / `n_delete_frac` — live-set size and replacement fraction, matching NSS.
 - `num_inner_steps_per_dim` — random-direction slice steps per block dimension.
 - `num_gibbs_sweeps` — complete block sweeps per particle replacement.
-- `n_devices` — number of local devices used to shard the live points and
-  replacement chains.
-  The waveform cache remains local to each replacement
-  chain; only live-point state participates in collectives.
+- `n_devices` — number of local devices used to shard the live points and replacement chains.
+  The waveform cache remains local to each replacement chain; only live-point state participates in collectives.
 
 !!! tip "Sharding without a GPU/TPU cluster"
     `n_devices` shards across whatever JAX reports as local devices — it does not require accelerators.

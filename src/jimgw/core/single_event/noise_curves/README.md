@@ -19,8 +19,11 @@ Each ET file combines the HF and LF interferometers of one detector, $\mathrm{AS
 
 - The curves were retrieved on 2026-10-14, and the ET curves on 2026-10-19.
 - The Cosmic Explorer curve is calculated for a source 15 degrees off normal incidence (upstream README).
-- The ET curves are for one L-shaped detector with 90 degrees between its arms. The 60 degree arms of the triangle are in the detector response of ET1-ET3, so do not rescale the PSD for them.
-- Upstream marks the ET curves as a work-in-progress snapshot (January 2026). `tests/cross_validation/test_noise_curves.py` checks the packaged files against the latest upstream version.
+- The ET curves are for one L-shaped detector with 90 degrees between its arms.
+  The 60 degree arms of the triangle are in the detector response of ET1-ET3, so do not rescale the PSD for them.
+- Upstream marks the ET curves as a work-in-progress snapshot (January 2026).
+  `tests/cross_validation/test_noise_curves.py` checks the packaged files against the latest upstream version.
 - Frequencies outside a file's range are filled with the value at its nearest end, so check that the frequency range of your data is inside the range above.
-- The documents above state no licence or redistribution terms. The curves belong to their authors and collaborations and are included here with attribution; please cite the source documents when you use them.
+- The documents above state no licence or redistribution terms.
+  The curves belong to their authors and collaborations and are included here with attribution; please cite the source documents when you use them.
 - To use a different curve, pass `psd_file` or `asd_file` to `load_and_set_psd`, or `psd_files` / `asd_files` in a `jim-run` config.

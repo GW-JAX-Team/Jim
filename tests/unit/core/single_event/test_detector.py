@@ -20,6 +20,7 @@ from jimgw.core.constants import (
 from jimgw.core.single_event import detector as detector_module
 from jimgw.core.single_event.data import Data, PowerSpectrum
 from jimgw.core.single_event.detector import (
+    DEFAULT_CHUNK_SIZE,
     GroundBased2G,
     GroundBased3G,
     default_asd_files,
@@ -1792,6 +1793,113 @@ class TestGroundBased3G:
         expected = det_2g.fd_response(self.frequency, h_sky, BNS_PARAMS)
         actual = det_3g.fd_response(self.frequency, h_sky, BNS_PARAMS)
         assert jnp.array_equal(actual, expected)
+
+
+class TestChunkedResponse:
+    """Long grids are evaluated in chunks of chunk_size frequencies, with the same result."""
+
+    frequency = jnp.geomspace(2.0, 2048.0, 512)
+    options = (
+        {"earth_rotation": False},
+        {},
+        {"finite_arm_length": True, "arm_length": 1e4},
+    )
+
+    @staticmethod
+    def _recorded_chunks(monkeypatch, cls, method):
+        """Record the grid length of every call of ``cls.method``."""
+        lengths = []
+        original = getattr(cls, method)
+
+        def recording(self, frequency, *args):
+            lengths.append(frequency.shape[0])
+            return original(self, frequency, *args)
+
+        monkeypatch.setattr(cls, method, recording)
+        return lengths
+
+    def test_chunking_is_on_by_default_for_3g_and_off_for_2g(self):
+        assert GroundBased3G("X").chunk_size == DEFAULT_CHUNK_SIZE
+        assert GroundBased3G.from_detector(get_H1()).chunk_size == DEFAULT_CHUNK_SIZE
+        assert GroundBased3G.from_detector(get_H1(), chunk_size=None).chunk_size is None
+        assert get_ET()[0].chunk_size == DEFAULT_CHUNK_SIZE
+        assert get_H1().chunk_size is None
+
+    @pytest.mark.parametrize("bad", [0, -4, 2.5, True, "8"])
+    def test_chunk_size_must_be_a_positive_integer_or_none(self, bad):
+        with pytest.raises(ValueError, match="chunk_size"):
+            GroundBased3G("X", chunk_size=bad)
+
+    @pytest.mark.parametrize("options", options)
+    @pytest.mark.parametrize("chunk_size", [1, 37, 256, 511])
+    def test_chunked_response_equals_one_call(self, options, chunk_size):
+        whole = _et1_3g(chunk_size=None, **options)
+        chunked = _et1_3g(chunk_size=chunk_size, **options)
+        h_sky = _unit_polarizations(self.frequency)
+        np.testing.assert_allclose(
+            chunked.fd_response(self.frequency, h_sky, BNS_PARAMS),
+            whole.fd_response(self.frequency, h_sky, BNS_PARAMS),
+            rtol=1e-14,
+            atol=0.0,
+        )
+
+    def test_chunks_cover_the_grid_and_short_grids_take_one_call(self, monkeypatch):
+        lengths = self._recorded_chunks(monkeypatch, GroundBased3G, "_fd_response")
+        h_sky = _unit_polarizations(self.frequency)
+        _et1_3g(chunk_size=200).fd_response(self.frequency, h_sky, BNS_PARAMS)
+        assert lengths == [200, 200, 112]
+        lengths.clear()
+        _et1_3g(chunk_size=512).fd_response(self.frequency, h_sky, BNS_PARAMS)
+        assert lengths == [512]
+
+    def test_chunked_response_under_jit(self):
+        whole = _et1_3g(chunk_size=None, finite_arm_length=True, arm_length=1e4)
+        chunked = _et1_3g(chunk_size=100, finite_arm_length=True, arm_length=1e4)
+        h_sky = _unit_polarizations(self.frequency)
+        response = jax.jit(lambda f, h: chunked.fd_response(f, h, BNS_PARAMS))
+        np.testing.assert_allclose(
+            response(self.frequency, h_sky),
+            whole.fd_response(self.frequency, h_sky, BNS_PARAMS),
+            rtol=1e-14,
+            atol=0.0,
+        )
+
+    def test_chunked_injection_equals_one_call(self, monkeypatch):
+        """inject_signal evaluates the waveform model in chunks too, with the same data and SNRs."""
+
+        def et1(chunk_size):
+            return make_detector(
+                lambda: GroundBased3G.from_detector(
+                    get_ET()[0],
+                    arm_length=1e4,
+                    finite_arm_length=True,
+                    chunk_size=chunk_size,
+                )
+            )
+
+        whole, chunked = et1(None), et1(1000)
+        snrs_whole = inject_reference(whole)
+        lengths = self._recorded_chunks(
+            monkeypatch, type(RippleIMRPhenomD(f_ref=20.0)), "__call__"
+        )
+        snrs_chunked = inject_reference(chunked)
+        n_freq = chunked.data.frequencies.shape[0]
+        assert n_freq > 1000
+        assert lengths == [1000] * (n_freq // 1000) + [n_freq % 1000]
+        np.testing.assert_allclose(chunked.data.fd, whole.data.fd, rtol=1e-13, atol=0.0)
+        np.testing.assert_allclose(snrs_chunked, snrs_whole, rtol=1e-12, atol=0.0)
+
+    def test_2g_injection_can_be_chunked(self, monkeypatch):
+        whole, chunked = make_detector(), make_detector()
+        chunked.chunk_size = 1000
+        snrs_whole = inject_reference(whole)
+        lengths = self._recorded_chunks(
+            monkeypatch, type(RippleIMRPhenomD(f_ref=20.0)), "__call__"
+        )
+        snrs_chunked = inject_reference(chunked)
+        assert max(lengths) == 1000
+        np.testing.assert_allclose(chunked.data.fd, whole.data.fd, rtol=1e-13, atol=0.0)
+        np.testing.assert_allclose(snrs_chunked, snrs_whole, rtol=1e-12, atol=0.0)
 
 
 class TestEarthRotation:

@@ -303,3 +303,17 @@ ET = get_ET(earth_rotation=True, finite_arm_length=True)
 Both are off by default.
 Switching either on makes the likelihood more expensive.
 The phase convention of the finite-arm-length response is given in the [technical notes](../notes/detector_response.md#finite-arm-length-phase-convention).
+
+A signal that stays in band for hours, such as a binary neutron star from a few Hz, has a frequency grid of ~10⁸ points, and the frequency-dependent response needs several 3 × 3 arrays per frequency.
+`GroundBased3G` therefore evaluates its response, and `inject_signal` the waveform, in chunks of `chunk_size` frequencies (2²² by default, a few hundred MB per chunk), with the same result as a single call.
+This bounds the memory of building a heterodyned likelihood or injecting a signal; while sampling, the heterodyned likelihood evaluates the response only at its bin edges, which fit in one chunk.
+Lower `chunk_size` if that runs out of (GPU) memory, or set it to `None` to evaluate the whole grid at once.
+Set it before the detectors are given to a likelihood, which freezes them:
+
+```python
+ET = get_ET(earth_rotation=True)
+for detector in ET:
+    detector.chunk_size = 2**20
+```
+
+`GroundBased2G` detectors do not chunk by default (`chunk_size=None`); setting `chunk_size` on one chunks the waveform in `inject_signal`.

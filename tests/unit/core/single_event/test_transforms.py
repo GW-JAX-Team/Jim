@@ -458,6 +458,91 @@ class TestSpinAnglesToCartesianSpinTransform:
             jimgw_spins = jnp.array(list(jimgw_spins.values()))
             assert np.allclose(jimgw_spins, jnp.array([*sample[7:], *sample[:7]]))
 
+    def test_round_trip_with_j_l_and_n_nearly_parallel(self):
+        """
+        Test the Cartesian round trip when J, L and N are nearly parallel
+        """
+        transform = SpinAnglesToCartesianSpinTransform(freq_ref=20.0)
+        cartesian = {
+            "iota": 6.5e-8,
+            "s1_x": 0.3,
+            "s1_y": -0.4,
+            "s1_z": 0.0,
+            "s2_x": -0.29999992,
+            "s2_y": 0.40000006,
+            "s2_z": 0.0,
+            "M_c": 20.0,
+            "q": 1.0,
+            "phase_c": 0.3,
+        }
+        recovered = transform.forward(transform.backward(cartesian))
+        for key in self.backward_keys:
+            assert np.isclose(recovered[key], cartesian[key], rtol=0, atol=1e-9), key
+
+    def test_azimuths_stay_below_two_pi(self):
+        """
+        Test that phi_12 and phi_jl stay in [0, 2 pi) for a tiny negative azimuth difference
+        """
+        output = SpinAnglesToCartesianSpinTransform(freq_ref=20.0).backward(
+            {
+                "iota": 0.1,
+                "s1_x": 0.1,
+                "s1_y": 1e-17,
+                "s1_z": 0.3,
+                "s2_x": 0.2,
+                "s2_y": 0.0,
+                "s2_z": 0.3,
+                "M_c": 20.0,
+                "q": 1.0,
+                "phase_c": 0.3,
+            }
+        )
+        for key in ("phi_12", "phi_jl"):
+            assert 0 <= output[key] < 2 * jnp.pi, key
+
+    @pytest.mark.parametrize("s_z", [(0.0, 0.0), (0.5, 0.5), (-0.5, -0.5), (0.5, 0.0)])
+    @pytest.mark.parametrize("phase_c", [0.3, 2.0])
+    def test_aligned_spins_give_zero_phi_jl(self, s_z, phase_c):
+        """
+        Test that phi_jl is zero for zero or aligned spins, where it is undefined
+        """
+        output = SpinAnglesToCartesianSpinTransform(freq_ref=20.0).backward(
+            {
+                "iota": 0.5,
+                "s1_x": 0.0,
+                "s1_y": 0.0,
+                "s1_z": s_z[0],
+                "s2_x": 0.0,
+                "s2_y": 0.0,
+                "s2_z": s_z[1],
+                "M_c": 20.0,
+                "q": 0.7,
+                "phase_c": phase_c,
+            }
+        )
+        assert output["phi_jl"] == 0.0
+
+    def test_round_trip_with_j_parallel_to_l(self):
+        """
+        Test the Cartesian round trip when the in-plane spins cancel exactly in J
+        """
+        transform = SpinAnglesToCartesianSpinTransform(freq_ref=20.0)
+        cartesian = {
+            "iota": 0.5,
+            "s1_x": 0.3,
+            "s1_y": -0.2,
+            "s1_z": 0.1,
+            "s2_x": -0.3,
+            "s2_y": 0.2,
+            "s2_z": 0.0,
+            "M_c": 20.0,
+            "q": 1.0,
+            "phase_c": 0.3,
+        }
+        recovered = transform.forward(transform.backward(cartesian))
+        for key in self.backward_keys:
+            assert np.isclose(recovered[key], cartesian[key], rtol=0, atol=1e-12), key
+
     def test_jitted_forward_transform(self):
         """
         Test that the forward transformation is JIT compilable

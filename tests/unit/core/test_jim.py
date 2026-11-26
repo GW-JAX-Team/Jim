@@ -10,7 +10,11 @@ import pytest
 
 from jimgw.core.jim import Jim
 from jimgw.core.prior import CombinePrior, UniformPrior
-from jimgw.core.transforms import BoundToUnbound
+from jimgw.core.transforms import (
+    BoundToUnbound,
+    ConditionalBijectiveTransform,
+    NtoMTransform,
+)
 from jimgw.samplers.config import FlowMCConfig
 from tests.utils import assert_all_finite
 
@@ -530,6 +534,54 @@ class TestJimPriorLikelihoodConsistencyChecks:
         )
         with pytest.raises(ValueError, match="not consumed by the likelihood"):
             Jim(likelihood=lh, prior=prior, sampler_config=_tiny_flowmc_config())
+
+    def test_unused_fixed_parameter_raises(self):
+        lh = self._make_mock_single_event_likelihood(
+            waveform_parameter_names=("M_c",),
+            fixed_parameters={"ra": 0.0, "dec": 0.0, "psi": 0.0, "t_c": 0.0, "x": 1.0},
+        )
+        prior = UniformPrior(10.0, 80.0, parameter_names=["M_c"])
+        with pytest.raises(
+            ValueError, match=r"\['x'\] in the prior or fixed_parameters"
+        ):
+            Jim(likelihood=lh, prior=prior, sampler_config=_tiny_flowmc_config())
+
+    @pytest.mark.parametrize("eta_used", [True, False])
+    def test_unused_parameter_is_named_in_prior_space(self, gw_prior, eta_used):
+        transform = NtoMTransform((["q"], ["eta", "auxiliary"]))
+        transform.transform_func = lambda params: {
+            "eta": params["q"] / (1 + params["q"]) ** 2,
+            "auxiliary": params["q"] ** 2,
+        }
+        lh = self._make_mock_single_event_likelihood(
+            waveform_parameter_names=("M_c", "eta") if eta_used else ("M_c",),
+            fixed_parameters={"ra": 0.0, "dec": 0.0, "psi": 0.0, "t_c": 0.0},
+        )
+        kwargs = {
+            "likelihood": lh,
+            "prior": gw_prior,
+            "sampler_config": _tiny_flowmc_config(),
+            "likelihood_transforms": [transform],
+        }
+        if eta_used:
+            Jim(**kwargs)
+        else:
+            with pytest.raises(ValueError, match=r"\['q'\] in the prior"):
+                Jim(**kwargs)
+
+    def test_conditioning_prior_parameter_is_used(self, gw_prior):
+        transform = ConditionalBijectiveTransform((["M_c"], ["mass"]), ["q"])
+        transform.transform_func = lambda params: {"mass": params["M_c"] * params["q"]}
+        lh = self._make_mock_single_event_likelihood(
+            waveform_parameter_names=("mass",),
+            fixed_parameters={"ra": 0.0, "dec": 0.0, "psi": 0.0, "t_c": 0.0},
+        )
+        Jim(
+            likelihood=lh,
+            prior=gw_prior,
+            sampler_config=_tiny_flowmc_config(),
+            likelihood_transforms=[transform],
+        )
 
     def test_likelihood_requires_missing_parameter_raises(self):
         prior = CombinePrior(

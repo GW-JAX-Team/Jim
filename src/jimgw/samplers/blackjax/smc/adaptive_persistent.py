@@ -89,10 +89,8 @@ class AdaptivePersistentSMCSampler(_BlackJAXSMCBase):
     def get_samples(self) -> dict[str, np.ndarray]:
         """Return posterior samples: resampled from all-temperature particles.
 
-        Samples are drawn with replacement from all-temperature particles
-        weighted by the persistent-sampling weight formula. The number of
-        returned samples approximately equals the effective sample size
-        ``1 / max(weights)``.
+        The particles of all temperatures are resampled by their weights. The
+        number of samples is about the effective sample size.
 
         Returns:
             Dict with keys ``"samples"`` (shape ``(n, n_dims)``) and

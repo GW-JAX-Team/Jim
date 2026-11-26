@@ -40,7 +40,7 @@ class TestPolarization:
         x = jnp.array([1.0, 0.0, 0.0])
         y = jnp.array([0.0, 1.0, 0.0])
 
-        tensor = pol.tensor_from_basis(x, y)
+        tensor = pol._tensor_from_basis(x, y)
 
         # Plus polarization: x⊗x - y⊗y
         expected = jnp.outer(x, x) - jnp.outer(y, y)
@@ -54,7 +54,7 @@ class TestPolarization:
         x = jnp.array([1.0, 0.0, 0.0])
         y = jnp.array([0.0, 1.0, 0.0])
 
-        tensor = pol.tensor_from_basis(x, y)
+        tensor = pol._tensor_from_basis(x, y)
 
         # Cross polarization: x⊗y + y⊗x
         expected = jnp.outer(x, y) + jnp.outer(y, x)
@@ -68,7 +68,7 @@ class TestPolarization:
         x = jnp.array([1.0, 0.0, 0.0])
         y = jnp.array([0.0, 1.0, 0.0])
 
-        tensor = pol.tensor_from_basis(x, y)
+        tensor = pol._tensor_from_basis(x, y)
 
         # Should be non-zero and finite
         assert jnp.any(jnp.abs(tensor) > 0)
@@ -81,7 +81,7 @@ class TestPolarization:
         x = jnp.array([1.0, 0.0, 0.0])
         y = jnp.array([0.0, 1.0, 0.0])
 
-        tensor = pol.tensor_from_basis(x, y)
+        tensor = pol._tensor_from_basis(x, y)
 
         # Should be non-zero and finite
         assert jnp.any(jnp.abs(tensor) > 0)
@@ -94,7 +94,7 @@ class TestPolarization:
         x = jnp.array([1.0, 0.0, 0.0])
         y = jnp.array([0.0, 1.0, 0.0])
 
-        tensor = pol.tensor_from_basis(x, y)
+        tensor = pol._tensor_from_basis(x, y)
 
         # Breathing polarization: x⊗x + y⊗y
         expected = jnp.outer(x, x) + jnp.outer(y, y)
@@ -108,7 +108,7 @@ class TestPolarization:
         x = jnp.array([1.0, 0.0, 0.0])
         y = jnp.array([0.0, 1.0, 0.0])
 
-        tensor = pol.tensor_from_basis(x, y)
+        tensor = pol._tensor_from_basis(x, y)
 
         # Should be non-zero and finite
         assert jnp.any(jnp.abs(tensor) > 0)

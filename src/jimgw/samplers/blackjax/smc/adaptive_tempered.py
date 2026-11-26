@@ -108,7 +108,9 @@ class AdaptiveTemperedSMCSampler(_BlackJAXSMCBase):
         remove_checkpoint_and_jax_cache(config, checkpoint_path)
 
     def get_samples(self) -> dict[str, np.ndarray]:
-        """Return posterior samples: all final-temperature particles, equal weight.
+        """Return posterior samples: the final particles resampled by their weights.
+
+        The number of samples is about the effective sample size.
 
         Returns:
             Dict with keys ``"samples"`` (shape ``(n, n_dims)``) and
@@ -116,14 +118,17 @@ class AdaptiveTemperedSMCSampler(_BlackJAXSMCBase):
         """
         if not self._sampled:
             raise RuntimeError("get_samples() called before sample()")
-        particles = self._final_state.sampler_state.particles
+        smc_state = self._final_state.sampler_state
+        particles = smc_state.particles
         pbs = self._config.batch_size
-        log_likelihoods = np.array(
+        log_likelihoods = (
             jax.lax.map(self._log_likelihood_fn, particles, batch_size=pbs)
             if pbs > 0
             else jax.vmap(self._log_likelihood_fn)(particles)
         )
-        return {"samples": np.array(particles), "log_likelihood": log_likelihoods}
+        return diagnostics.resample_by_weights(
+            particles, log_likelihoods, smc_state.weights
+        )
 
     def _get_diagnostics(self) -> dict[str, object]:
         """Return SMC run diagnostics.

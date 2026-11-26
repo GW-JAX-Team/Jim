@@ -291,16 +291,24 @@ class Jim:
                 consumed |= {"ra", "dec", "psi", "t_c"}
                 consumed -= marginalized_names
 
-                provided = set(self.likelihood_parameter_names)
-                if likelihood.fixed_parameters:
-                    provided |= set(likelihood.fixed_parameters.keys())
+                fixed = set(likelihood.fixed_parameters or {})
+                provided = set(self.likelihood_parameter_names) | fixed
 
-                unused = provided - consumed
+                # Trace the consumed names back through the likelihood transforms.
+                needed = consumed - fixed
+                for transform in reversed(likelihood_transforms):
+                    inputs, outputs = transform.name_mapping
+                    if needed & set(outputs):
+                        needed = (needed - set(outputs)) | set(inputs)
+                        needed |= set(getattr(transform, "conditional_names", ()))
+                unused = sorted(
+                    (set(self.prior_parameter_names) - needed) | (fixed - consumed)
+                )
                 if unused:
                     raise ValueError(
-                        f"Prior defines parameter(s) {sorted(unused)} that are not "
-                        "consumed by the likelihood. Remove them from the prior or "
-                        "add appropriate likelihood_transforms."
+                        f"Parameter(s) {unused} in the prior or fixed_parameters are "
+                        f"not consumed by the likelihood, which uses {sorted(consumed)}. "
+                        "Remove them or add appropriate likelihood_transforms."
                     )
                 missing = consumed - provided
                 if missing:

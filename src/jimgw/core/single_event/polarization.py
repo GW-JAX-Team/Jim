@@ -26,12 +26,17 @@ class Polarization(eqx.Module):
             e = f"unknown mode '{self.name}'; must be one of: {KNOWN_POLS}"
             raise ValueError(e)
 
-    def tensor_from_basis(
-        self, x: Float[Array, "3"], y: Float[Array, "3"]
-    ) -> Float[Array, "3 3"]:
-        """Constructor to obtain polarization tensor from waveframe basis
-        defined by orthonormal vectors (x, y) in arbitrary Cartesian
-        coordinates.
+    def _tensor_from_basis(
+        self, x: Float[Array, "3 ..."], y: Float[Array, "3 ..."]
+    ) -> Float[Array, "3 3 ..."]:
+        """Polarization tensor from the orthonormal wave-frame basis vectors (x, y).
+
+        Args:
+            x: First basis vector, Cartesian components on the first axis.
+            y: Second basis vector, same shape as ``x``.
+
+        Returns:
+            The 3x3 polarization tensor, with any trailing axes of ``x`` and ``y``.
         """
         outer_fmt = "i...,j...->ij..."
         if self.name == "p":
@@ -39,15 +44,15 @@ class Polarization(eqx.Module):
         elif self.name == "c":
             return jnp.einsum(outer_fmt, x, y) + jnp.einsum(outer_fmt, y, x)
         elif self.name == "x":
-            z = jnp.cross(x, y)
+            z = jnp.cross(x, y, axis=0)
             return jnp.einsum(outer_fmt, x, z) + jnp.einsum(outer_fmt, z, x)
         elif self.name == "y":
-            z = jnp.cross(x, y)
+            z = jnp.cross(x, y, axis=0)
             return jnp.einsum(outer_fmt, y, z) + jnp.einsum(outer_fmt, z, y)
         elif self.name == "b":
             return jnp.einsum(outer_fmt, x, x) + jnp.einsum(outer_fmt, y, y)
         elif self.name == "l":
-            z = jnp.cross(x, y)
+            z = jnp.cross(x, y, axis=0)
             return jnp.einsum(outer_fmt, z, z)
         else:
             raise ValueError(f"unrecognized polarization {self.name}")
@@ -58,18 +63,19 @@ class Polarization(eqx.Module):
         dec: FloatLike,
         psi: FloatLike,
         gmst: FloatLike,
-    ) -> Float[Array, "3 3"]:
-        """Computes {name} polarization tensor in celestial
-        coordinates from sky location and orientation parameters.
+    ) -> Float[Array, "3 3 ..."]:
+        """Polarization tensor in Earth-fixed coordinates from the sky position.
 
         Args:
             ra (Float): Right ascension in radians.
             dec (Float): Declination in radians.
             psi (Float): Polarization angle in radians.
-            gmst (Float): Greenwich mean standard time (GMST) in radians.
+            gmst (Float): Greenwich mean sidereal time (GMST) in radians, or an
+                array of them.
 
         Returns:
-            Float[Array, "3 3"]: 3x3 polarization tensor.
+            Float[Array, "3 3 ..."]: The 3x3 polarization tensor; for an array of
+            ``gmst``, one tensor per value along the trailing axes.
         """
         gmst = jnp.mod(gmst, 2 * jnp.pi)
         # Broadcast so that an array of gmst gives one tensor per element.
@@ -86,4 +92,4 @@ class Polarization(eqx.Module):
         m = -u * jnp.sin(psi) - v * jnp.cos(psi)
         n = -u * jnp.cos(psi) + v * jnp.sin(psi)
 
-        return self.tensor_from_basis(m, n)
+        return self._tensor_from_basis(m, n)

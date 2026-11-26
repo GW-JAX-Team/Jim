@@ -1,8 +1,4 @@
-import astropy.units as u
 import jax.numpy as jnp
-from astropy.constants import (
-    pc,  # ty: ignore[unresolved-import]  # astropy stubs incomplete
-)
 
 C_SI = 299792458.0
 """ Speed of light, m/s """
@@ -16,9 +12,8 @@ MTSUN = 4.925490947641266978197229498498379006e-6
 MRSUN = 1.476625061404649406193430731479084713e3
 """ Geometrised Nominal solar mass, m """
 
-# Astropy's stubs model a unit conversion as optional; ``yr`` is always concrete.
-year = (1 * u.yr).cgs.value
-Mpc = 1e6 * pc.value  # m
+year = 31557600.0  # Julian year, s
+Mpc = 3.085677581491367278913937957796471611e22  # m
 euler_gamma = 0.577215664901532860606512090082
 
 EARTH_SEMI_MAJOR_AXIS = 6378137.0  # for ellipsoid model of Earth, in m

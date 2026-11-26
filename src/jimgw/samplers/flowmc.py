@@ -13,6 +13,7 @@ from typing import Any, Optional
 import jax
 import jax.numpy as jnp
 import numpy as np
+from flowMC.resource.logPDF import TemperedPDF
 from flowMC.resource.states import State
 from flowMC.resource_strategy_bundle.RQSpline_GRW import RQSpline_GRW_Bundle
 from flowMC.resource_strategy_bundle.RQSpline_GRW_PT import RQSpline_GRW_PT_Bundle
@@ -112,6 +113,11 @@ class FlowMCSampler(Sampler):
         self, params: Float[Array, " n_dims"], _data: dict
     ) -> FloatScalar:
         return self._log_posterior_fn(params)
+
+    def _loglikelihood_flowmc(
+        self, params: Float[Array, " n_dims"], _data: dict
+    ) -> FloatScalar:
+        return self._log_likelihood_fn(params)
 
     def _logprior_flowmc(
         self, params: Float[Array, " n_dims"], _data: dict
@@ -216,9 +222,18 @@ class FlowMCSampler(Sampler):
             common_kwargs["n_temperatures"] = pt.n_temperatures
             common_kwargs["max_temperature"] = pt.max_temperature
             common_kwargs["n_tempered_steps"] = pt.n_tempered_steps
-            common_kwargs["logprior"] = self._logprior_flowmc
-
-        resource_strategy_bundle = bundle_cls(**common_kwargs)
+            resource_strategy_bundle = bundle_cls(**common_kwargs)
+            # Replace the tempered density the bundle built: it tempers the
+            # bundle's ``logpdf``, the posterior here, but only the likelihood
+            # should be tempered so that the first temperature is the posterior.
+            resource_strategy_bundle.resources["tempered_logpdf"] = TemperedPDF(
+                self._loglikelihood_flowmc,
+                self._logprior_flowmc,
+                n_dims=self.n_dims,
+                n_temps=pt.n_temperatures,
+            )
+        else:
+            resource_strategy_bundle = bundle_cls(**common_kwargs)
 
         outdir = (
             str(config.checkpoint_dir)
@@ -300,11 +315,11 @@ class FlowMCSampler(Sampler):
             )
         resources = self._flowmc_sampler.resources
 
-        pos_raw = resources["positions_production"].data  # ty: ignore[unresolved-attribute]  # flowMC stubs
+        pos_raw = resources["positions_production"].data  # ty: ignore[missing-attribute]  # flowMC stubs
         pos_jnp = jnp.array(pos_raw).reshape(-1, self.n_dims)
 
         log_posterior = np.array(
-            resources["log_prob_production"].data  # ty: ignore[unresolved-attribute]  # flowMC stubs
+            resources["log_prob_production"].data  # ty: ignore[missing-attribute]  # flowMC stubs
         ).reshape(-1)
         log_prior = np.array(jax.vmap(self._log_prior_fn)(pos_jnp))
         log_likelihood = log_posterior - log_prior
@@ -312,12 +327,40 @@ class FlowMCSampler(Sampler):
 
         return {"samples": prod_positions, "log_likelihood": log_likelihood}
 
+    def _n_likelihood_evaluations(self, n_loops: int) -> tuple[int, int]:
+        """Return the likelihood and gradient calls in ``n_loops`` loops."""
+        cfg = self._config
+        local_kernel = cfg.local_kernel
+        # Calls per step in flowMC 0.6.5; each stepper also evaluates its start.
+        if isinstance(local_kernel, FlowMCMALAConfig):
+            n_per_local_step, n_gradient_per_local_step = 2, 2
+        elif isinstance(local_kernel, FlowMCHMCConfig):
+            n_gradient_per_local_step = local_kernel.n_leapfrog_steps + 2
+            n_per_local_step = n_gradient_per_local_step + 1
+        else:
+            n_per_local_step, n_gradient_per_local_step = 1, 0
+        n_per_loop = (1 + cfg.n_local_steps * n_per_local_step) + (
+            1 + cfg.n_global_steps
+        )
+        n_gradient_per_loop = cfg.n_local_steps * n_gradient_per_local_step
+        pt = cfg.parallel_tempering
+        if pt is not None:
+            n_per_loop += pt.n_temperatures * (
+                2 + pt.n_tempered_steps * n_per_local_step
+            )
+            n_gradient_per_loop += (
+                pt.n_temperatures * pt.n_tempered_steps * n_gradient_per_local_step
+            )
+        n_chain_loops = cfg.n_chains * n_loops
+        return n_chain_loops * n_per_loop, n_chain_loops * n_gradient_per_loop
+
     def _get_diagnostics(self) -> dict[str, Any]:
         """Return flowMC run diagnostics.
 
         Returns a dict with the following keys:
 
         * ``"n_likelihood_evaluations"`` — total likelihood calls.
+        * ``"n_likelihood_gradient_evaluations"`` — calls with the gradient.
         * ``"n_training_loops_actual"`` — training loops actually run
           (may be fewer than configured if early stopping triggered).
         * ``"training_loss_history"`` — normalizing-flow loss per epoch.
@@ -332,27 +375,25 @@ class FlowMCSampler(Sampler):
         res = self._flowmc_sampler.resources
 
         actual_training_loops = (
-            self._flowmc_sampler.strategies["check_early_stop"]._call_count  # ty: ignore[unresolved-attribute]  # flowMC stubs: Strategy._call_count
+            self._flowmc_sampler.strategies["check_early_stop"]._call_count  # ty: ignore[missing-attribute]  # flowMC stubs: Strategy._call_count
             if "check_early_stop" in self._flowmc_sampler.strategies
             else cfg.n_training_loops
         )
-
-        n_evals = int(
-            cfg.n_chains
-            * (cfg.n_local_steps + cfg.n_global_steps)
-            * (actual_training_loops + cfg.n_production_loops)
+        n_evaluations, n_gradient_evaluations = self._n_likelihood_evaluations(
+            actual_training_loops + cfg.n_production_loops
         )
 
         return {
-            "n_likelihood_evaluations": n_evals,
+            "n_likelihood_evaluations": n_evaluations,
+            "n_likelihood_gradient_evaluations": n_gradient_evaluations,
             "n_training_loops_actual": actual_training_loops,
-            "training_loss_history": np.asarray(res["loss_buffer"].data),  # ty: ignore[unresolved-attribute]  # flowMC stubs
-            "acceptance_training_local": np.asarray(res["local_accs_training"].data),  # ty: ignore[unresolved-attribute]  # flowMC stubs
-            "acceptance_training_global": np.asarray(res["global_accs_training"].data),  # ty: ignore[unresolved-attribute]  # flowMC stubs
+            "training_loss_history": np.asarray(res["loss_buffer"].data),  # ty: ignore[missing-attribute]  # flowMC stubs
+            "acceptance_training_local": np.asarray(res["local_accs_training"].data),  # ty: ignore[missing-attribute]  # flowMC stubs
+            "acceptance_training_global": np.asarray(res["global_accs_training"].data),  # ty: ignore[missing-attribute]  # flowMC stubs
             "acceptance_production_local": np.asarray(
-                res["local_accs_production"].data  # ty: ignore[unresolved-attribute]  # flowMC stubs
+                res["local_accs_production"].data  # ty: ignore[missing-attribute]  # flowMC stubs
             ),
             "acceptance_production_global": np.asarray(
-                res["global_accs_production"].data  # ty: ignore[unresolved-attribute]  # flowMC stubs
+                res["global_accs_production"].data  # ty: ignore[missing-attribute]  # flowMC stubs
             ),
         }

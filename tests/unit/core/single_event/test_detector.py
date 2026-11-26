@@ -1842,6 +1842,41 @@ class TestEarthRotation:
             expected = det_2g.fd_response(f_i, h_i, BNS_PARAMS)
             np.testing.assert_allclose(response[i], expected[0], rtol=1e-12, atol=0.0)
 
+    @pytest.mark.parametrize("mode", ["x", "y", "l"])
+    @pytest.mark.parametrize("finite_arm_length", [False, True])
+    def test_non_gr_polarizations(self, monkeypatch, mode, finite_arm_length):
+        source = get_ET()[0]
+        detector = GroundBased2G(
+            source.name,
+            latitude=source.latitude,
+            longitude=source.longitude,
+            xarm_azimuth=source.xarm_azimuth,
+            yarm_azimuth=source.yarm_azimuth,
+            modes=mode,
+        )
+        options = {"arm_length": 1e4, "finite_arm_length": finite_arm_length}
+        start_time = ROTATION_TRIGGER_TIME - 100
+        rotating = _start_at(
+            GroundBased3G.from_detector(detector, earth_rotation=True, **options),
+            start_time,
+        )
+        static = _start_at(
+            GroundBased3G.from_detector(detector, earth_rotation=False, **options),
+            start_time,
+        )
+        frequency = jnp.array([2.0, 5.0, 20.0, 100.0])
+        h_sky = {mode: jnp.ones_like(frequency)}
+        actual = rotating.fd_response(frequency, h_sky, BNS_PARAMS)
+
+        # Evaluate each bin with a scalar sky basis at the same sidereal angle.
+        gmst = rotating.gmst_at_frequency(frequency, BNS_PARAMS)
+        for i, angle in enumerate(gmst):
+            _sidereal_angle_at_trigger(monkeypatch, angle)
+            expected = static.fd_response(
+                frequency[i : i + 1], {mode: h_sky[mode][i : i + 1]}, BNS_PARAMS
+            )
+            np.testing.assert_allclose(actual[i], expected[0], rtol=1e-12, atol=1e-15)
+
     def test_sidereal_angle_matches_gmst_at_emission(self):
         """GMST(f) agrees with the GMST of the emission time t_trigger + t_c - tau(f)."""
         det = _et1_3g()

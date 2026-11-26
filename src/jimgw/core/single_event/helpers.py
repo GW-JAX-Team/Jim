@@ -335,7 +335,7 @@ def get_default_likelihood_transforms(
     if _J_FRAME_SPIN_PARAMS <= names:
         transforms.append(
             SpinAnglesToCartesianSpinTransform(
-                freq_ref=waveform.f_ref,  # ty: ignore[unresolved-attribute]  # CBC waveforms only
+                freq_ref=waveform.f_ref,  # ty: ignore[missing-attribute]  # CBC waveforms only
                 fixed_phase=phase_marginalization,
             )
         )
@@ -452,7 +452,7 @@ def to_likelihood_space(
 
     if _J_FRAME_SPIN_PARAMS <= p.keys():
         t = SpinAnglesToCartesianSpinTransform(
-            freq_ref=waveform.f_ref  # ty: ignore[unresolved-attribute]  # CBC waveforms only
+            freq_ref=waveform.f_ref  # ty: ignore[missing-attribute]  # CBC waveforms only
         )
         p = dict(t.forward(p))
 

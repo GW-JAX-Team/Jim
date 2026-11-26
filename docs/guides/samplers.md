@@ -186,10 +186,8 @@ Key parameters:
 - `n_live` — number of live points.
 - `n_delete_frac` — fraction of live points replaced per iteration.
 - `num_inner_steps_per_dim` — slice-sampler steps per dimension per dead point; increase for strongly correlated posteriors.
-- `n_devices` — number of local devices used to shard the live points and
-  replacement chains.
-  Both `n_live` and `int(n_live * n_delete_frac)` must be
-  divisible by this value.
+- `n_devices` — number of local devices used to shard the live points and replacement chains.
+  Both `n_live` and `int(n_live * n_delete_frac)` must be divisible by this value.
   The default `1` uses the unsharded kernel.
 
 **Repository:** [blackjax-devs/blackjax](https://github.com/blackjax-devs/blackjax)
@@ -240,10 +238,8 @@ Key parameters:
 - `n_live` / `n_delete_frac` — live-set size and replacement fraction, matching NSS.
 - `num_inner_steps_per_dim` — random-direction slice steps per block dimension.
 - `num_gibbs_sweeps` — complete block sweeps per particle replacement.
-- `n_devices` — number of local devices used to shard the live points and
-  replacement chains.
-  The waveform cache remains local to each replacement
-  chain; only live-point state participates in collectives.
+- `n_devices` — number of local devices used to shard the live points and replacement chains.
+  The waveform cache remains local to each replacement chain; only live-point state participates in collectives.
 
 !!! tip "Sharding without a GPU/TPU cluster"
     `n_devices` shards across whatever JAX reports as local devices — it does not require accelerators.
@@ -366,7 +362,7 @@ Each backend's `get_samples()` returns equally-weighted posterior samples:
 
 - **NS AW / NSS**: uses anesthetic's `posterior_points()` to resample the dead-point collection to equal-weight samples.
 - **SMC (persistent)**: resamples all-temperature particles weighted by the persistent-sampling weights.
-- **SMC (non-persistent)**: returns all final-temperature particles.
+- **SMC (non-persistent)**: resamples the final particles weighted by their final importance weights.
 - **flowMC**: returns all production samples across all chains.
 
 Pass `n_samples` to `jim.get_samples()` to further downsample uniformly without replacement:
@@ -399,10 +395,12 @@ diag["acceptance_training_global"]      # np.ndarray — global acceptance rate 
 diag["acceptance_production_local"]     # np.ndarray — local acceptance rate per production loop
 diag["acceptance_production_global"]    # np.ndarray — global acceptance rate per production loop
 
-# NS AW and NSS — also include evidence estimate
+# NS AW, NSS and SwiG — also include evidence estimate
 diag["n_iterations"]              # int   — number of nested-sampling steps
 diag["log_Z"]                     # float — log Bayesian evidence
 diag["log_Z_error"]               # float — standard deviation from 100 bootstrap samples
+# SwiG only:
+diag["n_waveform_evaluations"]    # int   — waveform generations
 
 # SMC
 diag["acceptance_history"]        # np.ndarray — mean acceptance rate at each step

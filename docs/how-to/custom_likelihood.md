@@ -56,10 +56,15 @@ samples = jim.get_samples()  # one array per parameter, plus "log_likelihood"
 A complete script, with synthetic data and a corner plot, is [`examples/custom_likelihood.py`](https://github.com/GW-JAX-Team/Jim/blob/main/examples/custom_likelihood.py).
 
 !!! note "Things to know"
-    - **`evaluate` is compiled by JAX.** Use `jnp` functions, and `jnp.where` or `jax.lax.cond` instead of a Python `if` on a parameter value, which raises `TracerBoolConversionError`.
-    - **Parameter names are not checked.** The keys you read in `evaluate` must match the prior's `parameter_names`. A misspelt key raises `KeyError` when `Jim` is built, but a prior parameter that `evaluate` never reads is accepted without warning, and its posterior is just its prior.
-    - **Samplers and priors have their own constraints**, such as a normalised prior or, for NS AW, the unit cube. They are listed in the [sampler overview](../guides/samplers.md#sampler-overview); the [Transforms guide](../guides/transforms.md#mapping-a-prior-to-the-unit-cube-for-ns-aw) shows how to map a prior to the unit cube.
-    - **Importing `Jim` turns on 64-bit floats** for all JAX code in the process, as a side effect of importing ripple. It matters if you rely on single precision.
+    - **`evaluate` is compiled by JAX.**
+      Use `jnp` functions, and `jnp.where` or `jax.lax.cond` instead of a Python `if` on a parameter value, which raises `TracerBoolConversionError`.
+    - **Parameter names are not checked.**
+      The keys you read in `evaluate` must match the prior's `parameter_names`.
+      A misspelt key raises `KeyError` when `Jim` is built, but a prior parameter that `evaluate` never reads is accepted without warning, and its posterior is just its prior.
+    - **Samplers and priors have their own constraints**, such as a normalised prior or, for NS AW, the unit cube.
+      They are listed in the [sampler overview](../guides/samplers.md#sampler-overview); the [Transforms guide](../guides/transforms.md#mapping-a-prior-to-the-unit-cube-for-ns-aw) shows how to map a prior to the unit cube.
+    - **Importing `Jim` turns on 64-bit floats** for all JAX code in the process, as a side effect of importing ripple.
+      It matters if you rely on single precision.
     - **Not available:** the SwiG sampler, which needs a gravitational-wave likelihood with waveform caching, and the `jim-run` command, which cannot load a custom likelihood.
 
 ## Without `Jim`

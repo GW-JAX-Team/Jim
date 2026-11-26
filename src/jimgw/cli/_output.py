@@ -49,7 +49,7 @@ def write_outputs(jim, cfg) -> None:
 
     diag_json = out_dir / "diagnostics.json"
     diag_data: dict = {"versions": _collect_versions(cfg.sampler.type)}
-    diag_data.update({k: float(v) for k, v in scalar_diag.items()})
+    diag_data.update({k: np.asarray(v).item() for k, v in scalar_diag.items()})
     with open(diag_json, "w") as f:
         json.dump(diag_data, f, indent=2)
     logger.info("Saved diagnostics to %s", diag_json)

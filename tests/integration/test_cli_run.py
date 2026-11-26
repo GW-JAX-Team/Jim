@@ -1,5 +1,6 @@
 """Integration test: full jim-run pipeline from TOML config."""
 
+import json
 import tomllib
 from pathlib import Path
 
@@ -74,6 +75,13 @@ def test_full_run_samples_shape(full_run_result, tmp_output):
         assert n > 0
         for key in expected_params:
             assert data[key].shape == (n,)
+
+
+def test_full_run_diagnostics_keep_integers(full_run_result, tmp_output):
+    with open(tmp_output / "diagnostics.json") as f:
+        diagnostics = json.load(f)
+    assert isinstance(diagnostics["n_likelihood_evaluations"], int)
+    assert isinstance(diagnostics["n_training_loops_actual"], int)
 
 
 def test_init_creates_template(tmp_path):

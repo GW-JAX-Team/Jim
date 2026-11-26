@@ -2080,17 +2080,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#jimgw.core.single_event.polarization.Polarization.tensor_from_basis" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        tensor_from_basis
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#jimgw.core.single_event.polarization.Polarization.tensor_from_sky" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -3144,17 +3133,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#jimgw.core.single_event.polarization.Polarization.tensor_from_basis" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        tensor_from_basis
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#jimgw.core.single_event.polarization.Polarization.tensor_from_sky" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -3290,18 +3268,10 @@ corresponding tensor in an Earth centric frame.</p>
       </thead>
       <tbody>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="tensor_from_basis(x: Float[Array, 3], y: Float[Array, 3]) -&gt; Float[Array, &#x27;3 3&#x27;] (jimgw.core.single_event.polarization.Polarization.tensor_from_basis)" href="./#jimgw.core.single_event.polarization.Polarization.tensor_from_basis">tensor_from_basis</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="tensor_from_sky(ra: FloatLike, dec: FloatLike, psi: FloatLike, gmst: FloatLike) -&gt; Float[Array, &#x27;3 3 ...&#x27;] (jimgw.core.single_event.polarization.Polarization.tensor_from_sky)" href="./#jimgw.core.single_event.polarization.Polarization.tensor_from_sky">tensor_from_sky</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Constructor to obtain polarization tensor from waveframe basis</p>
-                </div>
-              </td>
-            </tr>
-            <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="tensor_from_sky(ra: FloatLike, dec: FloatLike, psi: FloatLike, gmst: FloatLike) -&gt; Float[Array, &#x27;3 3&#x27;] (jimgw.core.single_event.polarization.Polarization.tensor_from_sky)" href="./#jimgw.core.single_event.polarization.Polarization.tensor_from_sky">tensor_from_sky</a></code></td>
-              <td>
-                <div class="doc-md-description">
-                  <p>Computes {name} polarization tensor in celestial</p>
+                  <p>Polarization tensor in Earth-fixed coordinates from the sky position.</p>
                 </div>
               </td>
             </tr>
@@ -3327,36 +3297,15 @@ corresponding tensor in an Earth centric frame.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="jimgw.core.single_event.polarization.Polarization.tensor_from_basis" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">tensor_from_basis</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="n">y</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">'3 3'</span><span class="p">]</span></code>
-
-<a href="#jimgw.core.single_event.polarization.Polarization.tensor_from_basis" class="headerlink" title="Permanent link">¤</a></h3>
-
-
-    <div class="doc doc-contents ">
-
-        <p>Constructor to obtain polarization tensor from waveframe basis
-defined by orthonormal vectors (x, y) in arbitrary Cartesian
-coordinates.</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
 <h3 id="jimgw.core.single_event.polarization.Polarization.tensor_from_sky" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">tensor_from_sky</span><span class="p">(</span><span class="n">ra</span><span class="p">:</span> <span class="n">FloatLike</span><span class="p">,</span> <span class="n">dec</span><span class="p">:</span> <span class="n">FloatLike</span><span class="p">,</span> <span class="n">psi</span><span class="p">:</span> <span class="n">FloatLike</span><span class="p">,</span> <span class="n">gmst</span><span class="p">:</span> <span class="n">FloatLike</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">'3 3'</span><span class="p">]</span></code>
+            <code class="highlight language-python"><span class="n">tensor_from_sky</span><span class="p">(</span><span class="n">ra</span><span class="p">:</span> <span class="n">FloatLike</span><span class="p">,</span> <span class="n">dec</span><span class="p">:</span> <span class="n">FloatLike</span><span class="p">,</span> <span class="n">psi</span><span class="p">:</span> <span class="n">FloatLike</span><span class="p">,</span> <span class="n">gmst</span><span class="p">:</span> <span class="n">FloatLike</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s1">'3 3 ...'</span><span class="p">]</span></code>
 
 <a href="#jimgw.core.single_event.polarization.Polarization.tensor_from_sky" class="headerlink" title="Permanent link">¤</a></h3>
 
 
     <div class="doc doc-contents ">
 
-        <p>Computes {name} polarization tensor in celestial
-coordinates from sky location and orientation parameters.</p>
+        <p>Polarization tensor in Earth-fixed coordinates from the sky position.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3427,7 +3376,8 @@ coordinates from sky location and orientation parameters.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Greenwich mean standard time (GMST) in radians.</p>
+                <p>Greenwich mean sidereal time (GMST) in radians, or an
+array of them.</p>
               </div>
             </td>
             <td>
@@ -3449,11 +3399,21 @@ coordinates from sky location and orientation parameters.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code><span title="jaxtyping.Float">Float</span>[<span title="jaxtyping.Array">Array</span>, &#39;3 3&#39;]</code>
+                  <code><span title="jaxtyping.Float">Float</span>[<span title="jaxtyping.Array">Array</span>, &#39;3 3 ...&#39;]</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Float[Array, "3 3"]: 3x3 polarization tensor.</p>
+                <p>Float[Array, "3 3 ..."]: The 3x3 polarization tensor; for an array of</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="jaxtyping.Float">Float</span>[<span title="jaxtyping.Array">Array</span>, &#39;3 3 ...&#39;]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p><code>gmst</code>, one tensor per value along the trailing axes.</p>
               </div>
             </td>
           </tr>

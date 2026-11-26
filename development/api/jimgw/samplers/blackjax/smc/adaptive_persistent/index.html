@@ -3277,10 +3277,8 @@
     <div class="doc doc-contents ">
 
         <p>Return posterior samples: resampled from all-temperature particles.</p>
-<p>Samples are drawn with replacement from all-temperature particles
-weighted by the persistent-sampling weight formula. The number of
-returned samples approximately equals the effective sample size
-<code>1 / max(weights)</code>.</p>
+<p>The particles of all temperatures are resampled by their weights. The
+number of samples is about the effective sample size.</p>
 
 
     <p><span class="doc-section-title">Returns:</span></p>

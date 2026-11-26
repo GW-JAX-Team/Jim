@@ -2796,6 +2796,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#jimgw.samplers.blackjax.smc.diagnostics.resample_by_weights" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        resample_by_weights
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#jimgw.samplers.blackjax.smc.diagnostics.resample_persistent_particles" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -3194,6 +3205,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#jimgw.samplers.blackjax.smc.diagnostics.resample_by_weights" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        resample_by_weights
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#jimgw.samplers.blackjax.smc.diagnostics.resample_persistent_particles" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -3284,6 +3306,14 @@ thin composition and the actual math has a name and a docstring of its own.</p>
               <td>
                 <div class="doc-md-description">
                   <p>Delta-method log-evidence standard error for persistent sampling (modes ap/fp).</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="resample_by_weights(particles: jax.Array, log_likelihoods: jax.Array, weights: jax.Array) -&gt; dict[str, np.ndarray] (jimgw.samplers.blackjax.smc.diagnostics.resample_by_weights)" href="./#jimgw.samplers.blackjax.smc.diagnostics.resample_by_weights">resample_by_weights</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Turn weighted particles into equal-weight posterior samples.</p>
                 </div>
               </td>
             </tr>
@@ -3645,6 +3675,122 @@ summed across steps.</p>
 <div class="doc doc-object doc-function">
 
 
+<h2 id="jimgw.samplers.blackjax.smc.diagnostics.resample_by_weights" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">resample_by_weights</span><span class="p">(</span><span class="n">particles</span><span class="p">:</span> <span class="n">jax</span><span class="o">.</span><span class="n">Array</span><span class="p">,</span> <span class="n">log_likelihoods</span><span class="p">:</span> <span class="n">jax</span><span class="o">.</span><span class="n">Array</span><span class="p">,</span> <span class="n">weights</span><span class="p">:</span> <span class="n">jax</span><span class="o">.</span><span class="n">Array</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span></code>
+
+<a href="#jimgw.samplers.blackjax.smc.diagnostics.resample_by_weights" class="headerlink" title="Permanent link">¤</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Turn weighted particles into equal-weight posterior samples.</p>
+<p>Returns about <code>1 / max(weights)</code> samples (the effective sample size), each
+particle at most once, in random order.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>particles</code>
+            </td>
+            <td>
+                  <code><span title="jax.Array">Array</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Particles, shape <code>(n, n_dims)</code>.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>log_likelihoods</code>
+            </td>
+            <td>
+                  <code><span title="jax.Array">Array</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Their log-likelihoods, shape <code>(n,)</code>.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>weights</code>
+            </td>
+            <td>
+                  <code><span title="jax.Array">Array</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Their normalised weights, shape <code>(n,)</code>.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="numpy.ndarray">ndarray</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Dict with keys <code>"samples"</code> (shape <code>(m, n_dims)</code>) and</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="numpy.ndarray">ndarray</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p><code>"log_likelihood"</code> (shape <code>(m,)</code>), with <code>m &lt;= n</code>.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h2 id="jimgw.samplers.blackjax.smc.diagnostics.resample_persistent_particles" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">resample_persistent_particles</span><span class="p">(</span><span class="n">ps</span><span class="p">,</span> <span class="n">n_dims</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span></code>
 
@@ -3654,9 +3800,8 @@ summed across steps.</p>
     <div class="doc doc-contents ">
 
         <p>Draw the posterior sample from a finished persistent-sampling (ap/fp) state.</p>
-<p>Resamples with replacement from all-temperature particles, weighted by the
-persistent-sampling weight formula, to a target count approximately equal to
-the effective sample size <code>1 / max(weights)</code>.</p>
+<p>Resamples the particles of all temperatures by their persistent-sampling
+weights, as in :func:<code>resample_by_weights</code>.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>

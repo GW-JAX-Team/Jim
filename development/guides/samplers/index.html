@@ -3694,7 +3694,7 @@ The <a href="../cli/">CLI</a> passes the same result to Jim.</p>
 <ul>
 <li><strong>NS AW / NSS</strong>: uses anesthetic's <code>posterior_points()</code> to resample the dead-point collection to equal-weight samples.</li>
 <li><strong>SMC (persistent)</strong>: resamples all-temperature particles weighted by the persistent-sampling weights.</li>
-<li><strong>SMC (non-persistent)</strong>: returns all final-temperature particles.</li>
+<li><strong>SMC (non-persistent)</strong>: resamples the final particles weighted by their final importance weights.</li>
 <li><strong>flowMC</strong>: returns all production samples across all chains.</li>
 </ul>
 <p>Pass <code>n_samples</code> to <code>jim.get_samples()</code> to further downsample uniformly without replacement:</p>

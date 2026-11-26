@@ -3242,7 +3242,7 @@
               <td><code><a class="autorefs autorefs-internal" title="get_samples() -&gt; dict[str, np.ndarray] (jimgw.samplers.blackjax.smc.adaptive_tempered.AdaptiveTemperedSMCSampler.get_samples)" href="./#jimgw.samplers.blackjax.smc.adaptive_tempered.AdaptiveTemperedSMCSampler.get_samples">get_samples</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  <p>Return posterior samples: all final-temperature particles, equal weight.</p>
+                  <p>Return posterior samples: the final particles resampled by their weights.</p>
                 </div>
               </td>
             </tr>
@@ -3276,7 +3276,8 @@
 
     <div class="doc doc-contents ">
 
-        <p>Return posterior samples: all final-temperature particles, equal weight.</p>
+        <p>Return posterior samples: the final particles resampled by their weights.</p>
+<p>The number of samples is about the effective sample size.</p>
 
 
     <p><span class="doc-section-title">Returns:</span></p>

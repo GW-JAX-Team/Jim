@@ -6,6 +6,8 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
+      time: "04:19"
+      timezone: "Europe/Amsterdam"
     groups:
       github-actions:
         patterns:

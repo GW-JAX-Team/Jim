@@ -132,6 +132,23 @@ def test_smc_samples(ap_sampler):
     np.testing.assert_allclose(samples.mean(0), _MU, atol=0.03)
 
 
+@pytest.mark.parametrize(
+    "fields",
+    [{"target_ess": 500}, {"temperature_ladder": _LADDER}],
+    ids=["at", "ft"],
+)
+def test_smc_tempered_samples_have_the_posterior_width(fields):
+    """The tempered modes' samples have the posterior's width."""
+    sampler = _make_sampler(
+        _config(n_particles=1000, persistent_sampling=False, **fields)
+    )
+    sampler.sample(jax.random.key(11), _init_pos(1000))
+    samples = sampler.get_samples()["samples"]
+    assert samples.shape[0] <= 1000
+    np.testing.assert_allclose(samples.mean(0), _MU, atol=0.02)
+    np.testing.assert_allclose(samples.std(0).mean(), _SIGMA, atol=0.01)
+
+
 @pytest.mark.slow
 def test_smc_ap_diagnostics(ap_sampler):
     """AP mode: mutation history, the persistent log-Z trajectory and ESS."""

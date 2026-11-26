@@ -362,7 +362,7 @@ Each backend's `get_samples()` returns equally-weighted posterior samples:
 
 - **NS AW / NSS**: uses anesthetic's `posterior_points()` to resample the dead-point collection to equal-weight samples.
 - **SMC (persistent)**: resamples all-temperature particles weighted by the persistent-sampling weights.
-- **SMC (non-persistent)**: returns all final-temperature particles.
+- **SMC (non-persistent)**: resamples the final particles weighted by their final importance weights.
 - **flowMC**: returns all production samples across all chains.
 
 Pass `n_samples` to `jim.get_samples()` to further downsample uniformly without replacement:

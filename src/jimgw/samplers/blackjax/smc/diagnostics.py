@@ -12,17 +12,48 @@ from blackjax.smc.persistent_sampling import (
     compute_log_persistent_weights,
     compute_persistent_ess,
 )
+from blackjax.smc.resampling import systematic
 
-# Fixed key for the persistent-sampling posterior resample in get_samples().
+# Fixed key for the posterior resample in get_samples().
 _RESAMPLE_KEY = jax.random.key(123)
+
+
+def resample_by_weights(
+    particles: jax.Array, log_likelihoods: jax.Array, weights: jax.Array
+) -> dict[str, np.ndarray]:
+    """Turn weighted particles into equal-weight posterior samples.
+
+    Returns about ``1 / max(weights)`` samples (the effective sample size), each
+    particle at most once, in random order.
+
+    Args:
+        particles: Particles, shape ``(n, n_dims)``.
+        log_likelihoods: Their log-likelihoods, shape ``(n,)``.
+        weights: Their normalised weights, shape ``(n,)``.
+
+    Returns:
+        Dict with keys ``"samples"`` (shape ``(m, n_dims)``) and
+        ``"log_likelihood"`` (shape ``(m,)``), with ``m <= n``.
+    """
+    n_available = particles.shape[0]
+    n_target = max(1, int(1.0 / float(jnp.max(weights))))
+    n_target = min(n_target, n_available)
+    # systematic() returns sorted indices, so shuffle them.
+    resample_key, shuffle_key = jax.random.split(_RESAMPLE_KEY)
+    indices = jax.random.permutation(
+        shuffle_key, systematic(resample_key, weights, n_target)
+    )
+    return {
+        "samples": np.asarray(particles[indices]),
+        "log_likelihood": np.asarray(log_likelihoods[indices]),
+    }
 
 
 def resample_persistent_particles(ps, n_dims: int) -> dict[str, np.ndarray]:
     """Draw the posterior sample from a finished persistent-sampling (ap/fp) state.
 
-    Resamples with replacement from all-temperature particles, weighted by the
-    persistent-sampling weight formula, to a target count approximately equal to
-    the effective sample size ``1 / max(weights)``.
+    Resamples the particles of all temperatures by their persistent-sampling
+    weights, as in :func:`resample_by_weights`.
 
     Args:
         ps: The algorithm's persistent-sampling state (``PersistentSamplingState``),
@@ -45,21 +76,7 @@ def resample_persistent_particles(ps, n_dims: int) -> dict[str, np.ndarray]:
         include_current=True,
     )
     weights = jax.nn.softmax(log_w[: n_iter + 1].reshape(-1))
-
-    n_available = all_particles.shape[0]
-    n_target = max(1, int(1.0 / float(jnp.max(weights))))
-    n_target = min(n_target, n_available)
-    indices = jax.random.choice(
-        _RESAMPLE_KEY,
-        n_available,
-        shape=(n_target,),
-        replace=True,
-        p=weights,
-    )
-    return {
-        "samples": np.asarray(all_particles[indices]),
-        "log_likelihood": np.asarray(all_log_likelihoods[indices]),
-    }
+    return resample_by_weights(all_particles, all_log_likelihoods, weights)
 
 
 def persistent_ess_history(ps, n_iterations: int) -> np.ndarray:

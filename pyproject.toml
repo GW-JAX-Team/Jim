@@ -3,6 +3,7 @@ name = "JimGW"
 dynamic = ["version"]
 description = "A JAX-based gravitational-wave inference toolkit"
 readme = "README.md"
+# <3.15: h5py (via gwpy) has no Python 3.15 wheels yet; lift once it does.
 requires-python = ">=3.12,<3.15"
 authors = [
 	{name = "Kaze W. K. Wong", email = "kazewong.physics@gmail.com"},
@@ -80,7 +81,7 @@ jimgw = { workspace = true }
 bilby-xg = { git = "https://github.com/Pratyusava/bilby_xG", rev = "11ee11607a531b2d7f286eb438d2c971d4c045cf" }
 
 [build-system]
-requires = ["hatchling", "hatch-vcs"]
+requires = ["hatchling>=1.27", "hatch-vcs"]
 build-backend = "hatchling.build"
 
 [tool.hatch.version]
